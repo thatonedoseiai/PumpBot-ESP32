@@ -51,10 +51,10 @@ void loop() {
   RotaryEncoder::Direction spinDir = encoder.getDirection();
   unsigned long spd = encoder.getRPM();
   switch(spinDir) {
-    case RotaryEncoder::CLOCKWISE:
+    case RotaryEncoder::Direction::CLOCKWISE:
       Serial.print("rotating clockwise! ");
       break;
-    case RotaryEncoder::COUNTERCLOCKWISE:
+    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
       Serial.print("rotating counterclockwise! ");
       break;
     default:
