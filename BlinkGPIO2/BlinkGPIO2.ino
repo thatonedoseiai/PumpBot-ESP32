@@ -22,7 +22,7 @@
 #define LED_G 15
 #define LED_B 2
 
-RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::FOUR3);
 
 void setup() {
   pinMode(SPI_MOSI, OUTPUT);
@@ -52,13 +52,12 @@ void loop() {
   unsigned long spd = encoder.getRPM();
   switch(spinDir) {
     case RotaryEncoder::Direction::CLOCKWISE:
-      Serial.print("rotating clockwise! ");
+      Serial.println("rotating clockwise! ");
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      Serial.print("rotating counterclockwise! ");
+      Serial.println("rotating counterclockwise! ");
       break;
     default:
-      Serial.print("not rotating! ");
+      break;
   }
-  Serial.println(spd);
 }
