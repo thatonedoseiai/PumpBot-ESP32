@@ -1,5 +1,5 @@
 #include <arduino.h>
-#include <RotaryEncoder.h>
+#include "RotaryEncoder.h"
 
 #define SPI_MOSI 5      // Master Out Slave In
 #define SPI_MISO 17     // Master In Slave Out
