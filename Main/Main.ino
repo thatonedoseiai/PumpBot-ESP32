@@ -22,6 +22,13 @@
 #define LED_G 15
 #define LED_B 2
 
+typedef struct PB_INPUT {
+  bool btnL;
+  bool btnR;
+  RotaryEncoder::Direction rotaryDir;
+  bool rotaryBtn;
+}
+
 RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::FOUR3);
 
 void setup() {
@@ -46,11 +53,19 @@ void setup() {
   Serial.begin(115200);
 }
 
+PB_INPUT* pollInputs() {
+  PB_INPUT* inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
+  inputs->rotaryDir = encoder.getDirection();
+  inputs->btnL = digitalRead(BTN_L);
+  inputs->btnR = digitalRead(BTN_R);
+  inputs->rotaryBtn = digitalRead(ROT_ENC_SW);
+  return inputs;
+}
+
 void loop() {
   encoder.tick();
-  RotaryEncoder::Direction spinDir = encoder.getDirection();
-  unsigned long spd = encoder.getRPM();
-  switch(spinDir) {
+  PB_INPUT* inputs = pollInputs();
+  switch(inputs->rotaryDir) {
     case RotaryEncoder::Direction::CLOCKWISE:
       Serial.println("rotating clockwise! ");
       break;
