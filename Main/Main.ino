@@ -78,7 +78,6 @@ void pollInputs(PB_INPUT* inputs) {
   inputs->btnL = digitalRead(BTN_L);
   inputs->btnR = digitalRead(BTN_R);
   inputs->rotaryBtn = digitalRead(ROT_ENC_SW);
-  return inputs;
 }
 
 void pulseLED(int pin) {
@@ -112,6 +111,6 @@ void loop() {
       analogWrite(pin, channelValues[channel]+1 > 255 ? 255 : ++channelValues[channel]);
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      analogWrite(pin, channelValeus[channel]-1 < 0 ? 0 : --channelValues[channel]);
+      analogWrite(pin, channelValues[channel]-1 < 0 ? 0 : --channelValues[channel]);
   }
 }
