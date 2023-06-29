@@ -1,5 +1,5 @@
 #include <arduino.h>
-#include <RotaryEncoder.h>
+#include "RotaryEncoder.h"
 
 #define SPI_MOSI 5      // Master Out Slave In
 #define SPI_MISO 17     // Master In Slave Out
@@ -43,18 +43,18 @@ void setup() {
   pinMode(LED_R, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(LED_B, OUTPUT);
-  Serial.open(115200);
+  Serial.begin(115200);
 }
 
 void loop() {
   encoder.tick();
-  Direction spinDir = encoder.getDirection();
+  RotaryEncoder::Direction spinDir = encoder.getDirection();
   unsigned long spd = encoder.getRPM();
   switch(spinDir) {
-    case CLOCKWISE:
+    case RotaryEncoder::CLOCKWISE:
       Serial.print("rotating clockwise! ");
       break;
-    case COUNTERCLOCKWISE:
+    case RotaryEncoder::COUNTERCLOCKWISE:
       Serial.print("rotating counterclockwise! ");
       break;
     default:
