@@ -24,6 +24,19 @@
 #define LED_G 15
 #define LED_B 2
 
+
+// TEMPORARY
+typedef enum SelectedColourChannel {
+  SELECT_RED = 0,
+  SELECT_GREEN = 1,
+  SELECT_BLUE = 2
+} SelectedColourChannel;
+
+int channelValues[] = {0, 0, 0};
+// END TEMPORARY
+
+
+
 typedef struct PB_INPUT {
   bool btnL;
   bool btnR;
@@ -78,17 +91,6 @@ void pulseLED(int pin) {
     delay(5);
   }
 }
-
-// TEMPORARY
-typedef enum SelectedColourChannel {
-  SELECT_RED = 0,
-  SELECT_GREEN = 1,
-  SELECT_BLUE = 2
-} SelectedColourChannel;
-
-int channelValues[] = {0, 0, 0};
-// END TEMPORARY
-
 
 void loop() {
   encoder.tick();
