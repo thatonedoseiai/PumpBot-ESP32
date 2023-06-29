@@ -53,7 +53,7 @@ void setup() {
   Serial.begin(115200);
 }
 
-PB_INPUT* pollInputs() {
+PB_INPUT* pollInputs(RotaryEncoder encoder) {
   PB_INPUT* inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
   inputs->rotaryDir = encoder.getDirection();
   inputs->btnL = digitalRead(BTN_L);
@@ -75,7 +75,7 @@ void pulse(int pin) {
 
 void loop() {
   /* encoder.tick(); */
-  /* PB_INPUT* inputs = pollInputs(); */
+  /* PB_INPUT* inputs = pollInputs(encoder); */
   /* switch(inputs->rotaryDir) { */
   /*   case RotaryEncoder::Direction::CLOCKWISE: */
   /*     Serial.println("rotating clockwise! "); */
