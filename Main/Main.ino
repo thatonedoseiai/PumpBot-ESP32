@@ -114,4 +114,5 @@ void loop() {
     case RotaryEncoder::Direction::CLOCKWISE:
       analogWrite(pin, channelValues[channel]-1 < 0 ? 0 : --channelValues[channel]);
   }
+  Serial.println(channelValues[channel]);
 }
