@@ -1,3 +1,5 @@
+// vim:ft=cpp
+
 #include <arduino.h>
 #include "RotaryEncoder.h"
 
@@ -30,6 +32,8 @@ typedef struct PB_INPUT {
 } PB_INPUT;
 
 RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::FOUR3);
+PB_INPUT* inputs;
+SelectedColourChannel channel;
 
 void setup() {
   pinMode(SPI_MOSI, OUTPUT);
@@ -51,10 +55,12 @@ void setup() {
   pinMode(LED_G, OUTPUT);
   pinMode(LED_B, OUTPUT);
   Serial.begin(115200);
+
+  inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
+  channel = SELECT_RED;
 }
 
-PB_INPUT* pollInputs(RotaryEncoder encoder) {
-  PB_INPUT* inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
+void pollInputs(PB_INPUT* inputs) {
   inputs->rotaryDir = encoder.getDirection();
   inputs->btnL = digitalRead(BTN_L);
   inputs->btnR = digitalRead(BTN_R);
@@ -62,7 +68,7 @@ PB_INPUT* pollInputs(RotaryEncoder encoder) {
   return inputs;
 }
 
-void pulse(int pin) {
+void pulseLED(int pin) {
   for(int i=0;i<256;++i) {
     analogWrite(pin, i);
     delay(5);
@@ -73,21 +79,37 @@ void pulse(int pin) {
   }
 }
 
-void loop() {
-  /* encoder.tick(); */
-  /* PB_INPUT* inputs = pollInputs(encoder); */
-  /* switch(inputs->rotaryDir) { */
-  /*   case RotaryEncoder::Direction::CLOCKWISE: */
-  /*     Serial.println("rotating clockwise! "); */
-  /*     break; */
-  /*   case RotaryEncoder::Direction::COUNTERCLOCKWISE: */
-  /*     Serial.println("rotating counterclockwise! "); */
-  /*     break; */
-  /*   default: */
-  /*     break; */
-  /* } */
+// TEMPORARY
+typedef enum SelectedColourChannel {
+  SELECT_RED = 0,
+  SELECT_GREEN = 1,
+  SELECT_BLUE = 2
+} SelectedColourChannel;
 
-  pulse(LED_R);
-  pulse(LED_G);
-  pulse(LED_B);
+int channelValues[] = {0, 0, 0};
+// END TEMPORARY
+
+
+void loop() {
+  encoder.tick();
+  pollInputs(inputs);
+  int pin;
+  if(inputs->btnL) {
+    channel = SELECT_RED;
+    pin = LED_R;
+  } else if(inputs->rotaryBtn) {
+    channel = SELECT_GREEN;
+    pin = LED_G;
+  } else if(inputs->btnR) {
+    channel = SELECT_BLUE;
+    pin = LED_B;
+  }
+
+  switch(inputs->rotaryDir) {
+    case RotaryEncoder::Direction::CLOCKWISE:
+      analogWrite(pin, channelValues[channel]+1 > 255 ? 255 : ++channelValues[channel]);
+      break;
+    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
+      analogWrite(pin, channelValeus[channel]-1 < 0 ? 0 : --channelValues[channel]);
+  }
 }
