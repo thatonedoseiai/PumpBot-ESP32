@@ -43,18 +43,18 @@ void setup() {
   pinMode(LED_R, OUTPUT);
   pinMode(LED_G, OUTPUT);
   pinMode(LED_B, OUTPUT);
-  Serial.open(115200);
+  Serial.begin(115200);
 }
 
 void loop() {
   encoder.tick();
-  Direction spinDir = encoder.getDirection();
+  RotaryEncoder::Direction spinDir = encoder.getDirection();
   unsigned long spd = encoder.getRPM();
   switch(spinDir) {
-    case CLOCKWISE:
+    case RotaryEncoder::CLOCKWISE:
       Serial.print("rotating clockwise! ");
       break;
-    case COUNTERCLOCKWISE:
+    case RotaryEncoder::COUNTERCLOCKWISE:
       Serial.print("rotating counterclockwise! ");
       break;
     default:
