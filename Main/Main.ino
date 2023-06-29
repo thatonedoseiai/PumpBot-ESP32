@@ -67,7 +67,7 @@ void pulse(int pin) {
     analogWrite(pin, i);
     delay(5);
   }
-  for(int i=255;i>=0;++i) {
+  for(int i=255;i>=0;--i) {
     analogWrite(pin, i);
     delay(5);
   }
