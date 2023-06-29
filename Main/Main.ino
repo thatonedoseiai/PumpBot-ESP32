@@ -62,17 +62,32 @@ PB_INPUT* pollInputs() {
   return inputs;
 }
 
-void loop() {
-  encoder.tick();
-  PB_INPUT* inputs = pollInputs();
-  switch(inputs->rotaryDir) {
-    case RotaryEncoder::Direction::CLOCKWISE:
-      Serial.println("rotating clockwise! ");
-      break;
-    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      Serial.println("rotating counterclockwise! ");
-      break;
-    default:
-      break;
+void pulse(int pin) {
+  for(int i=0;i<256;++i) {
+    analogWrite(pin, i);
+    delay(5);
   }
+  for(int i=255;i>=0;++i) {
+    analogWrite(pin, i);
+    delay(5);
+  }
+}
+
+void loop() {
+  /* encoder.tick(); */
+  /* PB_INPUT* inputs = pollInputs(); */
+  /* switch(inputs->rotaryDir) { */
+  /*   case RotaryEncoder::Direction::CLOCKWISE: */
+  /*     Serial.println("rotating clockwise! "); */
+  /*     break; */
+  /*   case RotaryEncoder::Direction::COUNTERCLOCKWISE: */
+  /*     Serial.println("rotating counterclockwise! "); */
+  /*     break; */
+  /*   default: */
+  /*     break; */
+  /* } */
+
+  pulse(LED_R);
+  pulse(LED_G);
+  pulse(LED_B);
 }
