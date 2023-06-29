@@ -65,8 +65,11 @@ void setup() {
   pinMode(ROT_ENC_B, INPUT);
   pinMode(LCD_BL, OUTPUT);
   pinMode(LED_R, OUTPUT);
+  analogWriteResolution(LED_R, 16);
   pinMode(LED_G, OUTPUT);
+  analogWriteResolution(LED_G, 16);
   pinMode(LED_B, OUTPUT);
+  analogWriteResolution(LED_B, 16);
   Serial.begin(115200);
 
   inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
@@ -107,10 +110,10 @@ void loop() {
   }
 
   switch(inputs->rotaryDir) {
-    case RotaryEncoder::Direction::CLOCKWISE:
-      analogWrite(pin, channelValues[channel]+1 > 255 ? 255 : ++channelValues[channel]);
-      break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
+      analogWrite(pin, channelValues[channel]+1 > 65535 ? 65535 : ++channelValues[channel]);
+      break;
+    case RotaryEncoder::Direction::CLOCKWISE:
       analogWrite(pin, channelValues[channel]-1 < 0 ? 0 : --channelValues[channel]);
   }
 }
