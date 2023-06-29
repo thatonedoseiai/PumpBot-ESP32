@@ -1,6 +1,7 @@
 // vim:ft=cpp
 
 #include <arduino.h>
+#include <spi.h>
 #include "RotaryEncoder.h"
 
 #define SPI_MOSI 5      // Master Out Slave In
@@ -33,7 +34,6 @@ typedef struct PB_INPUT {
 
 RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::FOUR3);
 PB_INPUT* inputs;
-SelectedColourChannel channel;
 
 void setup() {
   pinMode(SPI_MOSI, OUTPUT);
@@ -56,6 +56,9 @@ void setup() {
   pinMode(LED_B, OUTPUT);
   Serial.begin(115200);
 
+  SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI, SPI_CS_LCD);
+  SPI.begin(SPI_CLK, SPI_MISO, SPI_MOSI, SPI_CS_PSRAM);
+
   inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
   channel = SELECT_RED;
 }
@@ -67,28 +70,6 @@ void pollInputs(PB_INPUT* inputs) {
   inputs->rotaryBtn = digitalRead(ROT_ENC_SW);
   return inputs;
 }
-
-void pulseLED(int pin) {
-  for(int i=0;i<256;++i) {
-    analogWrite(pin, i);
-    delay(5);
-  }
-  for(int i=255;i>=0;--i) {
-    analogWrite(pin, i);
-    delay(5);
-  }
-}
-
-// TEMPORARY
-typedef enum SelectedColourChannel {
-  SELECT_RED = 0,
-  SELECT_GREEN = 1,
-  SELECT_BLUE = 2
-} SelectedColourChannel;
-
-int channelValues[] = {0, 0, 0};
-// END TEMPORARY
-
 
 void loop() {
   encoder.tick();
