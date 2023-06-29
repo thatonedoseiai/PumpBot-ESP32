@@ -65,11 +65,9 @@ void setup() {
   pinMode(ROT_ENC_B, INPUT);
   pinMode(LCD_BL, OUTPUT);
   pinMode(LED_R, OUTPUT);
-  analogWriteResolution(LED_R, 16);
   pinMode(LED_G, OUTPUT);
-  analogWriteResolution(LED_G, 16);
   pinMode(LED_B, OUTPUT);
-  analogWriteResolution(LED_B, 16);
+  analogWriteResolution(16);
   Serial.begin(115200);
 
   inputs = (PB_INPUT*) malloc(sizeof(PB_INPUT));
