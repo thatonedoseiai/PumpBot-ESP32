@@ -27,7 +27,7 @@ typedef struct PB_INPUT {
   bool btnR;
   RotaryEncoder::Direction rotaryDir;
   bool rotaryBtn;
-}
+} PB_INPUT;
 
 RotaryEncoder encoder(ROT_ENC_A, ROT_ENC_B, RotaryEncoder::LatchMode::FOUR3);
 
