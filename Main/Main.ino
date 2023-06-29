@@ -110,9 +110,10 @@ void loop() {
   switch(inputs->rotaryDir) {
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
       analogWrite(pin, channelValues[channel]+1 > 65535 ? 65535 : ++channelValues[channel]);
+      Serial.println(channelValues[channel]);
       break;
     case RotaryEncoder::Direction::CLOCKWISE:
+      Serial.println(channelValues[channel]);
       analogWrite(pin, channelValues[channel]-1 < 0 ? 0 : --channelValues[channel]);
   }
-  Serial.println(channelValues[channel]);
 }
