@@ -8,7 +8,7 @@
 #define SPI_MOSI 5      // Master Out Slave In
 #define SPI_MISO 17     // Master In Slave Out
 #define SPI_CS_LCD 18
-#define LCD_DC 30
+#define LCD_DC 4
 #define SPI_CLK 19
 #define SPI_CS_PSRAM 21
 #define I2C_SDA 22
