@@ -32,10 +32,12 @@ typedef enum SelectedColourChannel {
   SELECT_BLUE = 2
 } SelectedColourChannel;
 
-int channelValues[] = {0, 0, 0};
+uint16_t rgbValues[] = {0, 0, 0};
+uint8_t rgbColors[] = {0, 0, 0};
+uint8_t rgbBrightness = 128;
+bool rgbMode = false;
+const int pinsRGB[] = {LED_R, LED_G, LED_B};
 // END TEMPORARY
-
-
 
 typedef struct PB_INPUT {
   bool btnL;
@@ -97,25 +99,83 @@ void loop() {
   pollInputs(inputs);
   int pin;
   if(inputs->btnL) {
-    channel = SELECT_RED;
-    pin = LED_R;
-  } else if(inputs->rotaryBtn) {
-    channel = SELECT_GREEN;
-    pin = LED_G;
+    switch(channel){
+      case SELECT_RED:
+        channel = SELECT_GREEN;
+        pin = LED_G;
+        break;
+      case SELECT_GREEN:
+        channel = SELECT_BLUE;
+        pin = LED_B;
+        break;
+      case SELECT_BLUE:
+        channel = SELECT_RED;
+        pin = LED_R;
+        break;
+    }
+ // } else if(inputs->rotaryBtn) {
   } else if(inputs->btnR) {
-    channel = SELECT_BLUE;
-    pin = LED_B;
+    rgbMode = !rgbMode;
   }
 
   switch(inputs->rotaryDir) {
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      Serial.println(channelValues[channel]);
+      if(!rgbMode){
+        rgbColors[channel] = min(rgbColors[channel] + 1, 255);
+        rgbValues[channel] = rgbColors[channel] * rgbBrightness;
+        analogWrite(pin, rgbValues[channel]);
+      } else {
+        rgbBrightness = min(rgbBrightness + 1, 255);
+        for (int i = 0; i < 2; ++i) {
+          rgbValues[i] = rgbColors[i] * rgbBrightness;
+          analogWrite(pinsRGB[i], rgbValues[i]);
+        }
+      }
+      Serial.print(channel);
+      Serial.print(" , ");
+      Serial.print(rgbColors[0]);
+      Serial.print(" , ");
+      Serial.print(rgbColors[1]);
+      Serial.print(" , ");
+      Serial.print(rgbColors[2]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[0]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[1]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[2]);
+      Serial.print(" , ");
+      Serial.println(rgbBrightness);
       Serial.flush();
-      analogWrite(pin, channelValues[channel]+1 > 65535 ? 65535 : ++channelValues[channel]);
+ 
       break;
     case RotaryEncoder::Direction::CLOCKWISE:
-      Serial.println(channelValues[channel]);
+      if(!rgbMode){
+        rgbColors[channel] = max(rgbColors[channel] - 1, 0);
+        rgbValues[channel] = rgbColors[channel] * rgbBrightness;
+        analogWrite(pin, rgbValues[channel]);
+      } else {
+        rgbBrightness = max(rgbBrightness - 1, 0);
+        for (int i = 0; i < 2; ++i) {
+          rgbValues[i] = rgbColors[i] * rgbBrightness;
+          analogWrite(pinsRGB[i], rgbValues[i]);
+        }
+      }
+      Serial.print(channel);
+      Serial.print(" , ");
+      Serial.print(rgbColors[0]);
+      Serial.print(" , ");
+      Serial.print(rgbColors[1]);
+      Serial.print(" , ");
+      Serial.print(rgbColors[2]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[0]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[1]);
+      Serial.print(" , ");
+      Serial.print(rgbValues[2]);
+      Serial.print(" , ");
+      Serial.println(rgbBrightness);
       Serial.flush();
-      analogWrite(pin, channelValues[channel]-1 < 0 ? 0 : --channelValues[channel]);
   }
 }
