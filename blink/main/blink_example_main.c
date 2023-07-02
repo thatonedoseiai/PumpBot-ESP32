@@ -13,6 +13,7 @@
 #include "esp_log.h"
 #include "led_strip.h"
 #include "sdkconfig.h"
+#include "esp_lcd_ili9341.h"
 
 static const char *TAG = "example";
 
@@ -20,12 +21,35 @@ static const char *TAG = "example";
    or you can edit the following line and set a number here.
 */
 #define BLINK_GPIO CONFIG_BLINK_GPIO
+#define LCD_RST -1
 
 static uint8_t s_led_state = 0;
 
 #ifdef CONFIG_BLINK_LED_RMT
 
 static led_strip_handle_t led_strip;
+static esp_lcd_panel_handle_t lcd;
+const esp_lcd_panel_io_handle_t lcd_io_handle = NULL;
+const esp_lcd_panel_dev_config_t panel_config = {
+    .reset_gpio_num = LCD_RST,
+    .rgb_endian = LCD_RGB_ENDIAN_BGR,
+    .bits_per_pixel = 16,
+};
+static i2c_config_t i2c_conf = {
+    .mode = I2C_MODE_MASTER,
+    .sda_io_num = EXAMPLE_PIN_NUM_SDA,
+    .scl_io_num = EXAMPLE_PIN_NUM_SCL,
+    .sda_pullup_en = GPIO_PULLUP_ENABLE,
+    .scl_pullup_en = GPIO_PULLUP_ENABLE,
+    .master.clk_speed = EXAMPLE_LCD_PIXEL_CLOCK_HZ,
+};
+esp_lcd_panel_io_i2c_config_t io_config = {
+    .dev_addr = EXAMPLE_I2C_HW_ADDR,
+    .control_phase_bytes = 1, // refer to LCD spec
+    .dc_bit_offset = 6,       // refer to LCD spec
+    .lcd_cmd_bits = 8,
+    .lcd_param_bits = 8,
+};
 
 static void blink_led(void)
 {
@@ -75,17 +99,31 @@ static void configure_led(void)
 
 #endif
 
+void start_lcd() {
+    ESP_ERROR_CHECK(i2c_param_config(I2C_HOST, &i2c_conf));
+    ESP_ERROR_CHECK(i2c_driver_install(I2C_HOST, I2C_MODE_MASTER, 0, 0, 0));
+ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_i2c_bus_handle_t)I2C_HOST, &io_config, &lcd_io_handle));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_ili9341(lcd_io_handle, &panel_config, &lcd));
+}
+
 void app_main(void)
 {
 
     /* Configure the peripheral according to the LED type */
-    configure_led();
+    /* configure_led(); */
+    start_lcd();
+    void* bitmap;
+    
 
-    while (1) {
-        ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
-        blink_led();
-        /* Toggle the LED state */
-        s_led_state = !s_led_state;
-        vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
-    }
+    ESP_ERROR_CHECK(panel_ili9341_init(&lcd));
+    ESP_ERROR_CHECK(panel_ili9341_disp_on_off(&lcd, false));
+    ESP_ERROR_CHECK(panel_ili9341_draw_bitmap(&lcd, 0, 0, 320, 240, bitmap));
+
+    /* while (1) { */
+        /* ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF"); */
+        /* blink_led(); */
+        /* /1* Toggle the LED state *1/ */
+        /* s_led_state = !s_led_state; */
+        /* vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS); */
+    /* } */
 }
