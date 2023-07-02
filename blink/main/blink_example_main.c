@@ -14,6 +14,7 @@
 #include "led_strip.h"
 #include "sdkconfig.h"
 #include "esp_lcd_ili9341.h"
+#include "testimg.h"
 
 static const char *TAG = "example";
 
@@ -113,11 +114,10 @@ void app_main(void)
     /* configure_led(); */
     start_lcd();
     void* bitmap;
-    
 
     ESP_ERROR_CHECK(panel_ili9341_init(&lcd));
     ESP_ERROR_CHECK(panel_ili9341_disp_on_off(&lcd, false));
-    ESP_ERROR_CHECK(panel_ili9341_draw_bitmap(&lcd, 0, 0, 320, 240, bitmap));
+    ESP_ERROR_CHECK(panel_ili9341_draw_bitmap(&lcd, 0, 0, 320, 240, 0x8a + (&testimg_bmp[0])));
 
     /* while (1) { */
         /* ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF"); */
