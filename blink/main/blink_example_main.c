@@ -23,6 +23,7 @@ static const char *TAG = "example";
 */
 #define BLINK_GPIO CONFIG_BLINK_GPIO
 #define LCD_RST -1
+#define LCD_HOST SPI2_HOST
 
 static uint8_t s_led_state = 0;
 
@@ -132,7 +133,7 @@ void app_main(void)
     /* Configure the peripheral according to the LED type */
     /* configure_led(); */
     start_lcd();
-    void* bitmap;
+    /* void* bitmap; */
 
     ESP_ERROR_CHECK(panel_ili9341_init(&lcd));
     ESP_ERROR_CHECK(panel_ili9341_disp_on_off(&lcd, false));
