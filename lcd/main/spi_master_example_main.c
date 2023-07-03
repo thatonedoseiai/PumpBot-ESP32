@@ -1,11 +1,3 @@
-/* SPI Master example
-
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +21,6 @@
  before the transaction is sent, the callback will set this line to the correct state.
 */
 
-#ifdef CONFIG_IDF_TARGET_ESP32
 #define LCD_HOST    HSPI_HOST
 
 #define PIN_NUM_MISO 17
@@ -40,37 +31,12 @@
 #define PIN_NUM_DC   16
 #define PIN_NUM_RST  4
 #define PIN_NUM_BCKL 12
-#elif defined CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
-#define LCD_HOST    SPI2_HOST
-
-#define PIN_NUM_MISO 37
-#define PIN_NUM_MOSI 35
-#define PIN_NUM_CLK  36
-#define PIN_NUM_CS   45
-
-#define PIN_NUM_DC   4
-#define PIN_NUM_RST  5
-#define PIN_NUM_BCKL 6
-#elif defined CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C2
-#define LCD_HOST    SPI2_HOST
-
-#define PIN_NUM_MISO 2
-#define PIN_NUM_MOSI 7
-#define PIN_NUM_CLK  6
-#define PIN_NUM_CS   10
-
-#define PIN_NUM_DC   9
-#define PIN_NUM_RST  4
-#define PIN_NUM_BCKL 5
-#endif
 
 //To speed up transfers, every SPI transfer sends a bunch of lines. This define specifies how many. More means more memory use,
 //but less overhead for setting up / finishing transfers. Make sure 240 is dividable by this.
 #define PARALLEL_LINES 16
 
-/*
- The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct.
-*/
+/* The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct. */
 typedef struct {
     uint8_t cmd;
     uint8_t data[16];
@@ -84,6 +50,7 @@ typedef enum {
 } type_lcd_t;
 
 //Place data into DRAM. Constant data gets placed into DROM by default, which is not accessible by DMA.
+// {{{
 DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[]={
     /* Memory Data Access Control, MX=MV=1, MY=ML=MH=0, RGB=0 */
     {0x36, {(1<<5)|(1<<6)}, 1},
@@ -117,7 +84,8 @@ DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[]={
     {0x29, {0}, 0x80},
     {0, {0}, 0xff}
 };
-
+// }}}
+// {{{
 DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
     /* Power contorl B, power control = 0, DC_ENA = 1 */
     {0xCF, {0x00, 0x83, 0X30}, 3},
@@ -177,6 +145,7 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
     {0x29, {0}, 0x80},
     {0, {0}, 0xff},
 };
+// }}}
 
 /* Send a command to the LCD. Uses spi_device_polling_transmit, which waits
  * until the transfer is complete.
@@ -462,3 +431,5 @@ void app_main(void)
     //Go do nice stuff.
     display_pretty_colors(spi);
 }
+
+// vim: foldmethod=marker
