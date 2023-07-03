@@ -1,7 +1,6 @@
 #include "ILIDriver.h"
 
 void app_main(void) {
-    esp_err_t ret;
     spi_device_handle_t spi;
     spi_bus_config_t buscfg={
         .miso_io_num=PIN_NUM_MISO,
@@ -23,19 +22,16 @@ void app_main(void) {
         .pre_cb=lcd_spi_pre_transfer_callback,  //Specify pre-transfer callback to handle D/C line
     };
     //Initialize the SPI bus
-    ret=spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO);
-    ESP_ERROR_CHECK(ret);
+    ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
     //Attach the LCD to the SPI bus
-    ret=spi_bus_add_device(LCD_HOST, &devcfg, &spi);
-    ESP_ERROR_CHECK(ret);
+    ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
     //Initialize the LCD
     lcd_init(spi);
     //Initialize the effect displayed
-    ret=pretty_effect_init();
-    ESP_ERROR_CHECK(ret);
+    /* ESP_ERROR_CHECK(pretty_effect_init()); */
 
     //Go do nice stuff.
-    display_pretty_colors(spi);
+    /* display_pretty_colors(spi); */
 }
 
 // vim: foldmethod=marker

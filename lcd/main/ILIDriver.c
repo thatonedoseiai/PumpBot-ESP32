@@ -99,14 +99,6 @@ void lcd_init(spi_device_handle_t spi) {
     gpio_set_level(PIN_NUM_BCKL, 1);
 }
 
-
-/* To send a set of lines we have to send a command, 2 data bytes, another command, 2 more data bytes and another command
- * before sending the line data itself; a total of 6 transactions. (We can't put all of this in just one transaction
- * because the D/C line needs to be toggled in the middle.)
- * This routine queues these commands up as interrupt transactions so they get
- * sent faster (compared to calling spi_device_transmit several times), and at
- * the mean while the lines for next transactions can get calculated.
- */
 static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata) {
     esp_err_t ret;
     int x;
@@ -156,7 +148,6 @@ static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata) {
     //send_line_finish, which will wait for the transfers to be done and check their status.
 }
 
-
 static void send_line_finish(spi_device_handle_t spi) {
     spi_transaction_t *rtrans;
     esp_err_t ret;
@@ -165,37 +156,5 @@ static void send_line_finish(spi_device_handle_t spi) {
         ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
         assert(ret==ESP_OK);
         //We could inspect rtrans now if we received any info back. The LCD is treated as write-only, though.
-    }
-}
-
-
-static void display_pretty_colors(spi_device_handle_t spi) {
-    uint16_t *lines[2];
-    //Allocate memory for the pixel buffers
-    for (int i=0; i<2; i++) {
-        lines[i]=heap_caps_malloc(320*PARALLEL_LINES*sizeof(uint16_t), MALLOC_CAP_DMA);
-        assert(lines[i]!=NULL);
-    }
-    int frame=0;
-    //Indexes of the line currently being sent to the LCD and the line we're calculating.
-    int sending_line=-1;
-    int calc_line=0;
-
-    while(1) {
-        frame++;
-        for (int y=0; y<240; y+=PARALLEL_LINES) {
-            //Calculate a line.
-            pretty_effect_calc_lines(lines[calc_line], y, frame, PARALLEL_LINES);
-            //Finish up the sending process of the previous line, if any
-            if (sending_line!=-1) send_line_finish(spi);
-            //Swap sending_line and calc_line
-            sending_line=calc_line;
-            calc_line=(calc_line==1)?0:1;
-            //Send the line we currently calculated.
-            send_lines(spi, y, lines[sending_line]);
-            //The line set is queued up for sending now; the actual sending happens in the
-            //background. We can go on to calculate the next line set as long as we do not
-            //touch line[sending_line]; the SPI sending process is still reading from that.
-        }
     }
 }

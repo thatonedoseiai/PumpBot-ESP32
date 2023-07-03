@@ -1,5 +1,6 @@
 set(srcs "pretty_effect.c"
     "spi_master_example_main.c"
+    "ILIDriver.c"
     "decode_image.c"
     )
 

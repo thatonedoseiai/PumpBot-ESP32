@@ -1,5 +1,11 @@
 #pragma once
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "driver/spi_master.h"
+#include "driver/gpio.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include "esp_err.h"
 
 #ifdef __cplusplus
@@ -139,12 +145,12 @@ void lcd_init(spi_device_handle_t spi);
  */
 static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata);
 
+/* wait for line transfers to be done and check their status.
+ *
+ * Call this at the end, after the next frame is finished calculating.
+ * See the comments at the end of ILIDriver.c->send_lines
+ */
 static void send_line_finish(spi_device_handle_t spi);
-
-//Simple routine to generate some patterns and send them to the LCD. Don't expect anything too
-//impressive. Because the SPI driver handles transactions in the background, we can calculate the next line
-//while the previous one is being sent.
-static void display_pretty_colors(spi_device_handle_t spi);
 
 #ifdef __cplusplus
 }
