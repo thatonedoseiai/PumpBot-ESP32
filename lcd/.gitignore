@@ -5,4 +5,5 @@ config.env
 kconfigs.in
 kconfigs_projbuild.in
 sdkconfig
+sdkconfig.old
 dependencies.lock
