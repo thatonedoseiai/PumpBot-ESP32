@@ -45,46 +45,10 @@ typedef struct {
 
 typedef enum {
     LCD_TYPE_ILI = 1,
-    LCD_TYPE_ST,
     LCD_TYPE_MAX,
 } type_lcd_t;
 
 //Place data into DRAM. Constant data gets placed into DROM by default, which is not accessible by DMA.
-// {{{
-DRAM_ATTR static const lcd_init_cmd_t st_init_cmds[]={
-    /* Memory Data Access Control, MX=MV=1, MY=ML=MH=0, RGB=0 */
-    {0x36, {(1<<5)|(1<<6)}, 1},
-    /* Interface Pixel Format, 16bits/pixel for RGB/MCU interface */
-    {0x3A, {0x55}, 1},
-    /* Porch Setting */
-    {0xB2, {0x0c, 0x0c, 0x00, 0x33, 0x33}, 5},
-    /* Gate Control, Vgh=13.65V, Vgl=-10.43V */
-    {0xB7, {0x45}, 1},
-    /* VCOM Setting, VCOM=1.175V */
-    {0xBB, {0x2B}, 1},
-    /* LCM Control, XOR: BGR, MX, MH */
-    {0xC0, {0x2C}, 1},
-    /* VDV and VRH Command Enable, enable=1 */
-    {0xC2, {0x01, 0xff}, 2},
-    /* VRH Set, Vap=4.4+... */
-    {0xC3, {0x11}, 1},
-    /* VDV Set, VDV=0 */
-    {0xC4, {0x20}, 1},
-    /* Frame Rate Control, 60Hz, inversion=0 */
-    {0xC6, {0x0f}, 1},
-    /* Power Control 1, AVDD=6.8V, AVCL=-4.8V, VDDS=2.3V */
-    {0xD0, {0xA4, 0xA1}, 1},
-    /* Positive Voltage Gamma Control */
-    {0xE0, {0xD0, 0x00, 0x05, 0x0E, 0x15, 0x0D, 0x37, 0x43, 0x47, 0x09, 0x15, 0x12, 0x16, 0x19}, 14},
-    /* Negative Voltage Gamma Control */
-    {0xE1, {0xD0, 0x00, 0x05, 0x0D, 0x0C, 0x06, 0x2D, 0x44, 0x40, 0x0E, 0x1C, 0x18, 0x16, 0x19}, 14},
-    /* Sleep Out */
-    {0x11, {0}, 0x80},
-    /* Display On */
-    {0x29, {0}, 0x80},
-    {0, {0}, 0xff}
-};
-// }}}
 // {{{
 DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
     /* Power contorl B, power control = 0, DC_ENA = 1 */
@@ -239,38 +203,9 @@ void lcd_init(spi_device_handle_t spi)
     gpio_set_level(PIN_NUM_RST, 1);
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    //detect LCD type
-    uint32_t lcd_id = lcd_get_id(spi);
-    int lcd_detected_type = 0;
-    int lcd_type;
+    printf("LCD ILI9341 initialization.\n");
+    lcd_init_cmds = ili_init_cmds;
 
-    printf("LCD ID: %08"PRIx32"\n", lcd_id);
-    if ( lcd_id == 0 ) {
-        //zero, ili
-        lcd_detected_type = LCD_TYPE_ILI;
-        printf("ILI9341 detected.\n");
-    } else {
-        // none-zero, ST
-        lcd_detected_type = LCD_TYPE_ST;
-        printf("ST7789V detected.\n");
-    }
-
-#ifdef CONFIG_LCD_TYPE_AUTO
-    lcd_type = lcd_detected_type;
-#elif defined( CONFIG_LCD_TYPE_ST7789V )
-    printf("kconfig: force CONFIG_LCD_TYPE_ST7789V.\n");
-    lcd_type = LCD_TYPE_ST;
-#elif defined( CONFIG_LCD_TYPE_ILI9341 )
-    printf("kconfig: force CONFIG_LCD_TYPE_ILI9341.\n");
-    lcd_type = LCD_TYPE_ILI;
-#endif
-    if ( lcd_type == LCD_TYPE_ST ) {
-        printf("LCD ST7789V initialization.\n");
-        lcd_init_cmds = st_init_cmds;
-    } else {
-        printf("LCD ILI9341 initialization.\n");
-        lcd_init_cmds = ili_init_cmds;
-    }
 
     //Send all the commands
     while (lcd_init_cmds[cmd].databytes!=0xff) {
@@ -407,9 +342,9 @@ void app_main(void)
     };
     spi_device_interface_config_t devcfg={
 #ifdef CONFIG_LCD_OVERCLOCK
-        .clock_speed_hz=26*1000*1000,           //Clock out at 26 MHz
+        .clock_speed_hz=40*1000*1000,           //Clock out at 40 MHz
 #else
-        .clock_speed_hz=10*1000*1000,           //Clock out at 10 MHz
+        .clock_speed_hz=26*1000*1000,           //Clock out at 26.667 MHz
 #endif
         .mode=0,                                //SPI mode 0
         .spics_io_num=PIN_NUM_CS,               //CS pin
