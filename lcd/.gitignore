@@ -1,9 +1,8 @@
 build/
-config.env
+managed_components/
 config/
+config.env
 kconfigs.in
 kconfigs_projbuild.in
-main/wibbly_effect.c
-managed_components/
 sdkconfig
 dependencies.lock
