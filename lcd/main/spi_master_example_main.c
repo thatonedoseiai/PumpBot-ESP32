@@ -1,4 +1,5 @@
 #include "ILIDriver.h"
+#include "decode_image.h"
 
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,
@@ -31,6 +32,8 @@ void app_main(void) {
     lcd_init(spi);
     //Initialize the effect displayed
     /* ESP_ERROR_CHECK(pretty_effect_init()); */
+    uint16_t* px;
+    ESP_ERROR_CHECK(decode_image(&px));
 
     //Go do nice stuff.
     /* display_pretty_colors(spi); */
