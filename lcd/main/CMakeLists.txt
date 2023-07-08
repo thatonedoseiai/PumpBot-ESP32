@@ -7,3 +7,7 @@ set(srcs "pretty_effect.c"
 idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS "."
                     EMBED_FILES image.jpg)
+
+add_library(freetype STATIC IMPORTED GLOBAL)
+set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/esp_freetype.a")
+target_link_libraries(${COMPONENT_TARGET} freetype)
