@@ -36,6 +36,8 @@ void app_main(void) {
     uint16_t* px;
     ESP_ERROR_CHECK(decode_image(&px));
 
+    send_lines(spi, 0, px);
+
     //Go do nice stuff.
     /* display_pretty_colors(spi); */
 }
