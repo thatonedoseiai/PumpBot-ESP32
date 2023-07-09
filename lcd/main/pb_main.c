@@ -1,4 +1,4 @@
-#include "ILIDriver.h"
+#include "ILIDriver.c"
 #include "decode_image.h"
 #include "freetype/freetype_extern_declarations.h"
 
