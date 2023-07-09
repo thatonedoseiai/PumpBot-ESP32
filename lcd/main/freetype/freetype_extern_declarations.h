@@ -1,0 +1,1 @@
+extern void ft_logging_init(void);

@@ -1,13 +1,15 @@
 set(srcs "pretty_effect.c"
-    "spi_master_example_main.c"
+    "pb_main.c"
     "ILIDriver.c"
     "decode_image.c"
     )
 
 idf_component_register(SRCS ${srcs}
-                    INCLUDE_DIRS "."
+                    INCLUDE_DIRS 
+                        "."
+                        "./freetype"
                     EMBED_FILES image.jpg)
 
 add_library(freetype STATIC IMPORTED GLOBAL)
-set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/esp_freetype.a")
+set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/freetype/esp_freetype.a")
 target_link_libraries(${COMPONENT_TARGET} freetype)

@@ -1,7 +1,6 @@
 #include "ILIDriver.h"
 #include "decode_image.h"
-
-extern void ft_logging_init(void);
+#include "freetype/freetype_extern_declarations.h"
 
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,
