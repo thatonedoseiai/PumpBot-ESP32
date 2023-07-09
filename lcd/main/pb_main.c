@@ -36,8 +36,10 @@ void app_main(void) {
     uint16_t* px;
     ESP_ERROR_CHECK(decode_image(&px));
 
-    send_lines(spi, 0, px);
-    send_line_finish(spi);
+    for(int y=0;y<240;y+=PARALLEL_LINES) {
+        send_lines(spi, y, px + 320*y);
+        send_line_finish(spi);
+    }
 
     //Go do nice stuff.
     /* display_pretty_colors(spi); */
