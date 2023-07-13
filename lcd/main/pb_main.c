@@ -1,7 +1,9 @@
 #include "ILIDriver.c"
 #include "decode_image.h"
 #include "wibbly_effect.c"
-#include "freetype/freetype_extern_declarations.h"
+#include "freetype2/ft2build.h"
+#include FT_FREETYPE_H
+/* #include "freetype/freetype_extern_declarations.h" */
 
 extern const uint8_t Meiryo_ttf_start[] asm("_binary_Meiryo_ttf_start");
 extern const uint8_t Meiryo_ttf_end[] asm("_binary_Meiryo_ttf_end");
@@ -29,13 +31,9 @@ const spi_device_interface_config_t devcfg={
 
 void app_main(void) {
     spi_device_handle_t spi;
-    //Initialize the SPI bus
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
-    //Attach the LCD to the SPI bus
     ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
-    //Initialize the LCD
     lcd_init(spi);
-    //Initialize the effect displayed
     /* ESP_ERROR_CHECK(pretty_effect_init()); */
     uint16_t* px;
     ESP_ERROR_CHECK(decode_image(&px));
@@ -56,23 +54,8 @@ void app_main(void) {
 
     }*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    FT_Library lib;
+    FT_Error error = FT_Init_FreeType(&lib);
 
     for(int y=0;y<240;y+=PARALLEL_LINES) {
         send_lines(spi, y, px + 320*y);
