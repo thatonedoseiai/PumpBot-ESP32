@@ -7,7 +7,6 @@
 
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUI_ttf_start");
 extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUI_ttf_end");
-FT_Long fontSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,
@@ -55,40 +54,34 @@ void app_main(void) {
 
     }*/
 
-FT_Library lib;
-FT_Face typeFace;
-FT_GlyphSlot slot;
-FT_Vector offset;
-FT_Error error;
-char text[] = "嗚呼";
-int textLen;
-int fontSize = 32;
-int startX = 0;
-int startY = 0;
+    FT_Library lib;
+    FT_Face typeFace;
+    FT_GlyphSlot slot;
+    FT_Vector offset;
+    FT_Error error;
+    char text[] = "嗚呼";
+    int textLen;
+    FT_Long fontSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
+    int startX = 0;
+    int startY = 0;
 
+    const FT_Open_Args openArgs = {
+        .flags = 0x2 | 0x8,
+        .memory_base = MeiryoUI_ttf_start,
+        .memory_size = fontSize,
+        //.pathname = unused,
+        //.stream = unused,
+        .driver = NULL, //TODO: Set to "truetype" and deal with the structs like a big boy
+        //.num_params = unused,
+        //.params = unused,
+    };
 
-const FT_Open_Args openArgs = {
-    .flags = 0x2 | 0x8,
-    .memory_base = MeiryoUI_ttf_start,
-    .memory_size = fontSize,
-    //.pathname = unused,
-    //.stream = unused,
-    .driver = NULL, //TODO: Set to "truetype" and deal with the structs like a big boy
-    //.num_params = unused,
-    //.params = unused,
-};
-
-
-
-error = FT_Init_FreeType(&lib);
-error = FT_Open_Face (lib, &openArgs, 0, &typeFace);
-error = FT_Set_Char_Size (typeFace, fontSize * 64, 0, 100, 0); // 0 = copy last value
-slot = typeFace->glyph;
-offset.x = startX * 64;
-offset.y = startY * 64;
-
-
-
+    error = FT_Init_FreeType(&lib);
+    error = FT_Open_Face (lib, &openArgs, 0, &typeFace);
+    error = FT_Set_Char_Size (typeFace, fontSize * 64, 0, 100, 0); // 0 = copy last value
+    slot = typeFace->glyph;
+    offset.x = startX * 64;
+    offset.y = startY * 64;
 
     for(int y=0;y<240;y+=PARALLEL_LINES) {
         send_lines(spi, y, px + 320*y);
