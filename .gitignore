@@ -2,3 +2,6 @@ lcd/dependencies.lock
 Main/debug_custom.json
 Main/debug.cfg
 Main/debug.svd
+lcd/esp_freetype_function_list.txt
+lcd/main/playground.c
+lcd/main/playground.exe

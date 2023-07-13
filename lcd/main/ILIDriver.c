@@ -65,6 +65,7 @@ uint32_t lcd_get_id(spi_device_handle_t spi) {
 }
 
 void lcd_init(spi_device_handle_t spi) {
+    gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
     int cmd=0;
     const lcd_init_cmd_t* lcd_init_cmds;
 
@@ -95,8 +96,6 @@ void lcd_init(spi_device_handle_t spi) {
         cmd++;
     }
 
-    ///Enable backlight
-    gpio_set_level(PIN_NUM_BCKL, 1);
 }
 
 static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata) {
