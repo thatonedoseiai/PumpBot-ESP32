@@ -3,7 +3,6 @@ extern struct FT_Library;
 extern struct FT_FaceRec_;
 extern struct FT_Bitmap_;
 
-
 //--Typedefs--
 typedef unsigned char  FT_Bool;
 typedef signed short  FT_FWord;
