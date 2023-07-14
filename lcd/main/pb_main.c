@@ -4,6 +4,8 @@
 #include "freetype2/ft2build.h"
 #include FT_FREETYPE_H
 
+#define SPRITE_LIMIT 16
+
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUI_ttf_start");
 extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUI_ttf_end");
 
@@ -28,30 +30,29 @@ const spi_device_interface_config_t devcfg={
     .pre_cb=lcd_spi_pre_transfer_callback,  //Specify pre-transfer callback to handle D/C line
 };
 
+
+// OAM STUFF {{{
+typedef struct oam_handle_ {
+    FT_Bitmap* oam [SPRITE_LIMIT]
+} OAM_HANDLE;
+
+
+OAM_HANDLE* init_OAM() {
+    OAM_HANDLE* ret = (OAM_HANDLE*) malloc(sizeof(OAM_HANDLE));
+    return ret;
+}
+
+void add_char_oam(OAM_HANDLE* oam, FT_Bitmap bmp) {
+    FT_Bitmap* new_bmp = (FT_Bitmap*) malloc(sizeof(FT_Bitmap));
+    /* oam->oam = new_bmp; */
+}
+// }}}
+
 void app_main(void) {
     spi_device_handle_t spi;
     ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
     ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
     lcd_init(spi);
-    /* ESP_ERROR_CHECK(pretty_effect_init()); */
-    uint16_t* px;
-    ESP_ERROR_CHECK(decode_image(&px));
-
-    /*uint16_t* gradient;
-    gradient = calloc(320*240, sizeof(uint16_t));
-
-    uint16_t gradR = 0; //32 steps in 565 color space (16 bit)
-    uint16_t gradB = 0; //32 steps in 565 color space (16 bit)
-
-    for (int gradY = 0; gradY < 320; ++gradY) {
-    gradB = gradY / 10;    // bit ..... ...... XXXXX
-        for (int gradX = 0; gradX < 240; ++gradX) {
-        gradR = gradX / 7.5; 
-        gradR = gradR << 5;  //move to bit XXXXX ...... .....
-        *(gradient + gradY + gradX * 320) = gradB | gradR; // RRRRR ...... BBBBB
-      }
-
-    }*/
 
     FT_Library lib;
     FT_Face typeFace;
@@ -59,10 +60,12 @@ void app_main(void) {
     FT_Vector offset;
     FT_Error error;
     char text[] = "嗚呼";
-    int textLen;
+    int textLen = 2;
     FT_Long fontSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
     int startX = 0;
     int startY = 0;
+
+    uint16_t screenbuf[320*240];
 
     const FT_Open_Args openArgs = {
         .flags = 0x2 | 0x8,
@@ -82,15 +85,31 @@ void app_main(void) {
     offset.x = startX * 64;
     offset.y = startY * 64;
 
+    for(int n=0;n<textLen;n++) {
+        FT_Set_Transform(typeFace, NULL, &offset);
+        error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
+        if (error) printf("an error occured when loading the character!");
+        //stuff is now in slot -> bitmap
+        /* add_char_oam(oam, slot->bitmap); */
+
+        FT_Int bmp_top = 240 - slot->bitmap_top;
+
+        for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++) {
+            for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++) {
+                if(i<0||j<0||i>=320||j>=240) continue;
+                screenbuf[i+320*j] |= slot->bitmap.buffer[q*slot->bitmap.width+p];
+            }
+        }
+
+        offset.x += slot->advance.x;
+        offset.y += slot->advance.y;
+    }
+
     for(int y=0;y<240;y+=PARALLEL_LINES) {
-        send_lines(spi, y, px + 320*y);
+        send_lines(spi, y, screenbuf+320*y);
         send_line_finish(spi);
-    //    send_lines(spi, y, gradient + 320*y);
-    //    send_line_finish(spi);
     }
     printf("%s\n", "finished sending display data!");
-    //Go do nice stuff.
-    //display_pretty_colors(spi); 
 }
 
 // vim: foldmethod=marker
