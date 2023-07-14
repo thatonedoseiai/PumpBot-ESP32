@@ -1,1 +1,0 @@
-ftsystem.o ftinit.o ftdebug.o ftbase.o ftbbox.o ftglyph.o ftbitmap.o ftgasp.o ftstroke.o ftsynth.o truetype.o raster.o smooth.o psnames.o sfnt.o

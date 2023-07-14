@@ -3,7 +3,6 @@
 #include "wibbly_effect.c"
 #include "freetype2/ft2build.h"
 #include FT_FREETYPE_H
-/* #include "freetype/freetype_extern_declarations.h" */
 
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUI_ttf_start");
 extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUI_ttf_end");

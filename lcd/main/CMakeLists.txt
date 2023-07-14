@@ -7,7 +7,6 @@ set(srcs "pretty_effect.c"
 idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS 
                         "."
-                        # "./freetype"
                         "./freetype2"
                     EMBED_FILES
                         image.jpg
@@ -15,7 +14,6 @@ idf_component_register(SRCS ${srcs}
 )
 
 # add_library(freetype STATIC IMPORTED GLOBAL)
-# set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/freetype/esp_freetype.a")
 # set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/libfreetype.a")
 # target_link_libraries(${COMPONENT_TARGET} freetype)
 add_prebuilt_library(freetype "${COMPONENT_DIR}/libfreetype.a" PRIV_REQUIRES esp_rom)
