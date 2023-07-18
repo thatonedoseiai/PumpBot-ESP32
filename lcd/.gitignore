@@ -1,7 +1,6 @@
 build/
 managed_components/
-config/
-config.env
+./config.env
 kconfigs.in
 kconfigs_projbuild.in
 sdkconfig
