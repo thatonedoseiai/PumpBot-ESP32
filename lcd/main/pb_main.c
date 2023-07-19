@@ -107,13 +107,13 @@ const spi_device_interface_config_t devcfg={
     // }
 
     ets_printf("Rendering characters done!\n");
-    FT_Done_Face (typeFace);
-    FT_Done_FreeType(lib);
+    /* FT_Done_Face (typeFace); */
+    /* FT_Done_FreeType(lib); */
     ets_printf("Starting to send to display...\n");
     for(int y=0;y<240;y+=PARALLEL_LINES) {
-        send_lines(spi, y, screenbuf+320*y);
+        /* send_lines(spi, y, screenbuf+320*y); */
         ets_printf("%s %d\n", "sent line", y);
-        send_line_finish(spi);
+        /* send_line_finish(spi); */
     }
     ets_printf("finished sending display data!\n");
 }

@@ -10,7 +10,7 @@ idf_component_register(SRCS ${srcs}
                         "./freetype2"
                     EMBED_FILES
                         image.jpg
-                        MeiryoUI.ttf
+                        MeiryoUImin.ttf
 )
 
 # add_library(freetype STATIC IMPORTED GLOBAL)
