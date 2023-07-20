@@ -55,14 +55,10 @@ const spi_device_interface_config_t devcfg={
         .pixelB = 0,
     };
 
-    //uint24_RGB* screenbuf = (uint24_RGB*) malloc(320*240*sizeof(uint24_RGB));
     send_color(spi, fillColor);
-    // ets_printf("LCD Filled! Starting FreeType...\n");
 
     error = FT_Init_FreeType(&lib);
     if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Init_FreeType! Error:", (int)error);
-    // error = FT_Open_Face (lib, &openArgs, 0, &typeFace);
-    // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Open_Face! Error:", (int)error); 
     error = FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace);
     if(error!=0) ets_printf("%s %d\n", "Error occured @FT_New_Memory_Face! Error:", (int)error);
     error = FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0); // 0 = copy last value
@@ -74,40 +70,32 @@ const spi_device_interface_config_t devcfg={
 
     
     for(int n=0;n<textLen;n++) {
-    //     ets_printf("Rendering character...\n");
         FT_Set_Transform(typeFace, NULL, &offset);
         error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
         if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
     //  stuff is now in slot -> bitmap
-
         FT_Int bmp_top = 240 - slot->bitmap_top;
-
-	   ets_printf("bitmap top: %d\n", slot->bitmap_top);
-       ets_printf("bitmap width: %d\n", slot->bitmap.width);
-       ets_printf("bitmap height: %d\n", slot->bitmap.rows);
         for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++, q++) {
             for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++, p++) {
                 if(i<0||j<0||i>=320||j>=240) continue;
                 //screenbuf[i+320*j].pixelR |= slot->bitmap.buffer[q*slot->bitmap.width+p];
             }
-            //ets_printf("%s\n", "");
         }
 
         offset.x += slot->advance.x;
         offset.y += slot->advance.y;
-    //     ets_printf("Character rendered!\n");
     }
 
     ets_printf("Rendering characters done!\n");
-    //FT_Done_Face (typeFace);
-    //FT_Done_FreeType(lib);
+    FT_Done_Face (typeFace);
+    FT_Done_FreeType(lib);
     ets_printf("Starting to send to display...\n");
     for(int y=0;y<240;y+=PARALLEL_LINES) {
         //send_lines(spi, y, screenbuf+320*y);
         //send_line_finish(spi);
         ets_printf("%s %d\n", "sent line", y);
     }
-    //free(screenbuf);
+    free(screenbuf);
     ets_printf("finished sending display data!\n");
 }
 
