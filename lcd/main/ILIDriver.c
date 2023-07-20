@@ -192,7 +192,7 @@ static void send_color(spi_device_handle_t spi, uint24_RGB color) {
             ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
             assert(ret==ESP_OK);
         }
-
+        send_line_finish(spi);
     }
     free(colorbuf);
 }
