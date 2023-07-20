@@ -7,8 +7,8 @@
 #include FT_FREETYPE_H
 
 #define SPRITE_LIMIT 16
-extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUI_ttf_start");
-extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUI_ttf_end");
+extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
+extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUImin_ttf_end");
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,
     .mosi_io_num=PIN_NUM_MOSI,
@@ -40,21 +40,26 @@ const spi_device_interface_config_t devcfg={
     ets_printf("3\n");
     lcd_init(spi);
     ets_printf("SPI bus initialized!\n");
-    // FT_Library lib;
-    // FT_Face typeFace;
-    // FT_GlyphSlot slot;
-    // FT_Vector offset;
-    // FT_Error error;
-    // char text[] = "嗚呼";
-    // int textLen = 2;
-    // int fontSize = 1;
-    // FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
-    // int startX = 0;
-    // int startY = 0;
+    FT_Library lib;
+    FT_Face typeFace;
+    FT_GlyphSlot slot;
+    FT_Vector offset;
+    FT_Error error;
+    char text[] = "b";//"嗚呼";
+    int textLen = 1;
+    int fontSize = 18;
+    FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
+    int startX = 20;
+    int startY = 20;
 
-    // uint16_t screenbuf[320*240];
+    ets_printf("strlen: %d\n", textLen);
+
+    uint16_t* screenbuf = (uint16_t*) malloc(320*240*sizeof(uint16_t));
+    for(int i=0;i<320*240;++i) {
+	screenbuf[i] = 0;
+    }
     // ets_printf("FreeType assignments made!\n");
-    // /*const FT_Open_Args openArgs = {
+    // const FT_Open_Args openArgs = {
     //     .flags = 0x2 | 0x8,
     //     .memory_base = MeiryoUI_ttf_start,
     //     .memory_size = fontBinSize,
@@ -63,58 +68,63 @@ const spi_device_interface_config_t devcfg={
     //     .driver = NULL, //TODO: Set to "truetype" and deal with the structs like a big boy
     //     //.num_params = unused,
     //     //.params = unused,
-    // };*/
+    // };
     //     ets_printf("FreeType Init Starting...\n");
 
-    // error = FT_Init_FreeType(&lib);
-    // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Init_FreeType! Error:", (int)error);
-    // // error = FT_Open_Face (lib, &openArgs, 0, &typeFace);
-    // // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Open_Face! Error:", (int)error); 
-    // error = FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace);
-    // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_New_Memory_Face! Error:", (int)error);
-    // error = FT_Set_Char_Size (typeFace, fontSize * 64, 0, 100, 0); // 0 = copy last value
-    // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Set_Char_Size! Error:", (int)error);
+    error = FT_Init_FreeType(&lib);
+    if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Init_FreeType! Error:", (int)error);
+    // error = FT_Open_Face (lib, &openArgs, 0, &typeFace);
+    // if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Open_Face! Error:", (int)error); 
+    error = FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace);
+    if(error!=0) ets_printf("%s %d\n", "Error occured @FT_New_Memory_Face! Error:", (int)error);
+    error = FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0); // 0 = copy last value
+    if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Set_Char_Size! Error:", (int)error);
 
-    // slot = typeFace->glyph;
-    // offset.x = startX * 64;
-    // offset.y = startY * 64;
+    slot = typeFace->glyph;
+    offset.x = startX << 6;
+    offset.y = startY << 6;
 
     
-    // for(int n=0;n<textLen;n++) {
+    for(int n=0;n<textLen;n++) {
     //     ets_printf("Rendering character...\n");
-    //     FT_Set_Transform(typeFace, NULL, &offset);
-    //     //error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
-    //     //if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
+        FT_Set_Transform(typeFace, NULL, &offset);
+        error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
+        if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
     //     //stuff is now in slot -> bitmap
-    //     //add_char_oam(oam, slot->bitmap); 
+    //    add_char_oam(oam, slot->bitmap); 
 
-    //     //FT_Int bmp_top = 240 - slot->bitmap_top;
+        FT_Int bmp_top = 240 - slot->bitmap_top;
 
-    //     // for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++) {
-    //     //     ets_printf("%s\n", "Started for loop 1");
-    //     //     for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++) {
-    //     //          ets_printf("%s\n", "Started for loop 2");
-    //     //         if(i<0||j<0||i>=320||j>=240) continue;
-    //     //         screenbuf[i+320*j] |= slot->bitmap.buffer[q*slot->bitmap.width+p];
-    //     //         ets_printf("%s\n", "Ended for loop 2");
-    //     //     }
-    //     //     ets_printf("%s\n", "Ended for loop 1");
-    //     // }
+	ets_printf("bitmap top: %d\n", slot->bitmap_top);
+        ets_printf("BITMAP WIDTH: %d\n", slot->bitmap.width);
+        for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++, q++) {
+            for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++, p++) {
+            //ets_printf("%s\n", "Started for loop 1");
+                //ets_printf("%s\n", "Started for loop 2");
+                if(i<0||j<0||i>=320||j>=240) continue;
+		//ets_printf("loc: %d, %d, %x\n", p, q, slot->bitmap.buffer[q*slot->bitmap.width+p]);
+		//ets_printf("%d\n", i);
+                screenbuf[i+320*j] |= slot->bitmap.buffer[q*slot->bitmap.width+p];
+                //ets_printf("%s\n", "Ended for loop 2");
+            }
+            //ets_printf("%s\n", "Ended for loop 1");
+        }
 
-    //     offset.x += slot->advance.x;
-    //     offset.y += slot->advance.y;
+        offset.x += slot->advance.x;
+        offset.y += slot->advance.y;
     //     ets_printf("Character rendered!\n");
-    // }
+    }
 
     ets_printf("Rendering characters done!\n");
-    /* FT_Done_Face (typeFace); */
-    /* FT_Done_FreeType(lib); */
+    //FT_Done_Face (typeFace);
+    //FT_Done_FreeType(lib);
     ets_printf("Starting to send to display...\n");
     for(int y=0;y<240;y+=PARALLEL_LINES) {
-        /* send_lines(spi, y, screenbuf+320*y); */
+        send_lines(spi, y, screenbuf+320*y);
         ets_printf("%s %d\n", "sent line", y);
-        /* send_line_finish(spi); */
+        send_line_finish(spi);
     }
+    //free(screenbuf);
     ets_printf("finished sending display data!\n");
 }
 
