@@ -38,6 +38,12 @@ extern "C" {
 //but less overhead for setting up / finishing transfers. Make sure 240 is dividable by this.
 #define PARALLEL_LINES 16
 
+typedef struct uint24_RGB_ {
+    uint8_t pixelR;
+    uint8_t pixelG;
+    uint8_t pixelB;
+} uint24_RGB;
+
 /* The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct. */
 typedef struct {
     uint8_t cmd;
@@ -143,7 +149,9 @@ void lcd_init(spi_device_handle_t spi);
  * sent faster (compared to calling spi_device_transmit several times), and at
  * the mean while the lines for next transactions can get calculated.
  */
-static void send_lines(spi_device_handle_t spi, int ypos, uint16_t *linedata);
+static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
+
+static void send_color(spi_device_handle_t spi, uint24_RGB color);
 
 /* wait for line transfers to be done and check their status.
  *

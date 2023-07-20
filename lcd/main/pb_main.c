@@ -1,6 +1,4 @@
 #include "ILIDriver.c"
-#include "decode_image.h"
-#include "wibbly_effect.c"
 #include "freetype2/ft2build.h"
 #include <stdio.h>
 #include <rom/ets_sys.h>
@@ -51,13 +49,17 @@ const spi_device_interface_config_t devcfg={
     FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
     int startX = 20;
     int startY = 20;
+    const uint24_RGB rgb0 = {
+        .pixelR = 0,
+        .pixelG = 0,
+        .pixelB = 0,
+    };
 
     ets_printf("strlen: %d\n", textLen);
 
-    uint16_t* screenbuf = (uint16_t*) malloc(320*240*sizeof(uint16_t));
-    for(int i=0;i<320*240;++i) {
-	screenbuf[i] = 0;
-    }
+    uint24_RGB* screenbuf = (uint24_RGB*) malloc(320*240*sizeof(uint24_RGB));
+    send_color(spi, rgb0);
+
     // ets_printf("FreeType assignments made!\n");
     // const FT_Open_Args openArgs = {
     //     .flags = 0x2 | 0x8,
@@ -104,7 +106,7 @@ const spi_device_interface_config_t devcfg={
                 if(i<0||j<0||i>=320||j>=240) continue;
 		//ets_printf("loc: %d, %d, %x\n", p, q, slot->bitmap.buffer[q*slot->bitmap.width+p]);
 		//ets_printf("%d\n", i);
-                screenbuf[i+320*j] |= slot->bitmap.buffer[q*slot->bitmap.width+p];
+                screenbuf[i+320*j].pixelR |= slot->bitmap.buffer[q*slot->bitmap.width+p];
                 //ets_printf("%s\n", "Ended for loop 2");
             }
             //ets_printf("%s\n", "Ended for loop 1");
