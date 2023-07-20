@@ -13,7 +13,7 @@ const spi_bus_config_t buscfg={
     .sclk_io_num=PIN_NUM_CLK,
     .quadwp_io_num=-1,
     .quadhd_io_num=-1,
-    .max_transfer_sz=PARALLEL_LINES*320*2+8
+    .max_transfer_sz=PARALLEL_LINES*320*3+8
 };
 
 const spi_device_interface_config_t devcfg={
@@ -49,29 +49,15 @@ const spi_device_interface_config_t devcfg={
     FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
     int startX = 20;
     int startY = 20;
-    const uint24_RGB rgb0 = {
+    const uint24_RGB fillColor = {
         .pixelR = 0,
         .pixelG = 0,
         .pixelB = 0,
     };
 
-    ets_printf("strlen: %d\n", textLen);
-
-    uint24_RGB* screenbuf = (uint24_RGB*) malloc(320*240*sizeof(uint24_RGB));
-    send_color(spi, rgb0);
-
-    // ets_printf("FreeType assignments made!\n");
-    // const FT_Open_Args openArgs = {
-    //     .flags = 0x2 | 0x8,
-    //     .memory_base = MeiryoUI_ttf_start,
-    //     .memory_size = fontBinSize,
-    //     //.pathname = unused,
-    //     //.stream = unused,
-    //     .driver = NULL, //TODO: Set to "truetype" and deal with the structs like a big boy
-    //     //.num_params = unused,
-    //     //.params = unused,
-    // };
-    //     ets_printf("FreeType Init Starting...\n");
+    //uint24_RGB* screenbuf = (uint24_RGB*) malloc(320*240*sizeof(uint24_RGB));
+    send_color(spi, fillColor);
+    // ets_printf("LCD Filled! Starting FreeType...\n");
 
     error = FT_Init_FreeType(&lib);
     if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Init_FreeType! Error:", (int)error);
@@ -92,24 +78,19 @@ const spi_device_interface_config_t devcfg={
         FT_Set_Transform(typeFace, NULL, &offset);
         error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
         if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
-    //     //stuff is now in slot -> bitmap
-    //    add_char_oam(oam, slot->bitmap); 
+    //  stuff is now in slot -> bitmap
 
         FT_Int bmp_top = 240 - slot->bitmap_top;
 
-	ets_printf("bitmap top: %d\n", slot->bitmap_top);
-        ets_printf("BITMAP WIDTH: %d\n", slot->bitmap.width);
+	   ets_printf("bitmap top: %d\n", slot->bitmap_top);
+       ets_printf("bitmap width: %d\n", slot->bitmap.width);
+       ets_printf("bitmap height: %d\n", slot->bitmap.rows);
         for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++, q++) {
             for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++, p++) {
-            //ets_printf("%s\n", "Started for loop 1");
-                //ets_printf("%s\n", "Started for loop 2");
                 if(i<0||j<0||i>=320||j>=240) continue;
-		//ets_printf("loc: %d, %d, %x\n", p, q, slot->bitmap.buffer[q*slot->bitmap.width+p]);
-		//ets_printf("%d\n", i);
-                screenbuf[i+320*j].pixelR |= slot->bitmap.buffer[q*slot->bitmap.width+p];
-                //ets_printf("%s\n", "Ended for loop 2");
+                //screenbuf[i+320*j].pixelR |= slot->bitmap.buffer[q*slot->bitmap.width+p];
             }
-            //ets_printf("%s\n", "Ended for loop 1");
+            //ets_printf("%s\n", "");
         }
 
         offset.x += slot->advance.x;
@@ -122,9 +103,9 @@ const spi_device_interface_config_t devcfg={
     //FT_Done_FreeType(lib);
     ets_printf("Starting to send to display...\n");
     for(int y=0;y<240;y+=PARALLEL_LINES) {
-        send_lines(spi, y, screenbuf+320*y);
+        //send_lines(spi, y, screenbuf+320*y);
+        //send_line_finish(spi);
         ets_printf("%s %d\n", "sent line", y);
-        send_line_finish(spi);
     }
     //free(screenbuf);
     ets_printf("finished sending display data!\n");
