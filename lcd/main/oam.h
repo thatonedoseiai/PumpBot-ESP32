@@ -1,8 +1,6 @@
 #include <ILIDriver.h>
 
-
-typedef struct sprite24b_
-{
+typedef struct sprite24b_ {
 	uint24_RGB bitmap;
 	uint16_t posX;
 	uint16_t posY;
@@ -10,5 +8,4 @@ typedef struct sprite24b_
 	uint16_t sizeY;
 	bool flipX;
 	bool flipY;
-
 } sprite_24b;
