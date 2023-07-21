@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <rom/ets_sys.h>
 #include FT_FREETYPE_H
+#include "oam.c"
 
 #define SPRITE_LIMIT 16
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
@@ -37,6 +38,7 @@ void app_main(void) {
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
 	ets_printf("3\n");
 	lcd_init(spi);
+	init_oam();
 	ets_printf("SPI bus initialized!\n");
 	FT_Library lib;
 	FT_Face typeFace;
@@ -73,14 +75,11 @@ void app_main(void) {
 		FT_Set_Transform(typeFace, NULL, &offset);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
+		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 	//  stuff is now in slot -> bitmap
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		for(FT_Int q=0,j=bmp_top; j<bmp_top+slot->bitmap.rows; j++, q++) {
-			for(FT_Int p=0,i=slot->bitmap_left; i<slot->bitmap_left+slot->bitmap.width; i++, p++) {
-				if(i<0||j<0||i>=320||j>=240) continue;
-				//screenbuf[i+320*j].pixelR |= slot->bitmap.buffer[q*slot->bitmap.width+p];
-			}
-		}
+		memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
+		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows, false, false, true);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
@@ -90,6 +89,7 @@ void app_main(void) {
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
 	ets_printf("Starting to send to display...\n");
+	draw_all_sprites(spi);
 	for(int y=0;y<240;y+=PARALLEL_LINES) {
 		//send_lines(spi, y, screenbuf+320*y);
 		//send_line_finish(spi);

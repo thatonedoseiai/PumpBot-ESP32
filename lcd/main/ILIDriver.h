@@ -159,7 +159,7 @@ static void send_color(spi_device_handle_t spi, uint24_RGB color);
 /*
  * draws a sprite at an x and y coordinate.
  */
-static void draw_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
+static void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
 
 /* wait for line transfers to be done and check their status.
  *
