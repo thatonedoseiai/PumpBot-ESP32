@@ -21,6 +21,10 @@ void init_oam() {
 	indices = (uint8_t*) malloc(sizeof(uint8_t) * (OAM_SIZE + 1));
 	indices[0] = OAM_SIZE;
 	OAM_SPRITE_TABLE = (SPRITE_24_H**) malloc(sizeof(SPRITE_24_H**) * OAM_SIZE);
+    for(int i=0;i<OAM_SIZE;++i) {
+        OAM_SPRITE_TABLE[i] = NULL;
+        indices[1+i] = i;
+    }
 }
 
 int init_sprite(uint24_RGB* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw) {
@@ -41,8 +45,9 @@ void draw_all_sprites(spi_device_handle_t spi) {
 	SPRITE_24_H* spr;
 	for(int i=0;i<OAM_SIZE;++i) {
 		spr = OAM_SPRITE_TABLE[i];
-		if(spr->draw)
+		if(spr != NULL && spr->draw) {
 			draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap);
+        }
 	}
 }
 

@@ -47,7 +47,7 @@ void app_main(void) {
 	FT_Error error;
 	char text[] = "b";//"嗚呼";
 	int textLen = 1;
-	int fontSize = 18;
+	int fontSize = 15;
 	FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	int startX = 20;
 	int startY = 20;
@@ -78,17 +78,23 @@ void app_main(void) {
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 	//  stuff is now in slot -> bitmap
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
+		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
+        for(int p=0;p<slot->bitmap.rows*slot->bitmap.width;p++) {
+            spriteBuf[p].pixelR = slot->bitmap.buffer[p];
+            spriteBuf[p].pixelG = slot->bitmap.buffer[p];
+            spriteBuf[p].pixelB = slot->bitmap.buffer[p];
+        }
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows, false, false, true);
+        ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
 	}
 
 	ets_printf("Rendering characters done!\n");
-	FT_Done_Face (typeFace);
-	FT_Done_FreeType(lib);
-	ets_printf("Starting to send to display...\n");
+	// FT_Done_Face (typeFace);
+	// FT_Done_FreeType(lib);
+	// ets_printf("Starting to send to display...\n");
 	draw_all_sprites(spi);
 	for(int y=0;y<240;y+=PARALLEL_LINES) {
 		//send_lines(spi, y, screenbuf+320*y);
