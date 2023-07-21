@@ -95,7 +95,7 @@ void app_main(void) {
 		//send_line_finish(spi);
 		ets_printf("%s %d\n", "sent line", y);
 	}
-	free(screenbuf);
+	/* free(screenbuf); */
 	ets_printf("finished sending display data!\n");
 }
 

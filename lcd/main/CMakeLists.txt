@@ -2,6 +2,7 @@ set(srcs "pretty_effect.c"
     "pb_main.c"
     "ILIDriver.c"
     "decode_image.c"
+    "oam.c"
     )
 
 idf_component_register(SRCS ${srcs}

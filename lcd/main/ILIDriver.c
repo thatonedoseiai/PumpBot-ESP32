@@ -148,6 +148,10 @@ static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) 
 	//send_line_finish, which will wait for the transfers to be done and check their status.
 }
 
+static void draw_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
+
+}
+
 static void send_color(spi_device_handle_t spi, uint24_RGB color) {
 	int pixelCount = 320*PARALLEL_LINES;
 	int bytelength = 3*pixelCount;
