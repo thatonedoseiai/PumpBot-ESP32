@@ -84,10 +84,10 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
     {0xC7, {0xBE}, 1},
     /* Memory access contorl, MX=MY=0, MV=1, ML=0, BGR=1, MH=0 */
     {0x36, {0x28}, 1},
-    /* Pixel format, 16bits/pixel for RGB/MCU interface */
+    /* Pixel format, 18bits/pixel for RGB/MCU interface */
     {0x3A, {0x66}, 1},
     /* Frame rate control, f=fosc, 70Hz fps */
-    {0xB1, {0x00, 0x10}, 2},
+    {0xB1, {0x00, 0x10}, 2}, //currently 0x10 - 119Hz
     /* Enable 3G, disabled */
     {0xF2, {0x08}, 1},
     /* Gamma set, curve 1 */
