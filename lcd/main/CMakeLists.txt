@@ -1,4 +1,4 @@
-set(srcs "pretty_effect.c"
+set(srcs
     "pb_main.c"
     "ILIDriver.c"
     "decode_image.c"
@@ -10,7 +10,6 @@ idf_component_register(SRCS ${srcs}
                         "."
                         "./freetype2"
                     EMBED_FILES
-                        image.jpg
                         MeiryoUImin.ttf
 )
 
