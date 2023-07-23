@@ -70,22 +70,21 @@ void app_main(void) {
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
-	
 	for(int n=0;n<textLen;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-	//  stuff is now in slot -> bitmap
+		//stuff is now in slot -> bitmap
 		FT_Int bmp_top = 240 - slot->bitmap_top;
 		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-        for(int p=0;p<slot->bitmap.rows*slot->bitmap.width;p++) {
-            spriteBuf[p].pixelR = slot->bitmap.buffer[p];
-            spriteBuf[p].pixelG = slot->bitmap.buffer[p];
-            spriteBuf[p].pixelB = slot->bitmap.buffer[p];
-        }
+		for(int p=0;p<slot->bitmap.rows*slot->bitmap.width;p++) {
+			spriteBuf[p].pixelR = slot->bitmap.buffer[p];
+			spriteBuf[p].pixelG = slot->bitmap.buffer[p];
+			spriteBuf[p].pixelB = slot->bitmap.buffer[p];
+		}
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows, false, false, true);
-        ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
+		ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
@@ -94,15 +93,13 @@ void app_main(void) {
 	ets_printf("Rendering characters done!\n");
 	// FT_Done_Face (typeFace);
 	// FT_Done_FreeType(lib);
-	// ets_printf("Starting to send to display...\n");
+	ets_printf("%s\n", "Sending image data...");
 	draw_all_sprites(spi);
-	for(int y=0;y<240;y+=PARALLEL_LINES) {
-		//send_lines(spi, y, screenbuf+320*y);
-		//send_line_finish(spi);
-		ets_printf("%s %d\n", "sent line", y);
-	}
-	/* free(screenbuf); */
+	//send_lines(spi, 0, screenbuf);
+	//send_line_finish(spi);
 	ets_printf("finished sending display data!\n");
+	// free(screenbuf);
+
 }
 
 // vim: foldmethod=marker
