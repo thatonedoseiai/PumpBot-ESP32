@@ -70,22 +70,22 @@ void app_main(void) {
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
-	
 	for(int n=0;n<textLen;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
-		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER);
+		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 	//  stuff is now in slot -> bitmap
 		FT_Int bmp_top = 240 - slot->bitmap_top;
 		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-        for(int p=0;p<slot->bitmap.rows*slot->bitmap.width;p++) {
-            spriteBuf[p].pixelR = slot->bitmap.buffer[p];
-            spriteBuf[p].pixelG = slot->bitmap.buffer[p];
-            spriteBuf[p].pixelB = slot->bitmap.buffer[p];
-        }
+		int sz = slot->bitmap.rows*slot->bitmap.width;
+		for(int p=0;p<sz;p++) {
+			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
+			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
+			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+		}
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows, false, false, true);
-        ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
+		ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;

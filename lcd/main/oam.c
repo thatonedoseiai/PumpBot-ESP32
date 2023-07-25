@@ -47,7 +47,7 @@ void draw_all_sprites(spi_device_handle_t spi) {
 		spr = OAM_SPRITE_TABLE[i];
 		if(spr != NULL && spr->draw) {
 			draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap);
-        }
+		}
 	}
 }
 
