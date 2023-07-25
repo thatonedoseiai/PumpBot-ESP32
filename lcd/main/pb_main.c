@@ -75,7 +75,7 @@ void app_main(void) {
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-	//  stuff is now in slot -> bitmap
+		//stuff is now in slot -> bitmap
 		FT_Int bmp_top = 240 - slot->bitmap_top;
 		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 		int sz = slot->bitmap.rows*slot->bitmap.width;
@@ -94,15 +94,13 @@ void app_main(void) {
 	ets_printf("Rendering characters done!\n");
 	// FT_Done_Face (typeFace);
 	// FT_Done_FreeType(lib);
-	// ets_printf("Starting to send to display...\n");
+	ets_printf("%s\n", "Sending image data...");
 	draw_all_sprites(spi);
-	for(int y=0;y<240;y+=PARALLEL_LINES) {
-		//send_lines(spi, y, screenbuf+320*y);
-		//send_line_finish(spi);
-		ets_printf("%s %d\n", "sent line", y);
-	}
-	/* free(screenbuf); */
+	//send_lines(spi, 0, screenbuf);
+	//send_line_finish(spi);
 	ets_printf("finished sending display data!\n");
+	// free(screenbuf);
+
 }
 
 // vim: foldmethod=marker
