@@ -52,9 +52,9 @@ void app_main(void) {
 	int startX = 20;
 	int startY = 20;
 	const uint24_RGB fillColor = {
-		.pixelR = 0,
+		.pixelR = 0x10,
 		.pixelG = 0,
-		.pixelB = 0,
+		.pixelB = 0x30,
 	};
 
 	send_color(spi, fillColor);
@@ -84,7 +84,7 @@ void app_main(void) {
 			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
 			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
-		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows, false, false, true);
+		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
 		ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
 
 		offset.x += slot->advance.x;
