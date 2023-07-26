@@ -47,7 +47,7 @@ void app_main(void) {
 	FT_Error error;
 	char text[] = "b";//"嗚呼";
 	int textLen = 1;
-	int fontSize = 15;
+	int fontSize = 40;
 	FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	int startX = 20;
 	int startY = 20;
@@ -63,6 +63,8 @@ void app_main(void) {
 	if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Init_FreeType! Error:", (int)error);
 	error = FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace);
 	if(error!=0) ets_printf("%s %d\n", "Error occured @FT_New_Memory_Face! Error:", (int)error);
+	error = FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE);
+	if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Select_Charmap! Error:", (int)error);	
 	error = FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0); // 0 = copy last value
 	if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Set_Char_Size! Error:", (int)error);
 
@@ -72,6 +74,7 @@ void app_main(void) {
 
 	for(int n=0;n<textLen;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
+		ets_printf("Rendering character %x...\n", text[n]);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
@@ -80,12 +83,12 @@ void app_main(void) {
 		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 		int sz = slot->bitmap.rows*slot->bitmap.width;
 		for(int p=0;p<sz;p++) {
-			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
+			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
 			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-		ets_printf("%d %d", slot->bitmap.width, slot->bitmap.rows);
+		ets_printf("%d %d\n", slot->bitmap.width, slot->bitmap.rows);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
