@@ -43,8 +43,8 @@ void app_main(void) {
 	FT_Vector offset;
 	FT_Error error;
 	FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
-	int textLen = 1;
-	int fontSize = 40;
+	int textLen = 2;
+	int fontSize = 30;
 	FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	int startX = 20;
 	int startY = 20;
@@ -75,9 +75,8 @@ void app_main(void) {
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-		//stuff is now in slot -> bitmap
+			heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		// memcpy(spriteBuf, slot->bitmap.buffer, slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
 		int sz = slot->bitmap.rows*slot->bitmap.width;
 		for(int p=0;p<sz;p++) {
 			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
@@ -91,15 +90,14 @@ void app_main(void) {
 		offset.y += slot->advance.y;
 	}
 
+
 	ets_printf("Rendering characters done!\n");
-	// FT_Done_Face (typeFace);
-	// FT_Done_FreeType(lib);
+	FT_Done_Face (typeFace);
+	FT_Done_FreeType(lib);
 	ets_printf("%s\n", "Sending image data...");
 	draw_all_sprites(spi);
-	//send_lines(spi, 0, screenbuf);
-	//send_line_finish(spi);
+	send_line_finish(spi);
 	ets_printf("finished sending display data!\n");
-	// free(screenbuf);
 
 }
 
