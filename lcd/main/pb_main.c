@@ -37,17 +37,17 @@ void app_main(void) {
 	lcd_init(spi);
 	init_oam();
 	ets_printf("SPI and OAM initialized!\n");
-	FT_Library lib;
-	FT_Face typeFace;
-	FT_GlyphSlot slot;
-	FT_Vector offset;
-	FT_Error error;
-	FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
-	int textLen = 2;
-	int fontSize = 30;
-	FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
-	int startX = 20;
-	int startY = 20;
+	static FT_Library lib;
+	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
+	static FT_GlyphSlot slot;
+	static FT_Vector offset;
+	static FT_Error error;
+	static FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
+	const int textLen = 2;
+	const int fontSize = 28;
+	const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
+	const int startX = 20;
+	const int startY = 20;
 	const uint24_RGB fillColor = {
 		.pixelR = 0x10,
 		.pixelG = 0,
@@ -66,6 +66,8 @@ void app_main(void) {
 	if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Set_Char_Size! Error:", (int)error);
 
 	slot = typeFace->glyph;
+	ets_printf("slot = %p\n", slot);
+	heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
@@ -73,12 +75,14 @@ void app_main(void) {
 		FT_Set_Transform(typeFace, NULL, &offset);
 		ets_printf("Rendering character 0x%x...\n", text[n]);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+		ets_printf("slot = %p\n", slot);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-			heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+		heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 		FT_Int bmp_top = 240 - slot->bitmap_top;
 		int sz = slot->bitmap.rows*slot->bitmap.width;
 		for(int p=0;p<sz;p++) {
+			ets_printf("spriteBuf = %d\n", p);
 			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
 			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
 			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
@@ -89,7 +93,6 @@ void app_main(void) {
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
 	}
-
 
 	ets_printf("Rendering characters done!\n");
 	FT_Done_Face (typeFace);
