@@ -42,7 +42,7 @@ void app_main(void) {
 	FT_GlyphSlot slot;
 	FT_Vector offset;
 	FT_Error error;
-	char text[] = "b";//"嗚呼";
+	FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
 	int textLen = 1;
 	int fontSize = 40;
 	FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
