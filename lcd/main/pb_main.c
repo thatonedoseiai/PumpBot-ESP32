@@ -32,14 +32,11 @@ const spi_device_interface_config_t devcfg={
 void app_main(void) {
 	ets_printf("Reached app_main!\n");
 	spi_device_handle_t spi;
-	ets_printf("1\n");
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
-	ets_printf("2\n");
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
-	ets_printf("3\n");
 	lcd_init(spi);
 	init_oam();
-	ets_printf("SPI bus initialized!\n");
+	ets_printf("SPI and OAM initialized!\n");
 	FT_Library lib;
 	FT_Face typeFace;
 	FT_GlyphSlot slot;
@@ -74,7 +71,7 @@ void app_main(void) {
 
 	for(int n=0;n<textLen;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
-		ets_printf("Rendering character %x...\n", text[n]);
+		ets_printf("Rendering character 0x%x...\n", text[n]);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
@@ -88,7 +85,7 @@ void app_main(void) {
 			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-		ets_printf("%d %d\n", slot->bitmap.width, slot->bitmap.rows);
+		ets_printf("%d x %dpx\n", slot->bitmap.width, slot->bitmap.rows / 3);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
