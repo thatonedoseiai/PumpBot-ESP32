@@ -25,14 +25,14 @@ extern "C" {
 
 #define LCD_HOST	HSPI_HOST
 
-#define PIN_NUM_MISO 17
-#define PIN_NUM_MOSI 5
-#define PIN_NUM_CLK  19
-#define PIN_NUM_CS   18
+#define PIN_NUM_MISO 12
+#define PIN_NUM_MOSI 13
+#define PIN_NUM_CLK  14
+#define PIN_NUM_CS   15
 
-#define PIN_NUM_DC   16
-#define PIN_NUM_RST  4
-#define PIN_NUM_BCKL 12
+#define PIN_NUM_DC   27
+#define PIN_NUM_RST  2
+#define PIN_NUM_BCKL 5
 
 //To speed up transfers, every SPI transfer sends a bunch of lines. This define specifies how many. More means more memory use,
 //but less overhead for setting up / finishing transfers. Make sure 240 is dividable by this.
@@ -152,7 +152,7 @@ void lcd_init(spi_device_handle_t spi);
 static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
 
 /*
- * fills a whole screen of one color.
+ * fills the whole screen with one color.
  */
 static void send_color(spi_device_handle_t spi, uint24_RGB color);
 

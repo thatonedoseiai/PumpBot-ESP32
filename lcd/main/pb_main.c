@@ -14,7 +14,7 @@ const spi_bus_config_t buscfg={
 	.sclk_io_num=PIN_NUM_CLK,
 	.quadwp_io_num=-1,
 	.quadhd_io_num=-1,
-	.max_transfer_sz=PARALLEL_LINES*320*3+8
+	.max_transfer_sz=240*320*3+8
 };
 
 const spi_device_interface_config_t devcfg={
@@ -44,7 +44,7 @@ void app_main(void) {
 	static FT_Error error;
 	static FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
 	const int textLen = 2;
-	const int fontSize = 28;
+	const int fontSize = 32;
 	const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	const int startX = 20;
 	const int startY = 20;
@@ -52,6 +52,11 @@ void app_main(void) {
 		.pixelR = 0x10,
 		.pixelG = 0,
 		.pixelB = 0x30,
+	};
+	const uint24_RGB color = {
+		.pixelR = 0x80,
+		.pixelG = 0,
+		.pixelB = 0x10,
 	};
 
 	send_color(spi, fillColor);
@@ -67,9 +72,13 @@ void app_main(void) {
 
 	slot = typeFace->glyph;
 	ets_printf("slot = %p\n", slot);
-	heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+	//heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 	offset.x = startX << 6;
 	offset.y = startY << 6;
+
+	uint24_RGB* colorbuf = malloc(sizeof(uint24_RGB) * 10000);
+		for (int i = 0; i < 10000; ++i) colorbuf[i] = color;
+	init_sprite(colorbuf, 130, 130, 100, 100, false, false, true);
 
 	for(int n=0;n<textLen;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
@@ -77,18 +86,20 @@ void app_main(void) {
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		ets_printf("slot = %p\n", slot);
 		if(error!=0) ets_printf("%s %d\n", "Error occured @FT_Load_Char! Error:", (int)error);
-		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width * sizeof(uint24_RGB));
-		heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+		//heap_caps_print_heap_info(MALLOC_CAP_8BIT);
+		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+		//heap_caps_print_heap_info(MALLOC_CAP_8BIT);
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		int sz = slot->bitmap.rows*slot->bitmap.width;
+		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
-			ets_printf("spriteBuf = %d\n", p);
+			//ets_printf("spriteBuf = %d\n", p);
 			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
 			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
 			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-		ets_printf("%d x %dpx\n", slot->bitmap.width, slot->bitmap.rows / 3);
+		ets_printf("%d x %dpx\n", slot->bitmap.rows / 3, slot->bitmap.width);
+		ets_printf("%d bytes\n", slot->bitmap.rows * slot->bitmap.width);
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
@@ -99,7 +110,6 @@ void app_main(void) {
 	FT_Done_FreeType(lib);
 	ets_printf("%s\n", "Sending image data...");
 	draw_all_sprites(spi);
-	send_line_finish(spi);
 	ets_printf("finished sending display data!\n");
 
 }
