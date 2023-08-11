@@ -141,7 +141,6 @@ uint32_t lcd_get_id(spi_device_handle_t spi);
 //Initialize the display
 void lcd_init(spi_device_handle_t spi);
 
-
 /* To send a set of lines we have to send a command, 2 data bytes, another command, 2 more data bytes and another command
  * before sending the line data itself; a total of 6 transactions. (We can't put all of this in just one transaction
  * because the D/C line needs to be toggled in the middle.)
@@ -149,24 +148,24 @@ void lcd_init(spi_device_handle_t spi);
  * sent faster (compared to calling spi_device_transmit several times), and at
  * the mean while the lines for next transactions can get calculated.
  */
-static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
 
 /*
  * fills the whole screen with one color.
  */
-static void send_color(spi_device_handle_t spi, uint24_RGB color);
+void send_color(spi_device_handle_t spi, uint24_RGB color);
 
 /*
  * draws a sprite at an x and y coordinate.
  */
-static void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
+void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
 
 /* wait for line transfers to be done and check their status.
  *
  * Call this at the end, after the next frame is finished calculating.
  * See the comments at the end of ILIDriver.c->send_lines
  */
-static void send_line_finish(spi_device_handle_t spi);
+void send_line_finish(spi_device_handle_t spi);
 
 #ifdef __cplusplus
 }

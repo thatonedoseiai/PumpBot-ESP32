@@ -1,0 +1,15 @@
+⎕FIO[49] "output"
+⊃⎕FIO[49] "output"
+a←⎕FIO[49] "output"
+a
+8⎕CR a
+⎕PW←1000
+8⎕CR a
+⍴a
+≡a
+⊃a
+⍴⊃a
+≡⊃a
+⍴⊃a
+,⊃a
+)OFF

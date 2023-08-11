@@ -1,8 +1,8 @@
 set(srcs
-    "pb_main.c"
     "ILIDriver.c"
-    "decode_image.c"
     "oam.c"
+    "decode_image.c"
+    "pb_main.c"
     )
 
 idf_component_register(SRCS ${srcs}

@@ -1,9 +1,9 @@
-#include "ILIDriver.c"
+#include "ILIDriver.h"
 #include "freetype2/ft2build.h"
 #include <stdio.h>
 #include <rom/ets_sys.h>
 #include FT_FREETYPE_H
-#include "oam.c"
+#include "oam.h"
 
 #define FT_ERR_HANDLE(code, loc) if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) code);
 
@@ -62,14 +62,10 @@ void app_main(void) {
 
 	send_color(spi, fillColor);
 
-	error = FT_Init_FreeType(&lib);
-	FT_ERR_HANDLE(error, "FT_Init_Freetype");
-	error = FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace);
-	FT_ERR_HANDLE(error, "FT_New_Memory_Face");
-	error = FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE);
-	FT_ERR_HANDLE(error, "FT_Select_Charmap");
-	error = FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0); // 0 = copy last value
-	FT_ERR_HANDLE(error, "FT_Set_Char_Size");
+	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
+	FT_ERR_HANDLE(FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace), "FT_New_Memory_Face");
+	FT_ERR_HANDLE(FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
+	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
 	slot = typeFace->glyph;
 	offset.x = startX << 6;
@@ -81,16 +77,15 @@ void app_main(void) {
 
 	for(int n=0;text[n]!=0;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
-		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-		FT_ERR_HANDLE(error, "FT_Load_Char");
+		FT_ERR_HANDLE(FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V), "FT_Load_Char");
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
-		FT_Int bmp_top = 240 - slot->bitmap_top;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
 			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
 			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
 			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
+		FT_Int bmp_top = 240 - slot->bitmap_top;
 		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
 
 		offset.x += slot->advance.x;

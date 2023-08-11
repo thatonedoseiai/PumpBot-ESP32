@@ -1,4 +1,9 @@
-#include <ILIDriver.h>
+#pragma once
+#include "ILIDriver.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define OAM_SIZE 16
 
@@ -41,3 +46,7 @@ void draw_all_sprites(spi_device_handle_t spi);
  * delete_sprite deletes a sprite from the OAM_SPRITE_TABLE.
  */
 void delete_sprite(int sprite);
+
+#ifdef __cplusplus
+}
+#endif

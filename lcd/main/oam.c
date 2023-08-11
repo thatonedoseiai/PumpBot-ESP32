@@ -2,7 +2,6 @@
 #include <rom/ets_sys.h>
 
 #include "oam.h"
-#include "ILIDriver.h"
 
 static SPRITE_24_H** OAM_SPRITE_TABLE;
 // array of free indices. first value stores the length of array.

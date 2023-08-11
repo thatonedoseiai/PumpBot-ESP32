@@ -98,7 +98,7 @@ void lcd_init(spi_device_handle_t spi) {
 	}
 }
 
-static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	esp_err_t ret;
 	int x;
 	//Transaction descriptors. Declared static so they're not allocated on the stack; we need this memory even when this
@@ -147,7 +147,7 @@ static void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) 
 	//send_line_finish, which will wait for the transfers to be done and check their status.
 }
 
-static void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
+void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
 	esp_err_t ret;
 	int x;
 	static spi_transaction_t trans[6];
@@ -187,7 +187,7 @@ static void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16
 	}
 }
 
-static void send_color(spi_device_handle_t spi, uint24_RGB color) {
+void send_color(spi_device_handle_t spi, uint24_RGB color) {
 	int pixelCount = 320*PARALLEL_LINES;
 	int bytelength = 3*pixelCount;
 	uint24_RGB* colorbuf = malloc(sizeof(uint24_RGB) * bytelength);
@@ -235,7 +235,7 @@ static void send_color(spi_device_handle_t spi, uint24_RGB color) {
 	free(colorbuf);
 }
 
-static void send_line_finish(spi_device_handle_t spi) {
+void send_line_finish(spi_device_handle_t spi) {
 	spi_transaction_t *rtrans;
 	esp_err_t ret;
 	//Wait for all 6 transactions to be done and get back the results.
