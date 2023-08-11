@@ -71,10 +71,6 @@ void app_main(void) {
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
-	uint24_RGB* colorbuf = malloc(sizeof(uint24_RGB) * 10000);
-		for (int i = 0; i < 10000; ++i) colorbuf[i] = color;
-	init_sprite(colorbuf, 130, 130, 100, 100, false, false, true);
-
 	for(int n=0;text[n]!=0;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
 		FT_ERR_HANDLE(FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V), "FT_Load_Char");
@@ -97,7 +93,6 @@ void app_main(void) {
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");
 	draw_all_sprites(spi);
 	ets_printf("finished sending display data!\n");
-
 }
 
 // vim: foldmethod=marker
