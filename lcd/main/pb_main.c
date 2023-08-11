@@ -44,8 +44,7 @@ void app_main(void) {
 	static FT_GlyphSlot slot;
 	static FT_Vector offset;
 	static FT_Error error;
-	static FT_ULong text[] = {0x547C, 0x55DA};//"嗚呼";
-	const int textLen = 2;
+	static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 	const int fontSize = 32;
 	const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	const int startX = 20;
@@ -80,7 +79,7 @@ void app_main(void) {
 		for (int i = 0; i < 10000; ++i) colorbuf[i] = color;
 	init_sprite(colorbuf, 130, 130, 100, 100, false, false, true);
 
-	for(int n=0;n<textLen;n++) {
+	for(int n=0;text[n]!=0;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
 		error = FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
 		FT_ERR_HANDLE(error, "FT_Load_Char");
