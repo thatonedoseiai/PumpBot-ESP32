@@ -20,10 +20,10 @@ void init_oam() {
 	indices = (uint8_t*) malloc(sizeof(uint8_t) * (OAM_SIZE + 1));
 	indices[0] = OAM_SIZE;
 	OAM_SPRITE_TABLE = (SPRITE_24_H**) malloc(sizeof(SPRITE_24_H**) * OAM_SIZE);
-    for(int i=0;i<OAM_SIZE;++i) {
-        OAM_SPRITE_TABLE[i] = NULL;
-        indices[1+i] = i;
-    }
+	for(int i=0;i<OAM_SIZE;++i) {
+		OAM_SPRITE_TABLE[i] = NULL;
+		indices[1+i] = i;
+	}
 }
 
 int init_sprite(uint24_RGB* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw) {
