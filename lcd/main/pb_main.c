@@ -54,11 +54,6 @@ void app_main(void) {
 		.pixelG = 0,
 		.pixelB = 0x30,
 	};
-	const uint24_RGB color = {
-		.pixelR = 0x80,
-		.pixelG = 0,
-		.pixelB = 0x10,
-	};
 
 	send_color(spi, fillColor);
 
