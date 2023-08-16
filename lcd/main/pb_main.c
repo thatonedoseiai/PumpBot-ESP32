@@ -5,7 +5,7 @@
 #include FT_FREETYPE_H
 #include "oam.h"
 
-#define FT_ERR_HANDLE(code, loc) if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) code);
+#define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
 #define SPRITE_LIMIT 16
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
