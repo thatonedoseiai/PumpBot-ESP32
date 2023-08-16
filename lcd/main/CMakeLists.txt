@@ -1,7 +1,6 @@
 set(srcs
     "pb_main.c"
     "ILIDriver.c"
-    "decode_image.c"
     "oam.c"
     )
 

@@ -1,6 +1,11 @@
+#pragma once
 #include <ILIDriver.h>
 
 #define OAM_SIZE 16
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct SPRITE_24_H_ {
 	uint24_RGB* bitmap;
@@ -41,3 +46,7 @@ void draw_all_sprites(spi_device_handle_t spi);
  * delete_sprite deletes a sprite from the OAM_SPRITE_TABLE.
  */
 void delete_sprite(int sprite);
+
+#ifdef __cplusplus
+}
+#endif

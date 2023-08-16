@@ -1,9 +1,9 @@
-#include "ILIDriver.c"
+#include "ILIDriver.h"
 #include "freetype2/ft2build.h"
 #include <stdio.h>
 #include <rom/ets_sys.h>
 #include FT_FREETYPE_H
-#include "oam.c"
+#include "oam.h"
 
 #define FT_ERR_HANDLE(code, loc) if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) code);
 
