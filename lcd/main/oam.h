@@ -1,11 +1,11 @@
 #pragma once
-#include "ILIDriver.h"
+#include <ILIDriver.h>
+
+#define OAM_SIZE 16
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#define OAM_SIZE 16
 
 typedef struct SPRITE_24_H_ {
 	uint24_RGB* bitmap;
