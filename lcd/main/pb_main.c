@@ -7,6 +7,10 @@
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
+#define PIN_NUM_SW0 0
+#define PIN_NUM_SW1 4
+#define PIN_NUM_ENC_A 18
+#define PIN_NUM_ENC_B 19
 #define SPRITE_LIMIT 16
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
 extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUImin_ttf_end");
@@ -54,8 +58,25 @@ void app_main(void) {
 		.pixelG = 0,
 		.pixelB = 0x30,
 	};
+	const gpio_config_t btn_conf = {
+		.pin_bit_mask = ((1ULL << PIN_NUM_SW0) | 
+						(1ULL << PIN_NUM_SW1)  |
+						(1ULL << PIN_NUM_ENC_A)|
+						(1ULL << PIN_NUM_ENC_B)),
+		.mode = GPIO_MODE_INPUT,
+		.pull_up_en = true,
+	};
+	gpio_config(&btn_conf);
 
 	send_color(spi, fillColor);
+
+    ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
+    ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
+    ets_printf("a level: %d\n", gpio_get_level(PIN_NUM_ENC_A));
+    ets_printf("b level: %d\n", gpio_get_level(PIN_NUM_ENC_B));
+	while(gpio_get_level(PIN_NUM_SW0)) {
+		vTaskDelay(10);
+	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
 	FT_ERR_HANDLE(FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace), "FT_New_Memory_Face");
