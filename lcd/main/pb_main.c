@@ -4,6 +4,7 @@
 #include <rom/ets_sys.h>
 #include FT_FREETYPE_H
 #include "oam.h"
+#include "rotenc.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 

@@ -2,6 +2,7 @@ set(srcs
     "ILIDriver.c"
     "oam.c"
     "pb_main.c"
+    "rotenc.c"
     )
 
 idf_component_register(SRCS ${srcs}
