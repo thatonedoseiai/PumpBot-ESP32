@@ -1,0 +1,33 @@
+//PumpBot DSL//
+	//Draw commands
+		//Text-based commands:
+			drawtext(int size, int x, int y, bool alpha, uint8_t justify, uint8_t palette){
+				.size = text size in pixels,
+				.x = x location of text. origin determined by justify,
+				.y = y location of text. origin determined by justify,
+				.alpha = allows text to render behind transparent objects,
+				.justify = changes the origin to one of 7 different locations, 
+				//0 = Top Left, 1 = Top Center, 2 = Top Right, 3 = Center, 4 = Bottom Left, 5 = Bottom Center, 6 = Bottom Right.
+				.palette = sets the color to one of the 5 palette colors
+				// 0 = Background, 1 = Foreground, 2 = Selected(text), 3 = Selection(highlight), 4 = Grey-out. 
+			};
+			drawalphatext(int size, int x, int y, uint8_t opacity, uint8_t justify, uint8_t palette){
+				.size = text size in pixels,
+				.x = x location of text. origin determined by justify,
+				.y = y location of text. origin determined by justify,
+				.opacity = opacity, //8 bit color - if 0, don't do math!
+				.justify = changes the origin to one of 7 different locations, 
+				//0 = Top Left, 1 = Top Center, 2 = Top Right, 3 = Center, 4 = Bottom Left, 5 = Bottom Center, 6 = Bottom Right.
+				.palette = sets the color to one of the 5 palette colors
+				// 0 = Background, 1 = Foreground, 2 = Selected(text), 3 = Selection(highlight), 4 = Grey-out. 
+			};
+		//Rect-based commands:
+			drawrect(int x, int y, int sizeX, int sizeY, bool alpha, uint8_t opacity, uint8_t palette){ //opacity integrated cos it works different, idk if good idea or not
+				.x = X location of top left of rect,
+				.y = Y location of top left of rect,
+				.sizeX = width of rect,
+				.sizeY = height of rect,
+				.alpha = allows rect to render behind transparent objects, //Useless? maybe! Let's talk!
+				.opacity = opacity, //8 bit color - if 0, don't do math!
+				.palette = sets the color to one of the 5 palette colors
+			};
