@@ -12,6 +12,7 @@
 #define PIN_NUM_SW1 4
 #define PIN_NUM_ENC_A 18
 #define PIN_NUM_ENC_B 19
+#define PIN_NUM_ENC_BTN 36
 #define SPRITE_LIMIT 16
 extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
 extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUImin_ttf_end");
@@ -41,6 +42,7 @@ void app_main(void) {
 	spi_device_handle_t spi;
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
+	ESP_ERROR_CHECK(gpio_install_isr_service(0));
 	lcd_init(spi);
 	init_oam();
 	ets_printf("SPI and OAM initialized!\n");
@@ -50,6 +52,7 @@ void app_main(void) {
 	static FT_Vector offset;
 	static FT_Error error;
 	static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
+	static rotary_encoder_info_t info = { 0 };
 	const int fontSize = 32;
 	const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 	const int startX = 20;
@@ -61,22 +64,35 @@ void app_main(void) {
 	};
 	const gpio_config_t btn_conf = {
 		.pin_bit_mask = ((1ULL << PIN_NUM_SW0) | 
-						(1ULL << PIN_NUM_SW1)  |
-						(1ULL << PIN_NUM_ENC_A)|
-						(1ULL << PIN_NUM_ENC_B)),
+						(1ULL << PIN_NUM_SW1)),
+						// (1ULL << PIN_NUM_ENC_A)|
+						// (1ULL << PIN_NUM_ENC_B)),
 		.mode = GPIO_MODE_INPUT,
 		.pull_up_en = true,
 	};
+	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
+	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
+    ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
 	gpio_config(&btn_conf);
 
 	send_color(spi, fillColor);
 
     ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
     ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
-    ets_printf("a level: %d\n", gpio_get_level(PIN_NUM_ENC_A));
-    ets_printf("b level: %d\n", gpio_get_level(PIN_NUM_ENC_B));
+
+    QueueHandle_t event_queue = rotary_encoder_create_queue(); 
 	while(gpio_get_level(PIN_NUM_SW0)) {
-		vTaskDelay(10);
+        rotary_encoder_event_t event = { 0 };
+		if(xQueueReceive(event_queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            ets_printf("Event: position %d, direction %s\n", event.state.position,
+                      event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+		} else {
+            rotary_encoder_state_t state = { 0 };
+            ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
+            ets_printf("Poll: position %d, direction %s\n", state.position,
+                     state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+		}
+		//vTaskDelay(1);
 	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
@@ -105,6 +121,7 @@ void app_main(void) {
 		offset.y += slot->advance.y;
 	}
 
+	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");

@@ -82,6 +82,7 @@ typedef struct {
 typedef struct {
 	gpio_num_t pin_a;					   ///< GPIO for Signal A from the rotary encoder device
 	gpio_num_t pin_b;					   ///< GPIO for Signal B from the rotary encoder device
+    gpio_num_t pin_btn;
 	QueueHandle_t queue;					///< Handle for event queue, created by ::rotary_encoder_create_queue
 	const table_row_t * table;			  ///< Pointer to active state transition table
 	uint8_t table_state;					///< Internal state
@@ -104,7 +105,7 @@ typedef struct {
  * @param[in] pin_b GPIO number for rotary encoder output B.
  * @return ESP_OK if successful, ESP_FAIL or ESP_ERR_* if an error occurred.
  */
-esp_err_t rotary_encoder_init(rotary_encoder_info_t* info, gpio_num_t pin_a, gpio_num_t pin_b);
+esp_err_t rotary_encoder_init(rotary_encoder_info_t* info, gpio_num_t pin_a, gpio_num_t pin_b, gpio_num_t pin_btn);
 
 /**
  * @brief Enable half-stepping mode. This generates twice as many counted steps per rotation.
