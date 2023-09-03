@@ -13,6 +13,8 @@ idf_component_register(SRCS ${srcs}
                         MeiryoUImin.ttf
 )
 
+# littlefs_create_partition_image(filesystem mainfs)
+
 # add_library(freetype STATIC IMPORTED GLOBAL)
 # set_property(TARGET freetype PROPERTY IMPORTED_LOCATION "${COMPONENT_DIR}/libfreetype.a")
 # target_link_libraries(${COMPONENT_TARGET} freetype)

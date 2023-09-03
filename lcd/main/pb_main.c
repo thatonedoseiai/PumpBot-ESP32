@@ -6,6 +6,8 @@
 #include "oam.h"
 #include "rotenc.h"
 
+#include "esp_littlefs.h"
+
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
 #define PIN_NUM_SW0 0
@@ -70,6 +72,40 @@ void app_main(void) {
 		.mode = GPIO_MODE_INPUT,
 		.pull_up_en = true,
 	};
+    esp_vfs_littlefs_conf_t conf = {
+        .base_path = "/mainfs",
+        .partition_label = "filesystem",
+        .format_if_mount_failed = true,
+        .dont_mount = false,
+    };
+    esp_err_t ret = esp_vfs_littlefs_register(&conf);
+    if(ret!=ESP_OK) {
+        ets_printf("failed to mount filesystem!\n");
+        return;
+    }
+    size_t total = 0, used = 0;
+    ret = esp_littlefs_info(conf.partition_label, &total, &used);
+    if (ret != ESP_OK) {
+        ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
+    } else {
+        ets_printf("Partition size: total: %d, used: %d\n", total, used);
+    }
+    FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
+    if(f==NULL) {
+        ets_printf("failed to open file!\n");
+        return;
+    }
+    char line[64];
+    fgets(line, sizeof(line), f);
+    fclose(f);
+    char *pos = strchr(line, '\n');
+    if (pos) {
+        *pos = '\0';
+    }
+    ets_printf("read out: %s", line);
+    esp_vfs_littlefs_unregister(conf.partition_label);
+
+
 	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
     ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
