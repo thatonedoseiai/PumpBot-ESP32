@@ -72,61 +72,61 @@ void app_main(void) {
 		.mode = GPIO_MODE_INPUT,
 		.pull_up_en = true,
 	};
-    esp_vfs_littlefs_conf_t conf = {
-        .base_path = "/mainfs",
-        .partition_label = "filesystem",
-        .format_if_mount_failed = true,
-        .dont_mount = false,
-    };
-    esp_err_t ret = esp_vfs_littlefs_register(&conf);
-    if(ret!=ESP_OK) {
-        ets_printf("failed to mount filesystem!\n");
-        return;
-    }
-    size_t total = 0, used = 0;
-    ret = esp_littlefs_info(conf.partition_label, &total, &used);
-    if (ret != ESP_OK) {
-        ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
-    } else {
-        ets_printf("Partition size: total: %d, used: %d\n", total, used);
-    }
-    FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
-    if(f==NULL) {
-        ets_printf("failed to open file!\n");
-        return;
-    }
-    char line[64];
-    fgets(line, sizeof(line), f);
-    fclose(f);
-    char *pos = strchr(line, '\n');
-    if (pos) {
-        *pos = '\0';
-    }
-    ets_printf("read out: %s", line);
-    esp_vfs_littlefs_unregister(conf.partition_label);
+	esp_vfs_littlefs_conf_t conf = {
+		.base_path = "/mainfs",
+		.partition_label = "filesystem",
+		.format_if_mount_failed = true,
+		.dont_mount = false,
+	};
+	esp_err_t ret = esp_vfs_littlefs_register(&conf);
+	if(ret!=ESP_OK) {
+		ets_printf("failed to mount filesystem!\n");
+		return;
+	}
+	size_t total = 0, used = 0;
+	ret = esp_littlefs_info(conf.partition_label, &total, &used);
+	if (ret != ESP_OK) {
+		ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
+	} else {
+		ets_printf("Partition size: total: %d, used: %d\n", total, used);
+	}
+	FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
+	if(f==NULL) {
+		ets_printf("failed to open file!\n");
+		return;
+	}
+	char line[64];
+	fgets(line, sizeof(line), f);
+	fclose(f);
+	char *pos = strchr(line, '\n');
+	if (pos) {
+		*pos = '\0';
+	}
+	ets_printf("read out: %s", line);
+	esp_vfs_littlefs_unregister(conf.partition_label);
 
 
 	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
-    ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
+	ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
 	gpio_config(&btn_conf);
 
 	send_color(spi, fillColor);
 
-    ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
-    ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
+	ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
+	ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-    QueueHandle_t event_queue = rotary_encoder_create_queue(); 
+	QueueHandle_t event_queue = rotary_encoder_create_queue(); 
 	while(gpio_get_level(PIN_NUM_SW0)) {
-        rotary_encoder_event_t event = { 0 };
+		rotary_encoder_event_t event = { 0 };
 		if(xQueueReceive(event_queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            ets_printf("Event: position %d, direction %s\n", event.state.position,
-                      event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+			ets_printf("Event: position %d, direction %s\n", event.state.position,
+					  event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
 		} else {
-            rotary_encoder_state_t state = { 0 };
-            ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
-            ets_printf("Poll: position %d, direction %s\n", state.position,
-                     state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+			rotary_encoder_state_t state = { 0 };
+			ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
+			ets_printf("Poll: position %d, direction %s\n", state.position,
+					 state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
 		}
 		//vTaskDelay(1);
 	}
