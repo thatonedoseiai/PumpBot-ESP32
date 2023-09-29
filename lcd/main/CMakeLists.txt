@@ -3,6 +3,7 @@ set(srcs
     "oam.c"
     "pb_main.c"
     "rotenc.c"
+    "stack_ddt.c"
     )
 
 idf_component_register(SRCS ${srcs}

@@ -5,6 +5,7 @@
 #include FT_FREETYPE_H
 #include "oam.h"
 #include "rotenc.h"
+#include "stack_ddt.h"
 
 #include "esp_littlefs.h"
 
@@ -72,6 +73,8 @@ void app_main(void) {
 		.mode = GPIO_MODE_INPUT,
 		.pull_up_en = true,
 	};
+	static PRG loaded_prg;
+	prg_init(&loaded_prg);
 	esp_vfs_littlefs_conf_t conf = {
 		.base_path = "/mainfs",
 		.partition_label = "filesystem",
@@ -104,7 +107,6 @@ void app_main(void) {
 	}
 	ets_printf("read out: %s", line);
 	esp_vfs_littlefs_unregister(conf.partition_label);
-
 
 	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
