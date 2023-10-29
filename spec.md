@@ -49,10 +49,13 @@ initialize things:
 ### Program:
  - Starts inside of VM, main UI/Ux of PumpBot.
  - On first boot, PumpBot will open in a "Welcome!" screen, saying "Welcome to\nPumpBot!" in a Large font, with underneath, on the bottom of the screen, "Press ⤓ To Continue" in "Standard" font. After 5 seconds, that text will change out to other languages in a predetermined order, drawing over the previous text from left to right with a linear progression of about 0.5s. 
- - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left". The following screens, outlied below, will be setup screens.
+ - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left" into Setup Screen 0.
+ - Setup Screen 0
+    - "Medium" text on the top, reading "Choose your Language", with a menu option, reading "Language", left justified, and in the same menu, right justified, the language selected. The languages can be scrolled through with the encoder, and selected by pressing the encoder switch. The language of this screen will change whenever the language is selected. On the very bottom of the screen, there will be an unselectable menu option displaying on the far right, "Apply". Pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 1.
+    If nothing is pressed within 30 seconds, the screen will "Swipe Right" back into the "Welcome!" screen.
  - Setup Screen 1
     - "Medium" text on the top, reading "How would you like to\nsetup PumpBot?", with 2 Menu Options, centered on the screen, reading "Wi-Fi Setup" and "Standalone Setup". In the "Tooltip", "Set up PumpBot by connecting another device" will be shown when "Wi-Fi Setup" is highlighted, and "Set up PumpBot without connecting another device" will be shown when "Standalone Setup" is highlighted.
-    If "Wi-Fi Setup" is selected (by pressing SW1), transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. If nothing is pressed within 30 seconds, the screen will "Swipe Right" back into the "Welcome!" screen.
+    If "Wi-Fi Setup" is selected (by pressing SW1), transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. 
  - Setup Screen 2
     - "Medium" text, dead center of the screen, reading "Starting Wi-Fi Network...". An unselectable menu option on the bottom left of the screen will have the option "Cancel". Pressing "Cancel" (with SW0) will bring you back to Setup Screen 1. Once the Wi-Fi network has initialized, the screen will immediately transition to Setup Screen 2a.
  - Setup Screen 2a
@@ -69,6 +72,7 @@ initialize things:
    - 
 
     list of setup screens:
+    0 - Language
     1 - wi-fi or standalone setup
     2 - connect to PumpBot via wi-fi
     2a - connect to pumpbot
