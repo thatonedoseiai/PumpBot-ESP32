@@ -82,11 +82,17 @@ initialize things:
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen.
         On the very bottom of the screen, there will be an unselectable menu option displaying, on the far left, "Back", and on the far right, "Next". Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next"), will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to a server, you won't be able to use some online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
  - Screen 5
-   - 
+   - "Medium" text on top, reading "Display Settings", with 2 menu options underneath, reading...
+    "Brightness  [Brightness]"
+    "Theme       [Light/Dark Theme]"
+    Both menu options are selectable, the first menu option will change the screen brightness when selected(gradation tbd, prolly 0-100%), changing both the number on the right side of the menu and the actual screen brightness in realtime, when you turn the encoder. The 2nd menu option will do the same, but cycle between menu themes and update as fast as possible. No guarantee in speed of that since it'll need to re-render the whole screen. On the very bottom of the screen, there will be an unselectable menu option displaying, on the far left, "Back", and on the far right, "Next". Pressing SW0 (underneath "Back") will bring you to Setup Screen 4, and pressing SW1 (underneath "Next"), will immediately transition to Setup Screen 6.
  - Screen 6
-   - 
+   - "Medium" text on top, reading "Add-On Settings", with 1 menu option underneath, reading...
+    "Unit of Pressure   [psi/bar]"
+    This menu option will cycle between units of pressure, this will be the display pressure of the "MPRLS" sensor.
+    On the very bottom of the screen, there will be an unselectable menu option displaying, on the far left, "Back", and on the far right, "Finish". Pressing SW0 (underneath "Back") will bring you to Setup Screen 5, and pressing SW1 (underneath "Finish"), will immediately transition to Setup Screen 7.
  - Screen 7
-   - 
+   - "Large" text on top, reading "Setup Complete!", with "Press ⤓ To Continue" in "Standard" font on the bottom of the screen, mocking the Welcome screen's layout. After ⤓ is pressed, "Swipe Left" transition to the Home Screen.
 
     list of setup screens:
     0 - Language
@@ -97,5 +103,7 @@ initialize things:
     3a - Wi-Fi connect
     4 - server login
     5 - theme, display brightness
-    6 - misc (units of pressure, basic rgb settings)
+    6 - add-on settings
     7 - setup finished
+
+    Not really sure where to put this but things in regular braces (aka like [This]) are like variables or text strings, not what'd actually be displayed
