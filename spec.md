@@ -59,8 +59,8 @@ initialize things:
     If nothing is pressed within 30 seconds or SW0 (underneath "Back") is pressed, the screen will "Swipe Right" back into the "Welcome!" screen.
  - Setup Screen 1
     - "Medium" text on the top, reading "How would you like to\nsetup PumpBot?", with 2 "Centered Menu Options", reading...  
-    "Wi-Fi Setup"
-    "Standalone Setup"
+    "Wi-Fi Setup"  
+    "Standalone Setup"  
     In a "Tooltip", "Set up PumpBot by connecting another device" will be shown when "Wi-Fi Setup" is highlighted, and "Set up PumpBot without connecting another device" will be shown when "Standalone Setup" is highlighted.
     If "Wi-Fi Setup" is selected, transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. 
     - There will be no "Screen Guide".
