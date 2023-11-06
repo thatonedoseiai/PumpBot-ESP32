@@ -53,14 +53,14 @@ initialize things:
  - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left" into Setup Screen 0.
  - Setup Screen 0
     - "Medium" text on the top, reading "Choose your Language", with a menu option underneath, reading...
-    >"Language      [Language]"
+     "Language      [Language]"
      The languages can be scrolled through with the encoder, and selected by pressing the encoder switch. The language of this screen will change whenever the language is selected. 
     - There will be a "Screen Guide" displaying "Back" on the left, "Apply" on the right. Pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 1.
     If nothing is pressed within 30 seconds or SW0 (underneath "Back") is pressed, the screen will "Swipe Right" back into the "Welcome!" screen.
  - Setup Screen 1
     - "Medium" text on the top, reading "How would you like to\nsetup PumpBot?", with 2 "Centered Menu Options", reading...
-   >"Wi-Fi Setup"
-   >"Standalone Setup"
+    "Wi-Fi Setup"
+    "Standalone Setup"
     In a "Tooltip", "Set up PumpBot by connecting another device" will be shown when "Wi-Fi Setup" is highlighted, and "Set up PumpBot without connecting another device" will be shown when "Standalone Setup" is highlighted.
     If "Wi-Fi Setup" is selected, transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. 
     - There will be no "Screen Guide".
@@ -76,31 +76,31 @@ initialize things:
    - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 1, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5.
  - Screen 3a
    - "Medium" text on the top, reading "Wi-Fi Settings", with 4 menu options underneath, reading...
-   >"Network Name        [Network Name]" (selectable, network name auto-filled if a wi-fi network is selected)
-   >"Password            [Password]" (selectable)
-   >         "Advanced"(selectable, another screen for manual/advanced wi-fi setup. Not speccing now)
-   >         "Connect" (selectable)
+   "Network Name        [Network Name]" (selectable, network name auto-filled if a wi-fi network is selected)
+   "Password            [Password]" (selectable)
+            "Advanced"(selectable, another screen for manual/advanced wi-fi setup. Not speccing now)
+            "Connect" (selectable)
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced wi-fi setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen. 
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to Wi-Fi, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
  - Screen 4 (visually a clone of Screen 3a)
    - "Medium" text on the top, reading "Server Settings", with 4 menu options underneath, reading...
-   >"Server Address      [Server Address]" (selectable, auto-filled to default server)
-   >"Password            [Password]" (selectable)
-   >         "Advanced"(selectable, Not speccing now)
-   >         "Connect"
+   "Server Address      [Server Address]" (selectable, auto-filled to default server)
+   "Password            [Password]" (selectable)
+            "Advanced"(selectable, Not speccing now)
+            "Connect"
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced server setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen.
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to a server, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
  - Screen 5
    - "Medium" text on top, reading "Display Settings", with 2 menu options underneath, reading...
-    >"Brightness  [Brightness]"
-    >"Theme       [Light/Dark Theme]"
+    |"Brightness  [Brightness]"|
+    |"Theme       [Light/Dark Theme]"|
     Both menu options are selectable, the first menu option will change the screen brightness when selected(gradation tbd, prolly 0-100%), changing both the number on the right side of the menu and the actual screen brightness in realtime, when you turn the encoder. The 2nd menu option will do the same, but cycle between menu themes and update as fast as possible. No guarantee in speed of that since it'll need to re-render the whole screen. 
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 4, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 6.
  - Screen 6
    - "Medium" text on top, reading "Add-On Settings", with 1 menu option underneath, reading...
-    >"Unit of Pressure   [psi/bar]"
+    "Unit of Pressure   [psi/bar]"
     This menu option will cycle between units of pressure, this will be the display pressure of the "MPRLS" sensor.
     - There will be a "Screen Guide" displaying "Back" on the left and "Finish" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 5, and pressing SW1 (underneath "Finish") will immediately transition to Setup Screen 7.
  - Screen 7
@@ -108,15 +108,15 @@ initialize things:
    - There will be no "Screen Guide".
 
     list of setup screens:
-    >0 - Language
-    >1 - wi-fi or standalone setup
-    >2 - connect to PumpBot via wi-fi
-    >2a - connect to pumpbot
-    >3 - Wi-Fi login
-    >3a - Wi-Fi connect
-    >4 - server login
-    >5 - theme, display brightness
-    >6 - add-on settings
-    >7 - setup finished
+    0 - Language
+    1 - wi-fi or standalone setup
+    2 - connect to PumpBot via wi-fi
+    2a - connect to pumpbot
+    3 - Wi-Fi login
+    3a - Wi-Fi connect
+    4 - server login
+    5 - theme, display brightness
+    6 - add-on settings
+    7 - setup finished
 
     Not really sure where to put this but things in regular braces (aka like [This]) are like variables or text strings, not what'd actually be displayed
