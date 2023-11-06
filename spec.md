@@ -48,7 +48,7 @@ initialize things:
 
 ### Program:
  - Starts inside of VM, main UI/Ux of PumpBot.
- - On first boot, PumpBot will open in a "Welcome!" screen, saying "Welcome to\nPumpBot!" in a Large font, with underneath, on the bottom of the screen, "Press ⤓ To Continue" in "Standard" font. After 5 seconds, that text will change out to other languages in a predetermined order, drawing over the previous text from left to right with a linear progression of about 0.5s. 
+ - On first boot, PumpBot will open in a "Welcome!" screen, saying "Welcome to\nPumpBot!" in a "Large" font, with underneath, on the bottom of the screen, "Press ⤓ To Continue" in "Standard" font. After 5 seconds, that text will change out to other languages in order (TBD, likely EN, ZH, JA, RU, ES, CAN.), drawing over the previous text from left to right with a linear progression of about 0.5s. 
  - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left" into Setup Screen 0.
  - Setup Screen 0
     - "Medium" text on the top, reading "Choose your Language", with a menu option, reading "Language", left justified, and in the same menu, right justified, the language selected. The languages can be scrolled through with the encoder, and selected by pressing the encoder switch. The language of this screen will change whenever the language is selected. On the very bottom of the screen, there will be an unselectable menu option displaying on the far right, "Apply". Pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 1.
