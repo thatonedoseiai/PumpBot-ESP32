@@ -45,6 +45,7 @@ initialize things:
  - A "Swipe" transition is a transition that swipes the previous screen, revealing the new screen underneath from left to right, referred to as "Swipe Right", or right to left, referred to as "Swipe Left". This transition slides the previous screen in the desired direction with a "Smoothstep" progression in roughly 0.75s.
 
 ### Fonts:
+![Font size reference sheet](/spec-assets/font-size-ref.png)
 - Unless specified, "Large" font is 32/40px, "Medium" font is 24/32px, "Standard" font is 20/24px, and "Small" text is 16/20px. all sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text will not coexist in the same text field, but if it does, default to the size of the first character.
 
 ### Program:
@@ -59,8 +60,8 @@ initialize things:
     If nothing is pressed within 30 seconds or SW0 (underneath "Back") is pressed, the screen will "Swipe Right" back into the "Welcome!" screen.
  - Setup Screen 1
     - "Medium" text on the top, reading "How would you like to\nsetup PumpBot?", with 2 "Centered Menu Options", reading...  
-    "Wi-Fi Setup"  
-    "Standalone Setup"  
+    `"Wi-Fi Setup"`  
+    `"Standalone Setup"`  
     In a "Tooltip", "Set up PumpBot by connecting another device" will be shown when "Wi-Fi Setup" is highlighted, and "Set up PumpBot without connecting another device" will be shown when "Standalone Setup" is highlighted.
     If "Wi-Fi Setup" is selected, transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. 
     - There will be no "Screen Guide".
@@ -70,7 +71,7 @@ initialize things:
     - There will be a "Screen Guide" displaying "Cancel" on the left and nothing on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1. Once the Wi-Fi network has initialized, the screen will immediately transition to Setup Screen 2a.
  - Setup Screen 2a
     - "Standard" text, "Connect to this Wi-Fi network to configure PumpBot:", with a unselectable menu option underneath with the network name, as well as "Open this URL in your web browser:", with another unselectable menu option underneath with a URL hosted by PumpBot that's used to configure settings. All of this will be roughly centered to the screen.
-    - There will be a "Screen Guide" displaying "Cancel" on the left and "Apply" on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1 after summoning a "Tooltip" reading "Stop Wi-Fi Setup?/n(This may take a few seconds)", requiring the user to press SW0 again before transitioning the screen, and pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 7 after summoning a "Tooltip" reading "Stop Wi-Fi Setup and apply all saved changes made on the website?/n(This may take a few seconds)", requiring the user to press SW1 again before transitioning the screen.
+    - There will be a "Screen Guide" displaying "Cancel" on the left and "Apply" on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1 after summoning a "Tooltip" reading "Stop Wi-Fi Setup?\n(This may take a few seconds)", requiring the user to press SW0 again before transitioning the screen, and pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 7 after summoning a "Tooltip" reading "Stop Wi-Fi Setup and apply all saved changes made on the website?\n(This may take a few seconds)", requiring the user to press SW1 again before transitioning the screen.
  - Screen 3
    - "Medium" text on the top, reading "Wi-Fi Settings", with "Standard" text reading "Searching..." underneath. As soon as Wi-Fi networks are found or the search times out, "Searching..." will be replaced by a list of availible networks, plus a "Manual/Advanced Setup" option, in menu options. They can be scrolled through with the encoder, and selected by pressing the encoder switch. When a Wi-Fi network or "Manual/Advanced Setup" is selected, the screen will immediately transition to Setup Screen 3a.
    - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 1, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5.
@@ -79,7 +80,7 @@ initialize things:
    `"Network Name        [Network Name]"` (selectable, network name auto-filled if a wi-fi network is selected)  
    `"Password            [Password]"` (selectable)  
    `         "Advanced"`(selectable, another screen for manual/advanced wi-fi setup. Not speccing now)  
-   `         "Connect"` (selectable)  
+   `         "Connect"`  
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced wi-fi setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen. 
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to Wi-Fi, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
@@ -88,7 +89,7 @@ initialize things:
    `"Server Address      [Server Address]"` (selectable, auto-filled to default server)  
    `"Password            [Password]"` (selectable)  
    `         "Advanced"`(selectable, Not speccing now)  
-   `         "Connect"` 
+   `         "Connect"`  
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced server setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen.
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to a server, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
