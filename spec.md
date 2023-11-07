@@ -54,24 +54,31 @@ initialize things:
  - On first boot, PumpBot will open in a "Welcome!" screen, saying "Welcome to\nPumpBot!" in a "Large" font, 8px from the top, with "Press ⤓ To Continue" in "Standard" font 8px from the bottom of the screen. After 5 seconds, that text will change out to other languages in order (TBD, likely EN, ZH, JA, RU, ES, CAN.), drawing over the previous text from left to right with a linear progression of about 0.5s. 
  - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left" into Setup Screen 0.
  - Setup Screen 0
+ ![Screen 0](/spec-assets/setup-0-en.png)
     - "Medium" text 8px from the top, reading "Choose your Language", with a Menu Option 64px from the top, reading...  
     `"Language      [Language]"`  
-    The languages can be scrolled through with the encoder, and selected by pressing the encoder switch. The language of this screen will change whenever the language is selected. 
-    - There will be a "Screen Guide" displaying "Back" on the left, "Apply" on the right. Pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 1.
+    The languages can be scrolled through and selected by turning the encoder. The menu will already be highlighted, as it is the only menu on the screen. The language of this screen will change as soon as the language is selected.
+    - There will be a "Screen Guide" displaying "Back" on the left, "Next" on the right. Pressing SW1 (underneath "Next") will apply changes and immediately transition to Setup Screen 1.
     If nothing is pressed within 30 seconds or SW0 (underneath "Back") is pressed, the screen will "Swipe Right" back into the "Welcome!" screen.
  - Setup Screen 1
+ ![Screen 1](/spec-assets/setup-1-en.png)
     - "Medium" text 8px from the top, reading "How would you like to\nsetup PumpBot?", with 2 "Centered Menu Options", 64px from the top, reading...  
     `"Wi-Fi Setup"`  
     `"Standalone Setup"`  
     In a "Tooltip", "Set up PumpBot by connecting another device" will be shown when "Wi-Fi Setup" is highlighted, and "Set up PumpBot without connecting another device" will be shown when "Standalone Setup" is highlighted.
     If "Wi-Fi Setup" is selected, transition immediately to Setup Screen 2. If "Standalone Setup" is selected, "Swipe Left" transition into menu 3. 
-    - There will be no "Screen Guide".
     - There will be a "Screen Guide" displaying "Back" on the left and "OK" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 0, and pressing SW1 (underneath "OK") will select whatever "Centered Menu Option" is highlighted.
  - Setup Screen 2
+ ![Screen 2](/spec-assets/setup-2-en.png)
     - "Medium" text, dead center of the screen space above the "Screen Guide", reading "Starting Wi-Fi Network...".
     - There will be a "Screen Guide" displaying "Cancel" on the left and nothing on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1. Once the Wi-Fi network has initialized, the screen will immediately transition to Setup Screen 2a.
  - Setup Screen 2a
-    - "Standard" text, "Connect to this Wi-Fi network to configure PumpBot:", with a unselectable menu option underneath with the network name, as well as "Open this URL in your web browser:", with another unselectable menu option underneath with a URL hosted by PumpBot that's used to configure settings. All of this will be centered to the screen space above the "Screen Guide".
+ ![Screen 2a](/spec-assets/setup-2a-en.png)
+    - "Standard" text 8px from the top, reading "Connect to this Wi-Fi network\nto configure PumpBot:", with 3 unselectable Menu Options starting 64px from the top, reading...  
+    `"[Network Name]"`  
+    `"Open this URL in a web browser:"`  
+    `"[URL]"`
+    , with another unselectable menu option underneath with a URL hosted by PumpBot that's used to configure settings. All of this will be centered to the screen space above the "Screen Guide".
     - There will be a "Screen Guide" displaying "Cancel" on the left and "Apply" on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1 after summoning a "Tooltip" reading "Stop Wi-Fi Setup?\n(This may take a few seconds)", requiring the user to press SW0 again before transitioning the screen, and pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 7 after summoning a "Tooltip" reading "Stop Wi-Fi Setup and apply all saved changes made on the website?\n(This may take a few seconds)", requiring the user to press SW1 again before transitioning the screen.
  - Screen 3
    - "Medium" text 8px from the top, reading "Wi-Fi Settings", with "Standard" text reading "Searching..." underneath. As soon as Wi-Fi networks are found or the search times out, "Searching..." will be replaced by a list of availible networks, plus a "Manual/Advanced Setup" option, in menu options. They can be scrolled through with the encoder, and selected by pressing the encoder switch. When a Wi-Fi network or "Manual/Advanced Setup" is selected, the screen will immediately transition to Setup Screen 3a.
