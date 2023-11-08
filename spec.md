@@ -80,8 +80,10 @@ initialize things:
     `"[URL]"`
     , with another unselectable menu option underneath with a URL hosted by PumpBot that's used to configure settings. All of this will be centered to the screen space above the "Screen Guide".
     - There will be a "Screen Guide" displaying "Cancel" on the left and "Apply" on the right. Pressing SW0 (underneath "Cancel") will bring you back to Setup Screen 1 after summoning a "Tooltip" reading "Stop Wi-Fi Setup?\n(This may take a few seconds)", requiring the user to press SW0 again before transitioning the screen, and pressing SW1 (underneath "Apply") will apply changes and immediately transition to Setup Screen 7 after summoning a "Tooltip" reading "Stop Wi-Fi Setup and apply all saved changes made on the website?\n(This may take a few seconds)", requiring the user to press SW1 again before transitioning the screen.
- - Screen 3
-   - "Medium" text 8px from the top, reading "Wi-Fi Settings", with "Standard" text reading "Searching..." underneath. As soon as Wi-Fi networks are found or the search times out, "Searching..." will be replaced by a list of availible networks, plus a "Manual/Advanced Setup" option, in menu options. They can be scrolled through with the encoder, and selected by pressing the encoder switch. When a Wi-Fi network or "Manual/Advanced Setup" is selected, the screen will immediately transition to Setup Screen 3a.
+ - Screen 3  
+  ![Screen 3, searching for networks](/spec-assets/setup-3-search-en.png)
+  ![Screen 3, listing found networks](/spec-assets/setup-3-list-en.png)
+   - "Medium" text 8px from the top, reading "Wi-Fi Settings", with Menu Option reading "Searching..." underneath. As soon as Wi-Fi networks are found or the search times out, "Searching..." will be replaced by a list of availible networks, plus a "Manual/Advanced Setup" option, in menu options. They can be scrolled through with the encoder, and selected by pressing the encoder switch. When a Wi-Fi network or "Manual/Advanced Setup" is selected, the screen will immediately transition to Setup Screen 3a.
    - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 1, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5.
  - Screen 3a
    - "Medium" text 8px from the top, reading "Wi-Fi Settings", with 4 menu options underneath, reading...  
