@@ -50,7 +50,7 @@ initialize things:
 - Unless specified, "Large" font is 32/40px, "Medium" font is 24/32px, "Standard" font is 20/24px, and "Small" text is 16/20px. all sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text will not coexist in the same text field, but if it does, default to the size of the first character.
 
 ### Program:
- - Starts inside of VM, main UI/UX of PumpBot.
+ - Starts inside of VM, main UI/UX of PumpBot.  
  ![Welcome Screen](/spec-assets/welcome-en.png)
  - On first boot, PumpBot will open in a "Welcome!" screen, saying "Welcome to\nPumpBot!" in a "Large" font, 8px from the top, with "Press ⤓ To Continue" in "Standard" font 8px from the bottom of the screen. After 5 seconds, that text will change out to other languages in order (TBD, likely EN, ZH, JA, RU, ES, CAN.), drawing over the previous text from left to right with a linear progression of about 0.5s. 
  - After ⤓ (ENC-SW) is pressed, the screen will stop updating, then "Swipe Left" into Setup Screen 0.
@@ -87,7 +87,7 @@ initialize things:
    - "Medium" text 8px from the top, reading "Wi-Fi Settings", with Menu Option reading "Searching..." underneath. As soon as Wi-Fi networks are found or the search times out, "Searching..." will be replaced by a list of availible networks, plus a "Manual/Advanced Setup" option, in menu options. They can be scrolled through with the encoder, and selected by pressing the encoder switch. When a Wi-Fi network or "Manual/Advanced Setup" is selected, the screen will immediately transition to Setup Screen 3a.
    - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 1, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5.
 
- - Screen 3a
+ - Screen 3a  
  ![Screen 3a](/spec-assets/setup-3a-en.png)
    - "Medium" text 8px from the top, reading "Wi-Fi Settings", with 4 menu options underneath, reading...  
    `"Network             [Network Name]"` (selectable, network name auto-filled if a wi-fi network is selected)  
@@ -97,7 +97,7 @@ initialize things:
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced wi-fi setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen. 
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to Wi-Fi, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
- - Screen 4 (visually a clone of Screen 3a)
+ - Screen 4 (visually a clone of Screen 3a)  
  ![Screen 4](/spec-assets/setup-4-en.png)
    - "Medium" text 8px from the top, reading "Server Settings", with 4 menu options underneath, reading...  
    `"Server IP           [Server IP]"` (selectable, auto-filled to default server)  
@@ -107,20 +107,20 @@ initialize things:
     Selecting the first 2 menu options will bring up a text entry screen, using the rotary encoder to scroll between and select characters. Selecting the 3rd menu option will go into an advanced server setup screen. These will not be covered here.
     Selecting the 4th menu option will attempt a connection with the current network and provided password, freezing the current screen and changing "Connect" to "Connecting..." and then either to "Connected!" before transitioning to Setup Screen 4 after a 1s delay, or to "Connection Failed!" before changing back to "Connect" after a 1s delay, then unfreezing the screen.
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 3, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 5, after summoning a "Tooltip" reading "Are you sure? If you aren't connected to a server, you won't be able to use any online features of PumpBot.", requiring the user to press SW1 again before transitioning the screen.
- - Screen 5
+ - Screen 5  
  ![Screen 5](/spec-assets/setup-5-en.png)
    - "Medium" text 8px from the top, reading "Display Settings", with 2 menu options underneath, reading...  
     `"Brightness  [Brightness]"`  
     `"Theme       [Light/Dark Theme]"`  
     Both menu options are selectable, the first menu option will change the screen brightness when selected(gradation tbd, prolly 0-100%), changing both the number on the right side of the menu and the actual screen brightness in realtime, when you turn the encoder. The 2nd menu option will do the same, but cycle between menu themes and update as fast as possible. No guarantee in speed of that since it'll need to re-render the whole screen. 
     - There will be a "Screen Guide" displaying "Back" on the left and "Next" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 4, and pressing SW1 (underneath "Next") will immediately transition to Setup Screen 6.
- - Screen 6
+ - Screen 6  
  ![Screen 6](/spec-assets/setup-6-en.png)
    - "Medium" text 8px from the top, reading "Add-On Settings", with 1 menu option underneath, reading...  
     `"Pressure Unit   [psi/bar]"`  
     This menu option will cycle between units of pressure, this will be the display pressure of the "MPRLS" sensor.
     - There will be a "Screen Guide" displaying "Back" on the left and "Finish" on the right. Pressing SW0 (underneath "Back") will bring you to Setup Screen 5, and pressing SW1 (underneath "Finish") will immediately transition to Setup Screen 7.
- - Screen 7
+ - Screen 7  
  ![Screen 7](/spec-assets/setup-7-en.png)
    - "Large" text 8px from the top, reading "Setup Complete!", with "Press ⤓ To Continue" in "Standard" font 8px from the bottom of the screen, mocking the Welcome screen's layout. After ⤓ is pressed, "Swipe Left" transition to the Home Screen.
    - There will be no "Screen Guide".
