@@ -32,6 +32,17 @@ initialize things:
 #### reset
 - reinitialize the VM, run the program, and return to the BIOS menu if VM exits unsuccessfully
 
+### LED PWM
+- simple abstracted system to "render" simple command into LED brightness values for the RGB LEDs on the board.
+Functions:  
+- on() - Turns LEDs on at the last displayed color or using the last mode, defaults to the User color/mode on boot.
+- off() - Turns LEDs off and saves current color and mode to be used for on().
+- mode(time, color0, color1, brightness) - Sets color/mode and mode arguments. color0/1 are standard 24-bit (8bpc) color values. brightness is 8 bits, treated as 0 to 1.
+Modes: (all of these use 16bpc color for smoother fading and brightness, but the arguments are still 8 bpc. final PWM output is 16 bits.)  
+ - solid(t, color0, color1, b) - Sets color to color0 indefinitely, multiplied by brightness. argument t should be set to 0, and color1 is ignored.
+ - fade(t, color0, color1, b) - sets color to color0 and fades linearly to color1 in t time, then fades back to color0. Loops indefinitely. final value from the fade math gets multiplied by b.
+ - rainbow(t, color0, color1, b) - Hue cycles around the color circle at 1 rotation taking t amount of time. final value gets multiplied by b. color0 and color1 are ignored.
+
 ### HID Standardization:
  - SW0 will always be used for leftward operations outside of the home menu (as in, a "back button"), used as on/off in main menu
  - Encoder button will always be used to select a menu item that user can change the value of outside of the home menu, used to switch between what channel you're controlling in main menu. 
