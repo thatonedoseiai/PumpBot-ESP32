@@ -74,7 +74,7 @@ void app_main(void) {
 		.pull_up_en = true,
 	};
 	static PRG loaded_prg;
-	prg_init(&loaded_prg);
+	// prg_init(&loaded_prg);
 	esp_vfs_littlefs_conf_t conf = {
 		.base_path = "/mainfs",
 		.partition_label = "filesystem",
@@ -142,9 +142,10 @@ void app_main(void) {
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
-	for(int n=0;text[n]!=0;n++) {
+	// for(int n=0;text[n]!=0;n++) {
+	for(int n=0;line[n]!=0;n++) {
 		FT_Set_Transform(typeFace, NULL, &offset);
-		FT_ERR_HANDLE(FT_Load_Char(typeFace, text[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V), "FT_Load_Char");
+		FT_ERR_HANDLE(FT_Load_Char(typeFace, line[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V), "FT_Load_Char");
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {

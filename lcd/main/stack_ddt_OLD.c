@@ -26,7 +26,7 @@ void run(PRG* _p) {
 
 	float res;
 
-	#define NEXT() _p->pc++; goto *ops[_p->prg[_p->pc-1]]
+	#define NEXT() goto *ops[_p->prg[_p->pc++]]
 nop:
 sleep:
 	NEXT();
@@ -46,96 +46,79 @@ itof:
 	float x = (float) _p->stack[_p->sp];
 	_p->stack[_p->sp] = *(uint32_t*)&x; 
 	NEXT();
-iadd:
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp+1] + _p->stack[_p->sp]; 
+iadd: 
+	_p->stack[_p->sp] = _p->stack[_p->sp--] + _p->stack[_p->sp]; 
 	NEXT();
 isub: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp] - _p->stack[_p->sp+1]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp-1] - _p->stack[_p->sp--]; 
 	NEXT();
-imul:
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp+1] * _p->stack[_p->sp]; 
+imul: 
+	_p->stack[_p->sp] = _p->stack[_p->sp--] * _p->stack[_p->sp]; 
 	NEXT();
-idiv:
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp] / _p->stack[_p->sp+1]; 
+idiv: 
+	_p->stack[_p->sp] = _p->stack[_p->sp-1] / _p->stack[_p->sp--]; 
 	NEXT();
 fadd:
-	_p->sp--;
-	res = (((float*)_p->stack)[_p->sp+1] + ((float*)_p->stack)[_p->sp]);
+	res = (((float*)_p->stack)[_p->sp--] + ((float*)_p->stack)[_p->sp]);
 	_p->stack[_p->sp] = *(uint32_t*)&res;
 	NEXT();
 fsub:
-	_p->sp--;
-	res = (((float*)_p->stack)[_p->sp] - ((float*)_p->stack)[_p->sp+1]);
+	res = (((float*)_p->stack)[_p->sp-1] - ((float*)_p->stack)[_p->sp--]);
 	_p->stack[_p->sp] = *(uint32_t*)&res;
 	NEXT();
 fmul: 
-	_p->sp--;
-	res = (((float*)_p->stack)[_p->sp+1] * ((float*)_p->stack)[_p->sp]);
+	res = (((float*)_p->stack)[_p->sp--] * ((float*)_p->stack)[_p->sp]);
 	_p->stack[_p->sp] = *(uint32_t*)&res; 
 	NEXT();
 fdiv: 
-	_p->sp--;
-	res = (((float*)_p->stack)[_p->sp] / ((float*)_p->stack)[_p->sp+1]);
+	res = (((float*)_p->stack)[_p->sp-1] / ((float*)_p->stack)[_p->sp--]);
 	_p->stack[_p->sp] = *(uint32_t*)&res; 
 	NEXT();
-pushi32:
-	_p->sp++;
-	_p->stack[_p->sp] = *(uint32_t*)(_p->prg + _p->pc);
+pushi32: 
+	_p->stack[++_p->sp] = *(uint32_t*)(_p->prg + _p->pc);
 	_p->pc += 4; 
 	NEXT();
-pushi16:
-	_p->sp++;
-	_p->stack[_p->sp] = (uint32_t)(*(uint16_t*)(_p->prg + _p->pc));
+pushi16: 
+	_p->stack[++_p->sp] = (uint32_t)(*(uint16_t*)(_p->prg + _p->pc));
 	_p->pc += 2; 
 	NEXT();
-swap:
+swap: 
 	uint32_t k = _p->stack[_p->sp];
 	_p->stack[_p->sp] = _p->stack[_p->sp-1];
 	_p->stack[_p->sp-1] = k; 
 	NEXT();
-
 beq:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] == _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] == _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc); // add 2 for the 2 bytes for args
 	}
 	_p->pc += 2;
 	NEXT();
 bgt:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] > _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] > _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc);
 	}
 	_p->pc += 2;
 	NEXT();
 blt:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] < _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] < _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc);
 	}
 	_p->pc += 2;
 	NEXT();
 bge:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] >= _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] >= _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc);
 	}
 	_p->pc += 2;
 	NEXT();
 ble:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] <= _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] <= _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc);
 	}
 	_p->pc += 2;
 	NEXT();
 bne:
-	_p->sp--;
-	if(_p->stack[_p->sp+1] != _p->stack[_p->sp]) {
+	if(_p->stack[_p->sp] != _p->stack[--_p->sp]) {
 		_p->pc += *(int16_t*)(_p->prg + _p->pc);
 	}
 	_p->pc += 2;
@@ -144,21 +127,17 @@ jmp:
 	_p->pc += *(int16_t*)(_p->prg + _p->pc) + 2; 
 	NEXT();
 dup: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->stack[_p->sp]; 
+	_p->stack[++_p->sp] = _p->stack[_p->sp]; 
 	NEXT();
 
 andb: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp+1] & _p->stack[_p->sp]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp--] & _p->stack[_p->sp]; 
 	NEXT();
 orb: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp+1] | _p->stack[_p->sp]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp--] | _p->stack[_p->sp]; 
 	NEXT();
 xorb: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp+1] ^ _p->stack[_p->sp]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp--] ^ _p->stack[_p->sp]; 
 	NEXT();
 notb: 
 	_p->stack[_p->sp] = ~_p->stack[_p->sp]; 
@@ -168,35 +147,28 @@ store:
 	_p->locals[*(unsigned char*)(_p->prg+(_p->pc++))] = _p->stack[_p->sp--]; 
 	NEXT();
 load: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[*(unsigned char*)(_p->prg+(_p->pc))]; 
-	_p->pc++;
+	_p->stack[++_p->sp] = _p->locals[*(unsigned char*)(_p->prg+(_p->pc++))]; 
 	NEXT();
 
 pushpc: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->pc; 
+	_p->stack[++_p->sp] = _p->pc; 
 	NEXT();
 writepc: 
-	_p->pc = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->pc = _p->stack[_p->sp--]; 
 	NEXT();
 pushsp: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->sp; 
+	_p->stack[++_p->sp] = _p->sp; 
 	NEXT();
 writesp: 
-	_p->sp = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->sp = _p->stack[_p->sp--]; 
 	NEXT();
 jsr: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->pc; 
+	_p->stack[++_p->sp] = _p->pc; 
 	_p->stack[_p->sp]+=2;
 	goto jmp; 
 jsrs: 
-	uint32_t newpc = _p->stack[_p->sp];
-	_p->stack[_p->sp] = _p->pc; 
+	uint32_t newpc = _p->stack[_p->sp--];
+	_p->stack[++_p->sp] = _p->pc; 
 	_p->pc = newpc; 
 	NEXT();
 pushab: 
@@ -212,20 +184,16 @@ sprint:
 	printf("%s\n", (char*) _p->prg+_p->stack[_p->sp]); 
 	NEXT();
 lsl: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp] << _p->stack[_p->sp+1]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp-1] << _p->stack[_p->sp--]; 
 	NEXT();
 lsr: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp] >> _p->stack[_p->sp+1]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp-1] >> _p->stack[_p->sp--]; 
 	NEXT();
 mod: 
-	_p->sp--;
-	_p->stack[_p->sp] = _p->stack[_p->sp] % _p->stack[_p->sp+1]; 
+	_p->stack[_p->sp] = _p->stack[_p->sp-1] % _p->stack[_p->sp--]; 
 	NEXT();
 pushi8: 
-	_p->sp++;
-	_p->stack[_p->sp] = (uint32_t)(*(uint8_t*)(_p->prg + _p->pc));
+	_p->stack[++_p->sp] = (uint32_t)(*(uint8_t*)(_p->prg + _p->pc));
 	_p->pc += 1; 
 	NEXT();
 negf: 
@@ -235,36 +203,28 @@ neg:
 	_p->stack[_p->sp] = -_p->stack[_p->sp]; 
 	NEXT();
 c0: 
-	_p->sp++;
-	_p->stack[_p->sp] = 0; 
+	_p->stack[++_p->sp] = 0; 
 	NEXT();
-c1:
-	_p->sp++;
-	_p->stack[_p->sp] = 1; 
+c1: 
+	_p->stack[++_p->sp] = 1; 
 	NEXT();
 c2: 
-	_p->sp++;
-	_p->stack[_p->sp] = 2; 
+	_p->stack[++_p->sp] = 2; 
 	NEXT();
 c3: 
-	_p->sp++;
-	_p->stack[_p->sp] = 3; 
+	_p->stack[++_p->sp] = 3; 
 	NEXT();
 c4: 
-	_p->sp++;
-	_p->stack[_p->sp] = 4; 
+	_p->stack[++_p->sp] = 4; 
 	NEXT();
 c5: 
-	_p->sp++;
-	_p->stack[_p->sp] = 5; 
+	_p->stack[++_p->sp] = 5; 
 	NEXT();
 c6: 
-	_p->sp++;
-	_p->stack[_p->sp] = 6; 
+	_p->stack[++_p->sp] = 6; 
 	NEXT();
 c7: 
-	_p->sp++;
-	_p->stack[_p->sp] = 7; 
+	_p->stack[++_p->sp] = 7; 
 	NEXT();
 malloca: 
 	_p->stack[_p->sp] = (uint32_t)malloc(_p->stack[_p->sp]);
@@ -273,8 +233,7 @@ malloca:
 	// for(int i=0;i<10;++i) { ((uint32_t*)_p->stack[_p->sp])[i] = 30-i; } 
 	NEXT();
 freea: 
-	free((uint32_t*)_p->stack[_p->sp]); 
-	_p->sp--;
+	free((uint32_t*)_p->stack[_p->sp--]); 
 	NEXT();
 indexab: 
 	_p->stack[_p->sp] = *((unsigned char*)(_p->stack[_p->sp]+_p->stack[_p->sp-1])); 
@@ -286,51 +245,47 @@ indexaw:
 	_p->stack[_p->sp] = *((uint32_t*)(_p->stack[_p->sp]+_p->stack[_p->sp-1])); 
 	NEXT();
 storea: 
-	(*(uint32_t*)(_p->stack[_p->sp-2]+_p->stack[_p->sp-1])) = _p->stack[_p->sp];
-	_p->sp--; 
+	(*(uint32_t*)(_p->stack[_p->sp-2]+_p->stack[_p->sp-1])) = _p->stack[_p->sp]; _p->sp--; 
 	NEXT();
 
 store0: 
-	_p->locals[0] = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->locals[0] = _p->stack[_p->sp--]; 
 	NEXT();
 store1: 
-	_p->locals[1] = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->locals[1] = _p->stack[_p->sp--]; 
 	NEXT();
 store2: 
-	_p->locals[2] = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->locals[2] = _p->stack[_p->sp--]; 
 	NEXT();
 store3: 
-	_p->locals[3] = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->locals[3] = _p->stack[_p->sp--]; 
 	NEXT();
 store4: 
-	_p->locals[4] = _p->stack[_p->sp]; 
-	_p->sp--;
+	_p->locals[4] = _p->stack[_p->sp--]; 
 	NEXT();
 load0: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[0]; 
+	_p->stack[++_p->sp] = _p->locals[0]; 
 	NEXT();
 load1: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[1]; 
+	_p->stack[++_p->sp] = _p->locals[1]; 
 	NEXT();
 load2: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[2]; 
+	_p->stack[++_p->sp] = _p->locals[2]; 
 	NEXT();
 load3: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[3]; 
+	_p->stack[++_p->sp] = _p->locals[3]; 
 	NEXT();
 load4: 
-	_p->sp++;
-	_p->stack[_p->sp] = _p->locals[4]; 
+	_p->stack[++_p->sp] = _p->locals[4]; 
 	NEXT();
 	halt:
+}
+
+void prg_init(PRG* k) {
+	k->pc = 0;
+	k->stack = malloc(STACK_SIZE * sizeof(uint32_t));
+	k->locals = malloc(NUMLOCALS * sizeof(uint32_t));
+	k->sp = -1;
 }
 
 // int main(int argc, char* argv[]) {
@@ -351,7 +306,7 @@ load4:
 // 	unsigned char* buffer = mmap(NULL, statbuf.st_size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fileno(inputfile), 0);
 // 	buffer[statbuf.st_size] = 0xff;
 // 	fclose(inputfile);
-// 
+
 // 	PRG k = {
 // 		.pc = 0,
 // 		.stack = malloc(STACK_SIZE * sizeof(uint32_t)),
@@ -359,9 +314,9 @@ load4:
 // 		.sp = -1,
 // 		.prg = buffer,
 // 	};
-// 
+
 // 	run(&k);
-// 
+
 // 	if(munmap(buffer, statbuf.st_size)) {
 // 		printf("unmapping failed!\n");
 // 		return (1);
