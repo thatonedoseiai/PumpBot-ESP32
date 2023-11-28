@@ -17,8 +17,6 @@
 #define PIN_NUM_ENC_B 19
 #define PIN_NUM_ENC_BTN 36
 #define SPRITE_LIMIT 16
-extern const uint8_t MeiryoUI_ttf_start[] asm("_binary_MeiryoUImin_ttf_start");
-extern const uint8_t MeiryoUI_ttf_end[] asm("_binary_MeiryoUImin_ttf_end");
 const spi_bus_config_t buscfg={
 	.miso_io_num=PIN_NUM_MISO,
 	.mosi_io_num=PIN_NUM_MOSI,
@@ -28,7 +26,6 @@ const spi_bus_config_t buscfg={
 	.max_transfer_sz=240*320*3+8
 };
 const int fontSize = 32;
-const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
 const int startX = 20;
 const int startY = 20;
 const uint24_RGB fillColor = {
@@ -55,20 +52,21 @@ const spi_device_interface_config_t devcfg={
 	.queue_size=7,							//We want to be able to queue 7 transactions at a time
 	.pre_cb=lcd_spi_pre_transfer_callback,	//Specify pre-transfer callback to handle D/C line
 };
+static esp_vfs_littlefs_conf_t conf = {
+    .base_path = "/mainfs",
+    .partition_label = "filesystem",
+    .format_if_mount_failed = true,
+    .dont_mount = false,
+};
 
-int inits(spi_device_handle_t &spi) {
+int inits(spi_device_handle_t* spi) {
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, spi));
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
 	lcd_init(*spi);
 	init_oam();
+	// prg_init(&loaded_prg);
 
-	esp_vfs_littlefs_conf_t conf = {
-		.base_path = "/mainfs",
-		.partition_label = "filesystem",
-		.format_if_mount_failed = true,
-		.dont_mount = false,
-	};
 	esp_err_t ret = esp_vfs_littlefs_register(&conf);
 	if (ret)
 		goto done;
@@ -89,8 +87,7 @@ void app_main(void) {
 	spi_device_handle_t spi;
 
 	// initializations
-	inits();
-	// prg_init(&loaded_prg);
+	esp_err_t ret = inits(&spi);
 	if(ret!=ESP_OK) {
 		ets_printf("failed to mount filesystem!\n");
 		return;
@@ -115,7 +112,6 @@ void app_main(void) {
 		*pos = '\0';
 	}
 	ets_printf("read out: %s", line);
-	esp_vfs_littlefs_unregister(conf.partition_label);
 
 	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
@@ -143,10 +139,14 @@ void app_main(void) {
 	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Memory_Face(lib, MeiryoUI_ttf_start, fontBinSize, 0, &typeFace), "FT_New_Memory_Face");
+    FT_ERR_HANDLE(FT_New_Face(lib, "/mainfs/MeiryoUImin.ttf", 0, &typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
+    if (typeFace == NULL) {
+        ets_printf("you suck.\n");
+        return;
+    }
 	slot = typeFace->glyph;
 	offset.x = startX << 6;
 	offset.y = startY << 6;
@@ -169,6 +169,7 @@ void app_main(void) {
 		offset.y += slot->advance.y;
 	}
 
+	esp_vfs_littlefs_unregister(conf.partition_label);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
