@@ -74,6 +74,8 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info) {
 	ESP_ERROR_CHECK(rotary_encoder_init(info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(info, false));
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
+
+	gpio_config(&btn_conf);
 done:
 	return ret;
 }
@@ -141,7 +143,6 @@ void app_main(void) {
 	}
 	ets_printf("read out: %s", line);
 
-	gpio_config(&btn_conf);
 
 	send_color(spi, fillColor);
 
@@ -149,29 +150,17 @@ void app_main(void) {
 	ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
 	QueueHandle_t event_queue = rotary_encoder_create_queue(); 
-    rotary_encoder_event_t event = { 0 };
-    rotary_encoder_state_t state = { 0 };
+	rotary_encoder_event_t event = { 0 };
+	rotary_encoder_state_t state = { 0 };
 	while(gpio_get_level(PIN_NUM_SW0)) {
-        if(xQueueReceive(event_queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            ets_printf("Event: position %d, direction %s\n", event.state.position,
-                      event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-        } else {
-            ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
-            ets_printf("Poll: position %d, direction %s\n", state.position,
-                     state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-        }
-        //vTaskDelay(1);
+		rotaryAction(event_queue, info, &event, &state, exampleCallback);
 	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
-    FT_ERR_HANDLE(FT_New_Face(lib, "/mainfs/MeiryoUImin.ttf", 0, &typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(lib, "/mainfs/MeiryoUImin.ttf", 0, &typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
-    if (typeFace == NULL) {
-        ets_printf("you suck.\n");
-        return;
-    }
 	slot = typeFace->glyph;
 	offset.x = startX << 6;
 	offset.y = startY << 6;
