@@ -25,7 +25,7 @@ const spi_bus_config_t buscfg={
 	.quadhd_io_num=-1,
 	.max_transfer_sz=240*320*3+8
 };
-const int fontSize = 32;
+const int fontSize = 20;
 const int startX = 20;
 const int startY = 20;
 const uint24_RGB fillColor = {
@@ -59,7 +59,7 @@ static esp_vfs_littlefs_conf_t conf = {
     .dont_mount = false,
 };
 
-int inits(spi_device_handle_t* spi) {
+int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info) {
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, spi));
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
@@ -70,6 +70,10 @@ int inits(spi_device_handle_t* spi) {
 	esp_err_t ret = esp_vfs_littlefs_register(&conf);
 	if (ret)
 		goto done;
+
+	ESP_ERROR_CHECK(rotary_encoder_init(info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
+	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(info, false));
+	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
 done:
 	return ret;
 }
@@ -87,7 +91,7 @@ void app_main(void) {
 	spi_device_handle_t spi;
 
 	// initializations
-	esp_err_t ret = inits(&spi);
+	esp_err_t ret = inits(&spi, &info);
 	if(ret!=ESP_OK) {
 		ets_printf("failed to mount filesystem!\n");
 		return;
@@ -113,9 +117,6 @@ void app_main(void) {
 	}
 	ets_printf("read out: %s", line);
 
-	ESP_ERROR_CHECK(rotary_encoder_init(&info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
-	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, false));
-	ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
 	gpio_config(&btn_conf);
 
 	send_color(spi, fillColor);
