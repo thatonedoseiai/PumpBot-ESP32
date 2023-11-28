@@ -13,8 +13,8 @@
 
 #define PIN_NUM_SW0 0
 #define PIN_NUM_SW1 4
-#define PIN_NUM_ENC_A 18
-#define PIN_NUM_ENC_B 19
+#define PIN_NUM_ENC_A 34 // 18
+#define PIN_NUM_ENC_B 35 // 19
 #define PIN_NUM_ENC_BTN 36
 #define SPRITE_LIMIT 16
 const spi_bus_config_t buscfg={
@@ -78,6 +78,30 @@ done:
 	return ret;
 }
 
+int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
+    (void) args;
+
+    if(isNotEvent) {
+        ets_printf("Poll: position %d, direction %s\n", state->position,
+               state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+    } else {
+        ets_printf("Event: position %d, direction %s\n", state->position,
+                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+    }
+    return 0;
+}
+
+int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_encoder_event_t* event, rotary_encoder_state_t* state, int(*callback)(rotary_encoder_state_t*, void*, char), void* args) {
+    if(xQueueReceive(event_queue, event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        return callback(&(event->state), args, 0);
+    } else {
+        //rotary_encoder_state_t state = { 0 };
+        ESP_ERROR_CHECK(rotary_encoder_get_state(info, state));
+        return callback(state, args, 1);
+    }
+    //vTaskDelay(1);
+}
+
 void app_main(void) {
 	static FT_Library lib;
 	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
@@ -125,18 +149,18 @@ void app_main(void) {
 	ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
 	QueueHandle_t event_queue = rotary_encoder_create_queue(); 
+    rotary_encoder_event_t event = { 0 };
+    rotary_encoder_state_t state = { 0 };
 	while(gpio_get_level(PIN_NUM_SW0)) {
-		rotary_encoder_event_t event = { 0 };
-		if(xQueueReceive(event_queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-			ets_printf("Event: position %d, direction %s\n", event.state.position,
-					  event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-		} else {
-			rotary_encoder_state_t state = { 0 };
-			ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
-			ets_printf("Poll: position %d, direction %s\n", state.position,
-					 state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-		}
-		//vTaskDelay(1);
+        if(xQueueReceive(event_queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            ets_printf("Event: position %d, direction %s\n", event.state.position,
+                      event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+        } else {
+            ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
+            ets_printf("Poll: position %d, direction %s\n", state.position,
+                     state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+        }
+        //vTaskDelay(1);
 	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
