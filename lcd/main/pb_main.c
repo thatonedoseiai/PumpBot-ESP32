@@ -27,7 +27,23 @@ const spi_bus_config_t buscfg={
 	.quadhd_io_num=-1,
 	.max_transfer_sz=240*320*3+8
 };
-
+const int fontSize = 32;
+const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
+const int startX = 20;
+const int startY = 20;
+const uint24_RGB fillColor = {
+	.pixelR = 0x10,
+	.pixelG = 0,
+	.pixelB = 0x30,
+};
+const gpio_config_t btn_conf = {
+	.pin_bit_mask = ((1ULL << PIN_NUM_SW0) | 
+					(1ULL << PIN_NUM_SW1)),
+					// (1ULL << PIN_NUM_ENC_A)|
+					// (1ULL << PIN_NUM_ENC_B)),
+	.mode = GPIO_MODE_INPUT,
+	.pull_up_en = true,
+};
 const spi_device_interface_config_t devcfg={
 #ifdef CONFIG_LCD_OVERCLOCK
 	.clock_speed_hz=40*1000*1000,			//Clock out at 40 MHz
@@ -40,41 +56,13 @@ const spi_device_interface_config_t devcfg={
 	.pre_cb=lcd_spi_pre_transfer_callback,	//Specify pre-transfer callback to handle D/C line
 };
 
-void app_main(void) {
-	ets_printf("starting app_main!\n");
-	spi_device_handle_t spi;
+int inits(spi_device_handle_t &spi) {
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
-	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, &spi));
+	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, spi));
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
-	lcd_init(spi);
+	lcd_init(*spi);
 	init_oam();
-	ets_printf("SPI and OAM initialized!\n");
-	static FT_Library lib;
-	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
-	static FT_GlyphSlot slot;
-	static FT_Vector offset;
-	static FT_Error error;
-	static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
-	static rotary_encoder_info_t info = { 0 };
-	const int fontSize = 32;
-	const FT_Long fontBinSize = MeiryoUI_ttf_end - MeiryoUI_ttf_start;
-	const int startX = 20;
-	const int startY = 20;
-	const uint24_RGB fillColor = {
-		.pixelR = 0x10,
-		.pixelG = 0,
-		.pixelB = 0x30,
-	};
-	const gpio_config_t btn_conf = {
-		.pin_bit_mask = ((1ULL << PIN_NUM_SW0) | 
-						(1ULL << PIN_NUM_SW1)),
-						// (1ULL << PIN_NUM_ENC_A)|
-						// (1ULL << PIN_NUM_ENC_B)),
-		.mode = GPIO_MODE_INPUT,
-		.pull_up_en = true,
-	};
-	static PRG loaded_prg;
-	// prg_init(&loaded_prg);
+
 	esp_vfs_littlefs_conf_t conf = {
 		.base_path = "/mainfs",
 		.partition_label = "filesystem",
@@ -82,6 +70,27 @@ void app_main(void) {
 		.dont_mount = false,
 	};
 	esp_err_t ret = esp_vfs_littlefs_register(&conf);
+	if (ret)
+		goto done;
+done:
+	return ret;
+}
+
+void app_main(void) {
+	static FT_Library lib;
+	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
+	static FT_GlyphSlot slot;
+	static FT_Vector offset;
+	static FT_Error error;
+	static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
+	static rotary_encoder_info_t info = { 0 };
+	static PRG loaded_prg;
+
+	spi_device_handle_t spi;
+
+	// initializations
+	inits();
+	// prg_init(&loaded_prg);
 	if(ret!=ESP_OK) {
 		ets_printf("failed to mount filesystem!\n");
 		return;
