@@ -10,7 +10,7 @@
 #include <rom/ets_sys.h>
 
 #include "ILIDriver.h"
-#include "pretty_effect.h"
+// #include "pretty_effect.h"
 
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd, bool keep_cs_active) {
 	esp_err_t ret;

@@ -60,7 +60,7 @@ static esp_vfs_littlefs_conf_t conf = {
     .dont_mount = false,
 };
 
-int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info) {
+int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib, FT_Face* typeFace) {
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, spi));
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
@@ -77,6 +77,11 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info) {
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
 
 	gpio_config(&btn_conf);
+
+    int error;
+	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImin.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	// size_t total = 0, used = 0;
 	// ret = esp_littlefs_info(conf.partition_label, &total, &used);
@@ -159,7 +164,7 @@ void app_main(void) {
 	spi_device_handle_t spi;
 
 	// initializations
-	esp_err_t ret = inits(&spi, &info);
+	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
     event_queue = rotary_encoder_create_queue(); 
 
 	if(ret!=ESP_OK) {
@@ -180,7 +185,6 @@ void app_main(void) {
 	if (pos) {
 		*pos = '\0';
 	}
-	ets_printf("read out: %s", line);
 
 
 	send_color(spi, fillColor);
@@ -192,12 +196,9 @@ void app_main(void) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
 
-	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(lib, "/mainfs/MeiryoUImin.ttf", 0, &typeFace), "FT_New_Face");
-	FT_ERR_HANDLE(FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
-	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
     uint24_RGB* spriteBuf;
+	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf), "draw_sprite");
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
