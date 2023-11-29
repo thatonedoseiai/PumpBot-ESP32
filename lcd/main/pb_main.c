@@ -6,6 +6,7 @@
 #include "oam.h"
 #include "rotenc.h"
 #include "stack_ddt.h"
+#include "utf8.h"
 
 #include "esp_littlefs.h"
 
@@ -76,6 +77,14 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info) {
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
 
 	gpio_config(&btn_conf);
+
+	// size_t total = 0, used = 0;
+	// ret = esp_littlefs_info(conf.partition_label, &total, &used);
+	// if (ret != ESP_OK) {
+	// 	ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
+	// } else {
+	// 	ets_printf("Partition size: total: %d, used: %d\n", total, used);
+	// }
 done:
 	return ret;
 }
@@ -104,31 +113,61 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
     //vTaskDelay(1);
 }
 
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf) {
+    FT_Vector offset;
+    FT_GlyphSlot slot;
+
+	slot = typeFace->glyph;
+	offset.x = startX << 6;
+	offset.y = startY << 6;
+
+    char* reader_head = string; // so that there is no modification
+    int err;
+    while (*reader_head != 0) {
+		FT_Set_Transform(typeFace, NULL, &offset);
+		err = FT_Load_Char(typeFace, decode_code_point(&reader_head), FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+        if(err)
+            return err;
+		(*spriteBuf) = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
+		for(int p=0;p<sz;p++) {
+			(*spriteBuf)[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
+			(*spriteBuf)[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
+			(*spriteBuf)[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+		}
+		FT_Int bmp_top = 240 - slot->bitmap_top;
+		init_sprite(*spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+
+		offset.x += slot->advance.x;
+		offset.y += slot->advance.y;
+	}
+
+    return 0;
+}
+
+// static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 void app_main(void) {
 	static FT_Library lib;
 	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
-	static FT_GlyphSlot slot;
-	static FT_Vector offset;
 	static FT_Error error;
-	static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 	static rotary_encoder_info_t info = { 0 };
 	static PRG loaded_prg;
+	static QueueHandle_t event_queue;
+	static rotary_encoder_event_t event = { 0 };
+	static rotary_encoder_state_t state = { 0 };
 
 	spi_device_handle_t spi;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info);
+    event_queue = rotary_encoder_create_queue(); 
+
 	if(ret!=ESP_OK) {
-		ets_printf("failed to mount filesystem!\n");
+		ets_printf("initializations failed!\n");
 		return;
 	}
-	size_t total = 0, used = 0;
-	ret = esp_littlefs_info(conf.partition_label, &total, &used);
-	if (ret != ESP_OK) {
-		ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
-	} else {
-		ets_printf("Partition size: total: %d, used: %d\n", total, used);
-	}
+
+
 	FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
 	if(f==NULL) {
 		ets_printf("failed to open file!\n");
@@ -146,12 +185,9 @@ void app_main(void) {
 
 	send_color(spi, fillColor);
 
-	ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
-	ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
+	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
+	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-	QueueHandle_t event_queue = rotary_encoder_create_queue(); 
-	rotary_encoder_event_t event = { 0 };
-	rotary_encoder_state_t state = { 0 };
 	while(gpio_get_level(PIN_NUM_SW0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
@@ -161,27 +197,8 @@ void app_main(void) {
 	FT_ERR_HANDLE(FT_Select_Charmap(typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
-	slot = typeFace->glyph;
-	offset.x = startX << 6;
-	offset.y = startY << 6;
-
-	// for(int n=0;text[n]!=0;n++) {
-	for(int n=0;line[n]!=0;n++) {
-		FT_Set_Transform(typeFace, NULL, &offset);
-		FT_ERR_HANDLE(FT_Load_Char(typeFace, line[n], FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V), "FT_Load_Char");
-		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
-		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
-		for(int p=0;p<sz;p++) {
-			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
-			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
-		}
-		FT_Int bmp_top = 240 - slot->bitmap_top;
-		init_sprite(spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-
-		offset.x += slot->advance.x;
-		offset.y += slot->advance.y;
-	}
+    uint24_RGB* spriteBuf;
+    FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf), "draw_sprite");
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));

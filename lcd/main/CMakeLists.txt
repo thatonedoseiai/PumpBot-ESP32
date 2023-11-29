@@ -4,6 +4,7 @@ set(srcs
     "pb_main.c"
     "rotenc.c"
     "stack_ddt.c"
+    "utf8.c"
     )
 
 idf_component_register(SRCS ${srcs}
