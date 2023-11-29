@@ -153,7 +153,7 @@ void app_main(void) {
 	rotary_encoder_event_t event = { 0 };
 	rotary_encoder_state_t state = { 0 };
 	while(gpio_get_level(PIN_NUM_SW0)) {
-		rotaryAction(event_queue, info, &event, &state, exampleCallback);
+		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
 
 	FT_ERR_HANDLE(FT_Init_FreeType(&lib), "FT_Init_Freetype");
