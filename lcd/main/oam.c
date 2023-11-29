@@ -36,8 +36,11 @@ int init_sprite(uint24_RGB* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX
 	sprite->flipX = flipX;
 	sprite->flipY = flipY;
 	sprite->draw = draw;
-	OAM_SPRITE_TABLE[find_empty_index(indices)] = sprite;
-	return 0;
+    int ind = find_empty_index(indices);
+    if (ind >= 0) {
+        OAM_SPRITE_TABLE[ind] = sprite;
+    }
+	return ind;
 }
 
 void draw_all_sprites(spi_device_handle_t spi) {

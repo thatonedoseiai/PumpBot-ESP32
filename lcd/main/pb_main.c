@@ -78,7 +78,9 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
     }
 }
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf) {
+// note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf, int* sprites) {
+
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -86,6 +88,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB
 	offset.x = startX << 6;
 	offset.y = startY << 6;
 
+    int i = 0;
     char* reader_head = string; // so that there is no modification
     int err;
     while (*reader_head != 0) {
@@ -101,7 +104,9 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB
 			(*spriteBuf)[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		init_sprite(*spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		int inx = init_sprite(*spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+        if (sprites)
+            sprites[i++] = inx;
 
 		offset.x += slot->advance.x;
 		offset.y += slot->advance.y;
@@ -158,8 +163,10 @@ void app_main(void) {
 
 
     uint24_RGB* spriteBuf;
+    int len = strlen(line);
+    int spriteArray[len];
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
-    FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf), "draw_sprite");
+    FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf, &spriteArray[0]), "draw_sprite");
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
