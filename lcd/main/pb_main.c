@@ -9,23 +9,10 @@
 #include "utf8.h"
 
 #include "esp_littlefs.h"
+#include "board_config.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
-#define PIN_NUM_SW0 0
-#define PIN_NUM_SW1 4
-#define PIN_NUM_ENC_A 34 // 18
-#define PIN_NUM_ENC_B 35 // 19
-#define PIN_NUM_ENC_BTN 36
-#define SPRITE_LIMIT 16
-const spi_bus_config_t buscfg={
-	.miso_io_num=PIN_NUM_MISO,
-	.mosi_io_num=PIN_NUM_MOSI,
-	.sclk_io_num=PIN_NUM_CLK,
-	.quadwp_io_num=-1,
-	.quadhd_io_num=-1,
-	.max_transfer_sz=240*320*3+8
-};
 const int fontSize = 20;
 const int startX = 20;
 const int startY = 20;
@@ -33,31 +20,6 @@ const uint24_RGB fillColor = {
 	.pixelR = 0x10,
 	.pixelG = 0,
 	.pixelB = 0x30,
-};
-const gpio_config_t btn_conf = {
-	.pin_bit_mask = ((1ULL << PIN_NUM_SW0) | 
-					(1ULL << PIN_NUM_SW1)),
-					// (1ULL << PIN_NUM_ENC_A)|
-					// (1ULL << PIN_NUM_ENC_B)),
-	.mode = GPIO_MODE_INPUT,
-	.pull_up_en = true,
-};
-const spi_device_interface_config_t devcfg={
-#ifdef CONFIG_LCD_OVERCLOCK
-	.clock_speed_hz=40*1000*1000,			//Clock out at 40 MHz
-#else
-	.clock_speed_hz=26*1000*1000,			//Clock out at 26.667 MHz
-#endif
-	.mode=0,								//SPI mode 0
-	.spics_io_num=PIN_NUM_CS,				//CS pin
-	.queue_size=7,							//We want to be able to queue 7 transactions at a time
-	.pre_cb=lcd_spi_pre_transfer_callback,	//Specify pre-transfer callback to handle D/C line
-};
-static esp_vfs_littlefs_conf_t conf = {
-    .base_path = "/mainfs",
-    .partition_label = "filesystem",
-    .format_if_mount_failed = true,
-    .dont_mount = false,
 };
 
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib, FT_Face* typeFace) {
@@ -111,11 +73,9 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
     if(xQueueReceive(event_queue, event, 50/portTICK_PERIOD_MS) == pdTRUE) {
         return callback(&(event->state), args, 0);
     } else {
-        //rotary_encoder_state_t state = { 0 };
         ESP_ERROR_CHECK(rotary_encoder_get_state(info, state));
         return callback(state, args, 1);
     }
-    //vTaskDelay(1);
 }
 
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf) {
@@ -156,7 +116,7 @@ void app_main(void) {
 	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
-	static PRG loaded_prg;
+	// static PRG loaded_prg;
 	static QueueHandle_t event_queue;
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
