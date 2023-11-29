@@ -11,8 +11,6 @@ idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS 
                         "."
                         "./freetype2"
-                        # EMBED_FILES
-                    #                         MeiryoUImin.ttf
 )
 
 # littlefs_create_partition_image(filesystem mainfs)
