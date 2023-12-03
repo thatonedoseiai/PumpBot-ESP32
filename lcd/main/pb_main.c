@@ -56,7 +56,6 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
 	lcd_init(*spi);
 	init_oam();
-	// prg_init(&loaded_prg);
 
 	esp_err_t ret = esp_vfs_littlefs_register(&conf);
 	if (ret)
@@ -161,7 +160,7 @@ void app_main(void) {
 	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
-	// static PRG loaded_prg;
+	static PRG loaded_prg;
 	static QueueHandle_t event_queue;
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
@@ -170,6 +169,7 @@ void app_main(void) {
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
+	prg_init(&loaded_prg);
     event_queue = rotary_encoder_create_queue(); 
 
 	if(ret!=ESP_OK) {
@@ -205,6 +205,8 @@ void app_main(void) {
 	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
+
+    runprgfile(&loaded_prg, "/mainfs/string");
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 

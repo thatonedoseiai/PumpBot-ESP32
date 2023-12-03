@@ -3,7 +3,10 @@
 #include <stdint.h>
 #include <sys/stat.h>
 // #include <sys/mman.h>
+#include <rom/ets_sys.h>
 #include "stack_ddt.h"
+#include "spi_flash_mmap.h"
+// #include "esp_partition_mmap.h"
 
 // uint32_t pc;
 // uint32_t* stack;
@@ -31,10 +34,10 @@ nop:
 sleep:
 	NEXT();
 iprint:
-	printf("0x%lx\n", _p->stack[_p->sp]);
+	ets_printf("0x%lx\n", _p->stack[_p->sp]);
 	NEXT();
 fprint:
-	printf("%lf\n", ((float*)_p->stack)[_p->sp]);
+	ets_printf("%lf\n", ((float*)_p->stack)[_p->sp]);
 	NEXT();
 pop: 
 	_p->sp--;
@@ -331,6 +334,37 @@ load4:
 	_p->stack[_p->sp] = _p->locals[4]; 
 	NEXT();
 	halt:
+}
+
+void prg_init(PRG* k) {
+	k->pc = 0;
+	k->stack = malloc(STACK_SIZE * sizeof(uint32_t));
+	k->locals = malloc(NUMLOCALS * sizeof(uint32_t));
+	k->sp = -1;
+}
+
+int runprgfile(PRG* k, char* prgname) {
+    FILE* infile = fopen(prgname, "r");
+    if(infile == NULL)
+        return 1;
+    struct stat statbuf;
+    if(fstat(fileno(infile), &statbuf) < 0)
+        return 2;
+    // unsigned char* buffer = spi_flash_mmap(NULL, statbuf.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fileno(infile), 0);
+    unsigned char* buffer = (unsigned char*) malloc(statbuf.st_size+1);
+    if (buffer == NULL)
+        return 2;
+    fgets((char*) buffer, statbuf.st_size, infile);
+    buffer[statbuf.st_size] = 0xff;
+    fclose(infile);
+
+    k->prg = buffer;
+    run(k);
+    free(buffer);
+    // if(spi_flash_munmap(buffer, statbuf.st_size)) {
+    //     return 1;
+    // }
+    return 0;
 }
 
 // int main(int argc, char* argv[]) {
