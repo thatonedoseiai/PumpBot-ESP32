@@ -27,38 +27,19 @@ const uint24_RGB fillColor = {
 	.pixelB = 0x30,
 };
 
-const wifi_config_t wifi_config = {
-    .ap = {
-        .ssid = "pumpy wifi",
-        .ssid_len = strlen("pumpy wifi"),
-        .channel = 1,
-        .password = "pumperslol",
-        .max_connection = 4,
-#ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
-        .authmode = WIFI_AUTH_WPA3_PSK,
-        .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
-#else /* CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT */
-        .authmode = WIFI_AUTH_WPA2_PSK,
-#endif
-        .pmf_cfg = {
-                .required = true,
-        // .authmode = WIFI_AUTH_OPEN; // if no password
-        },
-    },
-};
 
 static char connect_flag = 0;
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
 {
-    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
-    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-        // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
-    }
+    // if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+    //     wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+    //     // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
+    // } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+    //     wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+    //     // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
+    // }
     connect_flag = 1;
 }
 
@@ -217,7 +198,7 @@ void app_main(void) {
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
     connect_flag = 0;
