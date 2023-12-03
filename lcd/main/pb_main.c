@@ -8,8 +8,13 @@
 #include "stack_ddt.h"
 #include "utf8.h"
 
+#include "esp_wifi.h"
+#include "nvs_flash.h"
+// #include "esp_netif.h"
+
 #include "esp_littlefs.h"
 #include "board_config.h"
+#include "esp_event.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -22,7 +27,49 @@ const uint24_RGB fillColor = {
 	.pixelB = 0x30,
 };
 
+const wifi_config_t wifi_config = {
+    .ap = {
+        .ssid = "pumpy wifi",
+        .ssid_len = strlen("pumpy wifi"),
+        .channel = 1,
+        .password = "pumperslol",
+        .max_connection = 4,
+#ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
+        .authmode = WIFI_AUTH_WPA3_PSK,
+        .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
+#else /* CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT */
+        .authmode = WIFI_AUTH_WPA2_PSK,
+#endif
+        .pmf_cfg = {
+                .required = true,
+        // .authmode = WIFI_AUTH_OPEN; // if no password
+        },
+    },
+};
+
+static char connect_flag = 0;
+
+static void wifi_event_handler(void* arg, esp_event_base_t event_base,
+                                    int32_t event_id, void* event_data)
+{
+    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+        // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
+    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+        // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
+    }
+    connect_flag = 1;
+}
+
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib, FT_Face* typeFace) {
+    esp_err_t k = nvs_flash_init();
+    if (k == ESP_ERR_NVS_NO_FREE_PAGES || k == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      k = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(k);
+
 	ESP_ERROR_CHECK(spi_bus_initialize(LCD_HOST, &buscfg, SPI_DMA_CH_AUTO));
 	ESP_ERROR_CHECK(spi_bus_add_device(LCD_HOST, &devcfg, spi));
 	ESP_ERROR_CHECK(gpio_install_isr_service(0));
@@ -37,6 +84,18 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 	ESP_ERROR_CHECK(rotary_encoder_init(info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(info, false));
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
+    wifi_init_config_t wificfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&wificfg));
+    // if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
+    //     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    // }
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                    ESP_EVENT_ANY_ID,
+                                                    &wifi_event_handler,
+                                                    NULL,
+                                                    NULL));
+
 
 	gpio_config(&btn_conf);
 
@@ -157,10 +216,16 @@ void app_main(void) {
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-	while(gpio_get_level(PIN_NUM_SW0)) {
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    connect_flag = 0;
+	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
 
+    ESP_ERROR_CHECK(esp_wifi_stop());
 
     uint24_RGB* spriteBuf;
     int len = strlen(line);
@@ -174,6 +239,7 @@ void app_main(void) {
 	FT_Done_FreeType(lib);
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");
 	draw_all_sprites(spi);
+    ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
 }
 

@@ -1,4 +1,3 @@
 dependencies:
   joltwallet/littlefs: "==1.8.0"
   idf: ">=4.4"
-  esp_jpeg: ">=1.0.5~1"
