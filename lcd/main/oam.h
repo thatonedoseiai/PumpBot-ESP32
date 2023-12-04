@@ -1,14 +1,20 @@
 #pragma once
 #include <ILIDriver.h>
 
-#define OAM_SIZE 16
+#define OAM_SIZE 255
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+typedef struct SPRITE_BITMAP_ {
+    uint24_RGB* c;
+    uint8_t refcount;
+} SPRITE_BITMAP;
+
 typedef struct SPRITE_24_H_ {
-	uint24_RGB* bitmap;
+	SPRITE_BITMAP* bitmap;
 	uint16_t posX;
 	uint16_t posY;
 	uint16_t sizeX;
@@ -35,7 +41,7 @@ void init_oam();
  *
  * @return the index of the sprite within the OAM_SPRITE_TABLE.
  */
-int init_sprite(uint24_RGB* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw);
+int init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw);
 
 /*
  * draw_all_sprites draws all the sprites to a predetermined SPI bus

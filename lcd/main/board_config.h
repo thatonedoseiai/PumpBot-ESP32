@@ -9,7 +9,7 @@
 #define PIN_NUM_ENC_A 34
 #define PIN_NUM_ENC_B 35
 #define PIN_NUM_ENC_BTN 36
-#define SPRITE_LIMIT 16
+#define SPRITE_LIMIT 255
 
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,

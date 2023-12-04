@@ -27,6 +27,11 @@ const uint24_RGB fillColor = {
 	.pixelB = 0x30,
 };
 
+// OAM STUFF
+extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
+extern uint32_t text_cache[SPRITE_LIMIT];
+extern uint8_t text_cache_size;
+//
 
 static char connect_flag = 0;
 
@@ -119,7 +124,6 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
 
 // note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf, int* sprites) {
-
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -130,20 +134,42 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB
     int i = 0;
     char* reader_head = string; // so that there is no modification
     int err;
+    int curchar;
+    SPRITE_BITMAP* bmp;
     while (*reader_head != 0) {
+        curchar = decode_code_point(&reader_head);
 		FT_Set_Transform(typeFace, NULL, &offset);
-		err = FT_Load_Char(typeFace, decode_code_point(&reader_head), FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
         if(err)
             return err;
+
+        for(int i=0;i<text_cache_size;++i) {
+            if(text_cache[i] == curchar) {
+                bmp = bitmap_cache[i];
+                goto skip_bitmap_assignment;
+            }
+        }
+
 		(*spriteBuf) = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+        bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
+        bmp->refcount = 0;
+        bmp->c = (*spriteBuf);
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
 			(*spriteBuf)[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
 			(*spriteBuf)[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
 			(*spriteBuf)[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
+
+        if(text_cache_size < SPRITE_LIMIT) {
+            text_cache[text_cache_size] = curchar;
+            bitmap_cache[text_cache_size] = bmp;
+            text_cache_size++;
+        }
+
+skip_bitmap_assignment:
 		FT_Int bmp_top = 240 - slot->bitmap_top;
-		int inx = init_sprite(*spriteBuf, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
         if (sprites)
             sprites[i++] = inx;
 
@@ -215,6 +241,7 @@ void app_main(void) {
     int spriteArray[len];
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf, &spriteArray[0]), "draw_sprite");
+    ets_printf("cache size: %d", text_cache_size);
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
