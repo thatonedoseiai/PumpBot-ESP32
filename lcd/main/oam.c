@@ -77,3 +77,22 @@ void delete_sprite(int sprite) {
 	free(OAM_SPRITE_TABLE[sprite]);
 	OAM_SPRITE_TABLE[sprite] = NULL;
 }
+
+// SPRITE MANIPULATION
+void center_sprite_group_x(int* sprites, int numsprites) {
+    int minX = 320;
+    int maxX = 0;
+    SPRITE_24_H* spr;
+    for(int i=0;i<numsprites;++i) {
+        spr = OAM_SPRITE_TABLE[sprites[i]];
+        if(spr->posX < minX)
+            minX = spr->posX;
+        if(spr->posX + spr->sizeX > maxX)
+            maxX = spr->posX + spr->sizeX;
+    }
+    if(minX >= maxX)
+        return;
+    int offset = ((320 - maxX+minX) >> 1) - minX;
+    for(int i=0;i<numsprites;++i)
+        OAM_SPRITE_TABLE[sprites[i]]->posX += offset;
+}

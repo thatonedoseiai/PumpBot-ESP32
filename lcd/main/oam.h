@@ -53,6 +53,11 @@ void draw_all_sprites(spi_device_handle_t spi);
  */
 void delete_sprite(int sprite);
 
+/*
+ * center a group represented by an array of OAM IDs along the X axis
+ */
+void center_sprite_group_x(int* sprites, int numsprites);
+
 #ifdef __cplusplus
 }
 #endif
