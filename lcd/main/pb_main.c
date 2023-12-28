@@ -7,6 +7,7 @@
 #include "rotenc.h"
 #include "stack_ddt.h"
 #include "utf8.h"
+#include "menus.h"
 
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -25,6 +26,16 @@ const uint24_RGB fillColor = {
 	.pixelR = 0x10,
 	.pixelG = 0,
 	.pixelB = 0x30,
+};
+
+const MENU_ELEMENT menuabcde[] = {
+    {
+        .text = "hello Blue!",
+        .x = 0,
+        .y = 30,
+        .textlen = 11,
+        .center = true
+    }
 };
 
 // OAM STUFF
@@ -123,7 +134,7 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
 }
 
 // note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB** spriteBuf, int* sprites) {
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -150,15 +161,16 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, uint24_RGB
             }
         }
 
-		(*spriteBuf) = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+        uint24_RGB* spriteBuf;
+		spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
         bmp->refcount = 0;
-        bmp->c = (*spriteBuf);
+        bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
-			(*spriteBuf)[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
-			(*spriteBuf)[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-			(*spriteBuf)[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
+			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
+			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 		}
 
         if(text_cache_size < SPRITE_LIMIT) {
@@ -236,12 +248,15 @@ void app_main(void) {
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 
-    uint24_RGB* spriteBuf;
-    int len = strlen(line);
-    int spriteArray[len];
+    // int len = strlen(line);
+    // int spriteArray[len];
 	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
-    FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteBuf, &spriteArray[0]), "draw_sprite");
-    center_sprite_group_x(spriteArray, len);
+    // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
+    // center_sprite_group_x(spriteArray, len);
+    error = draw_menu_elements(&menuabcde[0], typeFace, 1); 
+    if (error)
+        ets_printf("draw menu element\n");
+
     ets_printf("cache size: %d", text_cache_size);
 
 	esp_vfs_littlefs_unregister(conf.partition_label);

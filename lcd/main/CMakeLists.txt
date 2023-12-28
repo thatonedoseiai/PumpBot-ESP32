@@ -1,6 +1,7 @@
 set(srcs
     "ILIDriver.c"
     "oam.c"
+    "menus/bootloader.c"
     "pb_main.c"
     "rotenc.c"
     "stack_ddt.c"
@@ -9,7 +10,7 @@ set(srcs
 
 idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS 
-                        "."
+                        "./includes"
                         "./freetype2"
 )
 
