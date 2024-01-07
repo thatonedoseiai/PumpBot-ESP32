@@ -9,6 +9,7 @@ static uint8_t* indices;
 
 SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
 uint32_t text_cache[OAM_SIZE];
+int text_size_cache[OAM_SIZE];
 uint8_t text_cache_size;
 
 int find_empty_index(uint8_t* inds) {
@@ -69,6 +70,7 @@ void delete_sprite(int sprite) {
             if(bitmap_cache[i] == bt) {
                 bitmap_cache[i] = bitmap_cache[text_cache_size-1];
                 text_cache[i] = text_cache[text_cache_size-1];
+                text_size_cache[i] = text_size_cache[text_cache_size-1];
                 text_cache_size--;
                 break;
             }

@@ -8,6 +8,7 @@
 #include "stack_ddt.h"
 #include "utf8.h"
 #include "menus.h"
+#include "menu_data.h"
 
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -28,19 +29,10 @@ const uint24_RGB fillColor = {
 	.pixelB = 0x30,
 };
 
-const MENU_ELEMENT menuabcde[] = {
-    {
-        .text = "hello Blue!",
-        .x = 0,
-        .y = 30,
-        .textlen = 11,
-        .center = true
-    }
-};
-
 // OAM STUFF
 extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
 extern uint32_t text_cache[SPRITE_LIMIT];
+extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
 //
 
@@ -155,16 +147,15 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
             return err;
 
         for(int i=0;i<text_cache_size;++i) {
-            if(text_cache[i] == curchar) {
+            if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height) {
                 bmp = bitmap_cache[i];
                 goto skip_bitmap_assignment;
             }
         }
 
-        uint24_RGB* spriteBuf;
-		spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
-        bmp->refcount = 0;
+        bmp->refcount = 1;
         bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
@@ -176,13 +167,14 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             bitmap_cache[text_cache_size] = bmp;
+            text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             text_cache_size++;
         }
 
 skip_bitmap_assignment:
 		FT_Int bmp_top = 240 - slot->bitmap_top;
 		int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-        if (sprites)
+        if (sprites && curchar != ' ')
             sprites[i++] = inx;
 
 		offset.x += slot->advance.x;
@@ -250,14 +242,14 @@ void app_main(void) {
 
     // int len = strlen(line);
     // int spriteArray[len];
-	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
+	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&menuabcde[0], typeFace, 1); 
+    error = draw_menu_elements(&menuabcde[0], typeFace, 3); 
     if (error)
         ets_printf("draw menu element\n");
 
-    ets_printf("cache size: %d", text_cache_size);
+    ets_printf("cache size: %d\n", text_cache_size);
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));

@@ -1,7 +1,7 @@
-#pragma once
-
 #ifndef MENUS_H
 #define MENUS_H
+
+#pragma once
 
 #include "oam.h"
 #include <freetype/freetype.h>
@@ -11,8 +11,11 @@ typedef struct {
     uint16_t x;
     uint16_t y;
     uint8_t textlen;
+    uint8_t numspaces;
     bool center;
     int textsize;
+    bool hline;
+    uint24_RGB col;
 } MENU_ELEMENT;
 
 /*
@@ -21,5 +24,7 @@ typedef struct {
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements);
 
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites);
+
+int draw_hline(int y, int thickness, uint24_RGB colour);
 
 #endif
