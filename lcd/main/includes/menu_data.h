@@ -40,5 +40,37 @@ const MENU_ELEMENT menuabcde[] = {
     }
 };
 
+const MENU_ELEMENT welcome_menu[] = {
+    {
+        .text = "Welcome to",
+        .x = 60,
+        .y = 195,
+        .textlen = 10,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 32,
+        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+    },
+    {
+        .text = "PumpBot!",
+        .x = 60,
+        .y = 154,
+        .textlen = 8,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 32,
+        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+    },
+    {
+        .text = "Press v to Continue",
+        .x = 60,
+        .y = 10,
+        .textlen = 19,
+        .numspaces = 3,
+        .center = true,
+        .textsize = 16,
+        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+    },
+};
 
 #endif

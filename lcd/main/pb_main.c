@@ -256,7 +256,7 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
+    error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
     if (error)
         ets_printf("draw menu element\n");
 
