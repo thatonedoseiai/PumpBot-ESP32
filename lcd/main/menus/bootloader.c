@@ -29,7 +29,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
             sizeControl = elems[i].textsize;
         }
         int spriteArray[elems[i].textlen - elems[i].numspaces];
-        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &elems[i].col);
+        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &elems[i].col, NULL);
         if (elems[i].center)
             center_sprite_group_x(spriteArray, elems[i].textlen - elems[i].numspaces);
         if (err)

@@ -34,6 +34,7 @@ extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
 extern uint32_t text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
+extern uint24_RGB* background_color;
 //
 
 static char connect_flag = 0;
@@ -126,7 +127,7 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
 }
 
 // note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color) {
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -138,6 +139,12 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     char* reader_head = string; // so that there is no modification
     int err;
     int curchar;
+    uint8_t alphaR, alphaG, alphaB;
+    uint24_RGB* bg;
+    if (bgcol == NULL)
+        bg = background_color;
+    else
+        bg = bgcol;
     SPRITE_BITMAP* bmp;
     while (*reader_head != 0) {
         curchar = decode_code_point(&reader_head);
@@ -159,9 +166,12 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
-			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)] * color.pixelB;
-			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width] * color.pixelG;
-			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2] * color.pixelR;
+            alphaB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
+            alphaG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
+            alphaR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+			spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
+			spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
+			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
 		}
 
         if(text_cache_size < SPRITE_LIMIT) {
@@ -194,6 +204,7 @@ void app_main(void) {
 	static QueueHandle_t event_queue;
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
+    background_color = &fillColor;
 
 	spi_device_handle_t spi;
 
@@ -222,7 +233,7 @@ void app_main(void) {
 	}
 
 
-	send_color(spi, fillColor);
+	send_color(spi, background_color);
 
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));

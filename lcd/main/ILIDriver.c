@@ -187,12 +187,12 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 	}
 }
 
-void send_color(spi_device_handle_t spi, uint24_RGB color) {
+void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 	int pixelCount = 320*PARALLEL_LINES;
 	int bytelength = 3*pixelCount;
 	uint24_RGB* colorbuf = malloc(sizeof(uint24_RGB) * bytelength);
 	for (int i = 0; i < pixelCount; ++i)
-		colorbuf[i] = color; 
+		colorbuf[i] = *color; 
 	for(int ypos=0;ypos<240;ypos+=PARALLEL_LINES) {
 		esp_err_t ret;
 		int x;

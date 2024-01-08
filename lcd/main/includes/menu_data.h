@@ -12,7 +12,8 @@ const MENU_ELEMENT menuabcde[] = {
         .numspaces = 0,
         .center = false,
         .textsize = 16,
-        .hline = false
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "hello Blue!",
@@ -22,7 +23,8 @@ const MENU_ELEMENT menuabcde[] = {
         .numspaces = 1,
         .center = true,
         .textsize = 32,
-        .hline = false
+        .hline = false,
+        .col = { .pixelR = 0, .pixelB = 255, .pixelG = 255 }
     },
     {
         .y = 100,

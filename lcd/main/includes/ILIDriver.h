@@ -153,7 +153,7 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
 /*
  * fills the whole screen with one color.
  */
-void send_color(spi_device_handle_t spi, uint24_RGB color);
+void send_color(spi_device_handle_t spi, uint24_RGB* color);
 
 /*
  * draws a sprite at an x and y coordinate.
