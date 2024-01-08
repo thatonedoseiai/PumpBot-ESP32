@@ -126,7 +126,7 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
 }
 
 // note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites) {
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -159,9 +159,9 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
-			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
-			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+			spriteBuf[p].pixelB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)] * color.pixelB;
+			spriteBuf[p].pixelG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width] * color.pixelG;
+			spriteBuf[p].pixelR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2] * color.pixelR;
 		}
 
         if(text_cache_size < SPRITE_LIMIT) {

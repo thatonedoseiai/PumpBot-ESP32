@@ -23,7 +23,7 @@ typedef struct {
  */
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements);
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites);
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color);
 
 int draw_hline(int y, int thickness, uint24_RGB colour);
 
