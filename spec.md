@@ -6,7 +6,7 @@ initialize things:
 - encoder state machine
 - initialize VM
 - run program if able
-- enter bios menu if SW1 is held or VM exits unsuccessfully
+- enter bios menu if SW1 is held or VM program does not start or times out.
 
 ### BIOS MENU:
 - text-only, using FreeType
@@ -22,7 +22,7 @@ initialize things:
 - can choose one to execute and save as default (to be run by the VM on startup)
 
 #### test PWM
-- manually set PWM % and frequency of all LEDs and outputs
+- manually set PWM duty cycle and frequency of all LEDs and outputs
 
 #### test input
 - display all button statuses
@@ -38,16 +38,16 @@ initialize things:
 - on() - Turns LEDs on at the last displayed color or using the last mode, defaults to the User color/mode on boot.
 - off() - Turns LEDs off and saves current color and mode to be used for on().
 - mode(time, color0, color1, brightness) - Sets color/mode and mode arguments. color0/1 are standard 24-bit (8bpc) color values. brightness is 8 bits, treated as 0 to 1.
-#### Modes: (all of these use 16bpc color for smoother fading and brightness. arguments are still 8 bpc. final PWM output is 16 bits.)  
+#### Modes: (all of these use 16bpc color for smoother fading and brightness. arguments are still 8bpc. final PWM output is 16bpc.)  
  - solid(t, color0, color1, b) - Sets color to color0 indefinitely, multiplied by brightness. argument t should be set to 0, and color1 is ignored.
  - fade(t, color0, color1, b) - sets color to color0 and fades linearly to color1 in t time, then fades back to color0. Loops indefinitely. final value from the fade math gets multiplied by b.
  - rainbow(t, color0, color1, b) - Hue cycles around the color circle at 1 rotation taking t amount of time. final value gets multiplied by b. color0 and color1 are ignored.
 
 ### HID Standardization:
- - SW0 will always be used for leftward operations outside of the home menu (as in, a "back button"), used as on/off in main menu
- - Encoder button will always be used to select a menu item that user can change the value of outside of the home menu, used to switch between what channel you're controlling in main menu. 
- - Encoder will always be CW for increasing a value or moving rightwards, CCW for decreasing a value or moving leftwards.
- - SW1 will be used to navigate into a submenu or for any unhandled usage, used to go into settings in main menu
+ - SW0 will always be used for leftward operations outside of the home menu (as in, a "back" button), used as on/off in main menu
+ - Encoder button (ENC-SW) will always be used to select a menu item that user can change the value of outside of the home menu, used to switch between what channel you're controlling in main menu. 
+ - Turning the encoder CW will always increase a value or move rightwards, CCW will always decrease a value or move leftwards.
+ - SW1 will be used to navigate into a submenu or for any unhandled usage. Used to go into settings in main menu
 
 ### Graphics:
 ![Graphics types guide sheet, using Yu Mincho as a placeholder](/spec-assets/graphics-guide.png)
@@ -58,7 +58,8 @@ initialize things:
 
 ### Fonts:
 ![Font size reference sheet, using Yu Mincho as a placeholder](/spec-assets/font-size-ref.png)
-- Unless specified, "Large" font is 32/40px, "Medium" font is 24/32px, "Standard" font is 20/24px, and "Small" text is 16/20px. all sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text will not coexist in the same text field, but if it does, default to the size of the first character.
+- Unless specified, "Large" font is 32/40px, "Medium" font is 24/32px, "Standard" font is 20/24px, and "Small" font is 16/20px. all sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text shouldn't coexist in the same text field, but if it does, the font size will use the size of the first character for the whole field.
+-Glyphs are added to a cache to save memory for when the same character is in use multipule times. Be careful to not bite the beast, for it will bite back.
 
 ### Program:
  - Starts inside of VM, main UI/UX of PumpBot.  
@@ -148,4 +149,4 @@ initialize things:
     6 - add-on settings  
     7 - setup finished  
 
-    Not really sure where to put this but things in regular braces (aka like [This]) are like variables or text strings, not what'd actually be displayed
+    Not really sure where to put this but things (except for embedding images in markdown) in regular braces (aka like [This]) are like variables or text strings, not what'd actually be displayed
