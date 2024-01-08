@@ -90,7 +90,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImin.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImax.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	// size_t total = 0, used = 0;
@@ -256,7 +256,7 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
+    error = draw_menu_elements(&text_test[0], typeFace, 17); 
     if (error)
         ets_printf("draw menu element\n");
 
