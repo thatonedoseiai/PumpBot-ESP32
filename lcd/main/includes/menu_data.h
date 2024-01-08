@@ -31,14 +31,14 @@ const MENU_ELEMENT menuabcde[] = {
         .textsize = 2,
         .col = { .pixelR = 255, .pixelB = 0, .pixelG = 0 },
         .hline = true
-    }
+    },
     {
-        .x = 100
-        .textsize = 3
-        .col = { .pixelR = 127, .pixelB = 0, .pixelG = 200}
+        .x = 100,
+        .textsize = 3,
+        .col = { .pixelR = 127, .pixelB = 0, .pixelG = 200},
         .vline = true
     }
-    };
+};
 
 
 #endif

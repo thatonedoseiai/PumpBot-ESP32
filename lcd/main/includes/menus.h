@@ -15,6 +15,7 @@ typedef struct {
     bool center;
     int textsize;
     bool hline;
+    bool vline;
     uint24_RGB col;
 } MENU_ELEMENT;
 
