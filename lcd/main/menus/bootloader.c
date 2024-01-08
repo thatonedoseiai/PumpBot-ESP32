@@ -50,3 +50,17 @@ int draw_hline(int y, int thickness, uint24_RGB colour) {
     }
     return init_sprite(bmp, 0, y, 320, thickness, false, false, true);
 }
+
+int draw_vline(int x, int thickness, uint24_RGB colour) {
+    uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));
+    SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
+    bmp->refcount = 1;
+    bmp->c = spriteBuf;
+    for(int p=0;p<320*thickness;p++) {
+        spriteBuf[p].pixelB = colour.pixelB;
+        spriteBuf[p].pixelG = colour.pixelG;
+        spriteBuf[p].pixelR = colour.pixelR;
+    }
+    return init_sprite(bmp,x, 0, thickness, 240, false, false, true);
+}
+    
