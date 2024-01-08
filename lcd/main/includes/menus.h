@@ -27,4 +27,6 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
 
 int draw_hline(int y, int thickness, uint24_RGB colour);
 
+int draw_vline(int x, int thickness, uint24_RGB colour);
+
 #endif

@@ -18,6 +18,9 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
             draw_hline(elems[i].y, elems[i].textsize, elems[i].col);
             continue;
         }
+        if (elems[i].vline) {
+            draw_vline(elems[i].x elems[i].textsize, elems[i].col);
+        }
         if (sizeControl != elems[i].textsize) {
             err = FT_Set_Char_Size (typeFace, elems[i].textsize << 6, 0, 100, 0); // 0 = copy last value
             // ftsize.width = elems[i].textsize << 6;
