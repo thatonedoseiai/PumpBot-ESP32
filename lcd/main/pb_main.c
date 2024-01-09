@@ -90,7 +90,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImax.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImin.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	// size_t total = 0, used = 0;
