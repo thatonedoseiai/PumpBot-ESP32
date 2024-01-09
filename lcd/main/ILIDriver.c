@@ -167,8 +167,8 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 	}
 	trans[0].tx_data[0]=0x2A;								//Column Address Set
 	trans[1].tx_data[0]=sx>>8;								//Start Col High
-	trans[1].tx_data[1]=sx&0xff;								//Start Col Low
-	trans[1].tx_data[2]=(sx+width-1)>>8;						//End Col High
+	trans[1].tx_data[1]=sx&0xff;							//Start Col Low
+	trans[1].tx_data[2]=(sx+width-1)>>8;					//End Col High
 	trans[1].tx_data[3]=(sx+width-1)&0xff;					//End Col Low
 	trans[2].tx_data[0]=0x2B;								//Page address set
 	trans[3].tx_data[0]=y>>8;								//Start page high

@@ -6,8 +6,8 @@
 const MENU_ELEMENT menuabcde[] = {
     {
         .text = "nope.",
-        .x = 30,
-        .y = 80,
+        .x = 0,
+        .y = 0,
         .textlen = 5,
         .numspaces = 0,
         .center = false,
@@ -83,7 +83,7 @@ const MENU_ELEMENT text_test[] = {
     	{
         .text = "Large - 30px",
         .x = 0,
-        .y = 226,
+        .y = 218,
         .textlen = 12,
         .numspaces = 2,
         .center = false,
@@ -94,7 +94,7 @@ const MENU_ELEMENT text_test[] = {
         {
         .text = "Medium - 22px",
         .x = 0,
-        .y = 160,
+        .y = 152,
         .textlen = 13,
         .numspaces = 2,
         .center = false,
@@ -105,7 +105,7 @@ const MENU_ELEMENT text_test[] = {
         {
         .text = "Standard - 18px",
         .x = 0,
-        .y = 100,
+        .y = 92,
         .textlen = 15,
         .numspaces = 2,
         .center = false,
@@ -116,7 +116,7 @@ const MENU_ELEMENT text_test[] = {
         {
         .text = "Small - 12px",
         .x = 0,
-        .y = 48,
+        .y = 40,
         .textlen = 12,
         .numspaces = 2,
         .center = false,
@@ -126,8 +126,8 @@ const MENU_ELEMENT text_test[] = {
     },
      	{
         .text = "36px",
-        .x = 160,
-        .y = 226,
+        .x = 162,
+        .y = 218,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
@@ -137,8 +137,8 @@ const MENU_ELEMENT text_test[] = {
     },
         {
         .text = "30px",
-        .x = 160,
-        .y = 160,
+        .x = 162,
+        .y = 152,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
@@ -148,8 +148,8 @@ const MENU_ELEMENT text_test[] = {
     },
     {
         .text = "22px",
-        .x = 160,
-        .y = 100,
+        .x = 162,
+        .y = 92,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
@@ -159,8 +159,8 @@ const MENU_ELEMENT text_test[] = {
     },
     {
         .text = "18px",
-        .x = 160,
-        .y = 48,
+        .x = 162,
+        .y = 40,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
@@ -171,7 +171,7 @@ const MENU_ELEMENT text_test[] = {
     {
         .text = "A Quick",
         .x = 0,
-        .y = 205,
+        .y = 173,
         .textlen = 7,
         .numspaces = 1,
         .center = false,
@@ -183,7 +183,7 @@ const MENU_ELEMENT text_test[] = {
     {
         .text = "Brown Fox",
         .x = 0,
-        .y = 139,
+        .y = 113,
         .textlen = 9,
         .numspaces = 1,
         .center = false,
@@ -195,7 +195,7 @@ const MENU_ELEMENT text_test[] = {
     {
         .text = "Jumps over",
         .x = 0,
-        .y = 79,
+        .y = 61,
         .textlen = 10,
         .numspaces = 1,
         .center = false,
@@ -207,7 +207,7 @@ const MENU_ELEMENT text_test[] = {
     {
         .text = "the lazy dog.",
         .x = 0,
-        .y = 27,
+        .y = 13,
         .textlen = 13,
         .numspaces = 2,
         .center = false,
@@ -216,11 +216,11 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {//sample text in chinese
-        //.text = "鑑於人類",
-	.text = "36PX",
+        .text = "鑑於人",
+	    //.text = "36PX",
         .x = 162,
-        .y = 205,
-        .textlen = 4,
+        .y = 173,
+        .textlen = 3,
         .numspaces = 0,
         .center = false,
         .textsize = 36,
@@ -228,10 +228,10 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        //.text = "社會個",
-        .text = "30P",
+        .text = "類社會",
+        //.text = "30P",
         .x = 162,
-        .y = 139,
+        .y = 113,
         .textlen = 3,
         .numspaces = 0,
         .center = false,
@@ -240,10 +240,10 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        //.text = "成員儕有個",
-        .text = "22PIX",
+        .text = "個成員儕有",
+        // .text = "22PIX",
         .x = 162,
-        .y = 79,
+        .y = 61,
         .textlen = 5,
         .numspaces = 0,
         .center = false,
@@ -252,11 +252,11 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        //.text = "固有尊嚴脫仔平等個脫仔",
-	.text = "18PIXELSBIG",
+        .text = "個固有尊嚴脫",
+	//.text = "18PIXELSBIG",
         .x = 162,
-        .y = 27,
-        .textlen = 11,
+        .y = 13,
+        .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 18,
