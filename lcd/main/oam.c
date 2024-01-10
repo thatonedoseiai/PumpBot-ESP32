@@ -11,6 +11,10 @@ SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
 uint32_t text_cache[OAM_SIZE];
 int text_size_cache[OAM_SIZE];
 uint8_t text_cache_size;
+uint64_t advance_x_cache[OAM_SIZE];
+uint16_t y_loc_cache[OAM_SIZE];
+uint16_t width_cache[OAM_SIZE];
+uint16_t height_cache[OAM_SIZE];
 uint24_RGB* background_color;
 
 int find_empty_index(uint8_t* inds) {

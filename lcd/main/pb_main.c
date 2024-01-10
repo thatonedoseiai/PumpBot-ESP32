@@ -35,6 +35,10 @@ extern uint32_t text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
+extern uint64_t advance_x_cache[SPRITE_LIMIT];
+extern uint16_t y_loc_cache[SPRITE_LIMIT];
+extern uint16_t width_cache[SPRITE_LIMIT];
+extern uint16_t height_cache[SPRITE_LIMIT];
 //
 
 static char connect_flag = 0;
@@ -90,7 +94,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImax.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImin.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	// size_t total = 0, used = 0;
@@ -141,6 +145,10 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     int curchar;
     uint8_t alphaR, alphaG, alphaB;
     uint24_RGB* bg;
+    uint64_t advance_x;
+    uint16_t width;
+    uint16_t height;
+    FT_Int bmp_top;
     if (bgcol == NULL)
         bg = background_color;
     else
@@ -148,17 +156,22 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     SPRITE_BITMAP* bmp;
     while (*reader_head != 0) {
         curchar = decode_code_point(&reader_head);
-		FT_Set_Transform(typeFace, NULL, &offset);
-		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-        if(err)
-            return err;
 
         for(int i=0;i<text_cache_size;++i) {
             if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height) {
                 bmp = bitmap_cache[i];
+                bmp_top = 240 - y_loc_cache[i] - startY;
+                advance_x = advance_x_cache[i];
+                width = width_cache[i];
+                height = height_cache[i];
                 goto skip_bitmap_assignment;
             }
         }
+
+		FT_Set_Transform(typeFace, NULL, &offset);
+		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+        if(err)
+            return err;
 
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
@@ -174,20 +187,29 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
 			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
 		}
 
+		bmp_top = 240 - slot->bitmap_top;
+        advance_x = slot->advance.x;
+        width = slot->bitmap.width;
+        height = slot->bitmap.rows/3;
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
+            advance_x_cache[text_cache_size] = advance_x;
+            y_loc_cache[text_cache_size] = 240 - startY - bmp_top;
+            width_cache[text_cache_size] = width;
+            height_cache[text_cache_size] = height;
             text_cache_size++;
         }
 
 skip_bitmap_assignment:
-		FT_Int bmp_top = 240 - slot->bitmap_top;
-		int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
+
         if (sprites && curchar != ' ')
             sprites[i++] = inx;
 
-		offset.x += slot->advance.x;
+		offset.x += advance_x;
 		offset.y += slot->advance.y;
 	}
 
@@ -256,7 +278,8 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    // error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
         ets_printf("draw menu element\n");
