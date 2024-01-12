@@ -82,8 +82,8 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	{0xC5, {0x35, 0x3E}, 2},
 	/* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
 	{0xC7, {0xBE}, 1},
-	/* Memory access contorl, MX=MY=0, MV=1, ML=0, BGR=1, MH=0 */
-	{0x36, {0x28}, 1},
+	/* Memory access contorl, MX=MY=0, MV=0, ML=0, BGR=1, MH=0 */
+	{0x36, {0x08}, 1},
 	/* Pixel format, 18bits/pixel for RGB/MCU interface */
 	{0x3A, {0x66}, 1},
 	/* Frame rate control, f=fosc, 70Hz fps */
