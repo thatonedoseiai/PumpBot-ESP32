@@ -94,6 +94,8 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	{0xF2, {0x08}, 1},
 	/* Gamma set, curve 1 */
 	{0x26, {0x01}, 1},
+    /* vertical scrolling area definition */
+	{0x33, {0x00, 0x00, 0x01, 0x40, 0x00, 0x00}, 6},
 	/* Positive gamma correction */
 	{0xE0, {0x1F, 0x1A, 0x18, 0x0A, 0x0F, 0x06, 0x45, 0X87, 0x32, 0x0A, 0x07, 0x02, 0x07, 0x05, 0x00}, 15},
 	/* Negative gamma correction */
@@ -151,6 +153,11 @@ void lcd_init(spi_device_handle_t spi);
  * the mean while the lines for next transactions can get calculated.
  */
 void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
+
+/*
+ * scroll the screen a certain amount
+ */
+void scroll_screen(spi_device_handle_t spi, uint16_t value);
 
 /*
  * fills the buffer with one color.

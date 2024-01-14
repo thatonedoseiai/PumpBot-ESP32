@@ -295,13 +295,14 @@ void app_main(void) {
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
+    buffer_all_sprites();
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");
 	// draw_all_sprites(spi);
-    buffer_all_sprites();
     for(int i=0;i<320;i+=PARALLEL_LINES) {
         send_lines(spi, i, framebuf+(i*240));
         send_line_finish(spi);
     }
+    scroll_screen(spi, 160);
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
     free(framebuf);
