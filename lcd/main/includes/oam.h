@@ -44,6 +44,11 @@ void init_oam();
 int init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw);
 
 /*
+ * buffers all the sprites to the framebuffer
+ */
+void buffer_all_sprites();
+
+/*
  * draw_all_sprites draws all the sprites to a predetermined SPI bus
  */
 void draw_all_sprites(spi_device_handle_t spi);

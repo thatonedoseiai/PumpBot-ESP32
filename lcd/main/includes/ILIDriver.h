@@ -51,6 +51,8 @@ typedef struct {
 	uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } lcd_init_cmd_t;
 
+extern uint24_RGB* framebuf;
+
 //Place data into DRAM. Constant data gets placed into DROM by default, which is not accessible by DMA.
 // {{{
 DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
@@ -151,9 +153,19 @@ void lcd_init(spi_device_handle_t spi);
 void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
 
 /*
+ * fills the buffer with one color.
+ */
+void buffer_fillcolor(uint24_RGB* col);
+
+/*
  * fills the whole screen with one color.
  */
 void send_color(spi_device_handle_t spi, uint24_RGB* color);
+
+/*
+ * writes a sprite to the framebuffer.
+ */
+void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) ;
 
 /*
  * draws a sprite at an x and y coordinate.

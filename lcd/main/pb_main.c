@@ -260,6 +260,7 @@ void app_main(void) {
 
 
 	send_color(spi, background_color);
+    buffer_fillcolor(background_color);
 
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
@@ -295,9 +296,15 @@ void app_main(void) {
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");
-	draw_all_sprites(spi);
+	// draw_all_sprites(spi);
+    buffer_all_sprites();
+    for(int i=0;i<320;i+=PARALLEL_LINES) {
+        send_lines(spi, i, framebuf+(i*240));
+        send_line_finish(spi);
+    }
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
+    free(framebuf);
 }
 
 // vim: foldmethod=marker

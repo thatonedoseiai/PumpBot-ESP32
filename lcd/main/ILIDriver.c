@@ -12,6 +12,8 @@
 #include "ILIDriver.h"
 // #include "pretty_effect.h"
 
+uint24_RGB* framebuf;
+
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd, bool keep_cs_active) {
 	esp_err_t ret;
 	spi_transaction_t t;
@@ -69,6 +71,8 @@ void lcd_init(spi_device_handle_t spi) {
 	gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
 	int cmd=0;
 	const lcd_init_cmd_t* lcd_init_cmds;
+    framebuf = malloc(320*240*sizeof(uint24_RGB));
+    memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
 
 	//Initialize non-SPI GPIOs
 	gpio_config_t io_conf = {};
@@ -123,8 +127,8 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	trans[0].tx_data[0]=0x2A;						//Column Address Set
 	trans[1].tx_data[0]=0;							//Start Col High
 	trans[1].tx_data[1]=0;							//Start Col Low
-	trans[1].tx_data[2]=(320)>>8;					//End Col High
-	trans[1].tx_data[3]=(320)&0xff;					//End Col Low
+	trans[1].tx_data[2]=(240)>>8;					//End Col High
+	trans[1].tx_data[3]=(240)&0xff;					//End Col Low
 	trans[2].tx_data[0]=0x2B;						//Page address set
 	trans[3].tx_data[0]=ypos>>8;					//Start page high
 	trans[3].tx_data[1]=ypos&0xff;					//start page low
@@ -132,7 +136,7 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	trans[3].tx_data[3]=(ypos+PARALLEL_LINES)&0xff;	//end page low
 	trans[4].tx_data[0]=0x2C;						//memory write
 	trans[5].tx_buffer=linedata;					//finally send the line data
-	trans[5].length=320*3*8*PARALLEL_LINES;			//Data length, in bits
+	trans[5].length=240*3*8*PARALLEL_LINES;			//Data length, in bits
 	trans[5].flags=0;								//undo SPI_TRANS_USE_TXDATA flag
 
 	//Queue all transactions.
@@ -145,6 +149,20 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	//mostly using DMA, so the CPU doesn't have much to do here. We're not going to wait for the transaction to
 	//finish because we may as well spend the time calculating the next line. When that is done, we can call
 	//send_line_finish, which will wait for the transfers to be done and check their status.
+}
+
+void buffer_fillcolor(uint24_RGB* col) {
+    for(int i=0;i<320*240;i++) {
+        framebuf[i] = *col;
+    }
+}
+
+void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
+    for(int i=0;i<width;i++) {
+        for(int j=0;j<height;j++) {
+            framebuf[(i+x)*240+(j+y)] = bitmap[i*height+j];
+        }
+    }
 }
 
 void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
@@ -197,7 +215,7 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 		esp_err_t ret;
 		int x;
 		static spi_transaction_t trans[6];
-        ets_printf("ypos: %d\n", ypos);
+        // ets_printf("ypos: %d\n", ypos);
 
 		for (x=0; x<6; x++) {
 			memset(&trans[x], 0, sizeof(spi_transaction_t));

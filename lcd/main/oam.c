@@ -66,6 +66,16 @@ void draw_all_sprites(spi_device_handle_t spi) {
 	}
 }
 
+void buffer_all_sprites() {
+	SPRITE_24_H* spr;
+	for(int i=0;i<OAM_SIZE;++i) {
+		spr = OAM_SPRITE_TABLE[i];
+		if(spr != NULL && spr->draw) {
+			buffer_sprite(spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
+		}
+	}
+}
+
 void delete_sprite(int sprite) {
     SPRITE_BITMAP* bt = OAM_SPRITE_TABLE[sprite]->bitmap;
     bt->refcount--;
