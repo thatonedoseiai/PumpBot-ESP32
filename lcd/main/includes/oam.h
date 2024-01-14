@@ -54,6 +54,11 @@ void buffer_all_sprites();
 void draw_all_sprites(spi_device_handle_t spi);
 
 /*
+ * deletes all sprites, clearing the OAM
+ */
+void delete_all_sprites();
+
+/*
  * delete_sprite deletes a sprite from the OAM_SPRITE_TABLE.
  */
 void delete_sprite(int sprite);

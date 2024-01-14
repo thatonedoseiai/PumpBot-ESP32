@@ -76,6 +76,14 @@ void buffer_all_sprites() {
 	}
 }
 
+void delete_all_sprites() {
+	for(int i=0;i<OAM_SIZE;++i) {
+		if(OAM_SPRITE_TABLE[i] != NULL) {
+			delete_sprite(i);
+		}
+	}
+}
+
 void delete_sprite(int sprite) {
     SPRITE_BITMAP* bt = OAM_SPRITE_TABLE[sprite]->bitmap;
     bt->refcount--;

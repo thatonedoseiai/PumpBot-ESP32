@@ -85,7 +85,7 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	/* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
 	{0xC7, {0xBE}, 1},
 	/* Memory access contorl, MX=MY=0, MV=0, ML=0, BGR=1, MH=0 */
-	{0x36, {0x08}, 1},
+	{0x36, {0x18}, 1},
 	/* Pixel format, 18bits/pixel for RGB/MCU interface */
 	{0x3A, {0x66}, 1},
 	/* Frame rate control, f=fosc, 70Hz fps */
@@ -152,7 +152,7 @@ void lcd_init(spi_device_handle_t spi);
  * sent faster (compared to calling spi_device_transmit several times), and at
  * the mean while the lines for next transactions can get calculated.
  */
-void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num_cols);
 
 /*
  * scroll the screen a certain amount

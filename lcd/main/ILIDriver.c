@@ -102,12 +102,15 @@ void lcd_init(spi_device_handle_t spi) {
 	}
 }
 
-void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num_cols) {
 	esp_err_t ret;
 	int x;
 	//Transaction descriptors. Declared static so they're not allocated on the stack; we need this memory even when this
 	//function is finished because the SPI driver needs access to it even while we're already calculating the next line.
 	static spi_transaction_t trans[6];
+    if(num_cols > PARALLEL_LINES) {
+        num_cols = PARALLEL_LINES;
+    }
 
 	//In theory, it's better to initialize trans and data only once and hang on to the initialized
 	//variables. We allocate them on the stack, so we need to re-init them each call.
@@ -132,11 +135,11 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	trans[2].tx_data[0]=0x2B;						//Page address set
 	trans[3].tx_data[0]=ypos>>8;					//Start page high
 	trans[3].tx_data[1]=ypos&0xff;					//start page low
-	trans[3].tx_data[2]=(ypos+PARALLEL_LINES)>>8;	//end page high
-	trans[3].tx_data[3]=(ypos+PARALLEL_LINES)&0xff;	//end page low
+	trans[3].tx_data[2]=(ypos+num_cols)>>8;	//end page high
+	trans[3].tx_data[3]=(ypos+num_cols)&0xff;	//end page low
 	trans[4].tx_data[0]=0x2C;						//memory write
 	trans[5].tx_buffer=linedata;					//finally send the line data
-	trans[5].length=240*3*8*PARALLEL_LINES;			//Data length, in bits
+	trans[5].length=240*3*8*num_cols;			//Data length, in bits
 	trans[5].flags=0;								//undo SPI_TRANS_USE_TXDATA flag
 
 	//Queue all transactions.

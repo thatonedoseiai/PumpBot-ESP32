@@ -42,6 +42,8 @@ extern uint16_t height_cache[SPRITE_LIMIT];
 //
 
 static char connect_flag = 0;
+static int screenoffset = 0;
+static spi_device_handle_t spi;
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -110,14 +112,27 @@ done:
 
 int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
     (void) args;
+    static int oldOffset = 0;
 
     if(isNotEvent) {
         ets_printf("Poll: position %d, direction %s\n", state->position,
                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+        screenoffset = state->position % 320;
+        if (oldOffset != screenoffset) {
+            scroll_screen(spi, screenoffset);
+            for(int i=0;i<320-screenoffset;i+=PARALLEL_LINES) {
+                send_lines(spi, i, framebuf+(i*240), 320-screenoffset-i < PARALLEL_LINES ? 320-screenoffset-i : PARALLEL_LINES);
+                send_line_finish(spi);
+            }
+            oldOffset = screenoffset;
+        }
     } else {
         ets_printf("Event: position %d, direction %s\n", state->position,
                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
     }
+
+    
+
     return 0;
 }
 
@@ -232,8 +247,6 @@ void app_main(void) {
 	static rotary_encoder_state_t state = { 0 };
     background_color = &fillColor;
 
-	spi_device_handle_t spi;
-
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
 	prg_init(&loaded_prg);
@@ -269,11 +282,6 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    connect_flag = 0;
-	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
-		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
-	}
-
     runprgfile(&loaded_prg, "/mainfs/string");
 
     ESP_ERROR_CHECK(esp_wifi_stop());
@@ -283,8 +291,11 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    // error = draw_menu_elements(&text_test[0], typeFace, 17); 
     error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
+    draw_all_sprites(spi);
+    delete_all_sprites();
+
+    error = draw_menu_elements(&text_test[0], typeFace, 17); 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
         ets_printf("draw menu element\n");
@@ -292,17 +303,20 @@ void app_main(void) {
     ets_printf("cache size: %d\n", text_cache_size);
 
 	esp_vfs_littlefs_unregister(conf.partition_label);
-	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
     buffer_all_sprites();
 	ets_printf("%s\n", "Rendering characters done! Sending image data...");
 	// draw_all_sprites(spi);
-    for(int i=0;i<320;i+=PARALLEL_LINES) {
-        send_lines(spi, i, framebuf+(i*240));
-        send_line_finish(spi);
-    }
-    scroll_screen(spi, 160);
+
+    screenoffset=0;
+    connect_flag = 0;
+	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
+		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
+	}
+
+
+	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
     free(framebuf);
