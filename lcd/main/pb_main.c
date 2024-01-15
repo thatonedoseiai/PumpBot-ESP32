@@ -42,8 +42,8 @@ extern uint16_t height_cache[SPRITE_LIMIT];
 //
 
 static char connect_flag = 0;
-static int screenoffset = 0;
 static spi_device_handle_t spi;
+
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -112,20 +112,10 @@ done:
 
 int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
     (void) args;
-    static int oldOffset = 0;
 
     if(isNotEvent) {
         ets_printf("Poll: position %d, direction %s\n", state->position,
                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-        screenoffset = state->position % 320;
-        if (oldOffset != screenoffset) {
-            scroll_screen(spi, screenoffset);
-            for(int i=0;i<320-screenoffset;i+=PARALLEL_LINES) {
-                send_lines(spi, i, framebuf+(i*240), 320-screenoffset-i < PARALLEL_LINES ? 320-screenoffset-i : PARALLEL_LINES);
-                send_line_finish(spi);
-            }
-            oldOffset = screenoffset;
-        }
     } else {
         ets_printf("Event: position %d, direction %s\n", state->position,
                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
@@ -197,10 +187,6 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
             alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
             alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
             alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
-            
-            // alphaB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
-            // alphaG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-            // alphaR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
 			spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
 			spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
 			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
@@ -296,30 +282,37 @@ void app_main(void) {
     delete_all_sprites();
 
     error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    if (error)
+        ets_printf("draw menu element\n");
+
+    buffer_all_sprites();
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
         ets_printf("draw menu element\n");
 
     ets_printf("cache size: %d\n", text_cache_size);
 
-	esp_vfs_littlefs_unregister(conf.partition_label);
-	FT_Done_Face (typeFace);
-	FT_Done_FreeType(lib);
-    buffer_all_sprites();
-	ets_printf("%s\n", "Rendering characters done! Sending image data...");
 	// draw_all_sprites(spi);
 
-    screenoffset=0;
     connect_flag = 0;
 	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
 
+    for(int i=0;i<320;i+=8) {
+        scroll_buffer(spi, i, i==0);
+        vTaskDelay(8 / portTICK_PERIOD_MS);
+    }
+    scroll_buffer(spi, 0, true);
 
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
     free(framebuf);
+
+    esp_vfs_littlefs_unregister(conf.partition_label);
+	FT_Done_Face (typeFace);
+	FT_Done_FreeType(lib);
 }
 
 // vim: foldmethod=marker

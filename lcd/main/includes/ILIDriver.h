@@ -179,12 +179,24 @@ void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint
  */
 void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
 
+/*
+ * scrolls the framebuffer onto the screen at the offset screenoffset.
+ * screenoffset must be strictly increasing, or else parts of the screen on the right will show up on the left.
+ */
+void scroll_buffer(spi_device_handle_t spi, int screenoffset, bool resetScroll);
+
 /* wait for line transfers to be done and check their status.
  *
  * Call this at the end, after the next frame is finished calculating.
  * See the comments at the end of ILIDriver.c->send_lines
  */
 void send_line_finish(spi_device_handle_t spi);
+
+/*
+ * wait for scroll transfers to be done and check the status
+ *
+ */
+void send_scroll_finish(spi_device_handle_t spi);
 
 #ifdef __cplusplus
 }

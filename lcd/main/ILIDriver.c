@@ -145,7 +145,10 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num
 	//Queue all transactions.
 	for (x=0; x<6; x++) {
 		ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
-		assert(ret==ESP_OK);
+		if(ret!=ESP_OK) {
+            ets_printf("%d %d %d\n", ret, ESP_OK, ret==ESP_OK);
+            assert(false);
+        }
 	}
 
 	//When we are here, the SPI driver is busy (in the background) getting the transactions sent. That happens
@@ -219,80 +222,6 @@ void scroll_screen(spi_device_handle_t spi, uint16_t value) {
     lcd_data(spi, data_33, 6);
     lcd_cmd(spi, 0x37, false);
     lcd_data(spi, data_37, 2);
-
-	// esp_err_t ret;
-	// int x;
-	// static spi_transaction_t trans[4];
-
-	// for (x=0; x<4; x++) {
-	// 	memset(&trans[x], 0, sizeof(spi_transaction_t));
-	// 	if ((x&1)==0) {
-	// 		//Even transfers are commands
-	// 		trans[x].length=8;
-	// 		trans[x].user=(void*)0;
-	// 	} else {
-	// 		//Odd transfers are data
-	// 		trans[x].user=(void*)1;
-	// 	}
-	// 	// trans[x].flags=SPI_TRANS_USE_TXDATA;
-	// }
-    // trans[0].tx_data[0]=0x33;
-    // trans[1].tx_data[0]=0;
-    // trans[1].tx_data[1]=0;
-    // trans[1].tx_data[2]=1;
-    // trans[1].tx_data[3]=0x40;
-    // trans[1].tx_data[4]=0;
-    // trans[1].tx_data[5]=0;
-    // trans[1].length=48;
-	// trans[2].tx_data[0]=0x2A;								//Column Address Set
-	// trans[3].tx_data[0]=0;								//Start Col High
-	// trans[3].tx_data[1]=0;							//Start Col Low
-	// trans[3].tx_data[2]=(240)>>8;					//End Col High
-	// trans[3].tx_data[3]=(240)&0xff;					//End Col Low
-	// trans[4].tx_data[0]=0x2B;								//Page address set
-	// trans[5].tx_data[0]=0;								//Start page high
-	// trans[5].tx_data[1]=0;								//start page low
-	// trans[5].tx_data[2]=(320)>>8;					//end page high
-	// trans[5].tx_data[3]=(320)&0xff;					//end page low
-	// trans[2].tx_data[0]=0x37;								//memory write
-    // trans[3].length=16;
-	// trans[3].tx_data[0]=value>>8;								//finally send the line data
-	// trans[3].tx_data[1]=value&0xff;								//finally send the line data
-
-    // ets_printf("%x %x\n", value>>8, value&0xff);
-
-	// //Queue all transactions.
-	// for (x=0; x<4; x++) {
-	// 	ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
-	// 	assert(ret==ESP_OK);
-	// }
-    // send_line_finish(spi);
-	// esp_err_t ret;
-	// spi_transaction_t *rtrans;
-	// int x;
-	// static spi_transaction_t trans[2];
-
-	// for (x=0; x<2; x++) {
-	// 	memset(&trans[x], 0, sizeof(spi_transaction_t));
-	// 	trans[x].flags=SPI_TRANS_USE_TXDATA;
-	// }
-    // trans[0].length=8;
-    // trans[0].user=(void*)0;
-	// trans[0].tx_data[0]=0x37;								//Column Address Set
-    // trans[1].length=16;
-    // trans[1].user=(void*)1;
-	// trans[1].tx_data[0]=value>>8;							//Start Col High
-	// trans[1].tx_data[1]=value&0xff;							//Start Col Low
-
-	// //Queue all transactions.
-	// for (x=0; x<2; x++) {
-	// 	ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
-	// 	assert(ret==ESP_OK);
-	// }
-	// for (int x=0; x<2; x++) {
-	// 	ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
-	// 	assert(ret==ESP_OK);
-	// }
 }
 
 void send_color(spi_device_handle_t spi, uint24_RGB* color) {
@@ -342,6 +271,38 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 		send_line_finish(spi);
 	}
 	free(colorbuf);
+}
+
+void scroll_buffer(spi_device_handle_t spi, int screenoffset, bool resetScroll) {
+	// esp_err_t ret;
+	// int x;
+	// static spi_transaction_t trans[10];
+    static int i = 0;
+    // int num_cols;
+    // const static uint8_t data_33[6] = {0,0,1,0x40,0,0};
+    if(resetScroll) {
+        i = 0;
+        scroll_screen(spi, 0);
+    }
+
+    while(i<screenoffset) {
+        send_lines(spi, i, framebuf+(i*240), screenoffset-i < PARALLEL_LINES ? screenoffset-i : PARALLEL_LINES);
+        scroll_screen(spi, 320-i);
+        send_line_finish(spi);
+        // send_scroll_finish(spi);
+        i+=screenoffset-i < PARALLEL_LINES ? screenoffset-i : PARALLEL_LINES;
+    }
+}
+
+void send_scroll_finish(spi_device_handle_t spi) {
+	spi_transaction_t *rtrans;
+	esp_err_t ret;
+	//Wait for all 10 transactions to be done and get back the results.
+	for (int x=0; x<10; x++) {
+		ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
+		assert(ret==ESP_OK);
+		//We could inspect rtrans now if we received any info back. The LCD is treated as write-only, though.
+	}
 }
 
 void send_line_finish(spi_device_handle_t spi) {
