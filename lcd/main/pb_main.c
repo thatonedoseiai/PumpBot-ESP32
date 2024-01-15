@@ -281,11 +281,6 @@ void app_main(void) {
     draw_all_sprites(spi);
     delete_all_sprites();
 
-    error = draw_menu_elements(&text_test[0], typeFace, 17); 
-    if (error)
-        ets_printf("draw menu element\n");
-
-    buffer_all_sprites();
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
         ets_printf("draw menu element\n");
@@ -298,17 +293,22 @@ void app_main(void) {
 	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
+    error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    if (error)
+        ets_printf("draw menu element\n");
+    buffer_all_sprites();
+    delete_all_sprites();
 
     for(int i=0;i<320;i+=8) {
         scroll_buffer(spi, i, i==0);
         vTaskDelay(8 / portTICK_PERIOD_MS);
     }
     scroll_buffer(spi, 0, true);
+    free(framebuf);
 
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
-    free(framebuf);
 
     esp_vfs_littlefs_unregister(conf.partition_label);
 	FT_Done_Face (typeFace);

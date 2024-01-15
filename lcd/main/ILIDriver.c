@@ -12,7 +12,7 @@
 #include "ILIDriver.h"
 // #include "pretty_effect.h"
 
-uint24_RGB* framebuf;
+uint24_RGB* framebuf = NULL;
 
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd, bool keep_cs_active) {
 	esp_err_t ret;
@@ -71,8 +71,8 @@ void lcd_init(spi_device_handle_t spi) {
 	gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
 	int cmd=0;
 	const lcd_init_cmd_t* lcd_init_cmds;
-    framebuf = malloc(320*240*sizeof(uint24_RGB));
-    memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
+    // framebuf = malloc(320*240*sizeof(uint24_RGB));
+    // memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
 
 	//Initialize non-SPI GPIOs
 	gpio_config_t io_conf = {};
@@ -158,12 +158,21 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num
 }
 
 void buffer_fillcolor(uint24_RGB* col) {
+    if(framebuf == NULL) {
+        framebuf = malloc(320*240*sizeof(uint24_RGB));
+        memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
+    }
     for(int i=0;i<320*240;i++) {
         framebuf[i] = *col;
     }
 }
 
 void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
+    if(framebuf == NULL) {
+        framebuf = malloc(320*240*sizeof(uint24_RGB));
+        memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
+    }
+
     for(int i=0;i<width;i++) {
         for(int j=0;j<height;j++) {
             framebuf[(i+x)*240+(j+y)] = bitmap[i*height+j];
