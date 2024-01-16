@@ -29,7 +29,7 @@ const spi_device_interface_config_t devcfg={
     .clock_speed_hz=40*1000*1000,
     .mode=0,                        // SPI mode 0
     .spics_io_num=PIN_NUM_CS,       // CS pin
-    .queue_size=7,                  // queuing 7 transactions at a time
+    .queue_size=8,                  // queuing 7 transactions at a time
     .pre_cb=lcd_spi_pre_transfer_callback,
     // Specify pre-transfer callback to handle D/C line
 };

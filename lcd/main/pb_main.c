@@ -35,9 +35,15 @@ extern uint32_t text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
+extern uint64_t advance_x_cache[SPRITE_LIMIT];
+extern uint16_t y_loc_cache[SPRITE_LIMIT];
+extern uint16_t width_cache[SPRITE_LIMIT];
+extern uint16_t height_cache[SPRITE_LIMIT];
 //
 
 static char connect_flag = 0;
+static spi_device_handle_t spi;
+
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -114,6 +120,9 @@ int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) 
         ets_printf("Event: position %d, direction %s\n", state->position,
                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
     }
+
+    
+
     return 0;
 }
 
@@ -141,6 +150,10 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     int curchar;
     uint8_t alphaR, alphaG, alphaB;
     uint24_RGB* bg;
+    uint64_t advance_x;
+    uint16_t width;
+    uint16_t height;
+    FT_Int bmp_top;
     if (bgcol == NULL)
         bg = background_color;
     else
@@ -148,17 +161,22 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     SPRITE_BITMAP* bmp;
     while (*reader_head != 0) {
         curchar = decode_code_point(&reader_head);
-		FT_Set_Transform(typeFace, NULL, &offset);
-		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-        if(err)
-            return err;
 
         for(int i=0;i<text_cache_size;++i) {
             if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height) {
                 bmp = bitmap_cache[i];
+                bmp_top = 240 - y_loc_cache[i] - startY;
+                advance_x = advance_x_cache[i];
+                width = width_cache[i];
+                height = height_cache[i];
                 goto skip_bitmap_assignment;
             }
         }
+
+		FT_Set_Transform(typeFace, NULL, &offset);
+		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+        if(err)
+            return err;
 
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
@@ -166,28 +184,37 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
-            alphaB = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)];
-            alphaG = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width];
-            alphaR = slot->bitmap.buffer[p/(slot->bitmap.width)*slot->bitmap.width*3+(p%slot->bitmap.width)+slot->bitmap.width*2];
+            alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
+            alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
+            alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
 			spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
 			spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
 			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
 		}
 
+		bmp_top = 240 - slot->bitmap_top;
+        advance_x = slot->advance.x;
+        width = slot->bitmap.width;
+        height = slot->bitmap.rows/3;
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
+            advance_x_cache[text_cache_size] = advance_x;
+            y_loc_cache[text_cache_size] = 240 - startY - bmp_top;
+            width_cache[text_cache_size] = width;
+            height_cache[text_cache_size] = height;
             text_cache_size++;
         }
 
 skip_bitmap_assignment:
-		FT_Int bmp_top = 240 - slot->bitmap_top;
-		int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
+		int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
+
         if (sprites && curchar != ' ')
             sprites[i++] = inx;
 
-		offset.x += slot->advance.x;
+		offset.x += advance_x;
 		offset.y += slot->advance.y;
 	}
 
@@ -205,8 +232,6 @@ void app_main(void) {
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
     background_color = &fillColor;
-
-	spi_device_handle_t spi;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
@@ -234,6 +259,7 @@ void app_main(void) {
 
 
 	send_color(spi, background_color);
+    buffer_fillcolor(background_color);
 
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
@@ -241,11 +267,6 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
-
-    connect_flag = 0;
-	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
-		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
-	}
 
     runprgfile(&loaded_prg, "/mainfs/string");
 
@@ -256,20 +277,42 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
+    error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
+    draw_all_sprites(spi);
+    delete_all_sprites();
+
+    // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
         ets_printf("draw menu element\n");
 
     ets_printf("cache size: %d\n", text_cache_size);
 
-	esp_vfs_littlefs_unregister(conf.partition_label);
+	// draw_all_sprites(spi);
+
+    connect_flag = 0;
+	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
+		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
+	}
+    error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    if (error)
+        ets_printf("draw menu element\n");
+    buffer_all_sprites();
+    delete_all_sprites();
+
+    for(int i=0;i<320;i+=8) {
+        scroll_buffer(spi, i, i==0);
+        vTaskDelay(8 / portTICK_PERIOD_MS);
+    }
+    scroll_buffer(spi, 0, true);
+    free(framebuf);
+
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
-	FT_Done_Face (typeFace);
-	FT_Done_FreeType(lib);
-	ets_printf("%s\n", "Rendering characters done! Sending image data...");
-	draw_all_sprites(spi);
     ESP_ERROR_CHECK(esp_wifi_deinit());
 	ets_printf("finished sending display data!\n");
+
+    esp_vfs_littlefs_unregister(conf.partition_label);
+	FT_Done_Face (typeFace);
+	FT_Done_FreeType(lib);
 }
 
 // vim: foldmethod=marker

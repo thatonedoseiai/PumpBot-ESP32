@@ -51,6 +51,8 @@ typedef struct {
 	uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } lcd_init_cmd_t;
 
+extern uint24_RGB* framebuf;
+
 //Place data into DRAM. Constant data gets placed into DROM by default, which is not accessible by DMA.
 // {{{
 DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
@@ -82,8 +84,8 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	{0xC5, {0x35, 0x3E}, 2},
 	/* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
 	{0xC7, {0xBE}, 1},
-	/* Memory access contorl, MX=MY=0, MV=1, ML=0, BGR=1, MH=0 */
-	{0x36, {0x28}, 1},
+	/* Memory access contorl, MX=MY=0, MV=0, ML=0, BGR=1, MH=0 */
+	{0x36, {0x18}, 1},
 	/* Pixel format, 18bits/pixel for RGB/MCU interface */
 	{0x3A, {0x66}, 1},
 	/* Frame rate control, f=fosc, 70Hz fps */
@@ -92,6 +94,8 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	{0xF2, {0x08}, 1},
 	/* Gamma set, curve 1 */
 	{0x26, {0x01}, 1},
+    /* vertical scrolling area definition */
+	{0x33, {0x00, 0x00, 0x01, 0x40, 0x00, 0x00}, 6},
 	/* Positive gamma correction */
 	{0xE0, {0x1F, 0x1A, 0x18, 0x0A, 0x0F, 0x06, 0x45, 0X87, 0x32, 0x0A, 0x07, 0x02, 0x07, 0x05, 0x00}, 15},
 	/* Negative gamma correction */
@@ -148,7 +152,17 @@ void lcd_init(spi_device_handle_t spi);
  * sent faster (compared to calling spi_device_transmit several times), and at
  * the mean while the lines for next transactions can get calculated.
  */
-void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num_cols);
+
+/*
+ * scroll the screen a certain amount
+ */
+void scroll_screen(spi_device_handle_t spi, uint16_t value);
+
+/*
+ * fills the buffer with one color.
+ */
+void buffer_fillcolor(uint24_RGB* col);
 
 /*
  * fills the whole screen with one color.
@@ -156,9 +170,20 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata);
 void send_color(spi_device_handle_t spi, uint24_RGB* color);
 
 /*
+ * writes a sprite to the framebuffer.
+ */
+void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) ;
+
+/*
  * draws a sprite at an x and y coordinate.
  */
 void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap);
+
+/*
+ * scrolls the framebuffer onto the screen at the offset screenoffset.
+ * screenoffset must be strictly increasing, or else parts of the screen on the right will show up on the left.
+ */
+void scroll_buffer(spi_device_handle_t spi, int screenoffset, bool resetScroll);
 
 /* wait for line transfers to be done and check their status.
  *
@@ -166,6 +191,12 @@ void draw_sprite(spi_device_handle_t spi, uint16_t x, uint16_t y, uint16_t width
  * See the comments at the end of ILIDriver.c->send_lines
  */
 void send_line_finish(spi_device_handle_t spi);
+
+/*
+ * wait for scroll transfers to be done and check the status
+ *
+ */
+void send_scroll_finish(spi_device_handle_t spi);
 
 #ifdef __cplusplus
 }

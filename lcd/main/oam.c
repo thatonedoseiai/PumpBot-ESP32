@@ -11,6 +11,10 @@ SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
 uint32_t text_cache[OAM_SIZE];
 int text_size_cache[OAM_SIZE];
 uint8_t text_cache_size;
+uint64_t advance_x_cache[OAM_SIZE];
+uint16_t y_loc_cache[OAM_SIZE];
+uint16_t width_cache[OAM_SIZE];
+uint16_t height_cache[OAM_SIZE];
 uint24_RGB* background_color;
 
 int find_empty_index(uint8_t* inds) {
@@ -58,6 +62,24 @@ void draw_all_sprites(spi_device_handle_t spi) {
 		if(spr != NULL && spr->draw) {
 			draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
 			send_line_finish(spi);
+		}
+	}
+}
+
+void buffer_all_sprites() {
+	SPRITE_24_H* spr;
+	for(int i=0;i<OAM_SIZE;++i) {
+		spr = OAM_SPRITE_TABLE[i];
+		if(spr != NULL && spr->draw) {
+			buffer_sprite(spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
+		}
+	}
+}
+
+void delete_all_sprites() {
+	for(int i=0;i<OAM_SIZE;++i) {
+		if(OAM_SPRITE_TABLE[i] != NULL) {
+			delete_sprite(i);
 		}
 	}
 }

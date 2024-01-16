@@ -12,6 +12,8 @@
 #include "ILIDriver.h"
 // #include "pretty_effect.h"
 
+uint24_RGB* framebuf = NULL;
+
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd, bool keep_cs_active) {
 	esp_err_t ret;
 	spi_transaction_t t;
@@ -69,6 +71,8 @@ void lcd_init(spi_device_handle_t spi) {
 	gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
 	int cmd=0;
 	const lcd_init_cmd_t* lcd_init_cmds;
+    // framebuf = malloc(320*240*sizeof(uint24_RGB));
+    // memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
 
 	//Initialize non-SPI GPIOs
 	gpio_config_t io_conf = {};
@@ -98,12 +102,15 @@ void lcd_init(spi_device_handle_t spi) {
 	}
 }
 
-void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
+void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num_cols) {
 	esp_err_t ret;
 	int x;
 	//Transaction descriptors. Declared static so they're not allocated on the stack; we need this memory even when this
 	//function is finished because the SPI driver needs access to it even while we're already calculating the next line.
 	static spi_transaction_t trans[6];
+    if(num_cols > PARALLEL_LINES) {
+        num_cols = PARALLEL_LINES;
+    }
 
 	//In theory, it's better to initialize trans and data only once and hang on to the initialized
 	//variables. We allocate them on the stack, so we need to re-init them each call.
@@ -123,28 +130,54 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata) {
 	trans[0].tx_data[0]=0x2A;						//Column Address Set
 	trans[1].tx_data[0]=0;							//Start Col High
 	trans[1].tx_data[1]=0;							//Start Col Low
-	trans[1].tx_data[2]=(320)>>8;					//End Col High
-	trans[1].tx_data[3]=(320)&0xff;					//End Col Low
+	trans[1].tx_data[2]=(240)>>8;					//End Col High
+	trans[1].tx_data[3]=(240)&0xff;					//End Col Low
 	trans[2].tx_data[0]=0x2B;						//Page address set
 	trans[3].tx_data[0]=ypos>>8;					//Start page high
 	trans[3].tx_data[1]=ypos&0xff;					//start page low
-	trans[3].tx_data[2]=(ypos+PARALLEL_LINES)>>8;	//end page high
-	trans[3].tx_data[3]=(ypos+PARALLEL_LINES)&0xff;	//end page low
+	trans[3].tx_data[2]=(ypos+num_cols)>>8;	//end page high
+	trans[3].tx_data[3]=(ypos+num_cols)&0xff;	//end page low
 	trans[4].tx_data[0]=0x2C;						//memory write
 	trans[5].tx_buffer=linedata;					//finally send the line data
-	trans[5].length=320*3*8*PARALLEL_LINES;			//Data length, in bits
+	trans[5].length=240*3*8*num_cols;			//Data length, in bits
 	trans[5].flags=0;								//undo SPI_TRANS_USE_TXDATA flag
 
 	//Queue all transactions.
 	for (x=0; x<6; x++) {
 		ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
-		assert(ret==ESP_OK);
+		if(ret!=ESP_OK) {
+            ets_printf("%d %d %d\n", ret, ESP_OK, ret==ESP_OK);
+            assert(false);
+        }
 	}
 
 	//When we are here, the SPI driver is busy (in the background) getting the transactions sent. That happens
 	//mostly using DMA, so the CPU doesn't have much to do here. We're not going to wait for the transaction to
 	//finish because we may as well spend the time calculating the next line. When that is done, we can call
 	//send_line_finish, which will wait for the transfers to be done and check their status.
+}
+
+void buffer_fillcolor(uint24_RGB* col) {
+    if(framebuf == NULL) {
+        framebuf = malloc(320*240*sizeof(uint24_RGB));
+        memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
+    }
+    for(int i=0;i<320*240;i++) {
+        framebuf[i] = *col;
+    }
+}
+
+void buffer_sprite(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
+    if(framebuf == NULL) {
+        framebuf = malloc(320*240*sizeof(uint24_RGB));
+        memset(framebuf, 0, 320*240*sizeof(uint24_RGB));
+    }
+
+    for(int i=0;i<width;i++) {
+        for(int j=0;j<height;j++) {
+            framebuf[(i+x)*240+(j+y)] = bitmap[i*height+j];
+        }
+    }
 }
 
 void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t width, uint16_t height, uint24_RGB* bitmap) {
@@ -166,15 +199,15 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 		trans[x].flags=SPI_TRANS_USE_TXDATA;
 	}
 	trans[0].tx_data[0]=0x2A;								//Column Address Set
-	trans[1].tx_data[0]=sx>>8;								//Start Col High
-	trans[1].tx_data[1]=sx&0xff;								//Start Col Low
-	trans[1].tx_data[2]=(sx+width-1)>>8;						//End Col High
-	trans[1].tx_data[3]=(sx+width-1)&0xff;					//End Col Low
+	trans[1].tx_data[0]=y>>8;								//Start Col High
+	trans[1].tx_data[1]=y&0xff;							//Start Col Low
+	trans[1].tx_data[2]=(y+height-1)>>8;					//End Col High
+	trans[1].tx_data[3]=(y+height-1)&0xff;					//End Col Low
 	trans[2].tx_data[0]=0x2B;								//Page address set
-	trans[3].tx_data[0]=y>>8;								//Start page high
-	trans[3].tx_data[1]=y&0xff;								//start page low
-	trans[3].tx_data[2]=(y+height-1)>>8;					//end page high
-	trans[3].tx_data[3]=(y+height-1)&0xff;					//end page low
+	trans[3].tx_data[0]=sx>>8;								//Start page high
+	trans[3].tx_data[1]=sx&0xff;								//start page low
+	trans[3].tx_data[2]=(sx+width-1)>>8;					//end page high
+	trans[3].tx_data[3]=(sx+width-1)&0xff;					//end page low
 	trans[4].tx_data[0]=0x2C;								//memory write
 	trans[5].tx_buffer=bitmap;								//finally send the line data
 	trans[5].length=width*height*sizeof(uint24_RGB) << 3;	//Data length, in bits
@@ -185,10 +218,23 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 		ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
 		assert(ret==ESP_OK);
 	}
+
+}
+
+void scroll_screen(spi_device_handle_t spi, uint16_t value) {
+    const static uint8_t data_33[6] = {0,0,1,0x40,0,0};
+    static uint8_t data_37[2];
+    data_37[0]=value>>8;
+    data_37[1]=value&0xff;
+
+    lcd_cmd(spi, 0x33, false);
+    lcd_data(spi, data_33, 6);
+    lcd_cmd(spi, 0x37, false);
+    lcd_data(spi, data_37, 2);
 }
 
 void send_color(spi_device_handle_t spi, uint24_RGB* color) {
-	int pixelCount = 320*PARALLEL_LINES;
+	int pixelCount = 400*PARALLEL_LINES;
 	int bytelength = 3*pixelCount;
 	uint24_RGB* colorbuf = malloc(sizeof(uint24_RGB) * bytelength);
 	for (int i = 0; i < pixelCount; ++i)
@@ -197,6 +243,7 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 		esp_err_t ret;
 		int x;
 		static spi_transaction_t trans[6];
+        // ets_printf("ypos: %d\n", ypos);
 
 		for (x=0; x<6; x++) {
 			memset(&trans[x], 0, sizeof(spi_transaction_t));
@@ -212,15 +259,15 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 			trans[x].flags=SPI_TRANS_USE_TXDATA;
 		}
 		trans[0].tx_data[0]=0x2A;		   //Column Address Set
-		trans[1].tx_data[0]=0;			  //Start Col High
-		trans[1].tx_data[1]=0;			  //Start Col Low
-		trans[1].tx_data[2]=(320)>>8;	   //End Col High
-		trans[1].tx_data[3]=(320)&0xff;	 //End Col Low
+		trans[1].tx_data[0]=ypos>>8;			  //Start Col High
+		trans[1].tx_data[1]=ypos&0xff;			  //Start Col Low
+		trans[1].tx_data[2]=(ypos+PARALLEL_LINES)>>8;	   //End Col High
+		trans[1].tx_data[3]=(ypos+PARALLEL_LINES)&0xff;	 //End Col Low
 		trans[2].tx_data[0]=0x2B;		   //Page address set
-		trans[3].tx_data[0]=ypos>>8;		//Start page high
-		trans[3].tx_data[1]=ypos&0xff;	  //start page low
-		trans[3].tx_data[2]=(ypos+PARALLEL_LINES)>>8;	//end page high
-		trans[3].tx_data[3]=(ypos+PARALLEL_LINES)&0xff;  //end page low
+		trans[3].tx_data[0]=0;		//Start page high
+		trans[3].tx_data[1]=0;	  //start page low
+		trans[3].tx_data[2]=(320)>>8;	//end page high
+		trans[3].tx_data[3]=(320)&0xff;  //end page low
 		trans[4].tx_data[0]=0x2C;		   //memory write
 		trans[5].tx_buffer=colorbuf;		//finally send the color data
 		trans[5].length=bytelength << 3;		  //Data length, in bits
@@ -233,6 +280,38 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 		send_line_finish(spi);
 	}
 	free(colorbuf);
+}
+
+void scroll_buffer(spi_device_handle_t spi, int screenoffset, bool resetScroll) {
+	// esp_err_t ret;
+	// int x;
+	// static spi_transaction_t trans[10];
+    static int i = 0;
+    // int num_cols;
+    // const static uint8_t data_33[6] = {0,0,1,0x40,0,0};
+    if(resetScroll) {
+        i = 0;
+        scroll_screen(spi, 0);
+    }
+
+    while(i<screenoffset) {
+        send_lines(spi, i, framebuf+(i*240), screenoffset-i < PARALLEL_LINES ? screenoffset-i : PARALLEL_LINES);
+        scroll_screen(spi, 320-i);
+        send_line_finish(spi);
+        // send_scroll_finish(spi);
+        i+=screenoffset-i < PARALLEL_LINES ? screenoffset-i : PARALLEL_LINES;
+    }
+}
+
+void send_scroll_finish(spi_device_handle_t spi) {
+	spi_transaction_t *rtrans;
+	esp_err_t ret;
+	//Wait for all 10 transactions to be done and get back the results.
+	for (int x=0; x<10; x++) {
+		ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
+		assert(ret==ESP_OK);
+		//We could inspect rtrans now if we received any info back. The LCD is treated as write-only, though.
+	}
 }
 
 void send_line_finish(spi_device_handle_t spi) {
