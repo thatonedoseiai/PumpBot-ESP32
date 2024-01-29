@@ -74,13 +74,13 @@ const MENU_ELEMENT welcome_menu[] = {
 };
 
 const MENU_ELEMENT text_test[] = {
-    	{
+    {
         .x = 160,
         .textsize = 2,
         .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
         .vline = true
     },
-    	{
+    {
         .text = "Large - 30px",
         .x = 0,
         .y = 218,
@@ -91,7 +91,7 @@ const MENU_ELEMENT text_test[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
+    {
         .text = "Medium - 22px",
         .x = 0,
         .y = 152,
@@ -102,7 +102,7 @@ const MENU_ELEMENT text_test[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
+    {
         .text = "Standard - 18px",
         .x = 0,
         .y = 92,
@@ -113,7 +113,7 @@ const MENU_ELEMENT text_test[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
+    {
         .text = "Small - 12px",
         .x = 0,
         .y = 40,
@@ -124,7 +124,7 @@ const MENU_ELEMENT text_test[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-     	{
+    {
         .text = "36px",
         .x = 162,
         .y = 218,
@@ -135,7 +135,7 @@ const MENU_ELEMENT text_test[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
+    {
         .text = "30px",
         .x = 162,
         .y = 152,
@@ -262,6 +262,92 @@ const MENU_ELEMENT text_test[] = {
         .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    }
+};
+
+const MENU_ELEMENT menuhome[] = {
+    {
+        .text = "XXX%", //Percentage of current channel
+        .x = 0,
+        .y = 176,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 48,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "⟳", //static symbol
+        .x = 0,
+        .y = 112,
+        .textlen = 1,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "CHX⤓", //X = current channel
+        .x = 0,
+        .y = 52,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 20,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "OXX", //OFF or ON for current channel
+        .x = 2,
+        .y = 22,
+        .textlen = 3,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 20,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "SET", //Settings menu, will be custom icon later
+        .x = 268,
+        .y = 22,
+        .textlen = 3,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 20,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //I know this shit won't line up, I'm lazy
+        .text = "0(OXX)  1(OXX)  2(OXX)  3(OXX)",//and this is also temp(?)
+        .x = 0,
+        .y = 32,
+        .textlen = 30,
+        .numspaces = 6,
+        .center = true,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { // yeah this definitely won't work as only 2 objects
+        .text = "XXX%  XXX%  XXX%  XXX%",
+        .x = 0,
+        .y = 16,
+        .textlen = 22,
+        .numspaces = 6,
+        .center = false,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Horizontal Line
+        .y = 34,
+        .textsize = 2,
+        .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
+        .hline = true
     }
 };
 

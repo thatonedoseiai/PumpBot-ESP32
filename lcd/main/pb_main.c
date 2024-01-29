@@ -277,7 +277,8 @@ void app_main(void) {
 	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, fontSize << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
-    error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
+    // error = draw_menu_elements(&welcome_menu[0], typeFace, 3); 
+    error = draw_menu_elements(&menuhome[0], typeFace, 8); 
     draw_all_sprites(spi);
     delete_all_sprites();
 
@@ -293,17 +294,17 @@ void app_main(void) {
 	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
 		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
 	}
-    error = draw_menu_elements(&text_test[0], typeFace, 17); 
-    if (error)
-        ets_printf("draw menu element\n");
-    buffer_all_sprites();
-    delete_all_sprites();
+    // error = draw_menu_elements(&text_test[0], typeFace, 17); 
+    // if (error)
+    //     ets_printf("draw menu element\n");
+    // buffer_all_sprites();
+    // delete_all_sprites();
 
-    for(int i=0;i<320;i+=8) {
-        scroll_buffer(spi, i, i==0);
-        vTaskDelay(8 / portTICK_PERIOD_MS);
-    }
-    scroll_buffer(spi, 0, true);
+    // for(int i=0;i<320;i+=8) {
+    //     scroll_buffer(spi, i, i==0);
+    //     vTaskDelay(8 / portTICK_PERIOD_MS);
+    // }
+    // scroll_buffer(spi, 0, true);
     free(framebuf);
 
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));

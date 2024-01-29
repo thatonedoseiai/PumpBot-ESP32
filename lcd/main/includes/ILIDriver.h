@@ -23,16 +23,16 @@ extern "C" {
  before the transaction is sent, the callback will set this line to the correct state.
 */
 
-#define LCD_HOST	HSPI_HOST
+#define LCD_HOST	SPI2_HOST //HSPI_HOST
 
-#define PIN_NUM_MISO 12
-#define PIN_NUM_MOSI 13
-#define PIN_NUM_CLK  14
-#define PIN_NUM_CS   15
+#define PIN_NUM_MISO 10
+#define PIN_NUM_MOSI 46
+#define PIN_NUM_CLK  9
+#define PIN_NUM_CS   38 //remove CS? currently defined to unused pin 
 
-#define PIN_NUM_DC   27
-#define PIN_NUM_RST  2
-#define PIN_NUM_BCKL 5
+#define PIN_NUM_DC   11
+#define PIN_NUM_RST  12
+#define PIN_NUM_BCKL 13
 
 //To speed up transfers, every SPI transfer sends a bunch of lines. This define specifies how many. More means more memory use,
 //but less overhead for setting up / finishing transfers. Make sure 240 is dividable by this.

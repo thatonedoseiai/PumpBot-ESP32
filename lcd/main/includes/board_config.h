@@ -5,10 +5,10 @@
 #include "ILIDriver.h"
 
 #define PIN_NUM_SW0 0
-#define PIN_NUM_SW1 4
-#define PIN_NUM_ENC_A 34
-#define PIN_NUM_ENC_B 35
-#define PIN_NUM_ENC_BTN 36
+#define PIN_NUM_SW1 3
+#define PIN_NUM_ENC_A 17
+#define PIN_NUM_ENC_B 8
+#define PIN_NUM_ENC_BTN 18
 #define SPRITE_LIMIT 255
 
 const spi_bus_config_t buscfg={
