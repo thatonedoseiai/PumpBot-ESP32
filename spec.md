@@ -149,3 +149,5 @@ initialize things:
     7 - setup finished  
 
     Not really sure where to put this but things in regular braces (aka like [This]) are like variables or text strings, not what'd actually be displayed
+
+    Oh also uh... tbd but might be worth making a "disobedient" feature for PumpBot users that like that, where, on the last changed output, it will randomly stay on longer, randomly turn on, or use a higher PWM % than requested (even though the requested PWM value will be shown on the main screen's big % gague, but not the small ones)
