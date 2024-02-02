@@ -28,6 +28,11 @@ const uint24_RGB fillColor = {
 	.pixelG = 0,
 	.pixelB = 0x30,
 };
+const uint24_RGB WHITE = {
+    .pixelR = 0xff,
+    .pixelG = 0xff,
+    .pixelB = 0xff,
+};
 
 // OAM STUFF
 extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
@@ -43,7 +48,8 @@ extern uint16_t height_cache[SPRITE_LIMIT];
 
 static char connect_flag = 0;
 static spi_device_handle_t spi;
-
+static char redraw_flag = 0;
+static int nums[5] = {0,0,0,0,0};
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -111,18 +117,34 @@ done:
 }
 
 int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
-    (void) args;
+    // (void) args;
+    static FT_Face face;
+    static char numBuf[6];
+    static int old_position = -1;
+    static int newNums[5] = {0,0,0,0,0};
+    int err;
+
+    face = (FT_Face) args;
 
     if(isNotEvent) {
         ets_printf("Poll: position %d, direction %s\n", state->position,
-               state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+        if(old_position != state->position) {
+            old_position = state->position;
+            sprintf(numBuf, "%03d%%", old_position);
+            err = draw_text(40, 176, numBuf, face, newNums, &WHITE, &fillColor);
+            for(int i=0;i<5;++i) {
+                if(nums[i] != 0 && nums[i] > 0)
+                    delete_sprite(nums[i]);
+                nums[i] = newNums[i];
+            }
+            redraw_flag = 1;
+            return strlen(numBuf);
+        }
     } else {
         ets_printf("Event: position %d, direction %s\n", state->position,
                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
     }
-
-    
-
     return 0;
 }
 
@@ -291,8 +313,15 @@ void app_main(void) {
 	// draw_all_sprites(spi);
 
     connect_flag = 0;
+    int txtln = 0;
+    FT_Set_Char_Size (typeFace, 48 << 6, 0, 100, 0); // 0 = copy last value
 	while(gpio_get_level(PIN_NUM_SW0) && (connect_flag == 0)) {
-		rotaryAction(event_queue, &info, &event, &state, exampleCallback, NULL);
+		txtln = rotaryAction(event_queue, &info, &event, &state, exampleCallback, (void*) typeFace);
+        if(redraw_flag) {
+            center_sprite_group_x(nums, txtln);
+            draw_sprites(spi, nums, txtln);
+            redraw_flag = 0;
+        }
 	}
     // error = draw_menu_elements(&text_test[0], typeFace, 17); 
     // if (error)

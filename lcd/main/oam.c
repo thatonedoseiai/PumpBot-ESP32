@@ -18,12 +18,15 @@ uint16_t height_cache[OAM_SIZE];
 uint24_RGB* background_color;
 
 int find_empty_index(uint8_t* inds) {
-	if(inds[0]) {
-		uint8_t k = inds[1];
-		inds[1] = inds[inds[0]--];
-		return k;
-	}
-	return -1;
+    (void) inds;
+    static int last_index = 0;
+	int i = last_index;
+    do {
+        if(OAM_SPRITE_TABLE[i]==NULL)
+            return i;
+		i=(i+1)%OAM_SIZE;
+    } while(i!=last_index);
+    return -1;
 }
 
 void init_oam() {
@@ -63,6 +66,19 @@ void draw_all_sprites(spi_device_handle_t spi) {
 			draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
 			send_line_finish(spi);
 		}
+	}
+}
+
+void draw_sprites(spi_device_handle_t spi, int* array, int numspr) {
+	SPRITE_24_H* spr;
+	for(int i=0;i<numspr;++i) {
+        if(array[i] > -1 && array[i] < OAM_SIZE) {
+            spr = OAM_SPRITE_TABLE[array[i]];
+            if(spr != NULL && spr->draw) {
+                draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
+                send_line_finish(spi);
+            }
+        }
 	}
 }
 

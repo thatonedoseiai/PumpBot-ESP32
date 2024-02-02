@@ -54,6 +54,11 @@ void buffer_all_sprites();
 void draw_all_sprites(spi_device_handle_t spi);
 
 /*
+ * draws all the sprites whose ids are in a given array
+ */
+void draw_sprites(spi_device_handle_t spi, int* array, int numspr);
+
+/*
  * deletes all sprites, clearing the OAM
  */
 void delete_all_sprites();
