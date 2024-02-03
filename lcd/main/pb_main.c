@@ -290,7 +290,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    runprgfile(&loaded_prg, "/mainfs/string");
+    runprgfile(&loaded_prg, "/mainfs/helloworld");
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 
