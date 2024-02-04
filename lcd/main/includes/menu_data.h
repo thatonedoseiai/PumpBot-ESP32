@@ -383,6 +383,8 @@ const MENU_ELEMENT menuwelcome[] = { //all text needs to be dynamic for language
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
+};
+
 const MENU_ELEMENT menusetup0[] = {
     {
         .text = "Choose your Language",

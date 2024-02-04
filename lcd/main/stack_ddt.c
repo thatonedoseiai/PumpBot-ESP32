@@ -20,7 +20,7 @@
 // uint16_t sp;
 // unsigned char* prg;
 
-void run(PRG* _p) {
+void run(PRG* _p, rotary_encoder_info_t* info) {
 	const static void* ops[] = {
 		&&nop, &&sleep, &&pushi32, &&pushi16, &&iprint, &&fprint, &&ftoi, &&itof,
 		&&iadd, &&isub, &&imul, &&idiv, &&fadd, &&fsub, &&fmul, &&fdiv,
@@ -29,11 +29,12 @@ void run(PRG* _p) {
 		&&sprint, &&lsl, &&lsr, &&mod, &&pushi8, &&neg, &&negf, 
 		&&c0, &&c1, &&c2, &&c3, &&c4, &&c5, &&c6, &&c7, &&malloca, &&freea, &&indexab, &&indexa, &&indexaw, &&storea,
 		&&store0, &&store1, &&store2, &&store3, &&store4, &&load0, &&load1, &&load2, &&load3, &&load4, 
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &&push_rotenc_state, 
 		&&halt
 	};
 
 	float res;
+	rotary_encoder_state_t rotenc_state;
 
 	#define NEXT() goto _NEXT_INSTR__
 _NEXT_INSTR__:
@@ -45,6 +46,11 @@ _NEXT_INSTR__:
 		_p->isrid = 255;
 	}
 	#endif
+	if(_p->instrs_execd == 0) {
+		vTaskDelay(10);
+		_p->instrs_execd = MAX_INSTRS_BEFORE_PAUSE;
+	}
+	_p->instrs_execd--;
 	_p->pc++;
 	goto *ops[_p->prg[_p->pc-1]];
 nop:
@@ -355,7 +361,13 @@ load4:
 	_p->sp++;
 	_p->stack[_p->sp] = _p->locals[4]; 
 	NEXT();
-	halt:
+push_rotenc_state:
+	_p->sp+=2;
+	ESP_ERROR_CHECK(rotary_encoder_get_state(info, &rotenc_state));
+	_p->stack[_p->sp-1] = rotenc_state.direction;
+	_p->stack[_p->sp] = rotenc_state.position;
+	NEXT();
+halt:
 }
 
 #ifdef NUM_ISRS
@@ -378,6 +390,7 @@ void prg_init(PRG* k) {
 	k->stack = malloc(STACK_SIZE * sizeof(uint32_t));
 	k->locals = malloc(NUMLOCALS * sizeof(uint32_t));
 	k->sp = -1;
+	k->instrs_execd = MAX_INSTRS_BEFORE_PAUSE;
 #ifdef NUM_ISRS
 	k->pc = sizeof(uint32_t) * NUM_ISRS;
 	k->isrid = 0;
@@ -386,7 +399,7 @@ void prg_init(PRG* k) {
 #endif
 }
 
-int runprgfile(PRG* k, char* prgname) {
+int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info) {
     FILE* infile = fopen(prgname, "r");
     if(infile == NULL)
         return 1;
@@ -413,7 +426,7 @@ int runprgfile(PRG* k, char* prgname) {
 	// pthread_create(&thread_id, NULL, cause_isr_wrapper, (void*) argp);
 	#endif
 
-    run(k);
+    run(k, info);
     free(buffer);
     // if(spi_flash_munmap(buffer, statbuf.st_size)) {
     //     return 1;
