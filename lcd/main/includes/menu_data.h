@@ -350,5 +350,138 @@ const MENU_ELEMENT menuhome[] = {
         .hline = true
     }
 };
+const MENU_ELEMENT menuwelcome[] = { //all text needs to be dynamic for language changes! 
+    { // (also unsure if \n works. Make it work!)
+        .text = "Welcome To",
+        .x = 0,
+        .y = 224,
+        .textlen = 10,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 32,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Pumpbot!",
+        .x = 0,
+        .y = 192,
+        .textlen = 8,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 32,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Press ⤓ to Continue",
+        .y = 32,
+        .textlen = 19,
+        .numspaces = 3,
+        .center = true,
+        .textsize = 20,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+const MENU_ELEMENT menusetup0[] = {
+    {
+        .text = "Choose your Language",
+        .x = 0,
+        .y = 224,
+        .textlen = 20,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 32,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 176,
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Language", 
+        .x = 32,
+        .y = 168,
+        .textlen = 8,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "English", //Really would help with right justification!!! Please!!!
+        .x = 220,
+        .y = 168,
+        .textlen = 7,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 144,
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Bottom menu
+        .y = 24,
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Back",
+        .x = 0,
+        .y = 18,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+        .x = 0,
+        .y = 260,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 16,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    }
+};
+const MENU_ELEMENT menusetupdone[] = {
+       {
+        .text = "Setup Complete!",
+        .x = 0,
+        .y = 224,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 32,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Press ⤓ to Continue",
+        .x = 0,
+        .y = 32,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 20,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+};
+
 
 #endif
