@@ -6,3 +6,12 @@ print("the sprites are at:")
 for i=1,#k do
     print(k[i])
 end
+i=200
+while(getgpio(0)) do
+    print(readrotary()[2])
+    if(i == 0) then
+        i = 201
+        wait(10)
+    end
+    i=i-1
+end

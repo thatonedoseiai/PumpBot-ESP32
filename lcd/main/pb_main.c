@@ -56,6 +56,7 @@ static char redraw_flag = 0;
 static int nums[5] = {0,0,0,0,0};
 static lua_State* L;
 static FT_Face typeFace; // because lua is required to use this, it must remain global
+static rotary_encoder_info_t* infop; // also because of lua
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -91,6 +92,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 	ESP_ERROR_CHECK(rotary_encoder_init(info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(info, false));
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
+    infop = info;
     wifi_init_config_t wificfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wificfg));
     // if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
@@ -299,6 +301,32 @@ static int l_setsize(lua_State* L) {
     return 0;
 }
 
+static int l_readrotary(lua_State* L) {
+    rotary_encoder_state_t state = { 0 };
+    rotary_encoder_get_state(infop, &state);
+    lua_newtable(L);
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, state.direction);
+    lua_settable(L, -3);
+    lua_pushnumber(L, 2);
+    lua_pushnumber(L, state.position);
+    lua_settable(L, -3);
+    return 1;
+}
+
+static int l_getgpio(lua_State* L) {
+    int x = luaL_checkinteger(L, 1);
+    int d = gpio_get_level(x);
+    lua_pushboolean(L, d);
+    return 1;
+}
+
+static int l_wait(lua_State* L) {
+    int x = luaL_checkinteger(L, 1);
+    vTaskDelay(x);
+    return 0;
+}
+
 // static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 void app_main(void) {
 	static FT_Library lib;
@@ -322,6 +350,12 @@ void app_main(void) {
     lua_setglobal(L, "draw_text");
     lua_pushcfunction(L, l_setsize);
     lua_setglobal(L, "set_char_size");
+    lua_pushcfunction(L, l_readrotary);
+    lua_setglobal(L, "readrotary");
+    lua_pushcfunction(L, l_getgpio);
+    lua_setglobal(L, "getgpio");
+    lua_pushcfunction(L, l_wait);
+    lua_setglobal(L, "wait");
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");
@@ -354,8 +388,7 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_start());
 
     // runprgfile(&loaded_prg, "/mainfs/rotenc_while_test", &info, typeFace);
-	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
-    (void) luaL_dofile(L, "/mainfs/test.lua");
+	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 
@@ -376,6 +409,8 @@ void app_main(void) {
     ets_printf("cache size: %d\n", text_cache_size);
 
 	// draw_all_sprites(spi);
+
+    (void) luaL_dofile(L, "/mainfs/test.lua");
 
     connect_flag = 0;
     int txtln = 0;
