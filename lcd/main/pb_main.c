@@ -18,6 +18,10 @@
 #include "board_config.h"
 #include "esp_event.h"
 
+#include <lua/lua.h>
+#include <lua/lauxlib.h>
+#include <lua/lualib.h>
+
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
 const int fontSize = 20;
@@ -50,6 +54,8 @@ static char connect_flag = 0;
 static spi_device_handle_t spi;
 static char redraw_flag = 0;
 static int nums[5] = {0,0,0,0,0};
+static lua_State* L;
+static FT_Face typeFace; // because lua is required to use this, it must remain global
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -118,13 +124,12 @@ done:
 
 int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
     // (void) args;
-    static FT_Face face;
     static char numBuf[6];
     static int old_position = -1;
     static int newNums[5] = {0,0,0,0,0};
     int err;
 
-    face = (FT_Face) args;
+    FT_Face t_face = (FT_Face) args;
 
     if(isNotEvent) {
         ets_printf("Poll: position %d, direction %s\n", state->position,
@@ -132,7 +137,7 @@ int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) 
         if(old_position != state->position) {
             old_position = state->position;
             sprintf(numBuf, "%03d%%", old_position);
-            err = draw_text(40, 176, numBuf, face, newNums, &WHITE, &fillColor);
+            err = draw_text(40, 176, numBuf, t_face, newNums, &WHITE, &fillColor);
             for(int i=0;i<5;++i) {
                 if(nums[i] != 0 && nums[i] > 0)
                     delete_sprite(nums[i]);
@@ -243,10 +248,61 @@ skip_bitmap_assignment:
     return 0;
 }
 
+static int l_draw_text(lua_State* L) {
+    // int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    size_t len;
+    const char* str = luaL_checklstring(L, 3, &len);
+    luaL_checktype(L, 4, LUA_TTABLE);
+    luaL_checktype(L, 5, LUA_TTABLE);
+    uint24_RGB fgcol, bgcol;
+    int sprites[len];
+
+    lua_pushinteger(L, 1);
+    lua_gettable(L, 4);
+    fgcol.pixelR = luaL_checkinteger(L, -1);
+    lua_pushinteger(L, 1);
+    lua_gettable(L, 5);
+    bgcol.pixelR = luaL_checkinteger(L, -1);
+
+    lua_pushinteger(L, 2);
+    lua_gettable(L, 4);
+    fgcol.pixelG = luaL_checkinteger(L, -1);
+    lua_pushinteger(L, 2);
+    lua_gettable(L, 5);
+    bgcol.pixelG = luaL_checkinteger(L, -1);
+
+    lua_pushinteger(L, 3);
+    lua_gettable(L, 4);
+    fgcol.pixelB = luaL_checkinteger(L, -1);
+    lua_pushinteger(L, 3);
+    lua_gettable(L, 5);
+    bgcol.pixelB = luaL_checkinteger(L, -1);
+    lua_pop(L, 6);
+
+    draw_text(x, y, str, typeFace, sprites, &fgcol, &bgcol);
+    lua_newtable(L);
+    for(int i=1;i<=len;++i) {
+        lua_pushnumber(L, i);
+        lua_pushnumber(L, sprites[i-1]);
+        lua_settable(L, -3);
+    }
+
+    return 1;
+}
+
+static int l_setsize(lua_State* L) {
+    int x = luaL_checkinteger(L, 1);
+    int error;
+	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, x, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
+    return 0;
+}
+
 // static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 void app_main(void) {
 	static FT_Library lib;
-	static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
+	// static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
 	static PRG loaded_prg;
@@ -259,6 +315,13 @@ void app_main(void) {
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
 	prg_init(&loaded_prg);
     event_queue = rotary_encoder_create_queue(); 
+
+    L = luaL_newstate();
+    luaL_openlibs(L);
+    lua_pushcfunction(L, l_draw_text);
+    lua_setglobal(L, "draw_text");
+    lua_pushcfunction(L, l_setsize);
+    lua_setglobal(L, "set_char_size");
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");
@@ -290,7 +353,9 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    runprgfile(&loaded_prg, "/mainfs/rotenc_while_test", &info);
+    // runprgfile(&loaded_prg, "/mainfs/rotenc_while_test", &info, typeFace);
+	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
+    (void) luaL_dofile(L, "/mainfs/test.lua");
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 

@@ -7,6 +7,10 @@
 #include "stack_ddt.h"
 #include "spi_flash_mmap.h"
 #include <string.h>
+#include "oam.h"
+
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol);
+
 // #include "esp_partition_mmap.h"
 
 // #ifdef NUM_ISRS
@@ -20,7 +24,7 @@
 // uint16_t sp;
 // unsigned char* prg;
 
-void run(PRG* _p, rotary_encoder_info_t* info) {
+void run(PRG* _p, rotary_encoder_info_t* info, FT_Face typeFace) {
 	const static void* ops[] = {
 		&&nop, &&sleep, &&pushi32, &&pushi16, &&iprint, &&fprint, &&ftoi, &&itof,
 		&&iadd, &&isub, &&imul, &&idiv, &&fadd, &&fsub, &&fmul, &&fdiv,
@@ -29,7 +33,8 @@ void run(PRG* _p, rotary_encoder_info_t* info) {
 		&&sprint, &&lsl, &&lsr, &&mod, &&pushi8, &&neg, &&negf, 
 		&&c0, &&c1, &&c2, &&c3, &&c4, &&c5, &&c6, &&c7, &&malloca, &&freea, &&indexab, &&indexa, &&indexaw, &&storea,
 		&&store0, &&store1, &&store2, &&store3, &&store4, &&load0, &&load1, &&load2, &&load3, &&load4, 
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &&push_rotenc_state, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		&&center_sprite_group_x, &&draw_text, &&set_char_size, &&push_rotenc_state, 
 		&&halt
 	};
 
@@ -361,6 +366,28 @@ load4:
 	_p->sp++;
 	_p->stack[_p->sp] = _p->locals[4]; 
 	NEXT();
+
+center_sprite_group_x:
+	_p->sp-=2;
+	center_sprite_group_x((int*)_p->stack[_p->sp], _p->stack[_p->sp+1]);
+	NEXT();
+draw_text:
+	_p->sp-=5;
+	// X Y str spr FG BG
+	// X becomes the err value
+	_p->stack[_p->sp] = 
+	draw_text(_p->stack[_p->sp+1], // x
+			  _p->stack[_p->sp+2], // y
+			  (char*) _p->stack[_p->sp+3], // pointer to the string
+			  typeFace,
+			  (int*) _p->stack[_p->sp+4], // array of sprites
+			  (uint24_RGB*) _p->stack + _p->sp+5, // rr gg bb 00 fg
+			  (uint24_RGB*) _p->stack + _p->sp+6);// rr gg bb 00 bg
+	NEXT();
+set_char_size:
+	_p->sp-=1;
+	FT_Set_Char_Size(typeFace, _p->stack[_p->sp+1], 0, 100, 0);
+	NEXT();
 push_rotenc_state:
 	_p->sp+=2;
 	ESP_ERROR_CHECK(rotary_encoder_get_state(info, &rotenc_state));
@@ -399,7 +426,7 @@ void prg_init(PRG* k) {
 #endif
 }
 
-int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info) {
+int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info, FT_Face face) {
     FILE* infile = fopen(prgname, "r");
     if(infile == NULL)
         return 1;
@@ -426,7 +453,7 @@ int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info) {
 	// pthread_create(&thread_id, NULL, cause_isr_wrapper, (void*) argp);
 	#endif
 
-    run(k, info);
+    run(k, info, face);
     free(buffer);
     // if(spi_flash_munmap(buffer, statbuf.st_size)) {
     //     return 1;

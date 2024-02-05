@@ -2,6 +2,8 @@
 #define STACK_DDT_H
 
 #include <rotenc.h>
+#include "ft2build.h"
+#include FT_FREETYPE_H
 
 #define STACK_SIZE 4096
 #define NUMLOCALS 256
@@ -21,11 +23,11 @@ typedef struct {
 	uint16_t instrs_execd;
 } PRG;
 
-void run(PRG* _p, rotary_encoder_info_t* info);
+void run(PRG* _p, rotary_encoder_info_t* info, FT_Face typeFace);
 
 void prg_init(PRG* k);
 
-int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info);
+int runprgfile(PRG* k, char* prgname, rotary_encoder_info_t* info, FT_Face typeFace);
 
 void cause_isr(PRG* p, int i);
 
