@@ -1,7 +1,9 @@
 set(srcs
+    "board_config.c"
     "ILIDriver.c"
     "oam.c"
     "menus/bootloader.c"
+    "lua_defs.c"
     "pb_main.c"
     "rotenc.c"
     "utf8.c"
