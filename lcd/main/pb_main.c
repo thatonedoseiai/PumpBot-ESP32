@@ -5,7 +5,6 @@
 #include FT_FREETYPE_H
 #include "oam.h"
 #include "rotenc.h"
-#include "stack_ddt.h"
 #include "utf8.h"
 #include "menus.h"
 #include "menu_data.h"
@@ -327,13 +326,27 @@ static int l_wait(lua_State* L) {
     return 0;
 }
 
+static const struct luaL_Reg lpb_funcs[] = {
+    { "draw_text", l_draw_text },
+    { "set_char_size", l_setsize },
+    { "readrotary", l_readrotary },
+    { "getgpio", l_getgpio },
+    { "wait", l_wait },
+    { NULL, NULL }
+};
+
+int luaopen_lpb(lua_State *L) {
+    luaL_newlib(L, lpb_funcs);
+    return 1;
+}
+
+
 // static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 void app_main(void) {
 	static FT_Library lib;
 	// static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
-	static PRG loaded_prg;
 	static QueueHandle_t event_queue;
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
@@ -341,21 +354,11 @@ void app_main(void) {
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
-	prg_init(&loaded_prg);
     event_queue = rotary_encoder_create_queue(); 
 
     L = luaL_newstate();
     luaL_openlibs(L);
-    lua_pushcfunction(L, l_draw_text);
-    lua_setglobal(L, "draw_text");
-    lua_pushcfunction(L, l_setsize);
-    lua_setglobal(L, "set_char_size");
-    lua_pushcfunction(L, l_readrotary);
-    lua_setglobal(L, "readrotary");
-    lua_pushcfunction(L, l_getgpio);
-    lua_setglobal(L, "getgpio");
-    lua_pushcfunction(L, l_wait);
-    lua_setglobal(L, "wait");
+    luaL_requiref(L, "lpb", luaopen_lpb, 1);
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");

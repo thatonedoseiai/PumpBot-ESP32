@@ -4,7 +4,6 @@ set(srcs
     "menus/bootloader.c"
     "pb_main.c"
     "rotenc.c"
-    "stack_ddt.c"
     "utf8.c"
     )
 
