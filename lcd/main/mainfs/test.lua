@@ -21,7 +21,7 @@ while(l.getgpio(0)) do
         for s=1,#spr do
             l.delete_sprite(spr[s])
         end
-        spr = l.draw_text(40, 176, string.format("%.0f", k), {255,255,255}, {16,0,48});
+        spr = l.draw_text(40, 176, string.format("%03.03f%%", k), {255,255,255}, {16,0,48});
         l.center_sprites_x(spr)
         l.draw_sprites(spr)
     end

@@ -115,7 +115,8 @@ static int l_draw_text(lua_State* L) {
     luaL_checktype(L, 4, LUA_TTABLE);
     luaL_checktype(L, 5, LUA_TTABLE);
     uint24_RGB fgcol, bgcol;
-    int* sprites = malloc(len);
+    // int* sprites = malloc(len);
+    int sprites[len];
 
     lua_pushinteger(L, 1);
     lua_gettable(L, 4);
@@ -147,7 +148,7 @@ static int l_draw_text(lua_State* L) {
         lua_settable(L, -3);
     }
 
-    free(sprites);
+    // free(sprites);
 
     return 1;
 }
@@ -188,28 +189,30 @@ static int l_wait(lua_State* L) {
 static int l_center_sprite_group_x(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
-    int* sprites = malloc(k);
+    // int* sprites = malloc(k);
+    int sprites[k];
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
         sprites[i-1] = luaL_checkinteger(L, -1);
     }
     center_sprite_group_x(sprites, k);
-    free(sprites);
+    // free(sprites);
     return 0;
 }
 
 static int l_draw_sprites(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
-    int* sprites = malloc(k);
+    // int* sprites = malloc(k);
+    int sprites[k];
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
         sprites[i-1] = luaL_checkinteger(L, -1);
     }
     draw_sprites(spi, sprites, k);
-    free(sprites);
+    // free(sprites);
     return 0;
 }
 
