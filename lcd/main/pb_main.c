@@ -10,16 +10,12 @@
 
 #include "esp_wifi.h"
 #include "nvs_flash.h"
-// #include "esp_netif.h"
 
 #include "esp_littlefs.h"
 #include "board_config.h"
 #include "esp_event.h"
 
 #include "lua_exports.h"
-// #include <lua/lua.h>
-// #include <lua/lauxlib.h>
-// #include <lua/lualib.h>
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -38,15 +34,8 @@ const uint24_RGB WHITE = {
 };
 
 // OAM STUFF
-// extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
-// extern uint32_t text_cache[SPRITE_LIMIT];
-// extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
-// extern uint64_t advance_x_cache[SPRITE_LIMIT];
-// extern uint16_t y_loc_cache[SPRITE_LIMIT];
-// extern uint16_t width_cache[SPRITE_LIMIT];
-// extern uint16_t height_cache[SPRITE_LIMIT];
 //
 
 static char connect_flag = 0;
@@ -163,96 +152,8 @@ int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_
     }
 }
 
-// note: spriteBuf NEEDS TO BE AN ARRAY POINTER!!!
-// int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol) {
-//     FT_Vector offset;
-//     FT_GlyphSlot slot;
-
-// 	slot = typeFace->glyph;
-// 	offset.x = startX << 6;
-// 	offset.y = startY << 6;
-
-//     int i = 0;
-//     char* reader_head = string; // so that there is no modification
-//     int err;
-//     int curchar;
-//     uint8_t alphaR, alphaG, alphaB;
-//     uint24_RGB* bg;
-//     uint64_t advance_x;
-//     uint16_t width;
-//     uint16_t height;
-//     FT_Int bmp_top;
-//     if (bgcol == NULL)
-//         bg = background_color;
-//     else
-//         bg = bgcol;
-//     SPRITE_BITMAP* bmp;
-//     while (*reader_head != 0) {
-//         curchar = decode_code_point(&reader_head);
-
-//         for(int i=0;i<text_cache_size;++i) {
-//             if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height) {
-//                 bmp = bitmap_cache[i];
-//                 bmp_top = 240 - y_loc_cache[i] - startY;
-//                 advance_x = advance_x_cache[i];
-//                 width = width_cache[i];
-//                 height = height_cache[i];
-//                 goto skip_bitmap_assignment;
-//             }
-//         }
-
-// 		FT_Set_Transform(typeFace, NULL, &offset);
-// 		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-//         if(err)
-//             return err;
-
-// 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
-//         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
-//         bmp->refcount = 1;
-//         bmp->c = spriteBuf;
-// 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
-// 		for(int p=0;p<sz;p++) {
-//             alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
-//             alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
-//             alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
-// 			spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
-// 			spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
-// 			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
-// 		}
-
-// 		bmp_top = 240 - slot->bitmap_top;
-//         advance_x = slot->advance.x;
-//         width = slot->bitmap.width;
-//         height = slot->bitmap.rows/3;
-//         if(text_cache_size < SPRITE_LIMIT) {
-//             text_cache[text_cache_size] = curchar;
-//             bitmap_cache[text_cache_size] = bmp;
-//             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
-//             advance_x_cache[text_cache_size] = advance_x;
-//             y_loc_cache[text_cache_size] = 240 - startY - bmp_top;
-//             width_cache[text_cache_size] = width;
-//             height_cache[text_cache_size] = height;
-//             text_cache_size++;
-//         }
-
-// skip_bitmap_assignment:
-// 		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-// 		int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
-
-//         if (sprites && curchar != ' ')
-//             sprites[i++] = inx;
-
-// 		offset.x += advance_x;
-// 		offset.y += slot->advance.y;
-// 	}
-
-//     return 0;
-// }
-
-// static FT_ULong text[] = {0x547C, 0x55DA, 0x0000};//"嗚呼";
 void app_main(void) {
 	static FT_Library lib;
-	// static FT_Face typeFace; // = *(FT_Face*)malloc(sizeof(FT_Face));
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
 	static QueueHandle_t event_queue;
@@ -264,9 +165,6 @@ void app_main(void) {
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
     event_queue = rotary_encoder_create_queue(); 
 
-    // L = luaL_newstate();
-    // luaL_openlibs(L);
-    // luaL_requiref(L, "lpb", luaopen_lpb, 1);
     L = lua_init();
 
 	if(ret!=ESP_OK) {
