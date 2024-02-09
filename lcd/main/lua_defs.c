@@ -222,6 +222,30 @@ static int l_delete_sprites(lua_State* L) {
     return 0;
 }
 
+static int l_create_rectangle(lua_State* L) {
+    uint24_RGB col;
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    int width = luaL_checkinteger(L, 3);
+    int height = luaL_checkinteger(L, 4);
+    luaL_checktype(L, 5, LUA_TTABLE);
+    lua_pushinteger(L, 1);
+    lua_gettable(L, 5);
+    col.pixelR = luaL_checkinteger(L, -1);
+
+    lua_pushinteger(L, 2);
+    lua_gettable(L, 5);
+    col.pixelG = luaL_checkinteger(L, -1);
+    
+    lua_pushinteger(L, 3);
+    lua_gettable(L, 5);
+    col.pixelB = luaL_checkinteger(L, -1);
+    lua_pop(L, 3);
+
+    lua_pushinteger(L, sprite_rectangle(x, y, width, height, &col));
+    return 1;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -231,6 +255,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "center_sprites_x", l_center_sprite_group_x },
     { "draw_sprites", l_draw_sprites },
     { "delete_sprite", l_delete_sprites },
+    { "draw_rectangle", l_create_rectangle },
     { NULL, NULL }
 };
 

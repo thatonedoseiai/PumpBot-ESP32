@@ -119,6 +119,17 @@ void delete_sprite(int sprite) {
 	OAM_SPRITE_TABLE[sprite] = NULL;
 }
 
+int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col) {
+	uint24_RGB* spritebuf = (uint24_RGB*) malloc(sizeX * sizeY * 3);
+	SPRITE_BITMAP* bitmap = malloc(sizeof(SPRITE_BITMAP));
+	for(int i=0;i<sizeY*sizeX;++i) {
+		spritebuf[i] = *col;
+	}
+	bitmap->c = spritebuf;
+	bitmap->refcount = 1;
+	return init_sprite(bitmap, posX, posY, sizeX, sizeY, false, false, true);
+}
+
 // SPRITE MANIPULATION
 void center_sprite_group_x(int* sprites, int numsprites) {
     int minX = 320;

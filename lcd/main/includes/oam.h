@@ -68,6 +68,8 @@ void delete_all_sprites();
  */
 void delete_sprite(int sprite);
 
+int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col);
+
 /*
  * center a group represented by an array of OAM IDs along the X axis
  */
