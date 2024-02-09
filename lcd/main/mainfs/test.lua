@@ -41,7 +41,6 @@ back2 = l.draw_rectangle(104,10,42,60,{16,0,48})
 back3 = l.draw_rectangle(146,10,47,60,{16,0,48})
 l.draw_sprites({back, back2, back3})
 x = 3
-print("hello")
 while(l.getgpio(0)) do
     f = l.readrotary()[2]
     if(f ~= k) then
@@ -58,6 +57,12 @@ while(l.getgpio(0)) do
         end
         l.draw_sprites(table.move({back, back2, back3}, x, 3, 1, {}))
         spr = l.draw_text(40, 176, string.format("%03.0f%%", k), {255,255,255}, {16,0,48});
+        l.sprite_set_draw({spr[#spr]}, false)
+        if x == 3 then
+            l.sprite_set_draw({spr[1],spr[2]}, false)
+        elseif x == 2 then
+            l.sprite_set_draw({spr[1]}, false)
+        end
         l.center_sprites_x(spr)
         -- l.draw_sprites(table.move(spr, x, 3, 1, {}))
         l.draw_sprites(spr)

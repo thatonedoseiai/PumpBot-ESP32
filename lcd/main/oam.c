@@ -3,7 +3,7 @@
 
 #include "oam.h"
 
-static SPRITE_24_H** OAM_SPRITE_TABLE;
+SPRITE_24_H** OAM_SPRITE_TABLE;
 // array of free indices. first value stores the length of array.
 static uint8_t* indices;
 

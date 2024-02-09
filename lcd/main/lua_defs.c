@@ -7,6 +7,7 @@
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
+extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
 extern uint32_t text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
@@ -246,6 +247,45 @@ static int l_create_rectangle(lua_State* L) {
     return 1;
 }
 
+static int l_set_sprite_draw_flags(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    int draw = lua_toboolean(L, 2);
+    unsigned int k = lua_rawlen(L, 1);
+    // int* sprites = malloc(k);
+    for(int i=1;i<=k;++i) {
+        lua_pushinteger(L, i);
+        lua_gettable(L, 1);
+        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->draw = draw;
+    }
+    return 0;
+}
+
+static int l_move_sprite_x(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    int newx = luaL_checkinteger(L, 2);
+    unsigned int k = lua_rawlen(L, 1);
+    // int* sprites = malloc(k);
+    for(int i=1;i<=k;++i) {
+        lua_pushinteger(L, i);
+        lua_gettable(L, 1);
+        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posX = newx;
+    }
+    return 0;
+}
+
+static int l_move_sprite_y(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    int newy = luaL_checkinteger(L, 2);
+    unsigned int k = lua_rawlen(L, 1);
+    // int* sprites = malloc(k);
+    for(int i=1;i<=k;++i) {
+        lua_pushinteger(L, i);
+        lua_gettable(L, 1);
+        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posY = newy;
+    }
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -256,6 +296,9 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "draw_sprites", l_draw_sprites },
     { "delete_sprite", l_delete_sprites },
     { "draw_rectangle", l_create_rectangle },
+    { "sprite_set_draw", l_set_sprite_draw_flags },
+    { "sprite_move_x", l_move_sprite_x },
+    { "sprite_move_y", l_move_sprite_y },
     { NULL, NULL }
 };
 
