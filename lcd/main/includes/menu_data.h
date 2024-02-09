@@ -48,7 +48,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .textlen = 10,
         .numspaces = 1,
         .center = true,
-        .textsize = 32,
+        .textsize = 24,
         .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
     },
     {
@@ -58,7 +58,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .textlen = 8,
         .numspaces = 0,
         .center = true,
-        .textsize = 32,
+        .textsize = 24,
         .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
     },
     {
@@ -68,7 +68,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .textlen = 19,
         .numspaces = 3,
         .center = true,
-        .textsize = 16,
+        .textsize = 14,
         .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
     },
 };
@@ -81,7 +81,7 @@ const MENU_ELEMENT text_test[] = {
         .vline = true
     },
     {
-        .text = "Large - 30px",
+        .text = "Large - 24px",
         .x = 0,
         .y = 218,
         .textlen = 12,
@@ -92,7 +92,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "Medium - 22px",
+        .text = "Medium - 18px",
         .x = 0,
         .y = 152,
         .textlen = 13,
@@ -103,7 +103,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "Standard - 18px",
+        .text = "Standard - 14px",
         .x = 0,
         .y = 92,
         .textlen = 15,
@@ -125,7 +125,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "36px",
+        .text = "28px",
         .x = 162,
         .y = 218,
         .textlen = 4,
@@ -136,7 +136,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "30px",
+        .text = "24px",
         .x = 162,
         .y = 152,
         .textlen = 4,
@@ -147,7 +147,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "22px",
+        .text = "18px",
         .x = 162,
         .y = 92,
         .textlen = 4,
@@ -158,7 +158,7 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "18px",
+        .text = "14px",
         .x = 162,
         .y = 40,
         .textlen = 4,
@@ -169,35 +169,23 @@ const MENU_ELEMENT text_test[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "A Quick",
+        .text = "A Quick Br",
         .x = 0,
         .y = 173,
-        .textlen = 7,
-        .numspaces = 1,
+        .textlen = 10,
+        .numspaces = 2,
         .center = false,
-        .textsize = 30,
+        .textsize = 24,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
 
     },
     {
-        .text = "Brown Fox",
+        .text = "own Fox Jumps",
         .x = 0,
         .y = 113,
-        .textlen = 9,
-        .numspaces = 1,
-        .center = false,
-        .textsize = 22,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    
-    },
-    {
-        .text = "Jumps over",
-        .x = 0,
-        .y = 61,
-        .textlen = 10,
-        .numspaces = 1,
+        .textlen = 13,
+        .numspaces = 2,
         .center = false,
         .textsize = 18,
         .hline = false,
@@ -205,61 +193,69 @@ const MENU_ELEMENT text_test[] = {
     
     },
     {
-        .text = "the lazy dog.",
+        .text = "over the lazy dog.",
+        .x = 0,
+        .y = 61,
+        .textlen = 18,
+        .numspaces = 3,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    
+    },
+    {
+        .text = "that dog was very lazy",
         .x = 0,
         .y = 13,
-        .textlen = 13,
-        .numspaces = 2,
+        .textlen = 22,
+        .numspaces = 4,
         .center = false,
         .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {//sample text in chinese
-        .text = "鑑於人",
-	    //.text = "36PX",
+        .text = "鑑於人類",
         .x = 162,
         .y = 173,
-        .textlen = 3,
+        .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 36,
+        .textsize = 28,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "類社會",
-        //.text = "30P",
+        .text = "社會個成員",
         .x = 162,
         .y = 113,
-        .textlen = 3,
-        .numspaces = 0,
-        .center = false,
-        .textsize = 30,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "個成員儕有",
-        // .text = "22PIX",
-        .x = 162,
-        .y = 61,
         .textlen = 5,
         .numspaces = 0,
         .center = false,
-        .textsize = 22,
+        .textsize = 24,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "個固有尊嚴脫",
-	//.text = "18PIXELSBIG",
+        .text = "儕有個固有尊",
         .x = 162,
-        .y = 13,
+        .y = 61,
         .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 18,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "嚴脫仔平等個脫仔",
+        .x = 162,
+        .y = 13,
+        .textlen = 8,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     }
@@ -358,18 +354,18 @@ const MENU_ELEMENT menuwelcome[] = { //all text needs to be dynamic for language
         .textlen = 10,
         .numspaces = 1,
         .center = true,
-        .textsize = 32,
+        .textsize = 24,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "Pumpbot!",
         .x = 0,
-        .y = 192,
+        .y = 200,
         .textlen = 8,
         .numspaces = 0,
         .center = true,
-        .textsize = 32,
+        .textsize = 24,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -379,7 +375,7 @@ const MENU_ELEMENT menuwelcome[] = { //all text needs to be dynamic for language
         .textlen = 19,
         .numspaces = 3,
         .center = true,
-        .textsize = 20,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -393,7 +389,7 @@ const MENU_ELEMENT menusetup0[] = {
         .textlen = 20,
         .numspaces = 2,
         .center = true,
-        .textsize = 32,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -410,7 +406,7 @@ const MENU_ELEMENT menusetup0[] = {
         .textlen = 8,
         .numspaces = 0,
         .center = true,
-        .textsize = 16,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -421,7 +417,7 @@ const MENU_ELEMENT menusetup0[] = {
         .textlen = 7,
         .numspaces = 0,
         .center = true,
-        .textsize = 16,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -444,7 +440,7 @@ const MENU_ELEMENT menusetup0[] = {
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 16,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -455,7 +451,7 @@ const MENU_ELEMENT menusetup0[] = {
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 16,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     }
@@ -468,7 +464,7 @@ const MENU_ELEMENT menusetupdone[] = {
         .textlen = 4,
         .numspaces = 0,
         .center = true,
-        .textsize = 32,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
@@ -479,7 +475,7 @@ const MENU_ELEMENT menusetupdone[] = {
         .textlen = 4,
         .numspaces = 0,
         .center = true,
-        .textsize = 20,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
