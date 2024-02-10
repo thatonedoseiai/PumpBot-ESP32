@@ -269,78 +269,144 @@ const MENU_ELEMENT menuhome[] = {
         .textlen = 4,
         .numspaces = 0,
         .center = true,
-        .textsize = 48,
+        .textsize = 42, // size H, "Heccin Chonker"
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "⟳", //static symbol
         .x = 0,
-        .y = 112,
+        .y = 132,
         .textlen = 1,
         .numspaces = 0,
         .center = true,
-        .textsize = 16,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "CHX⤓", //X = current channel
         .x = 0,
-        .y = 52,
+        .y = 44,
         .textlen = 4,
         .numspaces = 0,
         .center = true,
-        .textsize = 20,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "OXX", //OFF or ON for current channel
         .x = 2,
-        .y = 22,
+        .y = 20,
         .textlen = 3,
         .numspaces = 0,
         .center = true,
-        .textsize = 20,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
         .text = "SET", //Settings menu, will be custom icon later
-        .x = 268,
-        .y = 22,
+        .x = 271,
+        .y = 20,
         .textlen = 3,
         .numspaces = 0,
         .center = false,
-        .textsize = 20,
+        .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-    { //I know this shit won't line up, I'm lazy
-        .text = "0(OXX)  1(OXX)  2(OXX)  3(OXX)",//and this is also temp(?)
-        .x = 0,
+    {
+        .text = "0(OXX)"
+        .x = 40,
         .y = 32,
-        .textlen = 30,
-        .numspaces = 6,
-        .center = true,
-        .textsize = 16,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-    { // yeah this definitely won't work as only 2 objects
-        .text = "XXX%  XXX%  XXX%  XXX%",
-        .x = 0,
+    { 
+        .text = "XXX%",
+        .x = 40,
         .y = 16,
-        .textlen = 22,
-        .numspaces = 6,
+        .textlen = 4,
+        .numspaces = 0,
         .center = false,
-        .textsize = 16,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+        {
+        .text = "1(OXX)"
+        .x = 100,
+        .y = 32,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "XXX%",
+        .x = 100,
+        .y = 16,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+        {
+        .text = "2(OXX)"
+        .x = 160,
+        .y = 32,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "XXX%",
+        .x = 160,
+        .y = 16,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+        {
+        .text = "0(OXX)"
+        .x = 220,
+        .y = 32,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "XXX%",
+        .x = 220,
+        .y = 16,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Horizontal Line
-        .y = 34,
+        .y = 26,
         .textsize = 2,
         .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
         .hline = true

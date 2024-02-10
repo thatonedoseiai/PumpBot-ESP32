@@ -58,7 +58,7 @@ initialize things:
 
 ### Fonts:
 ![Font size reference sheet, using Yu Mincho as a placeholder](/spec-assets/font-size-ref.png)
-- Unless specified, "Large" font is 24/28px, "Medium" font is 18/24px, "Standard" font is 14/18px, and "Small" text is 12/14px. all sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text will not coexist in the same text field, but if it does, default to the size of the first character.
+- Unless specified, "Large" font is 24/28px, "Medium" font is 18/24px, "Standard" font is 14/18px, and "Small" text is 12/14px. "H" font is 42/42px. All sizes are shown in non-CJK/CJK sizes, respectively. Ideally, CJK and non-CJK text will not coexist in the same text field, but if it does, default to the size of the first character.
 - Font size mentioned in the above image is GIMP font size, which is 5x/7 = y, x being GIMP font size, y being FreeType font size. Some inaccuracies appear to occur because of FreeType's sub-pixel rendering.
 
 ### Program:
