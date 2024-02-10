@@ -52,3 +52,19 @@ const wifi_config_t wifi_config = {
         },
     },
 };
+const ledc_timer_config_t timer_config_0 = {
+    .speed_mode = LEDC_LOW_SPEED_MODE,
+    .freq_hz = 1000,
+    .duty_resolution = LEDC_TIMER_14_BIT,
+    .timer_num = LEDC_TIMER_0,
+    .clk_cfg = LEDC_USE_APB_CLK,
+};
+const ledc_channel_config_t channel_config = {
+    .gpio_num = 14,
+    .speed_mode = LEDC_LOW_SPEED_MODE,
+    .channel = LEDC_CHANNEL_0,
+    .intr_type = LEDC_INTR_DISABLE,
+    .timer_sel = LEDC_TIMER_0,
+    .duty = 1638,
+    .hpoint = 0,
+};

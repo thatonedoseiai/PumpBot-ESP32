@@ -7,6 +7,7 @@
 #include "rotenc.h"
 #include "menus.h"
 #include "menu_data.h"
+#include "pwm_fade.h"
 
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -19,9 +20,6 @@
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
-const int fontSize = 20;
-const int startX = 20;
-const int startY = 20;
 const uint24_RGB fillColor = {
 	.pixelR = 0x10,
 	.pixelG = 0,
@@ -93,6 +91,8 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
                                                     NULL,
                                                     NULL));
 
+    ESP_ERROR_CHECK(ledc_timer_config(&timer_config_0));
+    ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
 
 	gpio_config(&btn_conf);
 
@@ -159,13 +159,14 @@ void app_main(void) {
 	static QueueHandle_t event_queue;
 	static rotary_encoder_event_t event = { 0 };
 	static rotary_encoder_state_t state = { 0 };
+    static pwm_fade_info_t pfade_info_0;
     background_color = &fillColor;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
     event_queue = rotary_encoder_create_queue(); 
-
     L = lua_init();
+    init_pwm_fade_info(&pfade_info_0, LEDC_CHANNEL_0);
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");
@@ -186,6 +187,21 @@ void app_main(void) {
 		*pos = '\0';
 	}
 
+    pwm_setup_fade(&pfade_info_0, 0, 16300, 100);
+    for(int i=0;i<100;++i) {
+        // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
+        // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+        pwm_step_fade(&pfade_info_0);
+        vTaskDelay(10);
+    }
+
+    pwm_setup_fade(&pfade_info_0, 16300, 1630, 90);
+    for(int i=100;i>9;--i) {
+        // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
+        // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+        pwm_step_fade(&pfade_info_0);
+        vTaskDelay(10);
+    }
 
 	send_color(spi, background_color);
     buffer_fillcolor(background_color);
@@ -242,12 +258,10 @@ void app_main(void) {
     //     vTaskDelay(8 / portTICK_PERIOD_MS);
     // }
     // scroll_buffer(spi, 0, true);
-    free(framebuf);
 
+    free(framebuf);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());
-	ets_printf("finished sending display data!\n");
-
     esp_vfs_littlefs_unregister(conf.partition_label);
 	FT_Done_Face (typeFace);
 	FT_Done_FreeType(lib);
