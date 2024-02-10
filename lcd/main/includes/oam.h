@@ -75,6 +75,8 @@ int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t size
  */
 void center_sprite_group_x(int* sprites, int numsprites);
 
+void right_justify_sprite_group_x(int* sprites, int numsprites);
+
 #ifdef __cplusplus
 }
 #endif

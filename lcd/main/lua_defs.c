@@ -202,6 +202,21 @@ static int l_center_sprite_group_x(lua_State* L) {
     return 0;
 }
 
+static int l_right_justify_sprite_group_x(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    unsigned int k = lua_rawlen(L, 1);
+    // int* sprites = malloc(k);
+    int sprites[k];
+    for(int i=1;i<=k;++i) {
+        lua_pushinteger(L, i);
+        lua_gettable(L, 1);
+        sprites[i-1] = luaL_checkinteger(L, -1);
+    }
+    right_justify_sprite_group_x(sprites, k);
+    // free(sprites);
+    return 0;
+}
+
 static int l_draw_sprites(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
@@ -293,6 +308,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "getgpio", l_getgpio },
     { "wait", l_wait },
     { "center_sprites_x", l_center_sprite_group_x },
+    { "right_justify_sprites_x", l_right_justify_sprite_group_x },
     { "draw_sprites", l_draw_sprites },
     { "delete_sprite", l_delete_sprites },
     { "draw_rectangle", l_create_rectangle },
