@@ -117,7 +117,7 @@ int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) 
     static char numBuf[6];
     static int old_position = -1;
     static int newNums[5] = {0,0,0,0,0};
-    int err;
+    // int err;
 
     FT_Face t_face = (FT_Face) args;
 
@@ -127,7 +127,7 @@ int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) 
         if(old_position != state->position) {
             old_position = state->position;
             sprintf(numBuf, "%03d%%", old_position);
-            err = draw_text(40, 176, numBuf, t_face, newNums, &WHITE, &fillColor);
+            draw_text(40, 176, numBuf, t_face, newNums, &WHITE, &fillColor);
             for(int i=0;i<5;++i) {
                 if(nums[i] != 0 && nums[i] > 0)
                     delete_sprite(nums[i]);
@@ -157,8 +157,8 @@ void app_main(void) {
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
 	static QueueHandle_t event_queue;
-	static rotary_encoder_event_t event = { 0 };
-	static rotary_encoder_state_t state = { 0 };
+	// static rotary_encoder_event_t event = { 0 };
+	// static rotary_encoder_state_t state = { 0 };
     static pwm_fade_info_t pfade_info_0;
     background_color = &fillColor;
 
@@ -187,21 +187,21 @@ void app_main(void) {
 		*pos = '\0';
 	}
 
-    pwm_setup_fade(&pfade_info_0, 0, 16300, 100);
-    for(int i=0;i<100;++i) {
-        // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
-        // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-        pwm_step_fade(&pfade_info_0);
-        vTaskDelay(10);
-    }
+    // pwm_setup_fade(&pfade_info_0, 0, 16300, 100);
+    // for(int i=0;i<100;++i) {
+    //     // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
+    //     // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+    //     pwm_step_fade(&pfade_info_0);
+    //     vTaskDelay(10);
+    // }
 
-    pwm_setup_fade(&pfade_info_0, 16300, 1630, 90);
-    for(int i=100;i>9;--i) {
-        // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
-        // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-        pwm_step_fade(&pfade_info_0);
-        vTaskDelay(10);
-    }
+    // pwm_setup_fade(&pfade_info_0, 16300, 1630, 90);
+    // for(int i=100;i>9;--i) {
+    //     // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
+    //     // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+    //     pwm_step_fade(&pfade_info_0);
+    //     vTaskDelay(10);
+    // }
 
 	send_color(spi, background_color);
     buffer_fillcolor(background_color);
@@ -221,7 +221,7 @@ void app_main(void) {
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
     // error = draw_menu_elements(&text_test[0], typeFace, 17); 
-    error = draw_menu_elements(&menuhome[0], typeFace, 8); 
+    error = draw_menu_elements(&menuhome[0], typeFace, 14); 
     draw_all_sprites(spi);
     delete_all_sprites();
 
@@ -233,7 +233,7 @@ void app_main(void) {
 
 	// draw_all_sprites(spi);
 
-    (void) luaL_dofile(L, "/mainfs/test.lua");
+    // (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // connect_flag = 0;
     // int txtln = 0;

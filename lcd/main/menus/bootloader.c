@@ -2,6 +2,10 @@
 #include "menus.h"
 #include <freetype/ftsizes.h>
 
+
+// #pragma GCC push_options
+// #pragma GCC optimize ("O0")
+
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements) {
     int err;
     static int sizeControl = 0;
@@ -32,7 +36,10 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
             }
             sizeControl = elems[i].textsize;
         }
+
+        // ets_printf("%d %d", elems[i].textlen, elems[i].numspaces);
         int spriteArray[elems[i].textlen - elems[i].numspaces];
+
         err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &elems[i].col, NULL);
         if (elems[i].center)
             center_sprite_group_x(spriteArray, elems[i].textlen - elems[i].numspaces);
@@ -41,6 +48,8 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
     }
     return 0;
 }
+
+// #pragma GCC pop_options
 
 int draw_hline(int y, int thickness, uint24_RGB colour) {
     uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));

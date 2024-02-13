@@ -65,6 +65,7 @@ const ledc_channel_config_t channel_config = {
     .channel = LEDC_CHANNEL_0,
     .intr_type = LEDC_INTR_DISABLE,
     .timer_sel = LEDC_TIMER_0,
-    .duty = 1638,
+    // .duty = 1638,
+    .duty = 0,
     .hpoint = 0,
 };

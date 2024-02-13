@@ -301,7 +301,7 @@ const MENU_ELEMENT menuhome[] = {
         .y = 20,
         .textlen = 3,
         .numspaces = 0,
-        .center = true,
+        .center = false,
         .textsize = 18,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -318,10 +318,10 @@ const MENU_ELEMENT menuhome[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "0(OXX)"
+        .text = "0(OXX)",
         .x = 40,
         .y = 32,
-        .textlen = 4,
+        .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 14,
@@ -339,11 +339,11 @@ const MENU_ELEMENT menuhome[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
-        .text = "1(OXX)"
+    {
+        .text = "1(OXX)",
         .x = 100,
         .y = 32,
-        .textlen = 4,
+        .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 14,
@@ -362,10 +362,10 @@ const MENU_ELEMENT menuhome[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
         {
-        .text = "2(OXX)"
+        .text = "2(OXX)",
         .x = 160,
         .y = 32,
-        .textlen = 4,
+        .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 14,
@@ -383,11 +383,11 @@ const MENU_ELEMENT menuhome[] = {
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-        {
-        .text = "0(OXX)"
+    {
+        .text = "3(OXX)",
         .x = 220,
         .y = 32,
-        .textlen = 4,
+        .textlen = 6,
         .numspaces = 0,
         .center = false,
         .textsize = 14,
