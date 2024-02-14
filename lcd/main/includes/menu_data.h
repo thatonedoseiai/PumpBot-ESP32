@@ -265,7 +265,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "XXX%", //Percentage of current channel
         .x = 0,
-        .y = 176,
+        .y = 134,
         .textlen = 4,
         .numspaces = 0,
         .center = true,
@@ -276,7 +276,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "⟳", //static symbol
         .x = 0,
-        .y = 132,
+        .y = 114,
         .textlen = 1,
         .numspaces = 0,
         .center = true,
@@ -287,7 +287,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "CHX⤓", //X = current channel
         .x = 0,
-        .y = 44,
+        .y = 32,
         .textlen = 4,
         .numspaces = 0,
         .center = true,
@@ -298,7 +298,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "OXX", //OFF or ON for current channel
         .x = 2,
-        .y = 20,
+        .y = 2,
         .textlen = 3,
         .numspaces = 0,
         .center = false,
@@ -309,7 +309,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "SET", //Settings menu, will be custom icon later
         .x = 271,
-        .y = 20,
+        .y = 2,
         .textlen = 3,
         .numspaces = 0,
         .center = false,
@@ -318,134 +318,101 @@ const MENU_ELEMENT menuhome[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "0(OXX)",
-        .x = 40,
-        .y = 32,
-        .textlen = 6,
+        .text = "0-Oxx",
+        .x = 58,
+        .y = 16,
+        .textlen = 5,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { 
         .text = "XXX%",
-        .x = 40,
-        .y = 16,
+        .x = 58,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "1(OXX)",
-        .x = 100,
-        .y = 32,
-        .textlen = 6,
+        .text = "1-Oxx",
+        .x = 111,
+        .y = 16,
+        .textlen = 5,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { 
         .text = "XXX%",
-        .x = 100,
-        .y = 16,
+        .x = 111,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
         {
-        .text = "2(OXX)",
-        .x = 160,
-        .y = 32,
-        .textlen = 6,
+        .text = "2-Oxx",
+        .x = 164,
+        .y = 16,
+        .textlen = 5,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { 
         .text = "XXX%",
-        .x = 160,
-        .y = 16,
+        .x = 164,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .text = "3(OXX)",
-        .x = 220,
-        .y = 32,
-        .textlen = 6,
+        .text = "3-Oxx",
+        .x = 216,
+        .y = 16,
+        .textlen = 5,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { 
         .text = "XXX%",
-        .x = 220,
-        .y = 16,
+        .x = 216,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
-        .textsize = 14,
+        .textsize = 12,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Horizontal Line
-        .y = 26,
+        .y = 210,
         .textsize = 2,
         .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
         .hline = true
     }
 };
-const MENU_ELEMENT menuwelcome[] = { //all text needs to be dynamic for language changes! 
-    { // (also unsure if \n works. Make it work!)
-        .text = "Welcome To",
-        .x = 0,
-        .y = 224,
-        .textlen = 10,
-        .numspaces = 1,
-        .center = true,
-        .textsize = 24,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "Pumpbot!",
-        .x = 0,
-        .y = 200,
-        .textlen = 8,
-        .numspaces = 0,
-        .center = true,
-        .textsize = 24,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "Press ⤓ to Continue",
-        .y = 32,
-        .textlen = 19,
-        .numspaces = 3,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-};
+
 
 const MENU_ELEMENT menusetup0[] = {
     {

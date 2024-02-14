@@ -9,7 +9,7 @@ print("hello from lua!")
 --     print(k[i])
 -- end
 k=0
-l.set_char_size(48<<6)
+l.set_char_size(42<<6)
 spr = {}
 f=0
 collectgarbage("stop")
@@ -36,33 +36,18 @@ print("entering loop!")
 --     f = (f + 1) % 16
 -- end
 
-back = l.draw_rectangle(62,10,42,60,{16,0,48})
-back2 = l.draw_rectangle(104,10,42,60,{16,0,48})
-back3 = l.draw_rectangle(146,10,47,60,{16,0,48})
-l.draw_sprites({back, back2, back3})
+back = l.draw_rectangle(71,62,177,46,{16,0,48})
+l.draw_sprites({back})
 x = 3
 while(l.getgpio(0)) do
     f = l.readrotary()[2]
     if(f ~= k) then
-        if k%100 == 99 then
-            x = 1
-        elseif k%10 == 9 then
-            x = 2
-        else
-            x = 3
-        end
         k = f
         for s=1,#spr do
             l.delete_sprite(spr[s])
         end
-        l.draw_sprites(table.move({back, back2, back3}, x, 3, 1, {}))
-        spr = l.draw_text(40, 176, string.format("%03.0f%%", k), {255,255,255}, {16,0,48});
-        l.sprite_set_draw({spr[#spr]}, false)
-        if x == 3 then
-            l.sprite_set_draw({spr[1],spr[2]}, false)
-        elseif x == 2 then
-            l.sprite_set_draw({spr[1]}, false)
-        end
+        l.draw_sprites({back})
+        spr = l.draw_text(40, 134, string.format("%.0f%%", k), {255,255,255}, {16,0,48});
         l.center_sprites_x(spr)
         -- l.draw_sprites(table.move(spr, x, 3, 1, {}))
         l.draw_sprites(spr)
