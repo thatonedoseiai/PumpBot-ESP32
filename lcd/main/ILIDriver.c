@@ -68,7 +68,7 @@ uint32_t lcd_get_id(spi_device_handle_t spi) {
 }
 
 void lcd_init(spi_device_handle_t spi) {
-	gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
+	// gpio_set_level(PIN_NUM_BCKL, 1); //Enable backlight
 	int cmd=0;
 	const lcd_init_cmd_t* lcd_init_cmds;
     // framebuf = malloc(320*240*sizeof(uint24_RGB));
@@ -76,7 +76,8 @@ void lcd_init(spi_device_handle_t spi) {
 
 	//Initialize non-SPI GPIOs
 	gpio_config_t io_conf = {};
-	io_conf.pin_bit_mask = ((1ULL<<PIN_NUM_DC) | (1ULL<<PIN_NUM_RST) | (1ULL<<PIN_NUM_BCKL));
+	io_conf.pin_bit_mask = ((1ULL<<PIN_NUM_DC) | (1ULL<<PIN_NUM_RST));
+	// | (1ULL<<PIN_NUM_BCKL));
 	io_conf.mode = GPIO_MODE_OUTPUT;
 	io_conf.pull_up_en = true;
 	gpio_config(&io_conf);

@@ -4,6 +4,7 @@
 #include "board_config.h"
 #include "lua_exports.h"
 #include "utf8.h"
+#include "pwm_fade.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -21,6 +22,7 @@ extern uint16_t height_cache[SPRITE_LIMIT];
 extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
+extern pwm_fade_info_t pfade_channels[8];
 
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol) {
     FT_Vector offset;
@@ -301,6 +303,37 @@ static int l_move_sprite_y(lua_State* L) {
     return 0;
 }
 
+// pwm indices: 0 1 2 3 R G B screen
+//              0 1 2 3 4 5 6 7
+static int l_setup_fade(lua_State* L) {
+    int channel = luaL_checkinteger(L, 1);
+    int start = luaL_checkinteger(L, 2);
+    int stop = luaL_checkinteger(L, 3);
+    int step = luaL_checkinteger(L, 4);
+    pwm_setup_fade(&pfade_channels[channel], start, stop, step);
+    return 0;
+}
+
+// step a table of channels' fades
+static int l_step_fade(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    unsigned int k = lua_rawlen(L, 1);
+    for(int i=1;i<=k;++i) {
+        lua_pushinteger(L, i);
+        lua_gettable(L, 1);
+        pwm_step_fade(&pfade_channels[luaL_checkinteger(L, -1)]);
+    }
+    return 0;
+}
+
+static int l_set_pwm(lua_State* L) {
+    int channel = luaL_checkinteger(L, 1);
+    int value = luaL_checkinteger(L, 2);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, value);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -315,6 +348,9 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "sprite_set_draw", l_set_sprite_draw_flags },
     { "sprite_move_x", l_move_sprite_x },
     { "sprite_move_y", l_move_sprite_y },
+    { "set_pwm", l_set_pwm },
+    { "setup_fade", l_setup_fade },
+    { "step_fade", l_step_fade },
     { NULL, NULL }
 };
 

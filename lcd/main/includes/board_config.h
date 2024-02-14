@@ -21,6 +21,7 @@ extern const spi_device_interface_config_t devcfg;
 extern const esp_vfs_littlefs_conf_t conf;
 extern const wifi_config_t wifi_config;
 extern const ledc_timer_config_t timer_config_0;
-extern const ledc_channel_config_t channel_config;
+extern ledc_channel_config_t channel_config;
+extern const int pwm_gpio_nums[8];
 
 #endif

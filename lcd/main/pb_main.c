@@ -43,6 +43,7 @@ static int nums[5] = {0,0,0,0,0};
 static lua_State* L;
 FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
+pwm_fade_info_t pfade_channels[8];
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -92,7 +93,11 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
                                                     NULL));
 
     ESP_ERROR_CHECK(ledc_timer_config(&timer_config_0));
-    ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
+    for(int i=0;i<LEDC_CHANNEL_MAX;++i) {
+        channel_config.gpio_num = pwm_gpio_nums[i];
+        channel_config.channel = i;
+        ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
+    }
 
 	gpio_config(&btn_conf);
 
@@ -159,14 +164,15 @@ void app_main(void) {
 	static QueueHandle_t event_queue;
 	// static rotary_encoder_event_t event = { 0 };
 	// static rotary_encoder_state_t state = { 0 };
-    static pwm_fade_info_t pfade_info_0;
     background_color = &fillColor;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
     event_queue = rotary_encoder_create_queue(); 
     L = lua_init();
-    init_pwm_fade_info(&pfade_info_0, LEDC_CHANNEL_0);
+    for(int i=0;i<LEDC_CHANNEL_MAX;++i) {
+        init_pwm_fade_info(&pfade_channels[i], i);
+    }
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");
@@ -187,21 +193,23 @@ void app_main(void) {
 		*pos = '\0';
 	}
 
-    // pwm_setup_fade(&pfade_info_0, 0, 16300, 100);
+    // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {
     //     // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
     //     // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-    //     pwm_step_fade(&pfade_info_0);
+    //     pwm_step_fade(&pfade_channels[5]);
     //     vTaskDelay(10);
     // }
 
-    // pwm_setup_fade(&pfade_info_0, 16300, 1630, 90);
+    // pwm_setup_fade(&pfade_channels[5], 16300, 1630, 90);
     // for(int i=100;i>9;--i) {
     //     // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
     //     // ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-    //     pwm_step_fade(&pfade_info_0);
+    //     pwm_step_fade(&pfade_channels[5]);
     //     vTaskDelay(10);
     // }
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel, 0x3fff);
+	ledc_update_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel);
 
 	send_color(spi, background_color);
     buffer_fillcolor(background_color);

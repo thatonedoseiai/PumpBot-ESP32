@@ -59,8 +59,8 @@ const ledc_timer_config_t timer_config_0 = {
     .timer_num = LEDC_TIMER_0,
     .clk_cfg = LEDC_USE_APB_CLK,
 };
-const ledc_channel_config_t channel_config = {
-    .gpio_num = 14,
+ledc_channel_config_t channel_config = {
+    // .gpio_num = 14,
     .speed_mode = LEDC_LOW_SPEED_MODE,
     .channel = LEDC_CHANNEL_0,
     .intr_type = LEDC_INTR_DISABLE,
@@ -69,3 +69,5 @@ const ledc_channel_config_t channel_config = {
     .duty = 0,
     .hpoint = 0,
 };
+
+const int pwm_gpio_nums[8] = {4, 5, 6, 7, 14, 21, 47, 13};
