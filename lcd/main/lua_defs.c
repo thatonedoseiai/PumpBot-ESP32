@@ -334,6 +334,12 @@ static int l_set_pwm(lua_State* L) {
     return 0;
 }
 
+static int l_stop_pwm(lua_State* L) {
+    int channel = luaL_checkinteger(L, 1);
+    ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -349,6 +355,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "sprite_move_x", l_move_sprite_x },
     { "sprite_move_y", l_move_sprite_y },
     { "set_pwm", l_set_pwm },
+    { "stop_pwm", l_stop_pwm },
     { "setup_fade", l_setup_fade },
     { "step_fade", l_step_fade },
     { NULL, NULL }
