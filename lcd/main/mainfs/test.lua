@@ -22,11 +22,12 @@ l.draw_sprites({back,back_small,back_btn_text})
 oldf = 0
 oldrotenc = true
 oldleftbtn = true
--- leftbtncircbuf = {true, true, true, true}
--- leftbtncircbufi = 1
+leftbtncircbuf = {true, true, true, true, true, true, true, true, true, true}
+leftbtncircbufi = 1
 channel = {0, 0, 0, 0}
 channel_active = {true, true, true, true}
 xs = {58,111,164,216}
+circbufok = false
 l.draw_sprites(off_btn_text)
 
 function update_screen_text(x, y, bg, k, center)
@@ -65,7 +66,12 @@ while(l.getgpio(0) or l.getgpio(3)) do
         end
     end
 
-    if(not l.getgpio(0) and oldleftbtn) then
+    circbufok = (leftbtncircbuf[leftbtncircbufi])
+    for i=leftbtncircbufi,leftbtncircbufi+(#leftbtncircbuf)-2 do
+        circbufok = circbufok and not leftbtncircbuf[(i%(#leftbtncircbuf))+1]
+    end
+
+    if(not l.getgpio(0) and circbufok) then
         channel_active[k] = not channel_active[k]
         if(channel_active[k]) then
             l.set_pwm(k+3, channel[k]*163)
@@ -76,12 +82,7 @@ while(l.getgpio(0) or l.getgpio(3)) do
         end
     end
 
-    -- circbufok = leftbtncircbuf[(leftbtncircbufi%(#leftbtncircbuf))+1])
-    -- for i=leftbtncircbufi,leftbtncircbufi+(#leftbtncircbuf) do
-    --     circbufok = circbufok and not leftbtncircbuf[((i+1)%(#leftbtncircbuf))+1]
-    -- end
-
-    if(not l.getgpio(18) and oldleftbtn) then
+    if(not l.getgpio(3) and oldrotenc) then
         k = k + 1
         if k == 5 then
             k = 1
@@ -95,9 +96,8 @@ while(l.getgpio(0) or l.getgpio(3)) do
     end
 
     oldrotenc = l.getgpio(18)
-    oldleftbtn = l.getgpio(0)
-    -- leftbtncircbuf[leftbtncircbufi] = l.getgpio(0)
-    -- leftbtncircbufi = (leftbtncircbufi % (#leftbtncircbuf)) + 1
+    leftbtncircbuf[leftbtncircbufi] = l.getgpio(0)
+    leftbtncircbufi = (leftbtncircbufi % (#leftbtncircbuf)) + 1
 end
 
 delete_sprite(on_text[1])
