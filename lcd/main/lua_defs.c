@@ -5,6 +5,7 @@
 #include "lua_exports.h"
 #include "utf8.h"
 #include "pwm_fade.h"
+#include "button.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -23,6 +24,7 @@ extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern pwm_fade_info_t pfade_channels[8];
+extern QueueHandle_t* button_events;
 
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol) {
     FT_Vector offset;
@@ -164,22 +166,38 @@ static int l_setsize(lua_State* L) {
 }
 
 static int l_readrotary(lua_State* L) {
-    rotary_encoder_state_t state = { 0 };
-    rotary_encoder_get_state(infop, &state);
-    lua_newtable(L);
-    lua_pushnumber(L, 1);
-    lua_pushinteger(L, state.direction);
-    lua_settable(L, -3);
-    lua_pushnumber(L, 2);
-    lua_pushinteger(L, state.position);
-    lua_settable(L, -3);
+    rotary_encoder_event_t event;
+    // rotary_encoder_get_state(infop, &state);
+    if(xQueueReceive(infop->queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        lua_newtable(L);
+        lua_pushnumber(L, 1);
+        lua_pushinteger(L, event.state.direction);
+        lua_settable(L, -3);
+        lua_pushnumber(L, 2);
+        lua_pushinteger(L, event.state.position);
+        lua_settable(L, -3);
+        return 1;
+    }
+    lua_pushnil(L);
     return 1;
 }
 
 static int l_getgpio(lua_State* L) {
-    int x = luaL_checkinteger(L, 1);
-    int d = gpio_get_level(x);
-    lua_pushboolean(L, d);
+    button_event_t ev;
+    // int x = luaL_checkinteger(L, 1);
+    // int d = gpio_get_level(x);
+    if(xQueueReceive(*button_events, &ev, 50/portTICK_PERIOD_MS)) {
+        lua_newtable(L);
+        lua_pushnumber(L, 1);
+        lua_pushinteger(L, ev.pin);
+        lua_settable(L, -3);
+        lua_pushnumber(L, 2);
+        lua_pushinteger(L, ev.event);
+        lua_settable(L, -3);
+        return 1;
+    }
+    // lua_pushboolean(L, d);
+    lua_pushnil(L);
     return 1;
 }
 

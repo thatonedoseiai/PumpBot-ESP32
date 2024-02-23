@@ -1,4 +1,5 @@
 #include "ILIDriver.h"
+#include "button.h"
 #include "freetype2/ft2build.h"
 #include <stdio.h>
 #include <rom/ets_sys.h>
@@ -43,6 +44,7 @@ static int nums[5] = {0,0,0,0,0};
 static lua_State* L;
 FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
+QueueHandle_t* button_events = NULL; // also because of lua
 pwm_fade_info_t pfade_channels[8];
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
@@ -58,7 +60,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     connect_flag = 1;
 }
 
-int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib, FT_Face* typeFace) {
+int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
     esp_err_t k = nvs_flash_init();
     if (k == ESP_ERR_NVS_NO_FREE_PAGES || k == ESP_ERR_NVS_NEW_VERSION_FOUND) {
       ESP_ERROR_CHECK(nvs_flash_erase());
@@ -79,9 +81,12 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
 	ESP_ERROR_CHECK(rotary_encoder_init(info, PIN_NUM_ENC_A, PIN_NUM_ENC_B, PIN_NUM_ENC_BTN));
 	ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(info, false));
 	ESP_ERROR_CHECK(rotary_encoder_flip_direction(info));
+    QueueHandle_t queue = rotary_encoder_create_queue();
+    ESP_ERROR_CHECK(rotary_encoder_set_queue(info, queue));
     infop = info;
     wifi_init_config_t wificfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&wificfg));
+    
     // if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
     //     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     // }
@@ -99,7 +104,9 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, FT_Library* lib
         ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
     }
 
-	gpio_config(&btn_conf);
+    (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1));
+    button_events = btn_events;
+	// gpio_config(&btn_conf);
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
@@ -161,14 +168,14 @@ void app_main(void) {
 	static FT_Library lib;
 	static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
-	static QueueHandle_t event_queue;
+	static QueueHandle_t btn_events;
 	// static rotary_encoder_event_t event = { 0 };
 	// static rotary_encoder_state_t state = { 0 };
     background_color = &fillColor;
 
 	// initializations
-	esp_err_t ret = inits(&spi, &info, &lib, &typeFace);
-    event_queue = rotary_encoder_create_queue(); 
+	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);
+    // event_queue = rotary_encoder_create_queue(); 
     L = lua_init();
     for(int i=0;i<LEDC_CHANNEL_MAX;++i) {
         init_pwm_fade_info(&pfade_channels[i], i);
@@ -240,6 +247,13 @@ void app_main(void) {
     ets_printf("cache size: %d\n", text_cache_size);
 
 	// draw_all_sprites(spi);
+
+    // while(gpio_get_level(PIN_NUM_SW0)) {
+    //     rotary_encoder_event_t event;
+    //     if(xQueueReceive(info.queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+    //         ets_printf("%ld, %s\n", event.state.position, event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+    //     }
+    // }
 
     (void) luaL_dofile(L, "/mainfs/test.lua");
 
