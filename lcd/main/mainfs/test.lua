@@ -8,6 +8,13 @@ off_text = l.draw_text(89, 16, "ff", {255,255,255}, bgcol)
 l.set_char_size(18<<6)
 on_btn_text = l.draw_text(21, 2, "N", {255,255,255}, bgcol)
 off_btn_text = l.draw_text(21, 2, "FF", {255,255,255}, bgcol)
+channels_text = {{},{},{},{}}
+channels_text_bg = {}
+for ck=1,4 do
+    channels_text[ck] = l.draw_text(0,32,"CH"..ck.."⤓",{255,255,255},bgcol)
+    channels_text_bg[ck] = l.draw_rectangle(129, 187, 62, 21, bgcol)
+    l.center_sprites_x(channels_text[ck])
+end
 k=1
 l.set_char_size(42<<6)
 spr = {}
@@ -68,6 +75,8 @@ while(true) do
             if k == 5 then
                 k = 1
             end
+            l.draw_sprites({channels_text_bg[k]})
+            l.draw_sprites(channels_text[k])
             l.sprite_move_x({back_small}, xs[k])
             l.sprite_move_x({back_on_off}, xs[k]+31)
             l.sprite_move_x(on_text, xs[k]+31)

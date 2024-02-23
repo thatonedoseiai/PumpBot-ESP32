@@ -48,3 +48,12 @@ int join_from_surrogates(int *old, int *code) {
   *old = ((*code & 0xD800) == 0xD800 ? *code : 0);
   return !(*old);
 }
+
+// count the number of code points in a utf8 string
+size_t count_utf8_code_points(const char *s) {
+    size_t count = 0;
+    while (*s) {
+        count += (*s++ & 0xC0) != 0x80;
+    }
+    return count;
+}

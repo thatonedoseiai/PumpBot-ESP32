@@ -116,7 +116,8 @@ static int l_draw_text(lua_State* L) {
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
     size_t len;
-    const char* str = luaL_checklstring(L, 3, &len);
+    const char* str = luaL_checklstring(L, 3, NULL);
+    len = count_utf8_code_points(str);
     luaL_checktype(L, 4, LUA_TTABLE);
     luaL_checktype(L, 5, LUA_TTABLE);
     uint24_RGB fgcol, bgcol;
