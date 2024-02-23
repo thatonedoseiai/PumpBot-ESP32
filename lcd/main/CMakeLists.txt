@@ -8,6 +8,7 @@ set(srcs
     "pb_main.c"
     "rotenc.c"
     "utf8.c"
+    "button.c"
     )
 
 idf_component_register(SRCS ${srcs}
