@@ -200,30 +200,30 @@ static void _isr_rotenc(void * args) {
 	}
 }
 
-static void _isr_btn(void* args) {
-	rotary_encoder_info_t * info = (rotary_encoder_info_t *)args;
-	bool btn_state = gpio_get_level(info->pin_btn);
-	bool send_event = false;
+// static void _isr_btn(void* args) {
+// 	rotary_encoder_info_t * info = (rotary_encoder_info_t *)args;
+// 	bool btn_state = gpio_get_level(info->pin_btn);
+// 	bool send_event = false;
 
-	if(btn_state) {
-		info->state.position = -info->state.position;
-		send_event = true;
-	}
+	// if(btn_state) {
+	// 	info->state.position = -info->state.position;
+	// 	send_event = true;
+	// }
 
-	if (send_event && info->queue) {
-		rotary_encoder_event_t queue_event = {
-			.state = {
-				.position = info->state.position,
-				.direction = info->state.direction,
-			},
-		};
-		BaseType_t task_woken = pdFALSE;
-		xQueueOverwriteFromISR(info->queue, &queue_event, &task_woken);
-		if (task_woken) {
-			portYIELD_FROM_ISR();
-		}
-	}
-}
+// 	if (send_event && info->queue) {
+// 		rotary_encoder_event_t queue_event = {
+// 			.state = {
+// 				.position = info->state.position,
+// 				.direction = info->state.direction,
+// 			},
+// 		};
+// 		BaseType_t task_woken = pdFALSE;
+// 		xQueueOverwriteFromISR(info->queue, &queue_event, &task_woken);
+// 		if (task_woken) {
+// 			portYIELD_FROM_ISR();
+// 		}
+// 	}
+// }
 
 esp_err_t rotary_encoder_init(rotary_encoder_info_t * info, gpio_num_t pin_a, gpio_num_t pin_b, gpio_num_t pin_btn) {
 	esp_err_t err = ESP_OK;
@@ -247,14 +247,14 @@ esp_err_t rotary_encoder_init(rotary_encoder_info_t * info, gpio_num_t pin_a, gp
 		gpio_set_direction(info->pin_b, GPIO_MODE_INPUT);
 		gpio_set_intr_type(info->pin_b, GPIO_INTR_ANYEDGE);
 
-		gpio_reset_pin(info->pin_btn);
-		gpio_set_direction(info->pin_btn, GPIO_MODE_INPUT);
-		gpio_set_intr_type(info->pin_btn, GPIO_INTR_ANYEDGE);
+		// gpio_reset_pin(info->pin_btn);
+		// gpio_set_direction(info->pin_btn, GPIO_MODE_INPUT);
+		// gpio_set_intr_type(info->pin_btn, GPIO_INTR_ANYEDGE);
 
 		// install interrupt handlers
 		gpio_isr_handler_add(info->pin_a, _isr_rotenc, info);
 		gpio_isr_handler_add(info->pin_b, _isr_rotenc, info);
-		gpio_isr_handler_add(info->pin_btn, _isr_btn, info);
+		// gpio_isr_handler_add(info->pin_btn, _isr_btn, info);
 	} else {
 		ESP_LOGE(TAG, "info is NULL");
 		err = ESP_ERR_INVALID_ARG;

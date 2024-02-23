@@ -52,6 +52,31 @@ while(true) do
         break
     end
     f = l.readrotary()
+    if(buttons ~= nil) then
+        if(buttons[1] == 0 and buttons[2] == 1) then
+            channel_active[k] = not channel_active[k]
+            timeout = 500
+            if(channel_active[k]) then
+                l.set_pwm(k+3, channel[k]*163)
+                l.draw_sprites({back_on_off, back_btn_text, on_text[1], off_btn_text[1], off_btn_text[2]})
+            else
+                l.stop_pwm(k+3)
+                l.draw_sprites({back_on_off, back_btn_text, off_text[1], off_text[2], on_btn_text[1]})
+            end
+        elseif (buttons[1] == 18 and buttons[2] == 1) then
+            k = k + 1
+            if k == 5 then
+                k = 1
+            end
+            l.sprite_move_x({back_small}, xs[k])
+            l.sprite_move_x({back_on_off}, xs[k]+31)
+            l.sprite_move_x(on_text, xs[k]+31)
+            l.sprite_move_x(off_text, xs[k]+31)
+            update_screen_text(40, 134, {back}, k, true)
+            l.set_pwm(k+3, channel[k]*163)
+        end
+    end
+
     if(f ~= nil) then
         oldf = f[2]
         if(f[1] == 2) then channel[k] = channel[k] - 1 else channel[k] = channel[k] + 1 end
@@ -68,31 +93,6 @@ while(true) do
             else
                 channel[k] = 0
             end
-        end
-    end
-    if(buttons ~= nil) then
-        if(buttons[1] == 0 and buttons[2] == 1) then
-            channel_active[k] = not channel_active[k]
-            timeout = 500
-            if(channel_active[k]) then
-                l.set_pwm(k+3, channel[k]*163)
-                l.draw_sprites({back_on_off, back_btn_text, on_text[1], off_btn_text[1], off_btn_text[2]})
-            else
-                l.stop_pwm(k+3)
-                l.draw_sprites({back_on_off, back_btn_text, off_text[1], off_text[2], on_btn_text[1]})
-            end
-        elseif (buttons[1] == 18 and buttons[2] == 1) then
-
-            k = k + 1
-            if k == 5 then
-                k = 1
-            end
-            l.sprite_move_x({back_small}, xs[k])
-            l.sprite_move_x({back_on_off}, xs[k]+31)
-            l.sprite_move_x(on_text, xs[k]+31)
-            l.sprite_move_x(off_text, xs[k]+31)
-            update_screen_text(40, 134, {back}, k, true)
-            l.set_pwm(k+3, channel[k]*163)
         end
     end
 end

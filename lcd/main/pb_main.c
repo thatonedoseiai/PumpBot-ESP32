@@ -104,7 +104,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
         ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
     }
 
-    (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1));
+    (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
 	// gpio_config(&btn_conf);
 
