@@ -348,14 +348,14 @@ static int l_step_fade(lua_State* L) {
 static int l_set_pwm(lua_State* L) {
     int channel = luaL_checkinteger(L, 1);
     int value = luaL_checkinteger(L, 2);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, value);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel-1, value);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel-1);
     return 0;
 }
 
 static int l_stop_pwm(lua_State* L) {
     int channel = luaL_checkinteger(L, 1);
-    ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
+    ledc_stop(LEDC_LOW_SPEED_MODE, channel-1, 0);
     return 0;
 }
 

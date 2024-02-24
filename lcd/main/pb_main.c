@@ -248,13 +248,6 @@ void app_main(void) {
 
 	// draw_all_sprites(spi);
 
-    // while(gpio_get_level(PIN_NUM_SW0)) {
-    //     rotary_encoder_event_t event;
-    //     if(xQueueReceive(info.queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-    //         ets_printf("%ld, %s\n", event.state.position, event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-    //     }
-    // }
-
     (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // connect_flag = 0;
