@@ -7,6 +7,7 @@
 #include "esp_wifi.h"
 #include "nvs_flash.h"
 #include "driver/ledc.h"
+#include "esp_http_client.h"
 
 #define PIN_NUM_SW0 0
 #define PIN_NUM_SW1 3
@@ -19,9 +20,10 @@ extern const spi_bus_config_t buscfg;
 extern const gpio_config_t btn_conf;
 extern const spi_device_interface_config_t devcfg;
 extern const esp_vfs_littlefs_conf_t conf;
-extern const wifi_config_t wifi_config;
+extern wifi_config_t wifi_config;
 extern const ledc_timer_config_t timer_config_0;
 extern ledc_channel_config_t channel_config;
 extern const int pwm_gpio_nums[8];
+extern esp_http_client_config_t http_config;
 
 #endif

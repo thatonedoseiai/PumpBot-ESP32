@@ -3,7 +3,11 @@
 #include "esp_littlefs.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
+#include "esp_crt_bundle.h"
 #include <string.h>
+#include "http.h"
+
+esp_err_t HTTP_download_handler(esp_http_client_event_handle_t evt);
 
 const spi_bus_config_t buscfg={
     .miso_io_num=PIN_NUM_MISO,
@@ -33,7 +37,7 @@ const esp_vfs_littlefs_conf_t conf = {
     .format_if_mount_failed = true,
     .dont_mount = false,
 };
-const wifi_config_t wifi_config = {
+wifi_config_t wifi_config = {
     .ap = {
         .ssid = "pumpy wifi",
         .ssid_len = strlen("pumpy wifi"),
@@ -52,8 +56,8 @@ const wifi_config_t wifi_config = {
         },
     },
     .sta = {
-        .ssid = "hidden",
-        .password = "",
+        // .ssid = "hidden",
+        // .password = "",
         .scan_method = WIFI_FAST_SCAN,
         .bssid_set = 0,
         .channel = 0
@@ -75,6 +79,12 @@ ledc_channel_config_t channel_config = {
     // .duty = 1638,
     .duty = 0,
     .hpoint = 0,
+};
+esp_http_client_config_t http_config = {
+    // .url = "https://raw.githubusercontent.com/Tortus-exe/APL-2021-advent-of-code/main/script.apl",
+    .crt_bundle_attach = esp_crt_bundle_attach,
+    // .user_data = download,
+    .event_handler = HTTP_download_handler,
 };
 
 const int pwm_gpio_nums[8] = {4, 5, 6, 7, 14, 21, 47, 13};
