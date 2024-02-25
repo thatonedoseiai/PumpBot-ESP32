@@ -51,6 +51,13 @@ const wifi_config_t wifi_config = {
         // .authmode = WIFI_AUTH_OPEN; // if no password
         },
     },
+    .sta = {
+        .ssid = "hidden",
+        .password = "",
+        .scan_method = WIFI_FAST_SCAN,
+        .bssid_set = 0,
+        .channel = 0
+    }
 };
 const ledc_timer_config_t timer_config_0 = {
     .speed_mode = LEDC_LOW_SPEED_MODE,

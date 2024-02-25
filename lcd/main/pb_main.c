@@ -18,6 +18,9 @@
 #include "board_config.h"
 #include "esp_event.h"
 
+#include "esp_http_client.h"
+#include "esp_crt_bundle.h"
+
 #include "lua_exports.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
@@ -58,7 +61,20 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     //     wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
     //     // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
     // }
-    connect_flag = 1;
+    if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        wifi_event_sta_connected_t* event = (wifi_event_sta_connected_t*) event_data;
+        ets_printf("connected to station \"%s\"!\n", event->ssid);
+    } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+        ets_printf("starting connection...\n");
+    } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        esp_wifi_connect();
+        ets_printf("retrying connection...\n");
+    } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ets_printf("got ip:", IP2STR(&event->ip_info.ip));
+        connect_flag = 1;
+    }
 }
 
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
@@ -92,7 +108,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
     //     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     // }
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(ESP_EVENT_ANY_BASE,
                                                     ESP_EVENT_ANY_ID,
                                                     &wifi_event_handler,
                                                     NULL,
@@ -224,9 +240,34 @@ void app_main(void) {
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
+    // ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
+    ESP_ERROR_CHECK(esp_netif_init());
+    esp_netif_create_default_wifi_sta();
+
+    connect_flag = 0;
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    ets_printf("waiting for connection...\n");
+
+    while(!connect_flag);
+
+    ets_printf("connected!\n");
+    esp_http_client_config_t config = {
+        .url = "https://www.github.com",
+        .crt_bundle_attach = esp_crt_bundle_attach
+    };
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    esp_err_t err = esp_http_client_perform(client);
+
+    if (err == ESP_OK) {
+        ets_printf("Status = %d, content_length = %d",
+                esp_http_client_get_status_code(client),
+                esp_http_client_get_content_length(client));
+    }
+    esp_http_client_cleanup(client);
 
     ESP_ERROR_CHECK(esp_wifi_stop());
 
