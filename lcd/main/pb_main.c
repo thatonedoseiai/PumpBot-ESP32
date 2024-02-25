@@ -1,4 +1,5 @@
 #include "ILIDriver.h"
+#include "settings.h"
 #include "button.h"
 #include "freetype2/ft2build.h"
 #include <stdio.h>
@@ -186,19 +187,18 @@ void app_main(void) {
 		return;
 	}
 
-
-	FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
-	if(f==NULL) {
-		ets_printf("failed to open file!\n");
-		return;
-	}
-	char line[64];
-	fgets(line, sizeof(line), f);
-	fclose(f);
-	char *pos = strchr(line, '\n');
-	if (pos) {
-		*pos = '\0';
-	}
+	// FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
+	// if(f==NULL) {
+	// 	ets_printf("failed to open file!\n");
+	// 	return;
+	// }
+	// char line[64];
+	// fgets(line, sizeof(line), f);
+	// fclose(f);
+	// char *pos = strchr(line, '\n');
+	// if (pos) {
+	// 	*pos = '\0';
+	// }
 
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {

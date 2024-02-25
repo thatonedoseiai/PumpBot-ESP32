@@ -9,6 +9,7 @@ set(srcs
     "rotenc.c"
     "utf8.c"
     "button.c"
+    "settings.c"
     )
 
 idf_component_register(SRCS ${srcs}
