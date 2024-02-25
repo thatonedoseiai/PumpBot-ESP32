@@ -381,7 +381,7 @@ const MENU_ELEMENT menusetup0[] = {
     {
         .text = "Choose your Language",
         .x = 0,
-        .y = 224,
+        .y = 204,
         .textlen = 20,
         .numspaces = 2,
         .center = true,
@@ -390,7 +390,7 @@ const MENU_ELEMENT menusetup0[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 176,
+        .y = 64,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -398,10 +398,10 @@ const MENU_ELEMENT menusetup0[] = {
     {
         .text = "Language", 
         .x = 32,
-        .y = 168,
+        .y = 152,
         .textlen = 8,
         .numspaces = 0,
-        .center = true,
+        .center = false,
         .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -409,22 +409,22 @@ const MENU_ELEMENT menusetup0[] = {
     {
         .text = "English", //Really would help with right justification!!! Please!!!
         .x = 220,
-        .y = 168,
+        .y = 152,
         .textlen = 7,
         .numspaces = 0,
-        .center = true,
+        .center = false,
         .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 144,
+        .y = 96,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 24,
+        .y = 216,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -432,7 +432,7 @@ const MENU_ELEMENT menusetup0[] = {
     { 
         .text = "Back",
         .x = 0,
-        .y = 18,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,
@@ -442,8 +442,8 @@ const MENU_ELEMENT menusetup0[] = {
     },
     { 
         .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
-        .x = 0,
-        .y = 260,
+        .x = 275,
+        .y = 2,
         .textlen = 4,
         .numspaces = 0,
         .center = false,

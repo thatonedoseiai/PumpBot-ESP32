@@ -7,7 +7,7 @@
 #include "oam.h"
 #include "rotenc.h"
 #include "menus.h"
-#include "menu_data.h"
+// #include "menu_data.h"
 #include "pwm_fade.h"
 
 #include "esp_wifi.h"
@@ -236,9 +236,11 @@ void app_main(void) {
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
     // error = draw_menu_elements(&text_test[0], typeFace, 17); 
-    error = draw_menu_elements(&menuhome[0], typeFace, 14); 
-    draw_all_sprites(spi);
-    delete_all_sprites();
+    // error = draw_menu_elements(&menuhome[0], typeFace, 14); 
+    // error = draw_menu_elements(&menusetup0[0], typeFace, 8);
+    // draw_all_sprites(spi);
+    // delete_all_sprites();
+    (void) start_menu_tree(0);
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     if (error)
@@ -248,7 +250,7 @@ void app_main(void) {
 
 	// draw_all_sprites(spi);
 
-    (void) luaL_dofile(L, "/mainfs/test.lua");
+    // (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // connect_flag = 0;
     // int txtln = 0;
