@@ -77,6 +77,60 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
+esp_err_t HTTP_event_handler(esp_http_client_event_handle_t evt)
+{
+    static char* output_buffer;  // Buffer to store response of http request from event handler
+    static int output_len;       // Stores number of bytes read
+
+    switch (evt->event_id) {
+    case HTTP_EVENT_ON_DATA:
+        ets_printf("HTTP_EVENT_ON_DATA, len=%d\n", evt->data_len);
+        if (!esp_http_client_is_chunked_response(evt->client)) {
+            if (evt->user_data) {
+                memcpy(evt->user_data + output_len, evt->data, evt->data_len);
+            } else {
+                if (output_buffer == NULL) {
+                    output_buffer = (char *) malloc(esp_http_client_get_content_length(evt->client));
+                    output_len = 0;
+                    if (output_buffer == NULL) {
+                        ets_printf("Failed to allocate memory for output buffer\n");
+                        return ESP_FAIL;
+                    }
+                }
+                memcpy(output_buffer + output_len, evt->data, evt->data_len);
+            }
+            output_len += evt->data_len;
+        }
+
+        break;
+    case HTTP_EVENT_ON_FINISH:
+        ets_printf("HTTP_EVENT_ON_FINISH\n");
+        if (output_buffer != NULL) {
+            free(output_buffer);
+            output_buffer = NULL;
+        }
+        output_len = 0;
+        break;
+    case HTTP_EVENT_DISCONNECTED:
+        ets_printf("HTTP_EVENT_DISCONNECTED\n");
+        int mbedtls_err = 0;
+        // esp_err_t err = esp_tls_get_and_clear_last_error(evt->data, &mbedtls_err, NULL);
+        // if (err != 0) {
+        //     ets_printf("Last esp error code: 0x%x\n", err);
+        //     ets_printf("Last mbedtls failure: 0x%x\n", mbedtls_err);
+        // }
+        if (output_buffer != NULL) {
+            free(output_buffer);
+            output_buffer = NULL;
+        }
+        output_len = 0;
+        break;
+    default:
+        break;
+    }
+    return ESP_OK;
+}
+
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
     esp_err_t k = nvs_flash_init();
     if (k == ESP_ERR_NVS_NO_FREE_PAGES || k == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -254,18 +308,24 @@ void app_main(void) {
 
     while(!connect_flag);
 
+    char response_buffer[256];
     ets_printf("connected!\n");
     esp_http_client_config_t config = {
-        .url = "https://www.github.com",
-        .crt_bundle_attach = esp_crt_bundle_attach
+        .url = "https://raw.githubusercontent.com/Tortus-exe/stack_assembler/master/jsrstest.s",
+        .crt_bundle_attach = esp_crt_bundle_attach,
+        .user_data = response_buffer,
+        .event_handler = HTTP_event_handler,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err = esp_http_client_perform(client);
 
+
     if (err == ESP_OK) {
-        ets_printf("Status = %d, content_length = %d",
-                esp_http_client_get_status_code(client),
-                esp_http_client_get_content_length(client));
+        int content_length = esp_http_client_get_content_length(client);
+        ets_printf("Status = %d, content_length = %d\n",
+            esp_http_client_get_status_code(client),
+            content_length);
+        ets_printf("contents:\n%s\n", response_buffer);
     }
     esp_http_client_cleanup(client);
 
