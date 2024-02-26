@@ -452,6 +452,369 @@ const MENU_ELEMENT menusetup0[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     }
 };
+const MENU_ELEMENT menusetup1[] = {
+    {
+        .text = "How would you like to",
+        .x = 0,
+        .y = 204,
+        .textlen = 21,
+        .numspaces = 4,
+        .center = true,
+        .textsize = 18,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+        {
+        .text = "setup PumpBot?",
+        .x = 0,
+        .y = 176,
+        .textlen = 14,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 18,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Wi-Fi Setup", 
+        .x = 0,
+        .y = 120,
+        .textlen = 11,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Standalone Setup",
+        .x = 0,
+        .y = 88,
+        .textlen = 16,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 96, //144
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 128, //112
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 160, //80
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Bottom menu
+        .y = 216, //24
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Back",
+        .x = 0,
+        .y = 2,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "OK", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+        .x = 293,
+        .y = 2,
+        .textlen = 2,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    }
+};
+const MENU_ELEMENT menuhome[] = { //Setup Menu 2
+    {
+        .text = "Starting Wi-Fi Network...", 
+        .x = 0,
+        .y = 120,
+        .textlen = 25,
+        .numspaces = 2,
+        .center = false, //true
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Bottom menu
+        .y = 216, //24
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Cancel",
+        .x = 0,
+        .y = 2,
+        .textlen = 6,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+};
+const MENU_ELEMENT menusetup2a[] = {
+    {
+        .text = "Connect to this Wi-Fi Network",
+        .x = 0,
+        .y = 216, // yes this is 216, moved it up 12px to align with 32px grid for continuity with screen 3
+        .textlen = 29,
+        .numspaces = 4,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+        {
+        .text = "to setup PumpBot",
+        .x = 0,
+        .y = 194,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true, 
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Network Name]",
+        .x = 0,
+        .y = 152,
+        .textlen = 14,
+        .numspaces = 1,
+        .center = true, 
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "Open this URL in your browser:", 
+        .x = 0,
+        .y = 120,
+        .textlen = 30,
+        .numspaces = 5,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[URL]",
+        .x = 0,
+        .y = 88,
+        .textlen = 5,
+        .numspaces = 0,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 64, //176
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 96, //144
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 128, //112
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 160, //80
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Bottom menu
+        .y = 216, //24
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Back",
+        .x = 0,
+        .y = 2,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+        .x = 275,
+        .y = 2,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    }
+};
+const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Setting menu and the likes
+    {
+        .text = "Wi-Fi Settings",
+        .x = 0,
+        .y = 216,
+        .textlen = 14,
+        .numspaces = 1,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Text goes here]",
+        .x = 0,
+        .y = 184,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Text goes here]", 
+        .x = 0,
+        .y = 152,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Text goes here]", 
+        .x = 0,
+        .y = 120,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Text goes here]", 
+        .x = 0,
+        .y = 88,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .text = "[Text goes here]", //last option on the screen, would get overwritten with a tooltip
+        .x = 0,
+        .y = 56,
+        .textlen = 16,
+        .numspaces = 2,
+        .center = true,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 32, //208
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 64, //176
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {      
+        .y = 96, //144
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 128, //112
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 160, //80
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    {
+        .y = 192, //48, last line on the screen, would get overwritten if there was a tooltip
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { //Bottom menu
+        .y = 216, //24
+        .textsize = 2,
+        .hline = true,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Back",
+        .x = 0,
+        .y = 2,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    },
+    { 
+        .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+        .x = 275,
+        .y = 2,
+        .textlen = 4,
+        .numspaces = 0,
+        .center = false,
+        .textsize = 14,
+        .hline = false,
+        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    }
+};
 const MENU_ELEMENT menusetupdone[] = {
        {
         .text = "Setup Complete!",
