@@ -18,6 +18,12 @@
 #include "board_config.h"
 #include "esp_event.h"
 
+#include "http.h"
+
+// #include "esp_http_client.h"
+// #include "esp_crt_bundle.h"
+// #include "esp_tls.h"
+
 #include "lua_exports.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
@@ -58,7 +64,20 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     //     wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
     //     // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
     // }
-    connect_flag = 1;
+    if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
+        wifi_event_sta_connected_t* event = (wifi_event_sta_connected_t*) event_data;
+        ets_printf("connected to station \"%s\"!\n", event->ssid);
+    } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+        ets_printf("starting connection...\n");
+    } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        esp_wifi_connect();
+        ets_printf("retrying connection...\n");
+    } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
+        ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
+        connect_flag = 1;
+    }
 }
 
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
@@ -92,7 +111,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
     //     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     // }
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(ESP_EVENT_ANY_BASE,
                                                     ESP_EVENT_ANY_ID,
                                                     &wifi_event_handler,
                                                     NULL,
@@ -114,13 +133,13 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImid.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
-	// size_t total = 0, used = 0;
-	// ret = esp_littlefs_info(conf.partition_label, &total, &used);
-	// if (ret != ESP_OK) {
-	// 	ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
-	// } else {
-	// 	ets_printf("Partition size: total: %d, used: %d\n", total, used);
-	// }
+	size_t total = 0, used = 0;
+	ret = esp_littlefs_info(conf.partition_label, &total, &used);
+	if (ret != ESP_OK) {
+		ets_printf("Failed to get LittleFS partition information (%d)\n", ret);
+	} else {
+		ets_printf("Partition size: total: %d, used: %d\n", total, used);
+	}
 done:
 	return ret;
 }
@@ -187,19 +206,6 @@ void app_main(void) {
 		return;
 	}
 
-	// FILE *f = fopen("/mainfs/the_best_medicine_is", "r");
-	// if(f==NULL) {
-	// 	ets_printf("failed to open file!\n");
-	// 	return;
-	// }
-	// char line[64];
-	// fgets(line, sizeof(line), f);
-	// fclose(f);
-	// char *pos = strchr(line, '\n');
-	// if (pos) {
-	// 	*pos = '\0';
-	// }
-
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {
     //     // ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, i*163);
@@ -224,11 +230,61 @@ void app_main(void) {
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
+    // ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
+    ESP_ERROR_CHECK(esp_netif_init());
+    esp_netif_create_default_wifi_sta();
+
+    uint16_t aprecnum = 5;
+    wifi_ap_record_t ap_info[5];
+    uint16_t ap_count = 0;
+    memset(ap_info, 0, sizeof(ap_info));
+
+    connect_flag = 0;
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+    
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+
+    for (int i = 0; i < aprecnum; i++) {
+        ets_printf("SSID \t\t%s\n", ap_info[i].ssid);
+        ets_printf("RSSI \t\t%d\n", ap_info[i].rssi);
+        // print_auth_mode(ap_info[i].authmode);
+        // if (ap_info[i].authmode != WIFI_AUTH_WEP) {
+        //     print_cipher_type(ap_info[i].pairwise_cipher, ap_info[i].group_cipher);
+        // }
+        ets_printf("Channel \t\t%d\n", ap_info[i].primary);
+    }
+
+    char wifiname[] = "hidden";
+    char pskey[] = "";
+    strcpy((char*) wifi_config.sta.ssid, wifiname);
+    strcpy((char*) wifi_config.sta.password, pskey);
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_connect());
+
+    ets_printf("waiting for connection...\n");
+    while(!connect_flag);
+
+    ets_printf("connected!\n");
+    http_wget("https://raw.githubusercontent.com/Tortus-exe/APL-2021-advent-of-code/main/script.apl", "/mainfs/script.apl");
 
     ESP_ERROR_CHECK(esp_wifi_stop());
+
+	FILE *f = fopen("/mainfs/script.apl", "r");
+	if(f==NULL) {
+		ets_printf("failed to open file!\n");
+		return;
+	}
+	char* line = malloc(128);
+    ets_printf("contents:\n");
+    while( fgets(line, 128, f) != NULL ) {
+        ets_printf(line);
+    }
+	fclose(f);
 
     // int len = strlen(line);
     // int spriteArray[len];
