@@ -25,7 +25,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
     },
     {
-        .text = "Press v to Continue",
+        .text = "Press ⤓ to Continue",
         .x = 60,
         .y = 10,
         .textlen = 19,
@@ -250,7 +250,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = "CHX⤓", //X = current channel
         .x = 0,
-        .y = 32,
+        .y = 36,
         .textlen = 4,
         .numspaces = 0,
         .center = true,
@@ -348,7 +348,7 @@ const MENU_ELEMENT menuhome[] = {
     },
     {
         .text = "3-Oxx",
-        .x = 216,
+        .x = 24,
         .y = 16,
         .textlen = 5,
         .numspaces = 0,
@@ -359,7 +359,7 @@ const MENU_ELEMENT menuhome[] = {
     },
     { 
         .text = "XXX%",
-        .x = 216,
+        .x = 24,
         .y = 2,
         .textlen = 4,
         .numspaces = 0,
@@ -369,7 +369,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Horizontal Line
-        .y = 210,
+        .y = 32,
         .textsize = 2,
         .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
         .hline = true
@@ -390,7 +390,7 @@ const MENU_ELEMENT menusetup0[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 64,
+        .y = 176,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -418,13 +418,13 @@ const MENU_ELEMENT menusetup0[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 96,
+        .y = 144,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 216,
+        .y = 24,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -498,25 +498,25 @@ const MENU_ELEMENT menusetup1[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 96, //144
+        .y = 144,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 128, //112
+        .y = 112,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 160, //80
+        .y = 80,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 216, //24
+        .y = 24, //24
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -551,13 +551,13 @@ const MENU_ELEMENT menuhome[] = { //Setup Menu 2
         .y = 120,
         .textlen = 25,
         .numspaces = 2,
-        .center = false, //true
+        .center = true,
         .textsize = 14,
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 216, //24
+        .y = 24,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -631,31 +631,31 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 64, //176
+        .y = 176,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 96, //144
+        .y = 144,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 128, //112
+        .y = 112,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 160, //80
+        .y = 80,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 216, //24
+        .y = 24,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
@@ -687,7 +687,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     {
         .text = "Wi-Fi Settings",
         .x = 0,
-        .y = 216,
+        .y = 24,
         .textlen = 14,
         .numspaces = 1,
         .center = true,
@@ -751,43 +751,43 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 32, //208
+        .y = 208,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 64, //176
+        .y = 176,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {      
-        .y = 96, //144
+        .y = 144,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 128, //112
+        .y = 112,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 160, //80
+        .y = 80,
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     {
-        .y = 192, //48, last line on the screen, would get overwritten if there was a tooltip
+        .y = 48, //last line on the screen, would get overwritten if there was a tooltip
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
     { //Bottom menu
-        .y = 216, //24
+        .y = 24
         .textsize = 2,
         .hline = true,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
