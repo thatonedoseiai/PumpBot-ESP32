@@ -544,7 +544,7 @@ const MENU_ELEMENT menusetup1[] = {
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     }
 };
-const MENU_ELEMENT menuhome[] = { //Setup Menu 2
+const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
     {
         .text = "Starting Wi-Fi Network...", 
         .x = 0,
@@ -815,6 +815,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     }
 };
+
 const MENU_ELEMENT menusetupdone[] = {
        {
         .text = "Setup Complete!",
