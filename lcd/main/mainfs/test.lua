@@ -13,7 +13,7 @@ channels_text = {{},{},{},{}}
 channels_text_bg = {}
 for ck=1,4 do
     channels_text[ck] = l.draw_text(0,32,"CH"..(ck-1).."⤓",{255,255,255},bgcol)
-    channels_text_bg[ck] = l.draw_rectangle(129, 187, 62, 21, bgcol)
+    channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol)
     l.center_sprites_x(channels_text[ck])
 end
 k=1
@@ -22,10 +22,10 @@ spr = {}
 f=0
 print("lua start")
 collectgarbage("stop")
-back = l.draw_rectangle(71,62,177,46,bgcol)
-back_small = l.draw_rectangle(58,224,51,14,bgcol)
-back_on_off = l.draw_rectangle(89,208,12,16,{255,0,0})
-back_btn_text = l.draw_rectangle(21,217,28,21,bgcol)
+back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
+back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
+back_on_off = l.draw_rectangle(89,240-208-16,12,16,{255,0,0})
+back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol)
 l.draw_sprites({back,back_small,back_btn_text})
 oldrotenc = true
 oldleftbtn = true

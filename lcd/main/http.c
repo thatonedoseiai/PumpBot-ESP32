@@ -41,6 +41,7 @@ esp_err_t HTTP_download_handler(esp_http_client_event_handle_t evt) {
         if (err != 0) {
             ets_printf("Last esp error code: 0x%x\n", err);
             ets_printf("Last mbedtls failure: 0x%x\n", mbedtls_err);
+            return err;
         }
         // fclose(evt->data);
         break;

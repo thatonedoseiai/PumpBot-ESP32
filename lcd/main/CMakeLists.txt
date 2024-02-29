@@ -1,4 +1,5 @@
 set(srcs
+    "menus/menu_data.c"
     "board_config.c"
     "ILIDriver.c"
     "oam.c"

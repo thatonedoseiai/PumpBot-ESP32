@@ -8,7 +8,7 @@
 #include "oam.h"
 #include "rotenc.h"
 #include "menus.h"
-// #include "menu_data.h"
+#include "menu_data.h"
 #include "pwm_fade.h"
 
 #include "esp_wifi.h"
@@ -44,7 +44,7 @@ extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
 //
 
-static char connect_flag = 0;
+char connect_flag = 0;
 spi_device_handle_t spi;
 static char redraw_flag = 0;
 static int nums[5] = {0,0,0,0,0};
@@ -235,56 +235,58 @@ void app_main(void) {
     ESP_ERROR_CHECK(esp_netif_init());
     esp_netif_create_default_wifi_sta();
 
-    uint16_t aprecnum = 5;
-    wifi_ap_record_t ap_info[5];
-    uint16_t ap_count = 0;
-    memset(ap_info, 0, sizeof(ap_info));
+//     uint16_t aprecnum = 5;
+//     wifi_ap_record_t ap_info[5];
+//     uint16_t ap_count = 0;
+//     memset(ap_info, 0, sizeof(ap_info));
 
-    connect_flag = 0;
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+//     connect_flag = 0;
+//     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+//     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+//     ESP_ERROR_CHECK(esp_wifi_start());
+//     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+//     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
+//     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
 
-    for (int i = 0; i < aprecnum; i++) {
-        ets_printf("SSID \t\t%s\n", ap_info[i].ssid);
-        ets_printf("RSSI \t\t%d\n", ap_info[i].rssi);
-        // print_auth_mode(ap_info[i].authmode);
-        // if (ap_info[i].authmode != WIFI_AUTH_WEP) {
-        //     print_cipher_type(ap_info[i].pairwise_cipher, ap_info[i].group_cipher);
-        // }
-        ets_printf("Channel \t\t%d\n", ap_info[i].primary);
-    }
+//     for (int i = 0; i < aprecnum; i++) {
+//         ets_printf("SSID \t\t%s\n", ap_info[i].ssid);
+//         ets_printf("RSSI \t\t%d\n", ap_info[i].rssi);
+//         // print_auth_mode(ap_info[i].authmode);
+//         // if (ap_info[i].authmode != WIFI_AUTH_WEP) {
+//         //     print_cipher_type(ap_info[i].pairwise_cipher, ap_info[i].group_cipher);
+//         // }
+//         ets_printf("Channel \t\t%d\n", ap_info[i].primary);
+//     }
 
-    char wifiname[] = "hidden";
-    char pskey[] = "";
-    strcpy((char*) wifi_config.sta.ssid, wifiname);
-    strcpy((char*) wifi_config.sta.password, pskey);
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_connect());
+//     char wifiname[] = "hidden";
+//     char pskey[] = "";
+//     strcpy((char*) wifi_config.sta.ssid, wifiname);
+//     strcpy((char*) wifi_config.sta.password, pskey);
+//     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+//     ESP_ERROR_CHECK(esp_wifi_connect());
 
-    ets_printf("waiting for connection...\n");
-    while(!connect_flag);
+//     ets_printf("waiting for connection...\n");
+//     while(!connect_flag);
 
-    ets_printf("connected!\n");
-    http_wget("https://raw.githubusercontent.com/Tortus-exe/APL-2021-advent-of-code/main/script.apl", "/mainfs/script.apl");
+//     ets_printf("connected!\n");
+//     esp_err_t http_err;
+//     do {
+//         http_err = http_wget("https://raw.githubusercontent.com/Tortus-exe/APL-2021-advent-of-code/main/script.apl", "/mainfs/script.apl");
+//     } while(http_err != ESP_OK);
 
-    ESP_ERROR_CHECK(esp_wifi_stop());
 
-	FILE *f = fopen("/mainfs/script.apl", "r");
-	if(f==NULL) {
-		ets_printf("failed to open file!\n");
-		return;
-	}
-	char* line = malloc(128);
-    ets_printf("contents:\n");
-    while( fgets(line, 128, f) != NULL ) {
-        ets_printf(line);
-    }
-	fclose(f);
+// 	FILE *f = fopen("/mainfs/script.apl", "r");
+// 	if(f==NULL) {
+// 		ets_printf("failed to open file!\n");
+// 		return;
+// 	}
+// 	char* line = malloc(128);
+//     ets_printf("contents:\n");
+//     while( fgets(line, 128, f) != NULL ) {
+//         ets_printf(line);
+//     }
+// 	fclose(f);
 
     // int len = strlen(line);
     // int spriteArray[len];
@@ -292,17 +294,19 @@ void app_main(void) {
     // FT_ERR_HANDLE(draw_text(startX, startY, line, typeFace, &spriteArray[0]), "draw_sprite");
     // center_sprite_group_x(spriteArray, len);
     // error = draw_menu_elements(&text_test[0], typeFace, 17); 
-    // error = draw_menu_elements(&menuhome[0], typeFace, 14); 
     // error = draw_menu_elements(&menusetup0[0], typeFace, 8);
     // draw_all_sprites(spi);
     // delete_all_sprites();
-    (void) start_menu_tree(0);
+    (void) start_menu_tree(2);
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
-    if (error)
-        ets_printf("draw menu element\n");
+    // error = draw_menu_elements(&menuhome[0], typeFace, 14); 
+    // draw_all_sprites(spi);
+    // delete_all_sprites();
+    // if (error)
+    //     ets_printf("draw menu element\n");
 
-    ets_printf("cache size: %d\n", text_cache_size);
+    // ets_printf("cache size: %d\n", text_cache_size);
 
 	// draw_all_sprites(spi);
 
@@ -332,6 +336,7 @@ void app_main(void) {
     // }
     // scroll_buffer(spi, 0, true);
 
+    ESP_ERROR_CHECK(esp_wifi_stop());
     free(framebuf);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());

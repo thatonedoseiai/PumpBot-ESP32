@@ -127,7 +127,7 @@ int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t size
 	}
 	bitmap->c = spritebuf;
 	bitmap->refcount = 1;
-	return init_sprite(bitmap, posX, posY, sizeX, sizeY, false, false, true);
+	return init_sprite(bitmap, posX, 240-posY-sizeY, sizeX, sizeY, false, false, true);
 }
 
 // SPRITE MANIPULATION
