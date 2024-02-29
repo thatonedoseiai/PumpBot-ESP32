@@ -51,14 +51,38 @@ static int menufunc_setup(void) {
     }
 }
 
-// todo: add scrolling, 10 elements ok;
+static void draw_options(char** options, int bgrect) {
+    int ys[] = {184, 152, 120, 88, 56};
+    int sprs[32];
+
+    int name_length = 0;
+    OAM_SPRITE_TABLE[bgrect]->draw = true;
+    for(int i=0;i<5;++i) {
+        if(options[i] != NULL) {
+            draw_text(0, ys[i], options[i], typeFace, &sprs[0], &WHITE, background_color);
+            name_length = strlen(options[i]);
+            center_sprite_group_x(sprs, name_length);
+        }
+        OAM_SPRITE_TABLE[bgrect]->posY = 224-ys[i];
+        draw_all_sprites(spi);
+        if(options[i] != NULL)
+            for(int j=0;j<name_length;++j)
+                delete_sprite(sprs[j]);
+    }
+    OAM_SPRITE_TABLE[bgrect]->posY = 184;
+    OAM_SPRITE_TABLE[bgrect]->draw = false;
+}
+
+char SEARCH_TEXT[] = "Searching...";
 static int menufunc_wifi_scan() {
     int ys[] = {184, 152, 120, 88, 56};
 
     int error;
+    char* list_options[5];
     uint8_t selection = 0;
-    uint16_t aprecnum = 5;
-    wifi_ap_record_t ap_info[5];
+    uint8_t page_start = 0;
+    uint16_t aprecnum = 10;
+    wifi_ap_record_t ap_info[10];
     uint16_t ap_count = 0;
     memset(ap_info, 0, sizeof(ap_info));
     connect_flag = 0;
@@ -73,50 +97,54 @@ static int menufunc_wifi_scan() {
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+    FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
 
 refresh:
-    FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    int sprs[32];
-    error = draw_text(0, 184, "Searching...", typeFace, &sprs[0], &WHITE, background_color);
-    center_sprite_group_x(sprs, 12);
-    draw_all_sprites(spi);
-    for(int i=0;i<12;++i) {
-        delete_sprite(sprs[i]);
+    list_options[0] = SEARCH_TEXT;
+    for(int i=1;i<5;++i) {
+        list_options[i] = NULL;
     }
+    draw_options(list_options, textbg);
 
     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
 
-    int name_length;
-    for(int i=0;i<aprecnum;++i) {
-        error = draw_text(0, ys[i], (char*)ap_info[i].ssid, typeFace, &sprs[0], &WHITE, background_color);
-        OAM_SPRITE_TABLE[textbg]->posY = 224-ys[i];
-        name_length = strlen((char*)ap_info[i].ssid);
-        center_sprite_group_x(sprs, name_length);
-        draw_all_sprites(spi);
-        for(int j=0;j<name_length;++j) {
-            delete_sprite(sprs[j]);
-        }
+    for(int i=0;i<5;++i) {
+        list_options[i] = (i < aprecnum) ? (char*)ap_info[i].ssid : NULL;
     }
-    OAM_SPRITE_TABLE[textbg]->posY = 184;
-    OAM_SPRITE_TABLE[textbg]->draw = false;
+
+    draw_options(list_options, textbg);
     OAM_SPRITE_TABLE[cursor]->draw = true;
     OAM_SPRITE_TABLE[cursorbg]->draw = true;
-    draw_sprites(spi, &cursor, 1);
     draw_sprites(spi, &cursorbg, 1);
+    draw_sprites(spi, &cursor, 1);
+    if(ap_count > 10)
+        ap_count = 10;
 
     selection = 0;
     while(!connect_flag) {
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
-            selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % 5 : (selection - 1) % 5;
-            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
-            draw_sprites(spi, &cursor, 1);
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
+            selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % ap_count : (selection + ap_count - 1) % ap_count;
+            if(selection > page_start + 4 || selection < page_start) {
+                if(selection < page_start) {
+                    page_start = selection;
+                } else if (selection > page_start + 4) {
+                    page_start = selection - 4;
+                }
+                for(int i=0;i<5;++i)
+                    list_options[i] = (i < aprecnum) ? (char*)ap_info[i+page_start].ssid : NULL; // should never be null.
+                draw_options(list_options, textbg);
+            }
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection - page_start]-14;
             draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
         }
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+                draw_sprites(spi, &cursorbg, 1);
                 OAM_SPRITE_TABLE[cursorbg]->draw = false;
                 OAM_SPRITE_TABLE[cursor]->draw = false;
                 OAM_SPRITE_TABLE[textbg]->draw = true;
