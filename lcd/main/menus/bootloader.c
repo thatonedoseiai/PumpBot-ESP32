@@ -183,9 +183,11 @@ refresh:
 
 unsigned char table1[] = "EF⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
 unsigned char table2[] = "ef⌫✓abcdefghijklmnopqrstuvwxyz␣⌫✓abcd";
-unsigned char table3[] = "%^⌫✓!@#$%^&*().,+-\"0123456789~␣⌫✓!@#$";
+// unsigned char table3[] = "%^⌫✓!@#$%^&*().,+-\"0123456789~␣⌫✓!@#$";
+unsigned char table3[] = "?@⌫✓!\"#$%&'()*+,-./0123456789:;<=>?@␣⌫✓!\"#$%";
 unsigned char* metatable[] = {table1, table2, table3};
-char tablename[][2] = {"a", "!", "A"};
+unsigned char string_lengths[] = {29, 29, 36};
+char tablename[][2] = {"a", "@", "A"};
 int xs[] = {7, 42, 77, 112, 147, 182, 217, 252, 287};
 static void draw_textreel(unsigned int curtable, unsigned int selection, unsigned char** loc) {
     unsigned char visibleBuffer[27];
@@ -223,15 +225,15 @@ static int menufunc_text_write(void) {
     unsigned int selection = 0;
     unsigned int curtable = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    draw_text(300, 2, "a", typeFace, NULL, &WHITE, background_color);
+    draw_text(300, 3, "a", typeFace, NULL, &WHITE, background_color);
     draw_textreel(curtable, selection, &loc);
 
     while(true) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
-                sprite_rectangle(300, 2, 20, 18, background_color);
-                draw_text(300, 2, tablename[curtable], typeFace, NULL, &WHITE, background_color);
+                sprite_rectangle(300, 0, 20, 22, background_color);
+                draw_text(300, 3, tablename[curtable], typeFace, NULL, &WHITE, background_color);
                 draw_textreel(curtable, selection, &loc);
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN && numtyped < 64) {
@@ -270,9 +272,9 @@ static int menufunc_text_write(void) {
         }
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
-                selection = (selection + 1) % 29;
+                selection = (selection + 1) % string_lengths[curtable];
             } else {
-                selection = (selection + 28) % 29;
+                selection = (selection + string_lengths[curtable] - 1) % string_lengths[curtable];
             }
             draw_textreel(curtable, selection, &loc);
         }
