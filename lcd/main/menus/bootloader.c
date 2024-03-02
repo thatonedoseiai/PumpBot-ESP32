@@ -16,7 +16,8 @@
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
 #define MENU_POP_FLAG 0x4000
-#define MENU_SKIP_FLAG 0x2000
+#define MENU_TEXT_INPUT_FLAG 0x2000
+#define IBUF_SIZE 256
 
 extern FT_Face typeFace;
 extern QueueHandle_t* button_events;
@@ -27,6 +28,7 @@ extern uint24_RGB WHITE;
 extern char connect_flag;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
+static char* ibuf;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
@@ -102,7 +104,6 @@ static int menufunc_wifi_scan() {
     error = draw_text(10, 184, ">", typeFace, &cursor, &WHITE, background_color);
     OAM_SPRITE_TABLE[cursor]->draw = false;
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
-    ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
@@ -164,19 +165,13 @@ refresh:
             }
             if(event.pin == 18) {
                 strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
+                ibuf = malloc(256 * sizeof(char));
                 delete_all_sprites();
-                // strncpy((char*)wifi_config.sta.ssid, (char*)ap_info[selection].ssid, 32);
-                // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
-                // ESP_ERROR_CHECK(esp_wifi_connect());
-                // ets_printf("connecting...");
-                // while(!connect_flag);
-                // ets_printf("success!");
-                return MENU_RETURN_FLAG;
+                return MENU_TEXT_INPUT_FLAG | 4;
             }
             if(event.pin == 0)
                 return MENU_POP_FLAG;
         }
-
     }
     return MENU_RETURN_FLAG;
 }
@@ -209,10 +204,13 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
 }
 
 static int menufunc_text_write(void) {
+    if(ibuf == NULL) {
+        return MENU_POP_FLAG;
+    }
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    char ibuf[256];
-    memset(ibuf, 0, 256);
+    // char ibuf[256];
+    memset(ibuf, 0, IBUF_SIZE);
     unsigned char visibleBuffer[27];
     unsigned char i;
     unsigned char* selectedchar;
@@ -250,7 +248,7 @@ static int menufunc_text_write(void) {
                 } else if(selectedchar[0] == 0xe2 &&
                         selectedchar[1] == 0x9c &&
                         selectedchar[2] == 0x93) {
-                    return -2;
+                    break;
                 } else if(selectedchar[0] == 0xe2 &&
                         selectedchar[1] == 0x90 &&
                         selectedchar[2] == 0xa3) {
@@ -291,21 +289,48 @@ static int menufunc_welcome(void) {
     }
 }
 
+static int menufunc_connect_wifi(void) {
+    if(ibuf == NULL)
+        return MENU_POP_FLAG;
+    strncpy(settings.wifi_pass, ibuf, 64);
+    free(ibuf);
+    ibuf = NULL;
+
+    strncpy((char*)wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
+    strncpy((char*)wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    ets_printf("connecting...");
+    while(!connect_flag);
+    ets_printf("success!");
+    return MENU_RETURN_FLAG;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
     {&menusetup3[0], 9, menufunc_wifi_scan},
     {&menusetup3[0], 9, menufunc_text_write},
+    {&menuwifistarting[0], 3, menufunc_connect_wifi},
 };
 
 int start_menu_tree(int startmenu) {
     int menu_stack[20];
     int menu_stackp = 0;
     int nextmenu;
+    char do_text_menu = 0;
     MENU_INFO_t* currmenu;
     menu_stack[menu_stackp] = startmenu;
     do {
         send_color(spi, background_color);
+        if(do_text_menu) {
+            draw_menu_elements(allmenus[3].background, typeFace, allmenus[3].num_elements);
+            draw_all_sprites(spi);
+            delete_all_sprites();
+            (void) allmenus[3].menu_functionality();
+            do_text_menu = 0;
+            send_color(spi, background_color);
+        }
         currmenu = &allmenus[menu_stack[menu_stackp]];
         draw_menu_elements(currmenu->background, typeFace, currmenu->num_elements);
         draw_all_sprites(spi);
@@ -317,6 +342,10 @@ int start_menu_tree(int startmenu) {
                 menu_stackp = 0;
             }
         } else {
+            if (nextmenu & MENU_TEXT_INPUT_FLAG) {
+                do_text_menu = true;
+                nextmenu = nextmenu & 0xff;
+            }
             menu_stackp++;
             menu_stack[menu_stackp] = nextmenu;
         }

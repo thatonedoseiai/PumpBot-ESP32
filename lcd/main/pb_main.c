@@ -299,7 +299,10 @@ void app_main(void) {
     // error = draw_menu_elements(&menusetup0[0], typeFace, 8);
     // draw_all_sprites(spi);
     // delete_all_sprites();
-    (void) start_menu_tree(3);
+    ESP_ERROR_CHECK(esp_wifi_start());
+    // while(!connect_flag);
+    // connect_flag = 0;
+    (void) start_menu_tree(2);
     ets_printf("%s\n", &settings.wifi_name);
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
