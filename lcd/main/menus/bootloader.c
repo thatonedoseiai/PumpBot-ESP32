@@ -7,20 +7,28 @@
 #include "oam.h"
 #include "ILIDriver.h"
 #include "lua_exports.h"
+#include "settings.h"
+#include "utf8.h"
 
 #include "esp_wifi.h"
 #include "board_config.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
+#define MENU_RETURN_FLAG 0x8000
+#define MENU_POP_FLAG 0x4000
+#define MENU_SKIP_FLAG 0x2000
 
 extern FT_Face typeFace;
 extern QueueHandle_t* button_events;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
-extern const uint24_RGB WHITE;
+extern uint24_RGB WHITE;
 extern char connect_flag;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
+extern SETTINGS_t settings;
+
+uint24_RGB RED = {0xff, 0x00, 0x00};
 
 char languages[][15] = {
     "English",
@@ -36,15 +44,15 @@ static int menufunc_setup(void) {
     while(true) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3)
-                return -2;
+                return MENU_RETURN_FLAG;
             if(event.pin == 0)
-                return -1;
+                return MENU_POP_FLAG;
         }
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
             currlang = ((unsigned) rotencev.state.position) % 3;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
-            int err = draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], &WHITE, background_color);
+            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], &WHITE, background_color);
             draw_all_sprites(spi);
             delete_all_sprites();
         }
@@ -155,20 +163,121 @@ refresh:
                 goto refresh;
             }
             if(event.pin == 18) {
-                strncpy((char*)wifi_config.sta.ssid, (char*)ap_info[selection].ssid, 32);
-                ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
-                ESP_ERROR_CHECK(esp_wifi_connect());
-                ets_printf("connecting...");
-                while(!connect_flag);
-                ets_printf("success!");
-                return -2;
+                strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
+                delete_all_sprites();
+                // strncpy((char*)wifi_config.sta.ssid, (char*)ap_info[selection].ssid, 32);
+                // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+                // ESP_ERROR_CHECK(esp_wifi_connect());
+                // ets_printf("connecting...");
+                // while(!connect_flag);
+                // ets_printf("success!");
+                return MENU_RETURN_FLAG;
             }
             if(event.pin == 0)
-                return -1;
+                return MENU_POP_FLAG;
         }
 
     }
-    return -2;
+    return MENU_RETURN_FLAG;
+}
+
+unsigned char table1[] = "EF⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
+unsigned char table2[] = "ef⌫✓abcdefghijklmnopqrstuvwxyz␣⌫✓abcd";
+unsigned char table3[] = "%^⌫✓!@#$%^&*().,+-\"0123456789~␣⌫✓!@#$";
+unsigned char* metatable[] = {table1, table2, table3};
+char tablename[][2] = {"a", "!", "A"};
+int xs[] = {7, 42, 77, 112, 147, 182, 217, 252, 287};
+static void draw_textreel(unsigned int curtable, unsigned int selection, unsigned char** loc) {
+    unsigned char visibleBuffer[27];
+    *loc = &metatable[curtable][utf8substrlen((char*)metatable[curtable], selection)];
+    int sprs[9];
+    int substrend = utf8substrlen((char*) *loc, 9);
+    for(int i=0;i<substrend;++i) {
+        visibleBuffer[i] = (*loc)[i];
+    }
+    visibleBuffer[substrend] = 0;
+    for(int i=0;i<9;++i)
+        sprite_rectangle(xs[i], 113, 26, 27, background_color);
+    draw_text(0, 120, (char*) visibleBuffer, typeFace, sprs, &WHITE, background_color);
+    for(int i=0;i<9;++i) {
+        OAM_SPRITE_TABLE[sprs[i]]->posX = xs[i];
+    }
+    draw_all_sprites(spi);
+    delete_all_sprites();
+}
+
+static int menufunc_text_write(void) {
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    char ibuf[256];
+    memset(ibuf, 0, 256);
+    unsigned char visibleBuffer[27];
+    unsigned char i;
+    unsigned char* selectedchar;
+    unsigned char* loc;
+    int error;
+    int substrend;
+    int sprs[9];
+    uint8_t cursor = 0;
+    uint8_t numtyped = 0;
+    unsigned int selection = 0;
+    unsigned int curtable = 0;
+    FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
+    draw_text(300, 2, "a", typeFace, NULL, &WHITE, background_color);
+    draw_textreel(curtable, selection, &loc);
+
+    while(true) {
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                curtable = (curtable + 1) % 3;
+                sprite_rectangle(300, 2, 20, 18, background_color);
+                draw_text(300, 2, tablename[curtable], typeFace, NULL, &WHITE, background_color);
+                draw_textreel(curtable, selection, &loc);
+            }
+            if(event.pin == 18 && event.event == BUTTON_DOWN && numtyped < 64) {
+                selectedchar = loc + utf8substrlen((char*) loc, 4);
+                // ets_printf("typing!\n");
+                if(selectedchar[0] == 0xe2 &&
+                    selectedchar[1] == 0x8c &&
+                    selectedchar[2] == 0xab) {
+                    if(numtyped > 0) {
+                        utf8bspc((char*) ibuf, &cursor);
+                        numtyped--;
+                    }
+                    // ets_printf("input: %s\n", ibuf);
+                } else if(selectedchar[0] == 0xe2 &&
+                        selectedchar[1] == 0x9c &&
+                        selectedchar[2] == 0x93) {
+                    return -2;
+                } else if(selectedchar[0] == 0xe2 &&
+                        selectedchar[1] == 0x90 &&
+                        selectedchar[2] == 0xa3) {
+                    ibuf[cursor] = ' ';
+                    cursor++;
+                    // ets_printf("input: %s\n", ibuf);
+                    numtyped++;
+                } else {
+                    utf8cpychr(&ibuf[cursor], (char*) selectedchar, &cursor);
+                    // ets_printf("input: %s\n", ibuf);
+                    numtyped++;
+                }
+                sprite_rectangle(0, 191, 320, 14, background_color);
+                sprite_rectangle(0, 179, 320, 12, background_color);
+                draw_text(0, 184, ibuf, typeFace, NULL, &WHITE, background_color);
+                draw_all_sprites(spi);
+                delete_all_sprites();
+            } 
+        }
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+                selection = (selection + 1) % 29;
+            } else {
+                selection = (selection + 28) % 29;
+            }
+            draw_textreel(curtable, selection, &loc);
+        }
+    }
+    return MENU_RETURN_FLAG;
 }
 
 static int menufunc_welcome(void) {
@@ -183,7 +292,8 @@ static int menufunc_welcome(void) {
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
-    {&menusetup3[0], 14, menufunc_wifi_scan},
+    {&menusetup3[0], 9, menufunc_wifi_scan},
+    {&menusetup3[0], 9, menufunc_text_write},
 };
 
 int start_menu_tree(int startmenu) {
@@ -199,7 +309,7 @@ int start_menu_tree(int startmenu) {
         draw_all_sprites(spi);
         delete_all_sprites();
         nextmenu = currmenu->menu_functionality();
-        if(nextmenu == -1) {
+        if(nextmenu & MENU_POP_FLAG) {
             menu_stackp--;
             if(menu_stackp < 0) {
                 menu_stackp = 0;
@@ -208,7 +318,7 @@ int start_menu_tree(int startmenu) {
             menu_stackp++;
             menu_stack[menu_stackp] = nextmenu;
         }
-    } while(nextmenu != -2);
+    } while((nextmenu & MENU_RETURN_FLAG) == 0);
     return menu_stackp;
 }
 
@@ -249,7 +359,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
         // ets_printf("%d %d", elems[i].textlen, elems[i].numspaces);
         int spriteArray[elems[i].textlen - elems[i].numspaces];
 
-        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &elems[i].col, NULL);
+        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], (uint24_RGB*) &elems[i].col, NULL);
         if (elems[i].center)
             center_sprite_group_x(spriteArray, elems[i].textlen - elems[i].numspaces);
         if (err)

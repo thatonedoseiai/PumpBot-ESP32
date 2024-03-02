@@ -33,7 +33,7 @@ const uint24_RGB fillColor = {
 	.pixelG = 0,
 	.pixelB = 0x30,
 };
-const uint24_RGB WHITE = {
+uint24_RGB WHITE = {
     .pixelR = 0xff,
     .pixelG = 0xff,
     .pixelB = 0xff,
@@ -46,13 +46,14 @@ extern uint24_RGB* background_color;
 
 char connect_flag = 0;
 spi_device_handle_t spi;
-static char redraw_flag = 0;
-static int nums[5] = {0,0,0,0,0};
+// static char redraw_flag = 0;
+// static int nums[5] = {0,0,0,0,0};
 static lua_State* L;
 FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
 QueueHandle_t* button_events = NULL; // also because of lua
-pwm_fade_info_t pfade_channels[8];
+pwm_fade_info_t pfade_channels[8]; // this one too
+SETTINGS_t settings;
 
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
@@ -144,45 +145,45 @@ done:
 	return ret;
 }
 
-int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
-    // (void) args;
-    static char numBuf[6];
-    static int old_position = -1;
-    static int newNums[5] = {0,0,0,0,0};
-    // int err;
+// int exampleCallback(rotary_encoder_state_t* state, void* args, char isNotEvent) {
+//     // (void) args;
+//     static char numBuf[6];
+//     static int old_position = -1;
+//     static int newNums[5] = {0,0,0,0,0};
+//     // int err;
 
-    FT_Face t_face = (FT_Face) args;
+//     FT_Face t_face = (FT_Face) args;
 
-    if(isNotEvent) {
-        ets_printf("Poll: position %d, direction %s\n", state->position,
-                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-        if(old_position != state->position) {
-            old_position = state->position;
-            sprintf(numBuf, "%03d%%", old_position);
-            draw_text(40, 176, numBuf, t_face, newNums, &WHITE, &fillColor);
-            for(int i=0;i<5;++i) {
-                if(nums[i] != 0 && nums[i] > 0)
-                    delete_sprite(nums[i]);
-                nums[i] = newNums[i];
-            }
-            redraw_flag = 1;
-            return strlen(numBuf);
-        }
-    } else {
-        ets_printf("Event: position %d, direction %s\n", state->position,
-                state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-    }
-    return 0;
-}
+//     if(isNotEvent) {
+//         ets_printf("Poll: position %d, direction %s\n", state->position,
+//                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+//         if(old_position != state->position) {
+//             old_position = state->position;
+//             sprintf(numBuf, "%03d%%", old_position);
+//             draw_text(40, 176, numBuf, t_face, newNums, &WHITE, &fillColor);
+//             for(int i=0;i<5;++i) {
+//                 if(nums[i] != 0 && nums[i] > 0)
+//                     delete_sprite(nums[i]);
+//                 nums[i] = newNums[i];
+//             }
+//             redraw_flag = 1;
+//             return strlen(numBuf);
+//         }
+//     } else {
+//         ets_printf("Event: position %d, direction %s\n", state->position,
+//                 state->direction ? (state->direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+//     }
+//     return 0;
+// }
 
-int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_encoder_event_t* event, rotary_encoder_state_t* state, int(*callback)(rotary_encoder_state_t*, void*, char), void* args) {
-    if(xQueueReceive(event_queue, event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-        return callback(&(event->state), args, 0);
-    } else {
-        ESP_ERROR_CHECK(rotary_encoder_get_state(info, state));
-        return callback(state, args, 1);
-    }
-}
+// int rotaryAction(QueueHandle_t event_queue, rotary_encoder_info_t* info, rotary_encoder_event_t* event, rotary_encoder_state_t* state, int(*callback)(rotary_encoder_state_t*, void*, char), void* args) {
+//     if(xQueueReceive(event_queue, event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+//         return callback(&(event->state), args, 0);
+//     } else {
+//         ESP_ERROR_CHECK(rotary_encoder_get_state(info, state));
+//         return callback(state, args, 1);
+//     }
+// }
 
 void app_main(void) {
 	static FT_Library lib;
@@ -205,6 +206,7 @@ void app_main(void) {
 		ets_printf("initializations failed!\n");
 		return;
 	}
+    read_from_file(&settings);
 
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {
@@ -297,7 +299,8 @@ void app_main(void) {
     // error = draw_menu_elements(&menusetup0[0], typeFace, 8);
     // draw_all_sprites(spi);
     // delete_all_sprites();
-    (void) start_menu_tree(2);
+    (void) start_menu_tree(3);
+    ets_printf("%s\n", &settings.wifi_name);
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     // error = draw_menu_elements(&menuhome[0], typeFace, 14); 

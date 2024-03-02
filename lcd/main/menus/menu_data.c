@@ -692,61 +692,61 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .hline = false,
         .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
     },
-    {
-        .text = "[Text goes here]",
-        .x = 0,
-        .y = 184,
-        .textlen = 16,
-        .numspaces = 2,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "[Text goes here]", 
-        .x = 0,
-        .y = 152,
-        .textlen = 16,
-        .numspaces = 2,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "[Text goes here]", 
-        .x = 0,
-        .y = 120,
-        .textlen = 16,
-        .numspaces = 2,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "[Text goes here]", 
-        .x = 0,
-        .y = 88,
-        .textlen = 16,
-        .numspaces = 2,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
-    {
-        .text = "[Text goes here]", //last option on the screen, would get overwritten with a tooltip
-        .x = 0,
-        .y = 56,
-        .textlen = 16,
-        .numspaces = 2,
-        .center = true,
-        .textsize = 14,
-        .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    },
+    // {
+    //     .text = "[Text goes here]",
+    //     .x = 0,
+    //     .y = 184,
+    //     .textlen = 16,
+    //     .numspaces = 2,
+    //     .center = true,
+    //     .textsize = 14,
+    //     .hline = false,
+    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    // },
+    // {
+    //     .text = "[Text goes here]", 
+    //     .x = 0,
+    //     .y = 152,
+    //     .textlen = 16,
+    //     .numspaces = 2,
+    //     .center = true,
+    //     .textsize = 14,
+    //     .hline = false,
+    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    // },
+    // {
+    //     .text = "[Text goes here]", 
+    //     .x = 0,
+    //     .y = 120,
+    //     .textlen = 16,
+    //     .numspaces = 2,
+    //     .center = true,
+    //     .textsize = 14,
+    //     .hline = false,
+    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    // },
+    // {
+    //     .text = "[Text goes here]", 
+    //     .x = 0,
+    //     .y = 88,
+    //     .textlen = 16,
+    //     .numspaces = 2,
+    //     .center = true,
+    //     .textsize = 14,
+    //     .hline = false,
+    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    // },
+    // {
+    //     .text = "[Text goes here]", //last option on the screen, would get overwritten with a tooltip
+    //     .x = 0,
+    //     .y = 56,
+    //     .textlen = 16,
+    //     .numspaces = 2,
+    //     .center = true,
+    //     .textsize = 14,
+    //     .hline = false,
+    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    // },
     {      
         .y = 208,
         .textsize = 2,

@@ -1,4 +1,41 @@
 #include "utf8.h"
+#include <string.h>
+
+void utf8cpychr(char* d, char* s, uint8_t* curs) {
+	int n;
+	n = *s ? __builtin_clz(~(*s << 24)) : 0;  // Count # of leading 1 bits.
+	n = (n == 0) ? 1 : n;
+	*curs += n;
+    memcpy(d, s, n);
+    // n--;
+	// for(;n>=0;n--)
+		// d[n] = s[n];
+}
+
+int utf8substrlen(char* s, int len) {
+	int k=0;
+	int n;
+	for(int i=0;i<len;++i) {
+		n = s[k] ? __builtin_clz(~(s[k] << 24)) : 0;  // Count # of leading 1 bits.
+		k+=n>0?n:1;
+	}
+	return k;
+}
+
+void utf8bspc(char* s, uint8_t* curs) {
+	int k=*curs-1;
+	if((s[k] & 0x80)==0) {
+		s[k] = 0;
+		*curs = k;
+		return;
+	}
+	while((s[k] & 0xc0) == 0x80) {
+		s[k] = 0;
+		k--;
+	}
+	s[k] = 0;
+	*curs = k;
+}
 
 // Stops at any null characters.
 int decode_code_point(char **s) {

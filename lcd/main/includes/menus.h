@@ -20,7 +20,7 @@ typedef struct {
 } MENU_ELEMENT;
 
 typedef struct {
-    MENU_ELEMENT* background;
+    const MENU_ELEMENT* background;
     int num_elements;
     int(*menu_functionality)(void);
 } MENU_INFO_t;
