@@ -12,6 +12,7 @@ set(srcs
     "button.c"
     "settings.c"
     "http.c"
+    "file_server.c"
     )
 
 idf_component_register(SRCS ${srcs}

@@ -105,7 +105,7 @@ static int menufunc_wifi_scan() {
     OAM_SPRITE_TABLE[cursor]->draw = false;
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
 
 refresh:
@@ -296,9 +296,9 @@ static int menufunc_connect_wifi(void) {
     free(ibuf);
     ibuf = NULL;
 
-    strncpy((char*)wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
-    strncpy((char*)wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
+    strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
+    strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ESP_ERROR_CHECK(esp_wifi_connect());
     ets_printf("connecting...");
     while(!connect_flag);

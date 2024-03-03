@@ -37,7 +37,7 @@ const esp_vfs_littlefs_conf_t conf = {
     .format_if_mount_failed = true,
     .dont_mount = false,
 };
-wifi_config_t wifi_config = {
+wifi_config_t ap_wifi_config = {
     .ap = {
         .ssid = "pumpy wifi",
         .ssid_len = strlen("pumpy wifi"),
@@ -55,6 +55,8 @@ wifi_config_t wifi_config = {
         // .authmode = WIFI_AUTH_OPEN; // if no password
         },
     },
+};
+wifi_config_t sta_wifi_config = {
     .sta = {
         // .ssid = "hidden",
         // .password = "",

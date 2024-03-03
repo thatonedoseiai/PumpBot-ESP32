@@ -19,6 +19,7 @@
 #include "esp_event.h"
 
 #include "http.h"
+#include "file_server.h"
 
 // #include "esp_http_client.h"
 // #include "esp_crt_bundle.h"
@@ -58,13 +59,13 @@ SETTINGS_t settings;
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
 {
-    // if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-    //     wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-    //     // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
-    // } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-    //     wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-    //     // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
-    // }
+    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+        // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
+    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+        // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
+    }
     if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         wifi_event_sta_connected_t* event = (wifi_event_sta_connected_t*) event_data;
         ets_printf("connected to station \"%s\"!\n", event->ssid);
@@ -229,24 +230,30 @@ void app_main(void) {
 	send_color(spi, background_color);
     buffer_fillcolor(background_color);
 
+    ESP_ERROR_CHECK(esp_netif_init());
+    // esp_netif_create_default_wifi_sta();
+    esp_netif_create_default_wifi_ap();
+
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-    // ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &wifi_config));
-    ESP_ERROR_CHECK(esp_netif_init());
-    esp_netif_create_default_wifi_sta();
-
-//     uint16_t aprecnum = 5;
-//     wifi_ap_record_t ap_info[5];
-//     uint16_t ap_count = 0;
-//     memset(ap_info, 0, sizeof(ap_info));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &ap_wifi_config));
 
 //     connect_flag = 0;
 //     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-//     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &wifi_config));
-//     ESP_ERROR_CHECK(esp_wifi_start());
-//     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+    // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+    ets_printf("STARTED WIFI\n");
+    ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
+    button_event_t btnevent;
+    while(true) {
+        if(xQueueReceive(*button_events, &btnevent, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(btnevent.pin == 3 && btnevent.event == BUTTON_DOWN)
+                break;
+        }
+    }
+    // ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     
 //     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
 //     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
@@ -299,11 +306,16 @@ void app_main(void) {
     // error = draw_menu_elements(&menusetup0[0], typeFace, 8);
     // draw_all_sprites(spi);
     // delete_all_sprites();
-    ESP_ERROR_CHECK(esp_wifi_start());
-    // while(!connect_flag);
-    // connect_flag = 0;
-    (void) start_menu_tree(2);
-    ets_printf("%s\n", &settings.wifi_name);
+
+
+
+
+    // ESP_ERROR_CHECK(esp_wifi_start());
+    // (void) start_menu_tree(2);
+    // ets_printf("%s\n", &settings.wifi_name);
+
+
+
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     // error = draw_menu_elements(&menuhome[0], typeFace, 14); 
