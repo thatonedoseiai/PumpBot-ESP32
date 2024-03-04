@@ -27,6 +27,8 @@
 #include "esp_littlefs.h"
 #include "esp_http_server.h"
 #include "file_server.h"
+#include "settings.h"
+#include "esp_wifi.h"
 
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
@@ -46,6 +48,8 @@ struct file_server_data {
     /* Scratch buffer for temporary storage during file transfer */
     char scratch[SCRATCH_BUFSIZE];
 };
+
+extern SETTINGS_t settings;
 
 static const char *TAG = "file_server";
 
@@ -223,9 +227,40 @@ static const char* get_path_from_uri(char *dest, const char *base_path, const ch
     return dest + base_pathlen;
 }
 
+static esp_err_t get_wifi_handler(httpd_req_t *req) {
+    char wifi_list_buffer[340];
+
+    uint16_t aprecnum = 10;
+    wifi_ap_record_t ap_info[10];
+    uint16_t ap_count = 0;
+    memset(ap_info, 0, sizeof(ap_info));
+
+    ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+    
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+
+    memset(wifi_list_buffer, 0, sizeof(wifi_list_buffer));
+    for(int i=0;i<aprecnum;i++) {
+        strcat(wifi_list_buffer, (char*) ap_info[i].ssid);
+        strcat(wifi_list_buffer, ",");
+    }
+
+    httpd_resp_send(req, wifi_list_buffer, HTTPD_RESP_USE_STRLEN);
+
+    return ESP_OK;
+}
+
 static esp_err_t get_language_handler(httpd_req_t *req) {
-    const char resp[] = "I am in English!";
-    httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
+    const char get_handler_resp[][3] = {"en", "jp", "fr", "es", "pt", "zh", "cn", "ru", "de"};
+    httpd_resp_send(req, get_handler_resp[settings.language], HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+static esp_err_t get_settings_handler(httpd_req_t *req) {
+    char settings_buffer[200];
+    sprintf(&settings_buffer[0], "%s,%s,%d,%d,%d,%d,%d,%x%x%x,%x%x%x,%d,%d", settings.wifi_name, settings.wifi_pass, settings.disp_theme, settings.disp_brightness, settings.RGB_brightness, settings.RGB_speed, settings.RGB_mode, settings.RGB_colour.pixelR, settings.RGB_colour.pixelG, settings.RGB_colour.pixelB, settings.RGB_colour_2.pixelR, settings.RGB_colour_2.pixelG, settings.RGB_colour_2.pixelB, settings.pressure_units, settings.language);
+    httpd_resp_send(req, settings_buffer, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
@@ -318,12 +353,12 @@ static esp_err_t download_get_handler(httpd_req_t *req)
 /* Handler to upload a file onto the server */
 static esp_err_t set_settings_handler(httpd_req_t *req) {
     /* Retrieve the pointer to scratch buffer for temporary storage */
-    char sets[256];
+    char sets[1024];
 
     /* Content length of the request gives
      * the size of the file being uploaded */
     int remaining = req->content_len;
-    if(remaining > 256) {
+    if(remaining > 1024) {
         ESP_LOGE(TAG, "FAILURE: length of sent data longer than intended!\n");
     }
     int contentlength = remaining;
@@ -333,7 +368,7 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
 
         ESP_LOGI(TAG, "Remaining size : %d", remaining);
         /* Receive the file part by part into a buffer */
-        if ((received = httpd_req_recv(req, sets, MIN(remaining, 256))) <= 0) {
+        if ((received = httpd_req_recv(req, sets, MIN(remaining, 1024))) <= 0) {
             if (received == HTTPD_SOCK_ERR_TIMEOUT) {
                 /* Retry if timeout occurred */
                 continue;
@@ -348,7 +383,10 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
         remaining -= received;
     }
 
-    ets_printf("RECEIVED DATA:\n%s\n", sets);
+    // ets_printf("RECEIVED DATA:\n%s\n", sets);
+    sscanf(sets, "ws=%s&wp=%s&t=%d&b=%d&rb=%d&rs=%d&rm=%d&rc=%%23%hhx%hhx%hhx&rc2=%%23%hhx%hhx%hhx&p=%d&l=%d", settings.wifi_name, settings.wifi_pass, &settings.disp_theme, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
+    ets_printf("SETTINGS SUBMITTED!\n");
+    write_to_file(&settings);
 
     /* Redirect onto root to see the updated file list */
     httpd_resp_set_status(req, "303 See Other");
@@ -558,6 +596,22 @@ esp_err_t example_start_file_server(const char *base_path)
         .user_ctx  = server_data    // Pass server data as context
     };
     httpd_register_uri_handler(server, &get_language_uri);
+
+    httpd_uri_t get_wifi_uri = {
+        .uri       = "/get_wifi",
+        .method    = HTTP_GET,
+        .handler   = get_wifi_handler,
+        .user_ctx  = server_data
+    };
+    httpd_register_uri_handler(server, &get_wifi_uri);
+
+    httpd_uri_t get_settings_uri = {
+        .uri       = "/get_settings",
+        .method    = HTTP_GET,
+        .handler   = get_settings_handler,
+        .user_ctx  = server_data
+    };
+    httpd_register_uri_handler(server, &get_settings_uri);
 
     /* URI handler for getting uploaded files */
     httpd_uri_t file_download = {

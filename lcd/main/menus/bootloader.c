@@ -34,8 +34,14 @@ uint24_RGB RED = {0xff, 0x00, 0x00};
 
 char languages[][15] = {
     "English",
-    "Francais",
-    "NHG"
+    "日本語",
+    "Français",
+    "Español",
+    "Português",
+    "简化中文",
+    "繁體中文",
+    "Pусский",
+    "Deutsch",
 };
 static int menufunc_setup(void) {
     int error;
@@ -45,8 +51,10 @@ static int menufunc_setup(void) {
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     while(true) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            if(event.pin == 3)
-                return MENU_RETURN_FLAG;
+            if(event.pin == 3) {
+                settings.language = currlang;
+                return MENU_RETURN_FLAG; // replace with "how would you like to setup pumpbot? screen"
+            }
             if(event.pin == 0)
                 return MENU_POP_FLAG;
         }

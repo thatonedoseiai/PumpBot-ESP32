@@ -6,7 +6,8 @@
 #include "oam.h"
 
 enum RGB_MODE_t {
-    RGB_MODE_SOLID = 0,
+    RGB_MODE_OFF = 0,
+    RGB_MODE_SOLID,
     RGB_MODE_FADE,
     RGB_MODE_RAINBOW
 };
@@ -18,6 +19,18 @@ enum PRESSURE_UNIT_t {
     MMHG
 };
 
+enum LANGUAGE_t {
+    EN = 0,
+    JP = 1, 
+    FR = 2,
+    ES = 3,
+    PT = 4,
+    ZH = 5,
+    CN = 6,
+    RU = 7,
+    DE = 8
+};
+
 typedef struct {
     char wifi_name[32];
     char wifi_pass[64];
@@ -27,7 +40,9 @@ typedef struct {
     int RGB_speed;
     enum RGB_MODE_t RGB_mode;
     uint24_RGB RGB_colour;
+    uint24_RGB RGB_colour_2;
     enum PRESSURE_UNIT_t pressure_units;
+    enum LANGUAGE_t language;
     int pwm_min_limit[4];
     int pwm_max_limit[4];
     char output_set_on_off_only[4];

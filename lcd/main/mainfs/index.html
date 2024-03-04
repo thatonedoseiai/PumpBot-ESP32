@@ -1,15 +1,86 @@
 <head>
+  <meta charset="utf-8" />
   <script>
-    fetch("/get_language", {method: "GET"}).then(response => {return response.text()}).then(text => {document.getElementById("getreq").innerHTML = text;});
+    fetch("/get_language", {method: "GET"})
+      .then(response => response.text())
+      .then(text => {
+        document.getElementById("getreq").innerHTML = text;
+      });
+    fetch("/get_wifi", {method: "GET"})
+      .then(response => response.text())
+      .then(text => {
+        var k = text.split(",");
+        var x = document.getElementById("ws");
+        for(i=0;i<k.length-1;i++) {
+          var c = document.createElement("option");
+          c.text = k[i];
+          x.options.add(c);
+        }
+        document.getElementById("wifi_selection_label").innerHTML="";
+      });
+    fetch("/get_settings", {method: "GET"})
+      .then(response => response.text())
+      .then(text => {
+        var k = text.split(",");
+        var ids=["ws","wp","t","b","rb","rs","rm","rc","rc2","p","l"];
+        var c = document.createElement("option");
+        c.text = k[0];
+        document.getElementById("ws").options.add(c);
+        for(i=0;i<ids.length;i++) {
+          document.getElementById(ids[i]).value = k[i];
+        }
+      });
   </script>
 </head>
 <body>
 <form action="/set_settings", method="post">
-	<label for="fname">First name:</label>
-	<input type="text" id="fname" name="fname"><br><br>
-  	<label for="lname">Last name:</label>
-  	<input type="text" id="lname" name="lname"><br><br>
-  	<input type="submit" value="Submit">	
+    <label for="ws">wifi:</label>
+    <select id="ws" name="ws">
+    </select><label for="ws" id="wifi_selection_label">searching...</label><br><br>
+  	<label for="wp">wifi password:</label>
+  	<input type="text" id="wp" name="wp"><br><br>
+  	<label for="t">display theme:</label>
+    <select id="t" name="t">
+      <option value="0">dark</option>
+      <option value="1">light</option>
+    </select><br><br>
+    <label for="b">display brightness:</label>
+    <input type="range" min="0" max="255" value="230" id="b" name="b"><br><br>
+    <label for="rb">RGB brightness:</label>
+    <input type="range" min="0" max="255" value="230" id="rb" name="rb"><br><br>
+    <label for="rs">RGB speed:</label>
+    <input type="range" min="0" max="10" value="5" id="rs" name="rs"><br><br>
+    <label for="rm">RGB mode:</label>
+    <select id="rm" name="rm">
+      <option value="0">off</option>
+      <option value="1">solid</option>
+      <option value="2">fading</option>
+      <option value="3">rainbow</option>
+    </select><br><br>
+    <label for="rc">RGB color 1:</label>
+    <input type="color" id="rc" name="rc" value="#e66465">
+    <label for="rc2">RGB color 2:</label>
+    <input type="color" id="rc2" name="rc2" value="#e66465">
+    <label for="p">Units of pressure:</label>
+    <select id="p" name="p">
+      <option value="0">KPA</option>
+      <option value="1">BAR</option>
+      <option value="2">PSI</option>
+      <option value="3">MMHG</option>
+    </select><br><br>
+    <label for="l">Language:</label>
+    <select id="l" name="l">
+      <option value="0">English</option>
+      <option value="1">日本語</option>
+      <option value="2">Français</option>
+      <option value="3">Español</option>
+      <option value="4">Português</option>
+      <option value="5">简化中文</option>
+      <option value="6">繁體中文</option>
+      <option value="7">Pусский</option>
+      <option value="8">Deutsch</option>
+    </select><br><br>
+    <input type="submit" value="Submit">
 </form>
 <p id="getreq">
   GET request goes here.

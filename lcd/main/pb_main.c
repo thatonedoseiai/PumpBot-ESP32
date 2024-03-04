@@ -237,23 +237,14 @@ void app_main(void) {
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
 	// ets_printf("sw1 level: %d\n", gpio_get_level(PIN_NUM_SW1));
 
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &ap_wifi_config));
 
-//     connect_flag = 0;
-//     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    // ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ets_printf("STARTED WIFI\n");
     ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
-    button_event_t btnevent;
-    while(true) {
-        if(xQueueReceive(*button_events, &btnevent, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            if(btnevent.pin == 3 && btnevent.event == BUTTON_DOWN)
-                break;
-        }
-    }
-    // ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+
+//     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     
 //     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&aprecnum, ap_info));
 //     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
@@ -267,6 +258,23 @@ void app_main(void) {
 //         // }
 //         ets_printf("Channel \t\t%d\n", ap_info[i].primary);
 //     }
+
+//     connect_flag = 0;
+//     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    // uint16_t aprecnum = 10;
+    // wifi_ap_record_t ap_info[10];
+    // uint16_t ap_count = 0;
+    // memset(ap_info, 0, sizeof(ap_info));
+    // connect_flag = 0;
+
+    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
+    button_event_t btnevent;
+    while(true) {
+        if(xQueueReceive(*button_events, &btnevent, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(btnevent.pin == 3 && btnevent.event == BUTTON_DOWN)
+                break;
+        }
+    }
 
 //     char wifiname[] = "hidden";
 //     char pskey[] = "";
