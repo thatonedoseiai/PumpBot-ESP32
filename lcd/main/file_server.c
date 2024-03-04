@@ -223,12 +223,23 @@ static const char* get_path_from_uri(char *dest, const char *base_path, const ch
     return dest + base_pathlen;
 }
 
+static esp_err_t get_language_handler(httpd_req_t *req) {
+    const char resp[] = "I am in English!";
+    httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
 /* Handler to download a file kept on the server */
 static esp_err_t download_get_handler(httpd_req_t *req)
 {
     char filepath[FILE_PATH_MAX];
     FILE *fd = NULL;
     struct stat file_stat;
+
+    // ets_printf("%s, %d\n", req->uri, !strcmp(req->uri, "/get_language"));
+    // if(!strcmp(req->uri, "/get_language")) {
+    //     return get_language_handler(req);
+    // }
 
     const char *filename = get_path_from_uri(filepath, ((struct file_server_data *)req->user_ctx)->base_path,
                                              req->uri, sizeof(filepath));
@@ -301,6 +312,50 @@ static esp_err_t download_get_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Connection", "close");
 #endif
     httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
+/* Handler to upload a file onto the server */
+static esp_err_t set_settings_handler(httpd_req_t *req) {
+    /* Retrieve the pointer to scratch buffer for temporary storage */
+    char sets[256];
+
+    /* Content length of the request gives
+     * the size of the file being uploaded */
+    int remaining = req->content_len;
+    if(remaining > 256) {
+        ESP_LOGE(TAG, "FAILURE: length of sent data longer than intended!\n");
+    }
+    int contentlength = remaining;
+    int received;
+
+    while (remaining > 0) {
+
+        ESP_LOGI(TAG, "Remaining size : %d", remaining);
+        /* Receive the file part by part into a buffer */
+        if ((received = httpd_req_recv(req, sets, MIN(remaining, 256))) <= 0) {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT) {
+                /* Retry if timeout occurred */
+                continue;
+            }
+            /* Respond with 500 Internal Server Error */
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send settings!");
+            return ESP_FAIL;
+        }
+
+        /* Keep track of remaining size of
+         * the file left to be uploaded */
+        remaining -= received;
+    }
+
+    ets_printf("RECEIVED DATA:\n%s\n", sets);
+
+    /* Redirect onto root to see the updated file list */
+    httpd_resp_set_status(req, "303 See Other");
+    httpd_resp_set_hdr(req, "Location", "/");
+#ifdef CONFIG_EXAMPLE_HTTPD_CONN_CLOSE_HEADER
+    httpd_resp_set_hdr(req, "Connection", "close");
+#endif
     return ESP_OK;
 }
 
@@ -495,6 +550,15 @@ esp_err_t example_start_file_server(const char *base_path)
         return ESP_FAIL;
     }
 
+    /* URI handler for sending settings data */
+    httpd_uri_t get_language_uri = {
+        .uri       = "/get_language",   // Match all URIs of type /get_language
+        .method    = HTTP_GET,
+        .handler   = get_language_handler,
+        .user_ctx  = server_data    // Pass server data as context
+    };
+    httpd_register_uri_handler(server, &get_language_uri);
+
     /* URI handler for getting uploaded files */
     httpd_uri_t file_download = {
         .uri       = "/*",  // Match all URIs of type /path/to/file
@@ -521,6 +585,15 @@ esp_err_t example_start_file_server(const char *base_path)
         .user_ctx  = server_data    // Pass server data as context
     };
     httpd_register_uri_handler(server, &file_delete);
+
+    /* URI handler for sending settings data */
+    httpd_uri_t post_settings = {
+        .uri       = "/set_settings",   // Match all URIs of type /delete/path/to/file
+        .method    = HTTP_POST,
+        .handler   = set_settings_handler,
+        .user_ctx  = server_data    // Pass server data as context
+    };
+    httpd_register_uri_handler(server, &post_settings);
 
     return ESP_OK;
 }

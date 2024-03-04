@@ -1,8 +1,18 @@
 <head>
+  <script>
+    fetch("/get_language", {method: "GET"}).then(response => {return response.text()}).then(text => {document.getElementById("getreq").innerHTML = text;});
+  </script>
 </head>
 <body>
-<h1>
-	Hello World!
-</h1>
+<form action="/set_settings", method="post">
+	<label for="fname">First name:</label>
+	<input type="text" id="fname" name="fname"><br><br>
+  	<label for="lname">Last name:</label>
+  	<input type="text" id="lname" name="lname"><br><br>
+  	<input type="submit" value="Submit">	
+</form>
+<p id="getreq">
+  GET request goes here.
+</p>
 </body>
 
