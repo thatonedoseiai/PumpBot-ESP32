@@ -265,14 +265,11 @@ void app_main(void) {
     // memset(ap_info, 0, sizeof(ap_info));
     // connect_flag = 0;
 
-    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
-    button_event_t btnevent;
-    while(true) {
-        if(xQueueReceive(*button_events, &btnevent, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            if(btnevent.pin == 3 && btnevent.event == BUTTON_DOWN)
-                break;
-        }
-    }
+    // connect_flag = 0;
+    // ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
+    // button_event_t btnevent;
+    // while(!connect_flag);
+    // stop_file_server();
 
 //     char wifiname[] = "hidden";
 //     char pskey[] = "";
@@ -317,7 +314,7 @@ void app_main(void) {
 
 
     // ESP_ERROR_CHECK(esp_wifi_start());
-    // (void) start_menu_tree(2);
+    (void) start_menu_tree(5);
     // ets_printf("%s\n", &settings.wifi_name);
 
 

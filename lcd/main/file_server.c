@@ -50,6 +50,7 @@ struct file_server_data {
 };
 
 extern SETTINGS_t settings;
+extern char connect_flag;
 
 static const char *TAG = "file_server";
 
@@ -394,6 +395,8 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
 #ifdef CONFIG_EXAMPLE_HTTPD_CONN_CLOSE_HEADER
     httpd_resp_set_hdr(req, "Connection", "close");
 #endif
+    connect_flag = 1;
+
     return ESP_OK;
 }
 
@@ -555,10 +558,12 @@ static esp_err_t delete_post_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+struct file_server_data* server_data;
+httpd_handle_t server;
 /* Function to start the file server */
-esp_err_t example_start_file_server(const char *base_path)
-{
-    static struct file_server_data *server_data = NULL;
+esp_err_t example_start_file_server(const char *base_path) {
+    // static struct file_server_data *server_data = NULL;
+    server_data = NULL;
 
     if (server_data) {
         ESP_LOGE(TAG, "File server already started");
@@ -574,7 +579,7 @@ esp_err_t example_start_file_server(const char *base_path)
     strlcpy(server_data->base_path, base_path,
             sizeof(server_data->base_path));
 
-    httpd_handle_t server = NULL;
+    server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
     /* Use the URI wildcard matching function in order to
@@ -649,5 +654,11 @@ esp_err_t example_start_file_server(const char *base_path)
     };
     httpd_register_uri_handler(server, &post_settings);
 
+    return ESP_OK;
+}
+
+esp_err_t stop_file_server() {
+    free(server_data);
+    httpd_stop(server);
     return ESP_OK;
 }

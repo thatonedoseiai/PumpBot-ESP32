@@ -12,6 +12,7 @@
 
 #include "esp_wifi.h"
 #include "board_config.h"
+#include "file_server.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -314,12 +315,27 @@ static int menufunc_connect_wifi(void) {
     return MENU_RETURN_FLAG;
 }
 
+static int menufunc_http_setup(void) {
+    connect_flag = 0;
+    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
+    button_event_t event;
+    while(!connect_flag) {
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
+            stop_file_server();
+            return MENU_POP_FLAG;
+        }
+    }
+    stop_file_server();
+    return MENU_RETURN_FLAG;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
     {&menusetup3[0], 9, menufunc_wifi_scan},
     {&menusetup3[0], 9, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
+    {&menuwifistarting[0], 3, menufunc_http_setup},
 };
 
 int start_menu_tree(int startmenu) {
