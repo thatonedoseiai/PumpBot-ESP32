@@ -30,10 +30,14 @@
           document.getElementById(ids[i]).value = k[i];
         }
       });
+    function submission() {
+      document.getElementById("send_confirm").innerHTML = "Settings saved! Check pumpbot!";
+    }
   </script>
 </head>
 <body>
-<form action="/set_settings", method="post">
+<iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+<form action="/set_settings" method="post" target="dummyframe">
     <label for="ws">wifi:</label>
     <select id="ws" name="ws">
     </select><label for="ws" id="wifi_selection_label">searching...</label><br><br>
@@ -80,8 +84,9 @@
       <option value="7">Pусский</option>
       <option value="8">Deutsch</option>
     </select><br><br>
-    <input type="submit" value="Save and Exit">
+    <input type="submit" onclick="submission()" value="Save and Exit">
 </form>
+<p id="send_confirm"> </p>
 <p id="getreq">
   GET request goes here.
 </p>
