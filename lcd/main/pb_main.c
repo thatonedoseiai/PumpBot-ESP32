@@ -231,7 +231,7 @@ void app_main(void) {
     buffer_fillcolor(background_color);
 
     ESP_ERROR_CHECK(esp_netif_init());
-    // esp_netif_create_default_wifi_sta();
+    esp_netif_create_default_wifi_sta();
     esp_netif_create_default_wifi_ap();
 
 	// ets_printf("sw0 level: %d\n", gpio_get_level(PIN_NUM_SW0));
@@ -239,9 +239,7 @@ void app_main(void) {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, (wifi_config_t*) &ap_wifi_config));
-
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
-    ets_printf("STARTED WIFI\n");
     ESP_ERROR_CHECK(esp_wifi_start());
 
 //     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
