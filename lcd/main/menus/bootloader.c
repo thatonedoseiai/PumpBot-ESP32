@@ -105,6 +105,7 @@ static int menufunc_wifi_scan() {
     uint16_t ap_count = 0;
     memset(ap_info, 0, sizeof(ap_info));
     connect_flag = 0;
+    FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
@@ -115,7 +116,6 @@ static int menufunc_wifi_scan() {
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
-    FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
 
 refresh:
     list_options[0] = SEARCH_TEXT;
@@ -159,8 +159,8 @@ refresh:
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
-            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
+            if(event.pin == 3) {
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
                 draw_sprites(spi, &cursorbg, 1);
                 OAM_SPRITE_TABLE[cursorbg]->draw = false;
@@ -174,9 +174,9 @@ refresh:
             }
             if(event.pin == 18) {
                 strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
-                ibuf = malloc(256 * sizeof(char));
                 delete_all_sprites();
-                return MENU_TEXT_INPUT_FLAG | 4;
+                // return MENU_TEXT_INPUT_FLAG | 4;
+                return 6;
             }
             if(event.pin == 0)
                 return MENU_POP_FLAG;
@@ -219,19 +219,16 @@ static int menufunc_text_write(void) {
     button_event_t event;
     rotary_encoder_event_t rotencev;
     // char ibuf[256];
-    memset(ibuf, 0, IBUF_SIZE);
-    unsigned char visibleBuffer[27];
-    unsigned char i;
+    // memset(ibuf, 0, IBUF_SIZE);
     unsigned char* selectedchar;
     unsigned char* loc;
     int error;
-    int substrend;
-    int sprs[9];
-    uint8_t cursor = 0;
-    uint8_t numtyped = 0;
+    uint8_t cursor = strlen(ibuf);
+    uint8_t numtyped = utf8strlen(ibuf);
     unsigned int selection = 0;
     unsigned int curtable = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
+    draw_text(0, 184, ibuf, typeFace, NULL, &WHITE, background_color);
     draw_text(300, 3, "a", typeFace, NULL, &WHITE, background_color);
     draw_textreel(curtable, selection, &loc);
 
@@ -286,7 +283,7 @@ static int menufunc_text_write(void) {
             draw_textreel(curtable, selection, &loc);
         }
     }
-    return MENU_RETURN_FLAG;
+    return MENU_POP_FLAG;
 }
 
 static int menufunc_welcome(void) {
@@ -299,11 +296,11 @@ static int menufunc_welcome(void) {
 }
 
 static int menufunc_connect_wifi(void) {
-    if(ibuf == NULL)
-        return MENU_POP_FLAG;
-    strncpy(settings.wifi_pass, ibuf, 64);
-    free(ibuf);
-    ibuf = NULL;
+    // if(ibuf == NULL)
+    //     return MENU_POP_FLAG;
+    // strncpy(settings.wifi_pass, ibuf, 64);
+    // free(ibuf);
+    // ibuf = NULL;
 
     strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
     strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
@@ -329,6 +326,100 @@ static int menufunc_http_setup(void) {
     return MENU_RETURN_FLAG;
 }
 
+static int menufunc_network_preview(void) {
+    int ys[] = {184, 152, 120, 88, 56};
+    char namebuf[14];
+    int k[8];
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+
+    if(ibuf != NULL) {
+        strncpy(settings.wifi_pass, ibuf, 64);
+        free(ibuf);
+        ibuf = NULL;
+    }
+
+    draw_text(32, 184, "Network", typeFace, NULL, &WHITE, background_color);
+    draw_text(32, 152, "Password", typeFace, NULL, &WHITE, background_color);
+    draw_text(32, 120, "Advanced", typeFace, k, &WHITE, background_color);
+    center_sprite_group_x(k, 8);
+    draw_text(32, 88, "Connect", typeFace, k, &WHITE, background_color);
+    center_sprite_group_x(k, 7);
+    if(strlen(settings.wifi_name) > 10) {
+        for(int i=0;i<10;++i) {
+            namebuf[i] = settings.wifi_name[i];
+        }
+        namebuf[11] = '.';
+        namebuf[12] = '.';
+        namebuf[13] = '.';
+        namebuf[14] = 0;
+        draw_text(150, 184, namebuf, typeFace, NULL, &WHITE, background_color);
+    } else {
+        draw_text(150, 184, &settings.wifi_name[0], typeFace, NULL, &WHITE, background_color);
+    }
+    if(strlen(settings.wifi_pass) > 10) {
+        for(int i=0;i<10;++i) {
+            namebuf[i] = settings.wifi_pass[i];
+        }
+        namebuf[11] = '.';
+        namebuf[12] = '.';
+        namebuf[13] = '.';
+        namebuf[14] = 0;
+        draw_text(150, 152, namebuf, typeFace, NULL, &WHITE, background_color);
+    } else {
+        draw_text(150, 152, &settings.wifi_pass[0], typeFace, NULL, &WHITE, background_color);
+    }
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    int cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
+    int cursor;
+    int selection = 0;
+    draw_text(2, 184, ">", typeFace, &cursor, &WHITE, background_color);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+            selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % 4 : (selection + 3) % 4;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                // draw_text(0, 88, );
+                return MENU_RETURN_FLAG;
+            }
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                // strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
+                // ibuf = malloc(256 * sizeof(char));
+                // delete_all_sprites();
+                // return MENU_TEXT_INPUT_FLAG | 4;
+                switch(selection) {
+                case 0:
+                    memset(&settings.wifi_pass[0], 0, 64);
+                    delete_all_sprites();
+                    return MENU_POP_FLAG;
+                case 1:
+                    ibuf = calloc(256, sizeof(char));
+                    strcpy(ibuf, &settings.wifi_pass[0]);
+                    delete_all_sprites();
+                    return 3;
+                case 2:
+                    break;
+                case 3:
+                    delete_all_sprites();
+                    return 4;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                memset(&settings.wifi_pass[0], 0, 64);
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+    return 4;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -336,6 +427,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
     {&menuwifistarting[0], 3, menufunc_http_setup},
+    {&menusetup3[0], 9, menufunc_network_preview},
 };
 
 int start_menu_tree(int startmenu) {
@@ -347,14 +439,14 @@ int start_menu_tree(int startmenu) {
     menu_stack[menu_stackp] = startmenu;
     do {
         send_color(spi, background_color);
-        if(do_text_menu) {
-            draw_menu_elements(allmenus[3].background, typeFace, allmenus[3].num_elements);
-            draw_all_sprites(spi);
-            delete_all_sprites();
-            (void) allmenus[3].menu_functionality();
-            do_text_menu = 0;
-            send_color(spi, background_color);
-        }
+        // if(do_text_menu) {
+        //     draw_menu_elements(allmenus[3].background, typeFace, allmenus[3].num_elements);
+        //     draw_all_sprites(spi);
+        //     delete_all_sprites();
+        //     (void) allmenus[3].menu_functionality();
+        //     do_text_menu = 0;
+        //     send_color(spi, background_color);
+        // }
         currmenu = &allmenus[menu_stack[menu_stackp]];
         draw_menu_elements(currmenu->background, typeFace, currmenu->num_elements);
         draw_all_sprites(spi);
@@ -366,10 +458,10 @@ int start_menu_tree(int startmenu) {
                 menu_stackp = 0;
             }
         } else {
-            if (nextmenu & MENU_TEXT_INPUT_FLAG) {
-                do_text_menu = true;
-                nextmenu = nextmenu & 0xff;
-            }
+            // if (nextmenu & MENU_TEXT_INPUT_FLAG) {
+            //     do_text_menu = true;
+            //     nextmenu = nextmenu & 0xff;
+            // }
             menu_stackp++;
             menu_stack[menu_stackp] = nextmenu;
         }

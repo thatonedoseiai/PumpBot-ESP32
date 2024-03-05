@@ -22,6 +22,13 @@ int utf8substrlen(char* s, int len) {
 	return k;
 }
 
+int utf8strlen(char* s) {
+    int k=0;
+    for(int i=0;s[i]!='\0';++i)
+        k+=(s[i] & 0xc0) != 0x80;
+    return k;
+}
+
 void utf8bspc(char* s, uint8_t* curs) {
 	int k=*curs-1;
 	if((s[k] & 0x80)==0) {

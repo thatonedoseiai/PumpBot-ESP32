@@ -6,6 +6,7 @@
 
 void utf8cpychr(char* d, char* s, uint8_t* curs);
 int utf8substrlen(char* s, int len);
+int utf8strlen(char* s);
 void utf8bspc(char* s, uint8_t* curs);
 int decode_code_point(char **s);
 void encode_code_point(char **s, char *end, int code);
