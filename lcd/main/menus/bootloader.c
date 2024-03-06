@@ -494,7 +494,7 @@ static int menufunc_display_settings(void) {
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
     int bright_rec = sprite_rectangle(150, 184, 150, 16, background_color);
-    int theme_rec = sprite_rectangle(150, 147, 100, 19, background_color);
+    int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
     OAM_SPRITE_TABLE[bright_rec]->draw = false;
     OAM_SPRITE_TABLE[theme_rec]->draw = false;
     draw_text(10, 184, ">", typeFace, &cursor, &WHITE, background_color);
@@ -573,9 +573,9 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
     {&menuwifistarting[0], 3, menufunc_http_setup},
-    {&menusetup3[0], 9, menufunc_network_preview},
+    {&menusetup3[0], 10, menufunc_network_preview},
     {&menusetup1[0], 10, menufunc_pb_setup_method},
-    {&menusetup3[0], 9, menufunc_display_settings}
+    {&menusetup3[0], 10, menufunc_display_settings}
 };
 
 int start_menu_tree(int startmenu) {
