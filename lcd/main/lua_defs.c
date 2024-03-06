@@ -11,7 +11,7 @@
 
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
-extern uint32_t text_cache[SPRITE_LIMIT];
+extern int text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
 extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
@@ -19,6 +19,8 @@ extern uint64_t advance_x_cache[SPRITE_LIMIT];
 extern uint16_t y_loc_cache[SPRITE_LIMIT];
 extern uint16_t width_cache[SPRITE_LIMIT];
 extern uint16_t height_cache[SPRITE_LIMIT];
+extern uint24_RGB* fg_cache[SPRITE_LIMIT];
+extern uint24_RGB* bg_cache[SPRITE_LIMIT];
 
 extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
@@ -53,7 +55,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         curchar = decode_code_point(&reader_head);
 
         for(int i=0;i<text_cache_size;++i) {
-            if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height) {
+            if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height && fg_cache[i] == color && bg_cache[i] == bgcol) {
                 bmp = bitmap_cache[i];
                 bmp_top = 240 - y_loc_cache[i] - startY;
                 advance_x = advance_x_cache[i];
@@ -88,6 +90,8 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         height = slot->bitmap.rows/3;
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
+            fg_cache[text_cache_size] = color;
+            bg_cache[text_cache_size] = bgcol;
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             advance_x_cache[text_cache_size] = advance_x;

@@ -49,6 +49,6 @@ typedef struct {
 } SETTINGS_t;
 
 void write_to_file(SETTINGS_t* settings);
-void read_from_file(SETTINGS_t* settings);
+int read_from_file(SETTINGS_t* settings);
 
 #endif

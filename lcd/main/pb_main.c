@@ -207,7 +207,8 @@ void app_main(void) {
 		ets_printf("initializations failed!\n");
 		return;
 	}
-    read_from_file(&settings);
+    if(read_from_file(&settings))
+        settings.disp_brightness = 255;
 
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {
@@ -315,7 +316,7 @@ void app_main(void) {
 
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
-    (void) start_menu_tree(0);
+    (void) start_menu_tree(8);
     // ets_printf("%s\n", &settings.wifi_name);
 
 
