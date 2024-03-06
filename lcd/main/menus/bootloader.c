@@ -54,7 +54,7 @@ static int menufunc_setup(void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3) {
                 settings.language = currlang;
-                return MENU_RETURN_FLAG; // replace with "how would you like to setup pumpbot? screen"
+                return 7;
             }
             if(event.pin == 0)
                 return MENU_POP_FLAG;
@@ -230,6 +230,8 @@ static int menufunc_text_write(void) {
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
     draw_text(0, 184, ibuf, typeFace, NULL, &WHITE, background_color);
     draw_text(300, 3, "a", typeFace, NULL, &WHITE, background_color);
+    draw_text(147, 152, "v", typeFace, NULL, &WHITE, background_color);
+    draw_text(147, 88, "^", typeFace, NULL, &WHITE, background_color);
     draw_textreel(curtable, selection, &loc);
 
     while(true) {
@@ -296,12 +298,6 @@ static int menufunc_welcome(void) {
 }
 
 static int menufunc_connect_wifi(void) {
-    // if(ibuf == NULL)
-    //     return MENU_POP_FLAG;
-    // strncpy(settings.wifi_pass, ibuf, 64);
-    // free(ibuf);
-    // ibuf = NULL;
-
     strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
     strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
@@ -338,6 +334,7 @@ static int menufunc_network_preview(void) {
         free(ibuf);
         ibuf = NULL;
     }
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
 
     draw_text(32, 184, "Network", typeFace, NULL, &WHITE, background_color);
     draw_text(32, 152, "Password", typeFace, NULL, &WHITE, background_color);
@@ -389,10 +386,6 @@ static int menufunc_network_preview(void) {
                 return MENU_RETURN_FLAG;
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
-                // strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
-                // ibuf = malloc(256 * sizeof(char));
-                // delete_all_sprites();
-                // return MENU_TEXT_INPUT_FLAG | 4;
                 switch(selection) {
                 case 0:
                     memset(&settings.wifi_pass[0], 0, 64);
@@ -420,6 +413,63 @@ static int menufunc_network_preview(void) {
     return 4;
 }
 
+static int menufunc_pb_setup_method (void) {
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    char options_1[] = "Set up PumpBot by connecting";
+    char options_2[] = "another device";
+    char options_3[] = "Set up PumpBot without connecting";
+    char options_4[] = "to another device";
+    unsigned char selection = 0;
+    int tooltip_1[37];
+    int tooltip_2[44];
+    int err = FT_Set_Char_Size (typeFace, 12 << 6, 0, 100, 0);
+    int tooltip_bg = sprite_rectangle(0, 25, 320, 16, background_color);
+    int tooltip_bg2 = sprite_rectangle(0, 41, 320, 16, background_color);
+    int tooltip_bg3 = sprite_rectangle(0, 57, 320, 16, background_color);
+    draw_text(0, 52, options_1, typeFace, tooltip_1, &WHITE, background_color);
+    center_sprite_group_x(tooltip_1, 24);
+    draw_text(0, 34, options_2, typeFace, tooltip_1 + 24, &WHITE, background_color);
+    center_sprite_group_x(tooltip_1+24, 13);
+    draw_text(0, 52, options_3, typeFace, tooltip_2, &WHITE, background_color);
+    center_sprite_group_x(tooltip_2, 29);
+    draw_text(0, 34, options_4, typeFace, tooltip_2+29, &WHITE, background_color);
+    center_sprite_group_x(tooltip_2+29, 15);
+    for(int i=0;i<44;++i) {
+        OAM_SPRITE_TABLE[tooltip_2[i]]->draw = false;
+    }
+    int cursorbg = sprite_rectangle(10, 120, 20, 16, background_color);
+    int cursor;
+    draw_text(10, 120, ">", typeFace, &cursor, &WHITE, background_color);
+    draw_all_sprites(spi);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = selection ? 240-88-14 : 240-120-14;
+            selection = !selection;
+            OAM_SPRITE_TABLE[cursor]->posY = selection ? 240-88-14 : 240-120-14;
+            for(int i=0;i<44;++i) {
+                OAM_SPRITE_TABLE[tooltip_2[i]]->draw = selection;
+            }
+            for(int i=0;i<37;++i) {
+                OAM_SPRITE_TABLE[tooltip_1[i]]->draw = !selection;
+            }
+            draw_all_sprites(spi);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return selection ? 5 : 2;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+
+    return MENU_RETURN_FLAG;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -428,6 +478,7 @@ MENU_INFO_t allmenus[] = {
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
     {&menuwifistarting[0], 3, menufunc_http_setup},
     {&menusetup3[0], 9, menufunc_network_preview},
+    {&menusetup1[0], 10, menufunc_pb_setup_method}
 };
 
 int start_menu_tree(int startmenu) {
