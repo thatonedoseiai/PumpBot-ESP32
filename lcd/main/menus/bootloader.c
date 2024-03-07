@@ -30,6 +30,7 @@ extern char connect_flag;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
 static char* ibuf;
+static uint24_RGB* colorbuf;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
@@ -468,14 +469,18 @@ static int menufunc_pb_setup_method (void) {
     }
 }
 
-const char theme_names[][6] = {"dark", "light"};
+const char theme_names[][7] = {"dark", "light", "custom"};
 static int menufunc_display_settings(void) {
     button_event_t event;
     rotary_encoder_event_t rotencev;
     uint24_RGB hicolor = {0xff, 0x00, 0x00};
-    // hicolor.pixelR = (((int) 512 - (background_color->pixelR << 1)) * (int) background_color->pixelR << 1) >> 8;
-    // hicolor.pixelG = (((int) 512 - (background_color->pixelG << 1)) * (int) background_color->pixelG << 1) >> 8;
-    // hicolor.pixelB = (((int) 512 - (background_color->pixelB << 1)) * (int) background_color->pixelB << 1) >> 8;
+    if(colorbuf != NULL) {
+        settings.custom_theme_color.pixelR = colorbuf->pixelR;
+        settings.custom_theme_color.pixelG = colorbuf->pixelG;
+        settings.custom_theme_color.pixelB = colorbuf->pixelB;
+        free(colorbuf);
+        colorbuf = NULL;
+    }
     int sprs[15];
     char bright[4];
     (void) itoa(settings.disp_brightness, bright, 10);
@@ -526,7 +531,7 @@ static int menufunc_display_settings(void) {
                 ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
                 break;
             case 2:
-                settings.disp_theme = !settings.disp_theme;
+                settings.disp_theme = (settings.disp_theme + (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2) % 3;
                 draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &hicolor, background_color);
                 draw_all_sprites(spi);
                 for(int i=0;i<strlen(theme_names[settings.disp_theme]);++i)
@@ -537,6 +542,11 @@ static int menufunc_display_settings(void) {
         }
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                if(mode == 2 && settings.disp_theme == 2) {
+                    // start the colour menu!
+                    colorbuf = calloc(1, 3);
+                    return 9;
+                }
                 mode = mode == 0 ? selection + 1 : 0;
                 switch(mode) {
                 case 0:
@@ -566,6 +576,93 @@ static int menufunc_display_settings(void) {
     return MENU_RETURN_FLAG;
 }
 
+static int menufunc_color_picker(void) {
+    const int ys[] = {184, 152, 120};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    // if(colorbuf == NULL)
+    //     return MENU_POP_FLAG;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprite_rectangle(0, 216, 320, 16, background_color);
+    int sprs[10];
+    int selection = 0;
+    int mode = 0;
+    draw_text(0, 216, "Pick a Color!", typeFace, sprs, &WHITE, background_color);
+    center_sprite_group_x(sprs, 10);
+    draw_text(32, 184, "Red", typeFace, NULL, &WHITE, background_color);
+    draw_text(32, 152, "Green", typeFace, NULL, &WHITE, background_color);
+    draw_text(32, 120, "Blue", typeFace, NULL, &WHITE, background_color);
+    draw_text(150, 184, "0", typeFace, NULL, &WHITE, background_color);
+    draw_text(150, 152, "0", typeFace, NULL, &WHITE, background_color);
+    draw_text(150, 120, "0", typeFace, NULL, &WHITE, background_color);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, &RED);
+    int cursor;
+    draw_text(10, 184, ">", typeFace, &cursor, &WHITE, background_color);
+    int red_rec = sprite_rectangle(150, 184, 100, 16, background_color);
+    int green_rec = sprite_rectangle(150, 152, 100, 16, background_color);
+    int blue_rec = sprite_rectangle(150, 120, 100, 16, background_color);
+    OAM_SPRITE_TABLE[red_rec]->draw = false;
+    OAM_SPRITE_TABLE[green_rec]->draw = false;
+    OAM_SPRITE_TABLE[blue_rec]->draw = false;
+    unsigned char buffer[3] = {0, 0, 0};
+    char numbuf[3];
+    int colorrec;
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            switch(mode) {
+            case 0:
+                OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+                selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
+                OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+                draw_all_sprites(spi);
+                break;
+            default:
+                buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 255) % 256;
+                (void) itoa(buffer[selection], numbuf, 10);
+                draw_text(150, ys[selection], numbuf, typeFace, sprs, &RED, background_color);
+                draw_all_sprites(spi);
+                for(int i=0;i<strlen(numbuf);++i)
+                    delete_sprite(sprs[i]);
+            }
+            colorrec = sprite_rectangle(144, 56, 32, 32, (uint24_RGB*) buffer);
+            draw_sprites(spi, &colorrec, 1);
+            delete_sprite(colorrec);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                mode = (mode == 0) ? selection + 1 : 0;
+                (void) itoa(buffer[selection], numbuf, 10);
+                draw_text(150, ys[selection], numbuf, typeFace, sprs, (mode == 0) ? &WHITE : &RED, background_color);
+                draw_all_sprites(spi);
+                for(int i=0;i<strlen(numbuf);++i)
+                    delete_sprite(sprs[i]);
+                switch(mode) {
+                case 0:
+                    OAM_SPRITE_TABLE[red_rec]->draw = false;
+                    OAM_SPRITE_TABLE[green_rec]->draw = false;
+                    OAM_SPRITE_TABLE[blue_rec]->draw = false;
+                    break;
+                case 1:
+                    OAM_SPRITE_TABLE[red_rec]->draw = true;
+                    break;
+                case 2:
+                    OAM_SPRITE_TABLE[green_rec]->draw = true;
+                    break;
+                case 3:
+                    OAM_SPRITE_TABLE[blue_rec]->draw = true;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+    return MENU_RETURN_FLAG;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -575,7 +672,8 @@ MENU_INFO_t allmenus[] = {
     {&menuwifistarting[0], 3, menufunc_http_setup},
     {&menusetup3[0], 10, menufunc_network_preview},
     {&menusetup1[0], 10, menufunc_pb_setup_method},
-    {&menusetup3[0], 10, menufunc_display_settings}
+    {&menusetup3[0], 10, menufunc_display_settings},
+    {&menusetup3[0], 10, menufunc_color_picker}
 };
 
 int start_menu_tree(int startmenu) {

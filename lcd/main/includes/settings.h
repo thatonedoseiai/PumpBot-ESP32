@@ -35,6 +35,7 @@ typedef struct {
     char wifi_name[32];
     char wifi_pass[64];
     int disp_theme;
+    uint24_RGB custom_theme_color;
     int disp_brightness;
     int RGB_brightness;
     int RGB_speed;

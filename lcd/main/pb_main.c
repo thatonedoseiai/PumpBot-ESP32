@@ -316,7 +316,7 @@ void app_main(void) {
 
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
-    (void) start_menu_tree(8);
+    (void) start_menu_tree(9);
     // ets_printf("%s\n", &settings.wifi_name);
 
 
