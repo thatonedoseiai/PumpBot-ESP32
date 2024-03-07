@@ -531,7 +531,7 @@ static int menufunc_display_settings(void) {
                 ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
                 break;
             case 2:
-                settings.disp_theme = (settings.disp_theme + (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2) % 3;
+                settings.disp_theme = (settings.disp_theme + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
                 draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &hicolor, background_color);
                 draw_all_sprites(spi);
                 for(int i=0;i<strlen(theme_names[settings.disp_theme]);++i)
@@ -545,6 +545,10 @@ static int menufunc_display_settings(void) {
                 if(mode == 2 && settings.disp_theme == 2) {
                     // start the colour menu!
                     colorbuf = calloc(1, 3);
+                    colorbuf->pixelR = settings.custom_theme_color.pixelR;
+                    colorbuf->pixelG = settings.custom_theme_color.pixelG;
+                    colorbuf->pixelB = settings.custom_theme_color.pixelB;
+                    delete_all_sprites();
                     return 9;
                 }
                 mode = mode == 0 ? selection + 1 : 0;
@@ -561,9 +565,17 @@ static int menufunc_display_settings(void) {
                     OAM_SPRITE_TABLE[theme_rec]->draw = false;
                     break;
                 case 1:
+                    draw_text(150, 184, bright, typeFace, br_sprite, &RED, background_color);
+                    draw_all_sprites(spi);
+                    for(int i=0;i<strlen(bright);++i)
+                        delete_sprite(br_sprite[i]);
                     OAM_SPRITE_TABLE[bright_rec]->draw = true;
                     break;
                 case 2:
+                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &RED, background_color);
+                    draw_all_sprites(spi);
+                    for(int i=0;i<strlen(theme_names[settings.disp_theme]);++i)
+                        delete_sprite(theme_sprite[i]);
                     OAM_SPRITE_TABLE[theme_rec]->draw = true;
                 }
             }
@@ -580,24 +592,30 @@ static int menufunc_color_picker(void) {
     const int ys[] = {184, 152, 120};
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    // if(colorbuf == NULL)
-    //     return MENU_POP_FLAG;
+    if(colorbuf == NULL)
+        return MENU_POP_FLAG;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    sprite_rectangle(0, 216, 320, 16, background_color);
+    sprite_rectangle(85, 211, 150, 21, background_color);
     int sprs[10];
     int selection = 0;
     int mode = 0;
-    draw_text(0, 216, "Pick a Color!", typeFace, sprs, &WHITE, background_color);
+    unsigned char buffer[3] = {colorbuf->pixelR, colorbuf->pixelG, colorbuf->pixelB};
+    char numbuf[3];
+    draw_text(0, 216, "Pick a Color", typeFace, sprs, &WHITE, background_color);
     center_sprite_group_x(sprs, 10);
     draw_text(32, 184, "Red", typeFace, NULL, &WHITE, background_color);
     draw_text(32, 152, "Green", typeFace, NULL, &WHITE, background_color);
     draw_text(32, 120, "Blue", typeFace, NULL, &WHITE, background_color);
-    draw_text(150, 184, "0", typeFace, NULL, &WHITE, background_color);
-    draw_text(150, 152, "0", typeFace, NULL, &WHITE, background_color);
-    draw_text(150, 120, "0", typeFace, NULL, &WHITE, background_color);
+    (void) itoa(buffer[0], numbuf, 10);
+    draw_text(150, 184, numbuf, typeFace, NULL, &WHITE, background_color);
+    (void) itoa(buffer[1], numbuf, 10);
+    draw_text(150, 152, numbuf, typeFace, NULL, &WHITE, background_color);
+    (void) itoa(buffer[2], numbuf, 10);
+    draw_text(150, 120, numbuf, typeFace, NULL, &WHITE, background_color);
+    draw_text(10, 184, ">", typeFace, NULL, &WHITE, background_color);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, &RED);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
     draw_text(10, 184, ">", typeFace, &cursor, &WHITE, background_color);
     int red_rec = sprite_rectangle(150, 184, 100, 16, background_color);
@@ -606,8 +624,6 @@ static int menufunc_color_picker(void) {
     OAM_SPRITE_TABLE[red_rec]->draw = false;
     OAM_SPRITE_TABLE[green_rec]->draw = false;
     OAM_SPRITE_TABLE[blue_rec]->draw = false;
-    unsigned char buffer[3] = {0, 0, 0};
-    char numbuf[3];
     int colorrec;
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
@@ -626,7 +642,7 @@ static int menufunc_color_picker(void) {
                 for(int i=0;i<strlen(numbuf);++i)
                     delete_sprite(sprs[i]);
             }
-            colorrec = sprite_rectangle(144, 56, 32, 32, (uint24_RGB*) buffer);
+            colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer);
             draw_sprites(spi, &colorrec, 1);
             delete_sprite(colorrec);
         }
@@ -653,6 +669,13 @@ static int menufunc_color_picker(void) {
                 case 3:
                     OAM_SPRITE_TABLE[blue_rec]->draw = true;
                 }
+            }
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                colorbuf->pixelR = buffer[0];
+                colorbuf->pixelG = buffer[1];
+                colorbuf->pixelB = buffer[2];
+                return MENU_POP_FLAG;
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
