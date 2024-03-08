@@ -34,15 +34,12 @@ const uint24_RGB fillColor = {
 	.pixelG = 0,
 	.pixelB = 0x30,
 };
-uint24_RGB WHITE = {
-    .pixelR = 0xff,
-    .pixelG = 0xff,
-    .pixelB = 0xff,
-};
 
 // OAM STUFF
 extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
+extern uint24_RGB* foreground_color;
+extern const uint24_RGB WHITE;
 //
 
 char connect_flag = 0;
@@ -193,7 +190,8 @@ void app_main(void) {
 	static QueueHandle_t btn_events;
 	// static rotary_encoder_event_t event = { 0 };
 	// static rotary_encoder_state_t state = { 0 };
-    background_color = &fillColor;
+    background_color = (uint24_RGB*) &fillColor;
+    foreground_color = (uint24_RGB*) &WHITE;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);

@@ -2,10 +2,13 @@
 #include <rom/ets_sys.h>
 
 #include "oam.h"
+#include "settings.h"
 
 SPRITE_24_H** OAM_SPRITE_TABLE;
 // array of free indices. first value stores the length of array.
 static uint8_t* indices;
+
+extern SETTINGS_t settings;
 
 SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
 int text_cache[OAM_SIZE];
@@ -18,6 +21,17 @@ uint16_t height_cache[OAM_SIZE];
 uint24_RGB* fg_cache[OAM_SIZE];
 uint24_RGB* bg_cache[OAM_SIZE];
 uint24_RGB* background_color;
+uint24_RGB* foreground_color;
+const uint24_RGB WHITE = {
+    .pixelR = 0xff,
+    .pixelG = 0xff,
+    .pixelB = 0xff,
+};
+const uint24_RGB BLACK = {
+	.pixelR = 0x00,
+	.pixelG = 0x00,
+	.pixelB = 0x00
+};
 
 int find_empty_index(uint8_t* inds) {
     (void) inds;
@@ -169,4 +183,16 @@ void right_justify_sprite_group_x(int* sprites, int numsprites) {
     int offset = 320 - maxX;
     for(int i=0;i<numsprites;++i)
         OAM_SPRITE_TABLE[sprites[i]]->posX += offset;
+}
+
+void assign_theme_from_settings() {
+	if(((settings.custom_theme_color.pixelR * 77 + 
+		 settings.custom_theme_color.pixelG * 150 + 
+		 settings.custom_theme_color.pixelB * 29) >> 8) 
+		> 186) {
+		foreground_color = &BLACK;
+	} else {
+		foreground_color = &WHITE;
+	}
+	background_color = &(settings.custom_theme_color);
 }

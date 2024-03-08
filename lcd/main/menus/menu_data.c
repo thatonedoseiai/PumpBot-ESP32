@@ -1,5 +1,8 @@
 #include "menus.h"
 
+extern uint24_RGB* foreground_color;
+extern uint24_RGB* background_color;
+
 const MENU_ELEMENT welcome_menu[] = {
     {
         .text = "Welcome to",
@@ -7,7 +10,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .y = 195,
         .center = true,
         .textsize = 24,
-        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+        .col = &foreground_color
     },
     {
         .text = "PumpBot!",
@@ -15,7 +18,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .y = 154,
         .center = true,
         .textsize = 24,
-        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Press ⤓ to Continue",
@@ -23,7 +26,7 @@ const MENU_ELEMENT welcome_menu[] = {
         .y = 10,
         .center = true,
         .textsize = 14,
-        .col = { .pixelR = 255, .pixelG = 255, .pixelB = 255 }
+        .col = &foreground_color
     },
 };
 
@@ -31,7 +34,7 @@ const MENU_ELEMENT text_test[] = {
     {
         .x = 160,
         .textsize = 2,
-        .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
+        .col = &foreground_color,
         .vline = true
     },
     {
@@ -41,7 +44,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Medium - 18px",
@@ -50,7 +53,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Standard - 14px",
@@ -59,7 +62,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Small - 12px",
@@ -68,7 +71,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "28px",
@@ -77,7 +80,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "24px",
@@ -86,7 +89,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "18px",
@@ -95,7 +98,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "14px",
@@ -104,7 +107,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "A Quick Br",
@@ -113,8 +116,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 24,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-
+        .col = &foreground_color
     },
     {
         .text = "own Fox Jumps",
@@ -123,8 +125,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    
+        .col = &foreground_color
     },
     {
         .text = "over the lazy dog.",
@@ -133,8 +134,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
-    
+        .col = &foreground_color
     },
     {
         .text = "that dog was very lazy",
@@ -143,7 +143,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {//sample text in chinese
         .text = "鑑於人類",
@@ -152,7 +152,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 28,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "社會個成員",
@@ -161,7 +161,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 24,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "儕有個固有尊",
@@ -170,7 +170,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "嚴脫仔平等個脫仔",
@@ -179,7 +179,7 @@ const MENU_ELEMENT text_test[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     }
 };
 
@@ -191,7 +191,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = true,
         .textsize = 42, // size H, "Heccin Chonker"
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "⟳", //static symbol
@@ -200,7 +200,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "CHX⤓", //X = current channel
@@ -209,7 +209,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "OXX", //OFF or ON for current channel
@@ -218,7 +218,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "SET", //Settings menu, will be custom icon later
@@ -227,7 +227,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "0-Oxx",
@@ -236,7 +236,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "XXX%",
@@ -245,7 +245,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "1-Oxx",
@@ -254,7 +254,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "XXX%",
@@ -263,7 +263,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
         {
         .text = "2-Oxx",
@@ -272,7 +272,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "XXX%",
@@ -281,7 +281,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "3-Oxx",
@@ -290,7 +290,7 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "XXX%",
@@ -299,12 +299,12 @@ const MENU_ELEMENT menuhome[] = {
         .center = false,
         .textsize = 12,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Horizontal Line
         .y = 32,
         .textsize = 2,
-        .col = { .pixelR = 127, .pixelB = 127, .pixelG = 127},
+        .col = &foreground_color,
         .hline = true
     }
 };
@@ -318,13 +318,13 @@ const MENU_ELEMENT menusetup0[] = {
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 176,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Language", 
@@ -333,7 +333,7 @@ const MENU_ELEMENT menusetup0[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "English", //Really would help with right justification!!! Please!!!
@@ -342,19 +342,19 @@ const MENU_ELEMENT menusetup0[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {      
         .y = 144,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Bottom menu
         .y = 24,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Back",
@@ -363,7 +363,7 @@ const MENU_ELEMENT menusetup0[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
@@ -372,7 +372,7 @@ const MENU_ELEMENT menusetup0[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     }
 };
 const MENU_ELEMENT menusetup1[] = {
@@ -383,16 +383,16 @@ const MENU_ELEMENT menusetup1[] = {
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
-        {
+    {
         .text = "setup PumpBot?",
         .x = 0,
         .y = 176,
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Wi-Fi Setup", 
@@ -401,7 +401,7 @@ const MENU_ELEMENT menusetup1[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Standalone Setup",
@@ -410,31 +410,31 @@ const MENU_ELEMENT menusetup1[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {      
         .y = 144,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 112,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 80,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Bottom menu
         .y = 24, //24
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Back",
@@ -443,7 +443,7 @@ const MENU_ELEMENT menusetup1[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "OK", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
@@ -452,7 +452,7 @@ const MENU_ELEMENT menusetup1[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     }
 };
 const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
@@ -463,13 +463,13 @@ const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Bottom menu
         .y = 24,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Cancel",
@@ -478,7 +478,7 @@ const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
 };
 const MENU_ELEMENT menusetup2a[] = {
@@ -489,7 +489,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
         {
         .text = "to setup PumpBot",
@@ -498,7 +498,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = true, 
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "[Network Name]",
@@ -507,7 +507,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = true, 
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Open this URL in your browser:", 
@@ -516,7 +516,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "[URL]",
@@ -525,37 +525,37 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {      
         .y = 176,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {      
         .y = 144,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 112,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 80,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Bottom menu
         .y = 24,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Back",
@@ -564,7 +564,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
@@ -573,7 +573,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     }
 };
 const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Setting menu and the likes
@@ -584,7 +584,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     // {
     //     .text = "[Text goes here]",
@@ -595,7 +595,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .center = true,
     //     .textsize = 14,
     //     .hline = false,
-    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    //     .col = &foreground_color
     // },
     // {
     //     .text = "[Text goes here]", 
@@ -606,7 +606,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .center = true,
     //     .textsize = 14,
     //     .hline = false,
-    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    //     .col = &foreground_color
     // },
     // {
     //     .text = "[Text goes here]", 
@@ -617,7 +617,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .center = true,
     //     .textsize = 14,
     //     .hline = false,
-    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    //     .col = &foreground_color
     // },
     // {
     //     .text = "[Text goes here]", 
@@ -628,7 +628,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .center = true,
     //     .textsize = 14,
     //     .hline = false,
-    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    //     .col = &foreground_color
     // },
     // {
     //     .text = "[Text goes here]", //last option on the screen, would get overwritten with a tooltip
@@ -639,49 +639,49 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .center = true,
     //     .textsize = 14,
     //     .hline = false,
-    //     .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+    //     .col = &foreground_color
     // },
     {      
         .y = 208,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 176,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {      
         .y = 144,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 112,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 80,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .y = 48, //last line on the screen, would get overwritten if there was a tooltip
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { //Bottom menu
         .y = 24,
         .textsize = 2,
         .hline = true,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Back",
@@ -690,7 +690,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     { 
         .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
@@ -699,7 +699,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .center = false,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     }
 };
 
@@ -711,7 +711,7 @@ const MENU_ELEMENT menusetupdone[] = {
         .center = true,
         .textsize = 18,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
     {
         .text = "Press ⤓ to Continue",
@@ -720,7 +720,7 @@ const MENU_ELEMENT menusetupdone[] = {
         .center = true,
         .textsize = 14,
         .hline = false,
-        .col = { .pixelR = 255, .pixelB = 255, .pixelG = 255 }
+        .col = &foreground_color
     },
 };
 

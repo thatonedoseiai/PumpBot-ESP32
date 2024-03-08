@@ -77,6 +77,8 @@ void center_sprite_group_x(int* sprites, int numsprites);
 
 void right_justify_sprite_group_x(int* sprites, int numsprites);
 
+void assign_theme_from_settings(void);
+
 #ifdef __cplusplus
 }
 #endif

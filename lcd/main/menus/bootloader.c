@@ -17,7 +17,7 @@
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
 #define MENU_POP_FLAG 0x4000
-#define MENU_TEXT_INPUT_FLAG 0x2000
+#define MENU_REDRAW_FLAG 0x2000
 #define IBUF_SIZE 256
 
 extern FT_Face typeFace;
@@ -25,7 +25,8 @@ extern QueueHandle_t* button_events;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
-extern uint24_RGB WHITE;
+extern uint24_RGB* foreground_color;
+// extern uint24_RGB WHITE;
 extern char connect_flag;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
@@ -64,7 +65,7 @@ static int menufunc_setup(void) {
             currlang = ((unsigned) rotencev.state.position) % 3;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
-            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, &WHITE, background_color);
+            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color);
             draw_all_sprites(spi);
             delete_all_sprites();
         }
@@ -79,7 +80,7 @@ static void draw_options(char** options, int bgrect) {
     OAM_SPRITE_TABLE[bgrect]->draw = true;
     for(int i=0;i<5;++i) {
         if(options[i] != NULL) {
-            draw_text(0, ys[i], options[i], typeFace, &sprs[0], &name_length, &WHITE, background_color);
+            draw_text(0, ys[i], options[i], typeFace, &sprs[0], &name_length, foreground_color, background_color);
             // name_length = strlen(options[i]);
             center_sprite_group_x(sprs, name_length);
         }
@@ -112,7 +113,7 @@ static int menufunc_wifi_scan() {
     int cursor;
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    error = draw_text(10, 184, ">", typeFace, &cursor, NULL, &WHITE, background_color);
+    error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     OAM_SPRITE_TABLE[cursor]->draw = false;
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -176,7 +177,6 @@ refresh:
             if(event.pin == 18) {
                 strncpy(&settings.wifi_name[0], (char*)ap_info[selection].ssid, 32);
                 delete_all_sprites();
-                // return MENU_TEXT_INPUT_FLAG | 4;
                 return 6;
             }
             if(event.pin == 0)
@@ -205,7 +205,7 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
     visibleBuffer[substrend] = 0;
     for(int i=0;i<9;++i)
         sprite_rectangle(xs[i], 113, 26, 27, background_color);
-    draw_text(0, 120, (char*) visibleBuffer, typeFace, sprs, NULL, &WHITE, background_color);
+    draw_text(0, 120, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
     for(int i=0;i<9;++i) {
         OAM_SPRITE_TABLE[sprs[i]]->posX = xs[i];
     }
@@ -229,10 +229,10 @@ static int menufunc_text_write(void) {
     unsigned int selection = 0;
     unsigned int curtable = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    draw_text(0, 184, ibuf, typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(300, 3, "a", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(147, 152, "v", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(147, 88, "^", typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(300, 3, "a", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(147, 152, "v", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(147, 88, "^", typeFace, NULL, NULL, foreground_color, background_color);
     draw_textreel(curtable, selection, &loc);
 
     while(true) {
@@ -240,7 +240,7 @@ static int menufunc_text_write(void) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
                 sprite_rectangle(300, 0, 20, 22, background_color);
-                draw_text(300, 3, tablename[curtable], typeFace, NULL, NULL, &WHITE, background_color);
+                draw_text(300, 3, tablename[curtable], typeFace, NULL, NULL, foreground_color, background_color);
                 draw_textreel(curtable, selection, &loc);
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN && numtyped < 64) {
@@ -272,7 +272,7 @@ static int menufunc_text_write(void) {
                 }
                 sprite_rectangle(0, 191, 320, 14, background_color);
                 sprite_rectangle(0, 179, 320, 12, background_color);
-                draw_text(0, 184, ibuf, typeFace, NULL, NULL, &WHITE, background_color);
+                draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
                 draw_all_sprites(spi);
                 delete_all_sprites();
             } 
@@ -338,11 +338,11 @@ static int menufunc_network_preview(void) {
     }
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
 
-    draw_text(32, 184, "Network", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(32, 152, "Password", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(32, 120, "Advanced", typeFace, k, &lenk, &WHITE, background_color);
+    draw_text(32, 184, "Network", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Password", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color);
     center_sprite_group_x(k, lenk);
-    draw_text(32, 88, "Connect", typeFace, k, &lenk, &WHITE, background_color);
+    draw_text(32, 88, "Connect", typeFace, k, &lenk, foreground_color, background_color);
     center_sprite_group_x(k, lenk);
     if(strlen(settings.wifi_name) > 10) {
         for(int i=0;i<10;++i) {
@@ -352,9 +352,9 @@ static int menufunc_network_preview(void) {
         namebuf[12] = '.';
         namebuf[13] = '.';
         namebuf[14] = 0;
-        draw_text(150, 184, namebuf, typeFace, NULL, NULL, &WHITE, background_color);
+        draw_text(150, 184, namebuf, typeFace, NULL, NULL, foreground_color, background_color);
     } else {
-        draw_text(150, 184, &settings.wifi_name[0], typeFace, NULL, NULL, &WHITE, background_color);
+        draw_text(150, 184, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color);
     }
     if(strlen(settings.wifi_pass) > 10) {
         for(int i=0;i<10;++i) {
@@ -364,16 +364,16 @@ static int menufunc_network_preview(void) {
         namebuf[12] = '.';
         namebuf[13] = '.';
         namebuf[14] = 0;
-        draw_text(150, 152, namebuf, typeFace, NULL, NULL, &WHITE, background_color);
+        draw_text(150, 152, namebuf, typeFace, NULL, NULL, foreground_color, background_color);
     } else {
-        draw_text(150, 152, &settings.wifi_pass[0], typeFace, NULL, NULL, &WHITE, background_color);
+        draw_text(150, 152, &settings.wifi_pass[0], typeFace, NULL, NULL, foreground_color, background_color);
     }
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
     int cursor;
     int selection = 0;
-    draw_text(2, 184, ">", typeFace, &cursor, NULL, &WHITE, background_color);
+    draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -431,20 +431,20 @@ static int menufunc_pb_setup_method (void) {
     int tooltip_bg = sprite_rectangle(0, 25, 320, 16, background_color);
     int tooltip_bg2 = sprite_rectangle(0, 41, 320, 16, background_color);
     int tooltip_bg3 = sprite_rectangle(0, 57, 320, 16, background_color);
-    draw_text(0, 52, options_1, typeFace, tooltip_1, &lentt, &WHITE, background_color);
+    draw_text(0, 52, options_1, typeFace, tooltip_1, &lentt, foreground_color, background_color);
     center_sprite_group_x(tooltip_1, lentt);
-    draw_text(0, 34, options_2, typeFace, tooltip_1 + lentt, &lenttline2, &WHITE, background_color);
+    draw_text(0, 34, options_2, typeFace, tooltip_1 + lentt, &lenttline2, foreground_color, background_color);
     center_sprite_group_x(tooltip_1+lentt, lenttline2);
-    draw_text(0, 52, options_3, typeFace, tooltip_2, &lentt, &WHITE, background_color);
+    draw_text(0, 52, options_3, typeFace, tooltip_2, &lentt, foreground_color, background_color);
     center_sprite_group_x(tooltip_2, lentt);
-    draw_text(0, 34, options_4, typeFace, tooltip_2+lentt, &lenttline2, &WHITE, background_color);
+    draw_text(0, 34, options_4, typeFace, tooltip_2+lentt, &lenttline2, foreground_color, background_color);
     center_sprite_group_x(tooltip_2+lentt, lenttline2);
     for(int i=0;i<44;++i) {
         OAM_SPRITE_TABLE[tooltip_2[i]]->draw = false;
     }
     int cursorbg = sprite_rectangle(10, 120, 20, 16, background_color);
     int cursor;
-    draw_text(10, 120, ">", typeFace, &cursor, NULL, &WHITE, background_color);
+    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
@@ -483,6 +483,9 @@ static int menufunc_display_settings(void) {
         settings.custom_theme_color.pixelB = colorbuf->pixelB;
         free(colorbuf);
         colorbuf = NULL;
+        assign_theme_from_settings();
+        delete_all_sprites();
+        return MENU_REDRAW_FLAG;
     }
     int numsprs;
     int sprs[15];
@@ -492,12 +495,12 @@ static int menufunc_display_settings(void) {
     unsigned char selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprite_rectangle(0, 216, 320, 16, background_color);
-    draw_text(0, 216, "Display Settings", typeFace, sprs, &numsprs, &WHITE, background_color);
+    draw_text(0, 216, "Display Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(150, 184, bright, typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(32, 152, "Theme", typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(150, 184, bright, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Theme", typeFace, NULL, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
@@ -506,7 +509,7 @@ static int menufunc_display_settings(void) {
     int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
     OAM_SPRITE_TABLE[bright_rec]->draw = false;
     OAM_SPRITE_TABLE[theme_rec]->draw = false;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, &WHITE, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     int num_brspr;
     int br_sprite[4]; 
@@ -560,8 +563,8 @@ static int menufunc_display_settings(void) {
                 mode = mode == 0 ? selection + 1 : 0;
                 switch(mode) {
                 case 0:
-                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, &WHITE, background_color);
-                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, &WHITE, background_color);
+                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, foreground_color, background_color);
+                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, foreground_color, background_color);
                     draw_all_sprites(spi);
                     for(int i=0;i<num_brspr;++i)
                         delete_sprite(br_sprite[i]);
@@ -608,23 +611,23 @@ static int menufunc_color_picker(void) {
     int mode = 0;
     unsigned char buffer[3] = {colorbuf->pixelR, colorbuf->pixelG, colorbuf->pixelB};
     char numbuf[3];
-    draw_text(0, 216, "Pick a Color", typeFace, sprs, &numsprs, &WHITE, background_color);
+    draw_text(0, 216, "Pick a Color", typeFace, sprs, &numsprs, foreground_color, background_color);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Red", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(32, 152, "Green", typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(32, 120, "Blue", typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(32, 184, "Red", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Green", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Blue", typeFace, NULL, NULL, foreground_color, background_color);
     (void) itoa(buffer[0], numbuf, 10);
-    draw_text(150, 184, numbuf, typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(150, 184, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
     (void) itoa(buffer[1], numbuf, 10);
-    draw_text(150, 152, numbuf, typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(150, 152, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
     (void) itoa(buffer[2], numbuf, 10);
-    draw_text(150, 120, numbuf, typeFace, NULL, NULL, &WHITE, background_color);
-    draw_text(10, 184, ">", typeFace, NULL, NULL, &WHITE, background_color);
+    draw_text(150, 120, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, NULL, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, &WHITE, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     int red_rec = sprite_rectangle(150, 184, 100, 16, background_color);
     int green_rec = sprite_rectangle(150, 152, 100, 16, background_color);
     int blue_rec = sprite_rectangle(150, 120, 100, 16, background_color);
@@ -657,7 +660,7 @@ static int menufunc_color_picker(void) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 mode = (mode == 0) ? selection + 1 : 0;
                 (void) itoa(buffer[selection], numbuf, 10);
-                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, (mode == 0) ? &WHITE : &RED, background_color);
+                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, (mode == 0) ? foreground_color : &RED, background_color);
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
                     delete_sprite(sprs[i]);
@@ -733,7 +736,7 @@ int start_menu_tree(int startmenu) {
             if(menu_stackp < 0) {
                 menu_stackp = 0;
             }
-        } else {
+        } else if (!(nextmenu & MENU_REDRAW_FLAG)) {
             // if (nextmenu & MENU_TEXT_INPUT_FLAG) {
             //     do_text_menu = true;
             //     nextmenu = nextmenu & 0xff;
@@ -761,11 +764,11 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
 
     for (int i = 0; i < numElements; i++) {
         if (elems[i].hline) {
-            draw_hline(elems[i].y, elems[i].textsize, elems[i].col);
+            draw_hline(elems[i].y, elems[i].textsize, *(elems[i].col));
             continue;
         }
         if (elems[i].vline) {
-            draw_vline(elems[i].x, elems[i].textsize, elems[i].col);
+            draw_vline(elems[i].x, elems[i].textsize, *(elems[i].col));
             continue;
         }
         if (sizeControl != elems[i].textsize) {
@@ -784,7 +787,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
         int numsprs;
         int spriteArray[64];
 
-        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, (uint24_RGB*) &elems[i].col, NULL);
+        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL);
         if (elems[i].center)
             // center_sprite_group_x(spriteArray, elems[i].textlen - elems[i].numspaces);
             center_sprite_group_x(spriteArray, numsprs);
@@ -796,29 +799,29 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
 
 // #pragma GCC pop_options
 
-int draw_hline(int y, int thickness, uint24_RGB colour) {
+int draw_hline(int y, int thickness, uint24_RGB* colour) {
     uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));
     SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
     bmp->refcount = 1;
     bmp->c = spriteBuf;
     for(int p=0;p<320*thickness;p++) {
-        spriteBuf[p].pixelB = colour.pixelB;
-        spriteBuf[p].pixelG = colour.pixelG;
-        spriteBuf[p].pixelR = colour.pixelR;
+        spriteBuf[p].pixelB = colour->pixelB;
+        spriteBuf[p].pixelG = colour->pixelG;
+        spriteBuf[p].pixelR = colour->pixelR;
     }
     return init_sprite(bmp, 0, 240-y, 320, thickness, false, false, true);
 }
 
-int draw_vline(int x, int thickness, uint24_RGB colour) {
-    uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));
+int draw_vline(int x, int thickness, uint24_RGB* colour) {
+    uint24_RGB* spriteBuf = (uint24_RGB*) malloc(240*thickness*sizeof(uint24_RGB));
     SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
     bmp->refcount = 1;
     bmp->c = spriteBuf;
-    for(int p=0;p<320*thickness;p++) {
-        spriteBuf[p].pixelB = colour.pixelB;
-        spriteBuf[p].pixelG = colour.pixelG;
-        spriteBuf[p].pixelR = colour.pixelR;
+    for(int p=0;p<240*thickness;p++) {
+        spriteBuf[p].pixelB = colour->pixelB;
+        spriteBuf[p].pixelG = colour->pixelG;
+        spriteBuf[p].pixelR = colour->pixelR;
     }
-    return init_sprite(bmp,x, 0, thickness, 240, false, false, true);
+    return init_sprite(bmp, x, 0, thickness, 240, false, false, true);
 }
     

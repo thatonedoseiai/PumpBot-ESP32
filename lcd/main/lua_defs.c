@@ -57,7 +57,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         curchar = decode_code_point(&reader_head);
 
         for(int x=0;x<text_cache_size;++x) {
-            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && fg_cache[x] == color && bg_cache[x] == bgcol) {
+            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && fg_cache[x] == color && bg_cache[x] == bg) {
                 bmp = bitmap_cache[x];
                 bmp_top = 240 - y_loc_cache[x] - startY;
                 advance_x = advance_x_cache[x];
@@ -74,7 +74,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
 
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
-        bmp->refcount = 1;
+        bmp->refcount = 0;
         bmp->c = spriteBuf;
 		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
 		for(int p=0;p<sz;p++) {
@@ -93,7 +93,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             fg_cache[text_cache_size] = color;
-            bg_cache[text_cache_size] = bgcol;
+            bg_cache[text_cache_size] = bg;
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             advance_x_cache[text_cache_size] = advance_x;
