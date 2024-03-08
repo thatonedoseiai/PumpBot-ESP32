@@ -358,7 +358,7 @@ const MENU_ELEMENT menusetup0[] = {
     },
     { 
         .text = "Back",
-        .x = 0,
+        .x = 2,
         .y = 2,
         .center = false,
         .textsize = 14,
@@ -438,7 +438,7 @@ const MENU_ELEMENT menusetup1[] = {
     },
     { 
         .text = "Back",
-        .x = 0,
+        .x = 2,
         .y = 2,
         .center = false,
         .textsize = 14,
@@ -559,7 +559,7 @@ const MENU_ELEMENT menusetup2a[] = {
     },
     { 
         .text = "Back",
-        .x = 0,
+        .x = 2,
         .y = 2,
         .center = false,
         .textsize = 14,
@@ -685,7 +685,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     },
     { 
         .text = "Back",
-        .x = 0,
+        .x = 2,
         .y = 2,
         .center = false,
         .textsize = 14,
