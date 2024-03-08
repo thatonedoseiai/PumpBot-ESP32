@@ -190,8 +190,8 @@ void app_main(void) {
 	static QueueHandle_t btn_events;
 	// static rotary_encoder_event_t event = { 0 };
 	// static rotary_encoder_state_t state = { 0 };
-    background_color = (uint24_RGB*) &fillColor;
-    foreground_color = (uint24_RGB*) &WHITE;
+    // background_color = (uint24_RGB*) &fillColor;
+    // foreground_color = (uint24_RGB*) &WHITE;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);
@@ -205,8 +205,12 @@ void app_main(void) {
 		ets_printf("initializations failed!\n");
 		return;
 	}
-    if(read_from_file(&settings))
+    if(read_from_file(&settings)) {
         settings.disp_brightness = 255;
+        settings.disp_theme = 0;
+    }
+    assign_theme_from_settings();
+
 
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
     // for(int i=0;i<100;++i) {

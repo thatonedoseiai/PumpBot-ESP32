@@ -32,6 +32,11 @@ const uint24_RGB BLACK = {
 	.pixelG = 0x00,
 	.pixelB = 0x00
 };
+const uint24_RGB fillcolor = {
+	.pixelR = 0x10,
+	.pixelG = 0x00,
+	.pixelB = 0x30
+};
 
 int find_empty_index(uint8_t* inds) {
     (void) inds;
@@ -186,13 +191,24 @@ void right_justify_sprite_group_x(int* sprites, int numsprites) {
 }
 
 void assign_theme_from_settings() {
-	if(((settings.custom_theme_color.pixelR * 77 + 
-		 settings.custom_theme_color.pixelG * 150 + 
-		 settings.custom_theme_color.pixelB * 29) >> 8) 
-		> 100) {
-		foreground_color = &BLACK;
-	} else {
+	switch(settings.disp_theme) {
+	case 0:
 		foreground_color = &WHITE;
+		background_color = &fillcolor;
+		break;
+	case 1:
+		foreground_color = &BLACK;
+		background_color = &WHITE;
+		break;
+	case 2:
+		if(((settings.custom_theme_color.pixelR * 77 + 
+			 settings.custom_theme_color.pixelG * 150 + 
+			 settings.custom_theme_color.pixelB * 29) >> 8) 
+			> 100) {
+			foreground_color = &BLACK;
+		} else {
+			foreground_color = &WHITE;
+		}
+		background_color = &(settings.custom_theme_color);
 	}
-	background_color = &(settings.custom_theme_color);
 }

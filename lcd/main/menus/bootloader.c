@@ -551,14 +551,19 @@ static int menufunc_display_settings(void) {
         }
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
-                if(mode == 2 && settings.disp_theme == 2) {
+                if(mode == 2) {
                     // start the colour menu!
-                    colorbuf = calloc(1, 3);
-                    colorbuf->pixelR = settings.custom_theme_color.pixelR;
-                    colorbuf->pixelG = settings.custom_theme_color.pixelG;
-                    colorbuf->pixelB = settings.custom_theme_color.pixelB;
+                    if(settings.disp_theme == 2) {
+                        colorbuf = calloc(1, 3);
+                        colorbuf->pixelR = settings.custom_theme_color.pixelR;
+                        colorbuf->pixelG = settings.custom_theme_color.pixelG;
+                        colorbuf->pixelB = settings.custom_theme_color.pixelB;
+                        delete_all_sprites();
+                        return 9;
+                    }
+                    assign_theme_from_settings();
                     delete_all_sprites();
-                    return 9;
+                    return MENU_REDRAW_FLAG;
                 }
                 mode = mode == 0 ? selection + 1 : 0;
                 switch(mode) {
