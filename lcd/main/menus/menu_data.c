@@ -501,7 +501,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = &foreground_color
     },
     {
-        .text = "[Network Name]",
+        .text = "pumpy wifi",
         .x = 0,
         .y = 152,
         .center = true, 
@@ -519,7 +519,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = &foreground_color
     },
     {
-        .text = "[URL]",
+        .text = "http://192.168.1.4/",
         .x = 0,
         .y = 88,
         .center = true,

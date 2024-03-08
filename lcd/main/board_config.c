@@ -42,17 +42,18 @@ wifi_config_t ap_wifi_config = {
         .ssid = "pumpy wifi",
         .ssid_len = strlen("pumpy wifi"),
         .channel = 1,
-        .password = "pumperslol",
+        // .password = "pumperslol",
+        .password = "",
         .max_connection = 4,
-#ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
-        .authmode = WIFI_AUTH_WPA3_PSK,
-        .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
-#else /* CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT */
-        .authmode = WIFI_AUTH_WPA2_PSK,
-#endif
+// #ifdef CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT
+//         .authmode = WIFI_AUTH_WPA3_PSK,
+//         .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
+// #else /* CONFIG_ESP_WIFI_SOFTAP_SAE_SUPPORT */
+//         .authmode = WIFI_AUTH_WPA2_PSK,
+// #endif
+        .authmode = WIFI_AUTH_OPEN, // if no password
         .pmf_cfg = {
                 .required = true,
-        // .authmode = WIFI_AUTH_OPEN; // if no password
         },
     },
 };

@@ -306,7 +306,7 @@ static int menufunc_connect_wifi(void) {
     ets_printf("connecting...");
     while(!connect_flag);
     ets_printf("success!");
-    return MENU_RETURN_FLAG;
+    return 8;
 }
 
 static int menufunc_http_setup(void) {
@@ -320,7 +320,7 @@ static int menufunc_http_setup(void) {
         }
     }
     stop_file_server();
-    return MENU_RETURN_FLAG;
+    return 8;
 }
 
 static int menufunc_network_preview(void) {
@@ -597,6 +597,10 @@ static int menufunc_display_settings(void) {
                 delete_all_sprites();
                 return MENU_POP_FLAG;
             }
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return 10;
+            }
         }
     }
     return MENU_RETURN_FLAG;
@@ -698,7 +702,46 @@ static int menufunc_color_picker(void) {
             }
         }
     }
-    return MENU_RETURN_FLAG;
+}
+
+char kpa_name[] = "kPa";
+char bar_name[] = "bar";
+char mmhg_name[] = "mmHg";
+char psi_name[] = "PSI";
+char* pressure_names[] = {kpa_name, bar_name, psi_name, mmhg_name};
+static int menufunc_add_on_settings(void) {
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int numsprs;
+    int sprs[14];
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "Add-on Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(32, 184, "Pressure Units", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, NULL, NULL, foreground_color, background_color);
+    center_sprite_group_x(sprs, numsprs);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    (void) sprite_rectangle(190, 178, 100, 28, background_color);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            settings.pressure_units = (settings.pressure_units + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1)) % 4;
+            draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, sprs, &numsprs, foreground_color, background_color);
+            draw_all_sprites(spi);
+            for(int i=0;i<numsprs;++i)
+                delete_sprite(sprs[i]);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_RETURN_FLAG;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
 }
 
 MENU_INFO_t allmenus[] = {
@@ -707,11 +750,12 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_wifi_scan},
     {&menusetup3[0], 9, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
-    {&menuwifistarting[0], 3, menufunc_http_setup},
+    {&menusetup2a[0], 3, menufunc_http_setup},
     {&menusetup3[0], 10, menufunc_network_preview},
     {&menusetup1[0], 10, menufunc_pb_setup_method},
     {&menusetup3[0], 10, menufunc_display_settings},
-    {&menusetup3[0], 10, menufunc_color_picker}
+    {&menusetup3[0], 10, menufunc_color_picker},
+    {&menusetup3[0], 10, menufunc_add_on_settings}
 };
 
 int start_menu_tree(int startmenu) {

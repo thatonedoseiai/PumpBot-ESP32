@@ -113,9 +113,6 @@ while(true) do
             l.sprite_move_x({off_text[1]}, xs[k]+31)
             l.sprite_move_x({off_text[2]}, xs[k]+37)
             update_screen_text(40, 134, {back}, k, true)
-            -- if(channel_active[k]) then
-            --     l.set_pwm(k, channel[k]*163)
-            -- end
         end
     end
 end
