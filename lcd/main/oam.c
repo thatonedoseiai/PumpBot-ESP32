@@ -189,7 +189,7 @@ void assign_theme_from_settings() {
 	if(((settings.custom_theme_color.pixelR * 77 + 
 		 settings.custom_theme_color.pixelG * 150 + 
 		 settings.custom_theme_color.pixelB * 29) >> 8) 
-		> 186) {
+		> 100) {
 		foreground_color = &BLACK;
 	} else {
 		foreground_color = &WHITE;
