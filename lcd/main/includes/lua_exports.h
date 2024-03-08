@@ -6,7 +6,7 @@
 #include <lua/lauxlib.h>
 #include <lua/lualib.h>
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol);
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol);
 
 /* int l_draw_text(lua_State* L); */
 /* int l_setsize(lua_State* L); */

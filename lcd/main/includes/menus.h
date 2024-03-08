@@ -10,8 +10,8 @@ typedef struct {
     char* text;
     uint16_t x;
     uint16_t y;
-    uint8_t textlen;
-    uint8_t numspaces;
+    /* uint8_t textlen; */
+    /* uint8_t numspaces; */
     bool center;
     int textsize;
     bool hline;
@@ -32,7 +32,7 @@ int start_menu_tree(int);
 
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements);
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol);
+/* int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol); */
 
 int draw_hline(int y, int thickness, uint24_RGB colour);
 

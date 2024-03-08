@@ -28,7 +28,7 @@ extern spi_device_handle_t spi;
 extern pwm_fade_info_t pfade_channels[8];
 extern QueueHandle_t* button_events;
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol) {
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -51,16 +51,18 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     else
         bg = bgcol;
     SPRITE_BITMAP* bmp;
+    if(num_sprites != NULL)
+        *num_sprites = 0;
     while (*reader_head != 0) {
         curchar = decode_code_point(&reader_head);
 
-        for(int i=0;i<text_cache_size;++i) {
-            if(text_cache[i] == curchar && text_size_cache[i] == typeFace->size->metrics.height && fg_cache[i] == color && bg_cache[i] == bgcol) {
-                bmp = bitmap_cache[i];
-                bmp_top = 240 - y_loc_cache[i] - startY;
-                advance_x = advance_x_cache[i];
-                width = width_cache[i];
-                height = height_cache[i];
+        for(int x=0;x<text_cache_size;++x) {
+            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && fg_cache[x] == color && bg_cache[x] == bgcol) {
+                bmp = bitmap_cache[x];
+                bmp_top = 240 - y_loc_cache[x] - startY;
+                advance_x = advance_x_cache[x];
+                width = width_cache[x];
+                height = height_cache[x];
                 goto skip_bitmap_assignment;
             }
         }
@@ -105,8 +107,11 @@ skip_bitmap_assignment:
 		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
 		int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
 
-        if (sprites && curchar != ' ')
+        if (sprites && curchar != ' ') {
             sprites[i++] = inx;
+            if(num_sprites != NULL)
+                (*num_sprites)++;
+        }
 
 		offset.x += advance_x;
 		offset.y += slot->advance.y;
@@ -121,7 +126,7 @@ static int l_draw_text(lua_State* L) {
     int y = luaL_checkinteger(L, 2);
     size_t len;
     const char* str = luaL_checklstring(L, 3, NULL);
-    len = count_utf8_code_points(str);
+    len = utf8strlen(str);
     luaL_checktype(L, 4, LUA_TTABLE);
     luaL_checktype(L, 5, LUA_TTABLE);
     uint24_RGB fgcol, bgcol;
@@ -150,7 +155,7 @@ static int l_draw_text(lua_State* L) {
     bgcol.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 6);
 
-    draw_text(x, y, str, typeFace, sprites, &fgcol, &bgcol);
+    draw_text(x, y, str, typeFace, sprites, NULL, &fgcol, &bgcol);
     lua_newtable(L);
     for(int i=1;i<=len;++i) {
         lua_pushnumber(L, i);

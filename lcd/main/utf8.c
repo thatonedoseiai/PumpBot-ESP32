@@ -22,11 +22,12 @@ int utf8substrlen(char* s, int len) {
 	return k;
 }
 
-int utf8strlen(char* s) {
-    int k=0;
-    for(int i=0;s[i]!='\0';++i)
-        k+=(s[i] & 0xc0) != 0x80;
-    return k;
+size_t utf8strlen(char* s) {
+    size_t count = 0;
+    while (*s) {
+        count += (*s++ & 0xC0) != 0x80;
+    }
+    return count;
 }
 
 void utf8bspc(char* s, uint8_t* curs) {
@@ -91,13 +92,4 @@ int join_from_surrogates(int *old, int *code) {
   if (*old) *code = (((*old & 0x3FF) + 0x40) << 10) + (*code & 0x3FF);
   *old = ((*code & 0xD800) == 0xD800 ? *code : 0);
   return !(*old);
-}
-
-// count the number of code points in a utf8 string
-size_t count_utf8_code_points(const char *s) {
-    size_t count = 0;
-    while (*s) {
-        count += (*s++ & 0xC0) != 0x80;
-    }
-    return count;
 }
