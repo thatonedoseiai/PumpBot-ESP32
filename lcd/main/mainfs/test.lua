@@ -1,30 +1,37 @@
 local l = require("lpb")
 
-bgcol = {16,0,48}
+-- bgcol = {16,0,48}
+bgcol = l.background_color();
+fgcol = l.foreground_color();
 selecting_channels = false
 
 l.set_char_size(12<<6)
-on_text = l.draw_text(89, 16, "n", {255,255,255}, bgcol)
-off_text = l.draw_text(89, 16, "ff", {255,255,255}, bgcol)
+smolnums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
+l.sprite_set_draw(smolnums, false)
+
+on_text = l.draw_text(89, 16, "n", fgcol, bgcol)
+off_text = l.draw_text(89, 16, "ff", fgcol, bgcol)
 l.set_char_size(18<<6)
-on_btn_text = l.draw_text(21, 2, "N", {255,255,255}, bgcol)
-off_btn_text = l.draw_text(21, 2, "FF", {255,255,255}, bgcol)
+on_btn_text = l.draw_text(21, 2, "N", fgcol, bgcol)
+off_btn_text = l.draw_text(21, 2, "FF", fgcol, bgcol)
 channels_text = {{},{},{},{}}
 channels_text_bg = {}
 for ck=1,4 do
-    channels_text[ck] = l.draw_text(0,32,"CH"..(ck-1).."⤓",{255,255,255},bgcol)
+    channels_text[ck] = l.draw_text(0,36,"CH"..(ck-1).."⤓",fgcol,bgcol)
     channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol)
     l.center_sprites_x(channels_text[ck])
 end
 k=1
 l.set_char_size(42<<6)
+largenums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
+l.sprite_set_draw(largenums, false)
 spr = {}
 f=0
 print("lua start")
 collectgarbage("stop")
 back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
 back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
-back_on_off = l.draw_rectangle(89,240-208-16,12,16,{255,0,0})
+back_on_off = l.draw_rectangle(89,240-208-16,12,16,bgcol)
 back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol)
 l.draw_sprites({back,back_small,back_btn_text})
 oldrotenc = true
@@ -33,7 +40,7 @@ leftbtncircbuf = {true, true, true, true, true, true, true, true, true, true}
 leftbtncircbufi = 1
 channel = {0, 0, 0, 0}
 channel_active = {true, true, true, true}
-xs = {58,111,164,216}
+xs = {58,111,164,217}
 timeout = 0
 l.draw_sprites(off_btn_text)
 
@@ -42,7 +49,7 @@ function update_screen_text(x, y, bg, k, center)
         l.delete_sprite(spr[s])
     end
     l.draw_sprites(bg)
-    spr = l.draw_text(x, y, string.format("%.0f%%", channel[k]), {255,255,255}, {16,0,48});
+    spr = l.draw_text(x, y, string.format("%.0f%%", channel[k]), fgcol, bgcol);
     if(center) then
         l.center_sprites_x(spr)
     end
@@ -55,7 +62,7 @@ update_screen_text(40, 134, {back}, k, true)
 while(true) do
     buttons = l.getgpio()
     if(buttons ~= nil and buttons[1] == 3 and buttons[2] == 1) then
-        print("end: "..buttons[1].." "..buttons[2])
+        -- print("end: "..buttons[1].." "..buttons[2])
         break
     end
     f = l.readrotary()
@@ -71,7 +78,7 @@ while(true) do
                 l.stop_pwm(k)
                 l.draw_sprites({back_on_off, back_btn_text})
                 l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
-                print(off_text[2])
+                -- print(off_text[2])
                 l.draw_sprites({off_text[2]})
             end
         elseif (buttons[1] == 18 and buttons[2] == 1) then
@@ -127,3 +134,5 @@ delete_sprite(back_small)
 delete_sprite(back_on_off)
 delete_sprite(back_btn_text)
 delete_sprite(back)
+delete_sprite(largenums)
+delete_sprite(smolnums)

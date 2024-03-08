@@ -21,6 +21,7 @@ extern uint16_t width_cache[SPRITE_LIMIT];
 extern uint16_t height_cache[SPRITE_LIMIT];
 extern uint24_RGB* fg_cache[SPRITE_LIMIT];
 extern uint24_RGB* bg_cache[SPRITE_LIMIT];
+extern uint24_RGB* foreground_color;
 
 extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
@@ -368,6 +369,34 @@ static int l_stop_pwm(lua_State* L) {
     return 0;
 }
 
+static int l_get_foreground(lua_State* L) {
+    lua_newtable(L);
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, foreground_color->pixelR);
+    lua_settable(L, -3);
+    lua_pushnumber(L, 2);
+    lua_pushnumber(L, foreground_color->pixelG);
+    lua_settable(L, -3);
+    lua_pushnumber(L, 3);
+    lua_pushnumber(L, foreground_color->pixelB);
+    lua_settable(L, -3);
+    return 1;
+}
+
+static int l_get_background(lua_State* L) {
+    lua_newtable(L);
+    lua_pushnumber(L, 1);
+    lua_pushnumber(L, background_color->pixelR);
+    lua_settable(L, -3);
+    lua_pushnumber(L, 2);
+    lua_pushnumber(L, background_color->pixelG);
+    lua_settable(L, -3);
+    lua_pushnumber(L, 3);
+    lua_pushnumber(L, background_color->pixelB);
+    lua_settable(L, -3);
+    return 1;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -386,6 +415,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "stop_pwm", l_stop_pwm },
     { "setup_fade", l_setup_fade },
     { "step_fade", l_step_fade },
+    { "foreground_color", l_get_foreground },
+    { "background_color", l_get_background },
     { NULL, NULL }
 };
 

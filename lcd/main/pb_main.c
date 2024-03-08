@@ -205,11 +205,6 @@ void app_main(void) {
 		ets_printf("initializations failed!\n");
 		return;
 	}
-    if(read_from_file(&settings)) {
-        settings.disp_brightness = 255;
-        settings.disp_theme = 0;
-    }
-    assign_theme_from_settings();
 
 
     // pwm_setup_fade(&pfade_channels[5], 0, 16300, 100);
@@ -230,8 +225,8 @@ void app_main(void) {
     ledc_set_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel, 0x3fff);
 	ledc_update_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel);
 
-	send_color(spi, background_color);
-    buffer_fillcolor(background_color);
+	// send_color(spi, background_color);
+    // buffer_fillcolor(background_color);
 
     ESP_ERROR_CHECK(esp_netif_init());
     esp_netif_create_default_wifi_sta();
@@ -318,24 +313,35 @@ void app_main(void) {
 
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
-    (void) start_menu_tree(8);
+    char setup_flag = 0;
+    if(read_from_file(&settings)) {
+        settings.disp_brightness = 255;
+        settings.disp_theme = 0;
+        setup_flag = 1;
+    }
+    assign_theme_from_settings();
+    if(setup_flag) {
+        (void) start_menu_tree(0);
+        write_to_file(&settings);
+    }
     // ets_printf("%s\n", &settings.wifi_name);
 
 
 
 
     // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
-    // error = draw_menu_elements(&menuhome[0], typeFace, 14); 
-    // draw_all_sprites(spi);
-    // delete_all_sprites();
-    // if (error)
-    //     ets_printf("draw menu element\n");
+    send_color(spi, background_color);
+    error = draw_menu_elements(&menuhome[0], typeFace, 14); 
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    if (error)
+        ets_printf("draw menu element\n");
 
     // ets_printf("cache size: %d\n", text_cache_size);
 
 	// draw_all_sprites(spi);
 
-    // (void) luaL_dofile(L, "/mainfs/test.lua");
+    (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // connect_flag = 0;
     // int txtln = 0;
