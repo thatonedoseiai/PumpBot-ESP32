@@ -24,6 +24,10 @@ typedef struct SPRITE_24_H_ {
 	bool draw;
 } SPRITE_24_H;
 
+void flush_text_cache(void);
+
+void set_text_cache_auto_delete(char x);
+
 /*
  * find_empty_index finds the first empty index in the sprite table. -1 if indices are not free
  *
@@ -78,6 +82,8 @@ void center_sprite_group_x(int* sprites, int numsprites);
 void right_justify_sprite_group_x(int* sprites, int numsprites);
 
 void assign_theme_from_settings(void);
+
+char coloreq(uint24_RGB* a, uint24_RGB* b);
 
 #ifdef __cplusplus
 }

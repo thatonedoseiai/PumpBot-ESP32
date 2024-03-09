@@ -6,8 +6,8 @@ fgcol = l.foreground_color();
 selecting_channels = false
 
 l.set_char_size(12<<6)
-smolnums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
-l.sprite_set_draw(smolnums, false)
+-- smolnums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
+-- l.sprite_set_draw(smolnums, false)
 
 on_text = l.draw_text(89, 16, "n", fgcol, bgcol)
 off_text = l.draw_text(89, 16, "ff", fgcol, bgcol)
@@ -23,8 +23,8 @@ for ck=1,4 do
 end
 k=1
 l.set_char_size(42<<6)
-largenums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
-l.sprite_set_draw(largenums, false)
+-- largenums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
+-- l.sprite_set_draw(largenums, false)
 spr = {}
 f=0
 print("lua start")
@@ -43,6 +43,7 @@ channel_active = {true, true, true, true}
 xs = {58,111,164,217}
 timeout = 0
 l.draw_sprites(off_btn_text)
+l.enable_text_cache_auto_delete(false)
 
 function update_screen_text(x, y, bg, k, center)
     for s=1,#spr do
@@ -58,6 +59,7 @@ end
 
 print("start loop")
 update_screen_text(40, 134, {back}, k, true)
+-- l.flush_text_cache()
 
 while(true) do
     buttons = l.getgpio()
@@ -124,6 +126,7 @@ while(true) do
     end
 end
 
+l.enable_text_cache_auto_delete(true);
 delete_sprite(on_text[1])
 delete_sprite(off_text[1])
 delete_sprite(off_text[2])
@@ -134,5 +137,5 @@ delete_sprite(back_small)
 delete_sprite(back_on_off)
 delete_sprite(back_btn_text)
 delete_sprite(back)
-delete_sprite(largenums)
-delete_sprite(smolnums)
+-- delete_sprite(largenums)
+-- delete_sprite(smolnums)

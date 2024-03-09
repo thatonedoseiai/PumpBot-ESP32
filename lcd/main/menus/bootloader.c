@@ -462,7 +462,7 @@ static int menufunc_pb_setup_method (void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return selection ? 5 : 2;
+                return selection ? 2 : 5;
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();

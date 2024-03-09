@@ -19,8 +19,8 @@ extern uint64_t advance_x_cache[SPRITE_LIMIT];
 extern uint16_t y_loc_cache[SPRITE_LIMIT];
 extern uint16_t width_cache[SPRITE_LIMIT];
 extern uint16_t height_cache[SPRITE_LIMIT];
-extern uint24_RGB* fg_cache[SPRITE_LIMIT];
-extern uint24_RGB* bg_cache[SPRITE_LIMIT];
+extern uint24_RGB fg_cache[SPRITE_LIMIT];
+extern uint24_RGB bg_cache[SPRITE_LIMIT];
 extern uint24_RGB* foreground_color;
 
 extern FT_Face typeFace;
@@ -58,7 +58,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         curchar = decode_code_point(&reader_head);
 
         for(int x=0;x<text_cache_size;++x) {
-            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && fg_cache[x] == color && bg_cache[x] == bg) {
+            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
                 bmp = bitmap_cache[x];
                 bmp_top = 240 - y_loc_cache[x] - startY;
                 advance_x = advance_x_cache[x];
@@ -93,8 +93,8 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         height = slot->bitmap.rows/3;
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
-            fg_cache[text_cache_size] = color;
-            bg_cache[text_cache_size] = bg;
+            memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
+            memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             advance_x_cache[text_cache_size] = advance_x;
@@ -179,7 +179,7 @@ static int l_setsize(lua_State* L) {
 static int l_readrotary(lua_State* L) {
     rotary_encoder_event_t event;
     // rotary_encoder_get_state(infop, &state);
-    if(xQueueReceive(infop->queue, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+    if(xQueueReceive(infop->queue, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
         lua_newtable(L);
         lua_pushnumber(L, 1);
         lua_pushinteger(L, event.state.direction);
@@ -197,7 +197,7 @@ static int l_getgpio(lua_State* L) {
     button_event_t ev;
     // int x = luaL_checkinteger(L, 1);
     // int d = gpio_get_level(x);
-    if(xQueueReceive(*button_events, &ev, 50/portTICK_PERIOD_MS)) {
+    if(xQueueReceive(*button_events, &ev, 10/portTICK_PERIOD_MS)) {
         lua_newtable(L);
         lua_pushnumber(L, 1);
         lua_pushinteger(L, ev.pin);
@@ -397,6 +397,17 @@ static int l_get_background(lua_State* L) {
     return 1;
 }
 
+static int l_set_text_cache_auto_delete(lua_State* L) {
+    char x = lua_toboolean(L, 1);
+    set_text_cache_auto_delete(x);
+    return 0;
+}
+
+static int l_flush_text_cache(lua_State* L) {
+    flush_text_cache();
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -417,6 +428,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "step_fade", l_step_fade },
     { "foreground_color", l_get_foreground },
     { "background_color", l_get_background },
+    { "flush_text_cache", l_flush_text_cache },
+    { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
     { NULL, NULL }
 };
 

@@ -190,8 +190,8 @@ void app_main(void) {
 	static QueueHandle_t btn_events;
 	// static rotary_encoder_event_t event = { 0 };
 	// static rotary_encoder_state_t state = { 0 };
-    // background_color = (uint24_RGB*) &fillColor;
-    // foreground_color = (uint24_RGB*) &WHITE;
+    background_color = (uint24_RGB*) &fillColor;
+    foreground_color = (uint24_RGB*) &WHITE;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);
@@ -313,23 +313,24 @@ void app_main(void) {
 
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
-    char setup_flag = 0;
-    if(read_from_file(&settings)) {
-        settings.disp_brightness = 255;
-        settings.disp_theme = 0;
-        setup_flag = 1;
-    }
-    assign_theme_from_settings();
-    if(setup_flag) {
-        (void) start_menu_tree(0);
-        write_to_file(&settings);
-    }
+
+    // char setup_flag = 0;
+    // if(read_from_file(&settings)) {
+    //     settings.disp_brightness = 255;
+    //     settings.disp_theme = 0;
+    //     setup_flag = 1;
+    // }
+    // assign_theme_from_settings();
+    // if(setup_flag) {
+    //     (void) start_menu_tree(0);
+    //     write_to_file(&settings);
+    // }
+
     // ets_printf("%s\n", &settings.wifi_name);
 
 
 
 
-    // error = draw_menu_elements(&menuabcde[0], typeFace, 4); 
     send_color(spi, background_color);
     error = draw_menu_elements(&menuhome[0], typeFace, 14); 
     draw_all_sprites(spi);

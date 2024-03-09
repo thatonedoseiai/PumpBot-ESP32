@@ -18,10 +18,11 @@ uint64_t advance_x_cache[OAM_SIZE];
 uint16_t y_loc_cache[OAM_SIZE];
 uint16_t width_cache[OAM_SIZE];
 uint16_t height_cache[OAM_SIZE];
-uint24_RGB* fg_cache[OAM_SIZE];
-uint24_RGB* bg_cache[OAM_SIZE];
+uint24_RGB fg_cache[OAM_SIZE];
+uint24_RGB bg_cache[OAM_SIZE];
 uint24_RGB* background_color;
 uint24_RGB* foreground_color;
+char text_cache_auto_delete;
 const uint24_RGB WHITE = {
     .pixelR = 0xff,
     .pixelG = 0xff,
@@ -37,6 +38,20 @@ const uint24_RGB fillcolor = {
 	.pixelG = 0x00,
 	.pixelB = 0x30
 };
+
+void flush_text_cache() {
+	// memset(text_cache, 0, text_cache_size);
+	// memset(text_size_cache, 0, text_cache_size);
+	// memset(advance_x_cache, 0, text_cache_size);
+	// memset(y_loc_cache, 0, text_cache_size);
+	// memset(width_cache, 0, text_cache_size);
+	// memset(height_cache, 0, text_cache_size);
+	text_cache_size = 0;
+}
+
+void set_text_cache_auto_delete(char x) {
+	text_cache_auto_delete = x;
+}
 
 int find_empty_index(uint8_t* inds) {
     (void) inds;
@@ -59,6 +74,7 @@ void init_oam() {
 		OAM_SPRITE_TABLE[i] = NULL;
 		indices[1+i] = i;
 	}
+	text_cache_auto_delete = true;
 }
 
 int init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw) {
@@ -124,7 +140,7 @@ void delete_all_sprites() {
 void delete_sprite(int sprite) {
     SPRITE_BITMAP* bt = OAM_SPRITE_TABLE[sprite]->bitmap;
     bt->refcount--;
-    if(bt->refcount == 0) {
+    if(text_cache_auto_delete && bt->refcount == 0) {
         free(bt);
         for(int i=0;i<text_cache_size;++i) {
             if(bitmap_cache[i] == bt) {
@@ -211,4 +227,10 @@ void assign_theme_from_settings() {
 		}
 		background_color = &(settings.custom_theme_color);
 	}
+}
+
+char coloreq(uint24_RGB* a, uint24_RGB* b) {
+	return (a->pixelR == b->pixelR &&
+			a->pixelG == b->pixelG &&
+			a->pixelB == b->pixelB);
 }
