@@ -53,6 +53,7 @@ QueueHandle_t* button_events = NULL; // also because of lua
 pwm_fade_info_t pfade_channels[8]; // this one too
 SETTINGS_t settings;
 
+unsigned char wifi_restart_counter = 0;
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
 {
@@ -66,12 +67,18 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         wifi_event_sta_connected_t* event = (wifi_event_sta_connected_t*) event_data;
         ets_printf("connected to station \"%s\"!\n", event->ssid);
+        wifi_restart_counter = 0;
     } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
         ets_printf("starting connection...\n");
     } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        esp_wifi_connect();
         ets_printf("retrying connection...\n");
+        wifi_restart_counter++;
+        if(wifi_restart_counter < 10) {
+            esp_wifi_connect();
+        } else {
+            connect_flag = 1;
+        }
     } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
@@ -314,18 +321,18 @@ void app_main(void) {
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
 
-    // char setup_flag = 0;
-    // if(read_from_file(&settings)) {
-    //     settings.disp_brightness = 255;
-    //     settings.disp_theme = 0;
-    //     setup_flag = 1;
-    // }
-    // assign_theme_from_settings();
+    char setup_flag = 0;
+    if(read_from_file(&settings)) {
+        settings.disp_brightness = 255;
+        settings.disp_theme = 0;
+        setup_flag = 1;
+    }
+    assign_theme_from_settings();
     // if(setup_flag) {
     //     (void) start_menu_tree(0);
-    //     write_to_file(&settings);
+    //     // write_to_file(&settings);
     // }
-
+    (void) start_menu_tree(11, true);
     // ets_printf("%s\n", &settings.wifi_name);
 
 
@@ -337,12 +344,11 @@ void app_main(void) {
     delete_all_sprites();
     if (error)
         ets_printf("draw menu element\n");
+    (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // ets_printf("cache size: %d\n", text_cache_size);
 
 	// draw_all_sprites(spi);
-
-    (void) luaL_dofile(L, "/mainfs/test.lua");
 
     // connect_flag = 0;
     // int txtln = 0;

@@ -33,7 +33,7 @@ back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
 back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
 back_on_off = l.draw_rectangle(89,240-208-16,12,16,bgcol)
 back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol)
-l.draw_sprites({back,back_small,back_btn_text})
+l.draw_sprites({back,back_btn_text})
 oldrotenc = true
 oldleftbtn = true
 leftbtncircbuf = {true, true, true, true, true, true, true, true, true, true}

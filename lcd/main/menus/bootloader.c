@@ -18,6 +18,7 @@
 #define MENU_RETURN_FLAG 0x8000
 #define MENU_POP_FLAG 0x4000
 #define MENU_REDRAW_FLAG 0x2000
+#define MENU_SETUP_ONLY_TRANSITION_FLAG 0x1000
 #define IBUF_SIZE 256
 
 extern FT_Face typeFace;
@@ -32,6 +33,7 @@ extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
 static char* ibuf;
 static uint24_RGB* colorbuf;
+extern unsigned char wifi_restart_counter;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
@@ -56,7 +58,7 @@ static int menufunc_setup(void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3) {
                 settings.language = currlang;
-                return 7;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | 7;
             }
             if(event.pin == 0)
                 return MENU_POP_FLAG;
@@ -188,7 +190,6 @@ refresh:
 
 unsigned char table1[] = "EF⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
 unsigned char table2[] = "ef⌫✓abcdefghijklmnopqrstuvwxyz␣⌫✓abcd";
-// unsigned char table3[] = "%^⌫✓!@#$%^&*().,+-\"0123456789~␣⌫✓!@#$";
 unsigned char table3[] = "?@⌫✓!\"#$%&'()*+,-./0123456789:;<=>?@␣⌫✓!\"#$%";
 unsigned char* metatable[] = {table1, table2, table3};
 unsigned char string_lengths[] = {29, 29, 36};
@@ -293,7 +294,7 @@ static int menufunc_welcome(void) {
     button_event_t event;
     while(true) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
-            return 1;
+            return MENU_SETUP_ONLY_TRANSITION_FLAG | 1;
         }
     }
 }
@@ -303,10 +304,14 @@ static int menufunc_connect_wifi(void) {
     strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ESP_ERROR_CHECK(esp_wifi_connect());
-    ets_printf("connecting...");
+    ets_printf("connecting...\n");
     while(!connect_flag);
-    ets_printf("success!");
-    return 8;
+    if(wifi_restart_counter >= 10) {
+        ets_printf("FAILED!\n");
+        return MENU_POP_FLAG;
+    }
+    ets_printf("success!\n");
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
 }
 
 static int menufunc_http_setup(void) {
@@ -320,7 +325,7 @@ static int menufunc_http_setup(void) {
         }
     }
     stop_file_server();
-    return 8;
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
 }
 
 static int menufunc_network_preview(void) {
@@ -374,6 +379,7 @@ static int menufunc_network_preview(void) {
     int cursor;
     int selection = 0;
     draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -385,7 +391,7 @@ static int menufunc_network_preview(void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 // draw_text(0, 88, );
-                return MENU_RETURN_FLAG;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 switch(selection) {
@@ -412,7 +418,6 @@ static int menufunc_network_preview(void) {
             }
         }
     }
-    return 4;
 }
 
 static int menufunc_pb_setup_method (void) {
@@ -462,7 +467,7 @@ static int menufunc_pb_setup_method (void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return selection ? 2 : 5;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | (selection ? 2 : 5);
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
@@ -599,7 +604,7 @@ static int menufunc_display_settings(void) {
             }
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return 10;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | 10;
             }
         }
     }
@@ -734,7 +739,7 @@ static int menufunc_add_on_settings(void) {
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return MENU_RETURN_FLAG;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_RETURN_FLAG;
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
@@ -742,6 +747,61 @@ static int menufunc_add_on_settings(void) {
             }
         }
     }
+}
+
+const char set_disp[] = "Display";
+const char set_net[] = "Network";
+const char set_outp[] = "Output";
+const char set_RGB[] = "RGB";
+const char set_addon[] = "Add-on";
+const char set_apps[] = "Apps";
+const char set_devs[] = "Developer";
+const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
+const int selection_to_menu[] = {8, 2, MENU_RETURN_FLAG, MENU_RETURN_FLAG, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
+static int menufunc_all_settings(void) {
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int sprs[8];
+    int numsprs;
+    int selection = 0;
+    int page_start = 0;
+    int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    int cursor;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    center_sprite_group_x(sprs, numsprs);
+    draw_options((char**)settings_en, textbg);
+    for(int i=0;i<numsprs;++i)
+        delete_sprite(sprs[i]);
+    delete_sprite(titlebg);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
+            selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 6)) % 7;
+            page_start = (selection > 4) ? selection - 4 : 0;
+            if((selection-page_start == 0) || (selection-page_start == 4)) {
+                draw_options((char**) (&settings_en[page_start]), textbg);
+            }
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection - page_start]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return selection_to_menu[selection];
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+    return MENU_RETURN_FLAG;
 }
 
 MENU_INFO_t allmenus[] = {
@@ -755,10 +815,11 @@ MENU_INFO_t allmenus[] = {
     {&menusetup1[0], 10, menufunc_pb_setup_method},
     {&menusetup3[0], 10, menufunc_display_settings},
     {&menusetup3[0], 10, menufunc_color_picker},
-    {&menusetup3[0], 10, menufunc_add_on_settings}
+    {&menusetup3[0], 10, menufunc_add_on_settings},
+    {&menusetup3[0], 9, menufunc_all_settings},
 };
 
-int start_menu_tree(int startmenu) {
+int start_menu_tree(int startmenu, char settings_mode) {
     int menu_stack[20];
     int menu_stackp = 0;
     int nextmenu;
@@ -767,14 +828,6 @@ int start_menu_tree(int startmenu) {
     menu_stack[menu_stackp] = startmenu;
     do {
         send_color(spi, background_color);
-        // if(do_text_menu) {
-        //     draw_menu_elements(allmenus[3].background, typeFace, allmenus[3].num_elements);
-        //     draw_all_sprites(spi);
-        //     delete_all_sprites();
-        //     (void) allmenus[3].menu_functionality();
-        //     do_text_menu = 0;
-        //     send_color(spi, background_color);
-        // }
         currmenu = &allmenus[menu_stack[menu_stackp]];
         draw_menu_elements(currmenu->background, typeFace, currmenu->num_elements);
         draw_all_sprites(spi);
@@ -785,11 +838,10 @@ int start_menu_tree(int startmenu) {
             if(menu_stackp < 0) {
                 menu_stackp = 0;
             }
+        } else if ((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
+            menu_stackp = 0;
+            nextmenu = 0;
         } else if (!(nextmenu & MENU_REDRAW_FLAG)) {
-            // if (nextmenu & MENU_TEXT_INPUT_FLAG) {
-            //     do_text_menu = true;
-            //     nextmenu = nextmenu & 0xff;
-            // }
             menu_stackp++;
             menu_stack[menu_stackp] = nextmenu;
         }

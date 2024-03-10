@@ -26,7 +26,7 @@ typedef struct {
 /*
  * draw a collection of menu elements to the screen
  */
-int start_menu_tree(int);
+int start_menu_tree(int, char);
 
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements);
 

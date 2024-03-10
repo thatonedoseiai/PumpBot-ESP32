@@ -185,7 +185,7 @@ const MENU_ELEMENT text_test[] = {
 
 const MENU_ELEMENT menuhome[] = {
     {
-        .text = "XXX%", //Percentage of current channel
+        .text = "0%", //Percentage of current channel
         .x = 0,
         .y = 134,
         .center = true,
@@ -203,7 +203,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "CHX⤓", //X = current channel
+        .text = "CH0⤓", //X = current channel
         .x = 0,
         .y = 36,
         .center = true,
@@ -212,7 +212,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "OXX", //OFF or ON for current channel
+        .text = "OFF", //OFF or ON for current channel
         .x = 2,
         .y = 2,
         .center = false,
@@ -230,7 +230,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "0-Oxx",
+        .text = "0-On",
         .x = 58,
         .y = 16,
         .center = false,
@@ -239,7 +239,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     { 
-        .text = "XXX%",
+        .text = "0%",
         .x = 58,
         .y = 2,
         .center = false,
@@ -248,7 +248,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "1-Oxx",
+        .text = "1-On",
         .x = 111,
         .y = 16,
         .center = false,
@@ -257,7 +257,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     { 
-        .text = "XXX%",
+        .text = "0%",
         .x = 111,
         .y = 2,
         .center = false,
@@ -266,7 +266,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
         {
-        .text = "2-Oxx",
+        .text = "2-On",
         .x = 164,
         .y = 16,
         .center = false,
@@ -275,7 +275,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     { 
-        .text = "XXX%",
+        .text = "0%",
         .x = 164,
         .y = 2,
         .center = false,
@@ -284,7 +284,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "3-Oxx",
+        .text = "3-On",
         .x = 224,
         .y = 16,
         .center = false,
@@ -293,7 +293,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     { 
-        .text = "XXX%",
+        .text = "0%",
         .x = 224,
         .y = 2,
         .center = false,
@@ -457,7 +457,7 @@ const MENU_ELEMENT menusetup1[] = {
 };
 const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
     {
-        .text = "Starting Wi-Fi Network...", 
+        .text = "Connecting to Wi-Fi Network...", 
         .x = 0,
         .y = 120,
         .center = true,

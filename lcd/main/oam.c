@@ -46,6 +46,9 @@ void flush_text_cache() {
 	// memset(y_loc_cache, 0, text_cache_size);
 	// memset(width_cache, 0, text_cache_size);
 	// memset(height_cache, 0, text_cache_size);
+	for(int i=0;i<text_cache_size;++i) {
+		free(bitmap_cache[i]);
+	}
 	text_cache_size = 0;
 }
 
