@@ -197,7 +197,7 @@ static int l_getgpio(lua_State* L) {
     button_event_t ev;
     // int x = luaL_checkinteger(L, 1);
     // int d = gpio_get_level(x);
-    if(xQueueReceive(*button_events, &ev, 10/portTICK_PERIOD_MS)) {
+    if(xQueueReceive(*button_events, &ev, 10/portTICK_PERIOD_MS) == pdTRUE && ev.event == BUTTON_DOWN) {
         lua_newtable(L);
         lua_pushnumber(L, 1);
         lua_pushinteger(L, ev.pin);

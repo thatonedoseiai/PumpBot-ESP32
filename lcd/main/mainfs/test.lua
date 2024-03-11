@@ -1,14 +1,10 @@
 local l = require("lpb")
 
--- bgcol = {16,0,48}
 bgcol = l.background_color();
 fgcol = l.foreground_color();
 selecting_channels = false
 
 l.set_char_size(12<<6)
--- smolnums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
--- l.sprite_set_draw(smolnums, false)
-
 on_text = l.draw_text(89, 16, "n", fgcol, bgcol)
 off_text = l.draw_text(89, 16, "ff", fgcol, bgcol)
 l.set_char_size(18<<6)
@@ -23,8 +19,6 @@ for ck=1,4 do
 end
 k=1
 l.set_char_size(42<<6)
--- largenums = l.draw_text(0, 0, "0123456789%", fgcol, bgcol);
--- l.sprite_set_draw(largenums, false)
 spr = {}
 f=0
 print("lua start")

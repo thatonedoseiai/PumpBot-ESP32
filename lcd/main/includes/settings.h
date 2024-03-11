@@ -44,8 +44,8 @@ typedef struct {
     uint24_RGB RGB_colour_2;
     enum PRESSURE_UNIT_t pressure_units;
     enum LANGUAGE_t language;
-    int pwm_min_limit[4];
-    int pwm_max_limit[4];
+    uint16_t pwm_min_limit[4];
+    uint16_t pwm_max_limit[4];
     char output_set_on_off_only[4];
 } SETTINGS_t;
 

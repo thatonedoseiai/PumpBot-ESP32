@@ -757,18 +757,18 @@ const char set_addon[] = "Add-on";
 const char set_apps[] = "Apps";
 const char set_devs[] = "Developer";
 const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
-const int selection_to_menu[] = {8, 2, MENU_RETURN_FLAG, MENU_RETURN_FLAG, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
+const int selection_to_menu[] = {8, 2, 12, MENU_RETURN_FLAG, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
     rotary_encoder_event_t rotencev;
     int sprs[8];
     int numsprs;
+    int cursor;
     int selection = 0;
     int page_start = 0;
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    int cursor;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
@@ -797,11 +797,202 @@ static int menufunc_all_settings(void) {
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
+                write_to_file(&settings);
+                assign_theme_from_settings();
                 return MENU_POP_FLAG;
             }
         }
     }
-    return MENU_RETURN_FLAG;
+}
+
+int selected_pwm;
+static int menufunc_pwm_output_settings(void) {
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int sprs[11];
+    int numsprs;
+    int cursor;
+    int selection = 0;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(32, 184, "Output 0", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Output 1", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Output 2", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 88, "Output 3", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+            selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                selected_pwm = selection;
+                return 13;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                write_to_file(&settings);
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+char analog_mode[] = "Analog";
+char digital_mode[] = "Digital";
+static int menufunc_pwm_output_set(void) {
+    uint24_RGB* hicolor = &RED;
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int sprs[11];
+    int minsprs[6];
+    int num_minsprs;
+    int numsprs;
+    int cursor;
+    int selection = 0;
+    char percentage[5];
+    int mode = 0;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
+    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
+    draw_text(200, 152, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(32, 184, "Minimum PWM", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Maximum PWM", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Setup Wizard", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 88, "Output Mode", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    OAM_SPRITE_TABLE[textbg]->draw = false;
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            switch(mode) {
+            case 0:
+                OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+                selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+                OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+                draw_sprites(spi, &cursorbg, 1);
+                draw_sprites(spi, &cursor, 1);
+                break;
+            case 1:
+                if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+                    if(settings.pwm_min_limit[selected_pwm] + 163 < 0x3fff) {
+                        settings.pwm_min_limit[selected_pwm] += 163;
+                    } else {
+                        settings.pwm_min_limit[selected_pwm] = 0x3fff;
+                    }
+                } else {
+                    if(settings.pwm_min_limit[selected_pwm] > 163)
+                        settings.pwm_min_limit[selected_pwm] -= 163;
+                    else
+                        settings.pwm_min_limit[selected_pwm] = 0;
+                }
+                sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
+                draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color);
+                draw_all_sprites(spi);
+                for(int i=0;i<num_minsprs;++i)
+                    delete_sprite(minsprs[i]);
+                break;
+            case 2:
+                if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+                    if(settings.pwm_max_limit[selected_pwm] + 163 < 0x3fff) {
+                        settings.pwm_max_limit[selected_pwm] += 163;
+                    } else {
+                        settings.pwm_max_limit[selected_pwm] = 0x3fff;
+                    }
+                } else {
+                    if(settings.pwm_max_limit[selected_pwm] > 163)
+                        settings.pwm_max_limit[selected_pwm] -= 163;
+                    else
+                        settings.pwm_max_limit[selected_pwm] = 0;
+                }
+                sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
+                draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                draw_all_sprites(spi);
+                for(int i=0;i<numsprs;++i)
+                    delete_sprite(sprs[i]);
+            }
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                if(selection < 2) {
+                    mode = (mode == 0) ? selection + 1 : 0;
+                    // if(mode != 0)
+                    //     mode = 0;
+                    // else if(selection == 0)
+                    //     mode = 1;
+                    // else if(selection == 1)
+                    //     mode = 2;
+                    switch(mode) {
+                    case 0:
+                        OAM_SPRITE_TABLE[textbg]->draw = false;
+                        sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
+                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, foreground_color, background_color);
+                        sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
+                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, foreground_color, background_color);
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numsprs;++i)
+                            delete_sprite(sprs[i]);
+                        for(int i=0;i<num_minsprs;++i)
+                            delete_sprite(minsprs[i]);
+                        break;
+                    case 1:
+                        OAM_SPRITE_TABLE[textbg]->draw = true;
+                        OAM_SPRITE_TABLE[textbg]->posY = 240-21-184;
+                        sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
+                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color);
+                        draw_all_sprites(spi);
+                        for(int i=0;i<num_minsprs;++i)
+                            delete_sprite(minsprs[i]);
+                        break;
+                    case 2:
+                        OAM_SPRITE_TABLE[textbg]->draw = true;
+                        OAM_SPRITE_TABLE[textbg]->posY = 240-21-152;
+                        sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
+                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numsprs;++i)
+                            delete_sprite(sprs[i]);
+                    default:
+                        break;
+                    }
+                } else if (selection == 3) {
+                    OAM_SPRITE_TABLE[textbg]->draw = true;
+                    OAM_SPRITE_TABLE[textbg]->posY = 240-16-88;
+                    settings.output_set_on_off_only[selected_pwm] = !settings.output_set_on_off_only[selected_pwm];
+                    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, sprs, &numsprs, foreground_color, background_color);
+                    draw_all_sprites(spi);
+                    for(int i=0;i<numsprs;++i)
+                        delete_sprite(sprs[i]);
+                    OAM_SPRITE_TABLE[textbg]->draw = false;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
 }
 
 MENU_INFO_t allmenus[] = {
@@ -817,6 +1008,8 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 10, menufunc_color_picker},
     {&menusetup3[0], 10, menufunc_add_on_settings},
     {&menusetup3[0], 9, menufunc_all_settings},
+    {&menusetup3[0], 9, menufunc_pwm_output_settings},
+    {&menusetup3[0], 9, menufunc_pwm_output_set},
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {
