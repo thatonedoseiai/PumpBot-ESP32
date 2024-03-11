@@ -15,6 +15,5 @@ typedef struct pwm_fade_info_t_ {
 void init_pwm_fade_info(pwm_fade_info_t* info, ledc_channel_t channel);
 void pwm_setup_fade(pwm_fade_info_t* info, int start, int end, int num_steps);
 esp_err_t pwm_step_fade(pwm_fade_info_t* info);
-void pwm_fade_blocking();
 
 #endif

@@ -25,7 +25,3 @@ esp_err_t pwm_step_fade(pwm_fade_info_t* info) {
 		info->cur_step++;
 	return ESP_OK;
 }
-
-void pwm_fade_blocking() {
-
-}

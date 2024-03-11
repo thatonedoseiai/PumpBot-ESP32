@@ -20,6 +20,7 @@
 
 #include "http.h"
 #include "file_server.h"
+#include "esp_timer.h"
 
 // #include "esp_http_client.h"
 // #include "esp_crt_bundle.h"
@@ -57,13 +58,13 @@ unsigned char wifi_restart_counter = 0;
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                                     int32_t event_id, void* event_data)
 {
-    if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+    // if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+    //     wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
         // ets_printf("station %s join, AID=%d", MAC2STR(event->mac), event->aid);
-    } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+    // } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+    //     wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
         // ets_printf("station %s leave, AID=%d", MAC2STR(event->mac), event->aid);
-    }
+    // }
     if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_CONNECTED) {
         wifi_event_sta_connected_t* event = (wifi_event_sta_connected_t*) event_data;
         ets_printf("connected to station \"%s\"!\n", event->ssid);
@@ -84,6 +85,36 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
         connect_flag = 1;
     }
+}
+
+int curcol[] = {0, 0, 0};
+static void fade_rgb_callback(void* arg) {
+    static char goingup = 0;
+    int largerdiff;
+    for(int i=0;i<3;++i) {
+        largerdiff = ((unsigned char*) &settings.RGB_colour)[i]-((unsigned char*) &settings.RGB_colour_2)[i];
+        if(goingup)
+            curcol[i] += largerdiff / 4;
+        else
+            curcol[i] -= largerdiff / 4;
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, i+4, curcol[i]);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, i+4);
+    }
+    if(((curcol[0] >> 6) == settings.RGB_colour_2.pixelR && !goingup) || (((curcol[0] >> 6) == settings.RGB_colour.pixelR) && goingup))
+        goingup = !goingup;
+}
+
+static void rainbow_rgb_callback(void* arg) {
+    static char goingup = 1;
+    static char curchan = 1;
+    static char curval = 0;
+    curval += goingup ? 1 : -1;
+    if(curval == 0 || curval == 255) {
+        goingup = !goingup;
+        curchan = (curchan + 2) % 3;
+    }
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, curval << 6);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, curchan+4);
 }
 
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
@@ -315,6 +346,23 @@ void app_main(void) {
     // draw_all_sprites(spi);
     // delete_all_sprites();
 
+    settings.RGB_colour.pixelR = 255;
+    settings.RGB_colour_2.pixelG = 255;
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, 4, 0x3fc0));
+    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, 4));
+    curcol[0] = settings.RGB_colour.pixelR << 6;
+    curcol[1] = settings.RGB_colour.pixelG << 6;
+    curcol[2] = settings.RGB_colour.pixelB << 6;
+    
+    const esp_timer_create_args_t periodic_timer_args = {
+        // .callback = &rainbow_rgb_callback,
+        .callback = &fade_rgb_callback,
+        .name = "periodic"
+    };
+
+    esp_timer_handle_t periodic_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 100000));
 
 
 
