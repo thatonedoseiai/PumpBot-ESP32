@@ -37,7 +37,7 @@ typedef struct {
     int disp_theme;
     uint24_RGB custom_theme_color;
     int disp_brightness;
-    int RGB_brightness;
+    uint16_t RGB_brightness;
     int RGB_speed;
     enum RGB_MODE_t RGB_mode;
     uint24_RGB RGB_colour;

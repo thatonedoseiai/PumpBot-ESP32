@@ -329,6 +329,7 @@ void app_main(void) {
         memset(settings.pwm_min_limit, 0, 4*sizeof(uint16_t));
         for(int i=0;i<4;++i)
             settings.pwm_max_limit[i] = 0x3fff;
+        settings.RGB_brightness = 0x3fff;
     }
     assign_theme_from_settings();
     // if(setup_flag) {

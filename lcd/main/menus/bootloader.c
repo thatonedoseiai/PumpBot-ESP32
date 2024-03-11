@@ -757,7 +757,7 @@ const char set_addon[] = "Add-on";
 const char set_apps[] = "Apps";
 const char set_devs[] = "Developer";
 const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
-const int selection_to_menu[] = {8, 2, 12, MENU_RETURN_FLAG, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
+const int selection_to_menu[] = {8, 2, 12, 14, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
@@ -937,12 +937,6 @@ static int menufunc_pwm_output_set(void) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 if(selection < 2) {
                     mode = (mode == 0) ? selection + 1 : 0;
-                    // if(mode != 0)
-                    //     mode = 0;
-                    // else if(selection == 0)
-                    //     mode = 1;
-                    // else if(selection == 1)
-                    //     mode = 2;
                     switch(mode) {
                     case 0:
                         OAM_SPRITE_TABLE[textbg]->draw = false;
@@ -995,6 +989,129 @@ static int menufunc_pwm_output_set(void) {
     }
 }
 
+char RGB_Mode_Off[] = "Off";
+char RGB_Mode_Solid[] = "Solid";
+char RGB_Mode_Fade[] = "Fade";
+char RGB_Mode_Rainbow[] = "Rainbow";
+char* RGB_Mode_Names[] = {RGB_Mode_Off, RGB_Mode_Solid, RGB_Mode_Fade, RGB_Mode_Rainbow};
+static int menufunc_rgb_lighting(void) {
+    uint24_RGB* hicolor = &RED;
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int sprs[11];
+    int codesprs[11];
+    int numsprs;
+    int numcodesprs;
+    int cursor;
+    int selection = 0;
+    char percentage[5];
+    int mode = 0;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprintf(percentage, "%d%%", settings.RGB_brightness / 163);
+    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, NULL, NULL, foreground_color, background_color);
+    sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "RGB Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 152, "Mode", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Color 1", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 88, "Color 2", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    sprite_rectangle(200, 112, 30, 30, &settings.RGB_colour);
+    sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour_2);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    OAM_SPRITE_TABLE[textbg]->draw = false;
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            switch(mode) {
+            case 0:
+                OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+                selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+                OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+                draw_sprites(spi, &cursorbg, 1);
+                draw_sprites(spi, &cursor, 1);
+                break;
+            case 1:
+                if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+                    if(settings.RGB_brightness + 163 < 0x3fff)
+                        settings.RGB_brightness += 163;
+                    else
+                        settings.RGB_brightness = 0x3fff;
+                } else {
+                    if(settings.RGB_brightness > 163)
+                        settings.RGB_brightness -= 163;
+                    else
+                        settings.RGB_brightness = 0;
+                }
+                sprintf(percentage, "%d%%", settings.RGB_brightness / 163);
+                draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                OAM_SPRITE_TABLE[textbg]->draw = true;
+                draw_all_sprites(spi);
+                for(int i=0;i<numsprs;++i)
+                    delete_sprite(sprs[i]);
+                break;
+            case 2:
+                settings.RGB_mode = (settings.RGB_mode + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+                draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color);
+                OAM_SPRITE_TABLE[textbg]->draw = true;
+                draw_all_sprites(spi);
+                for(int i=0;i<numcodesprs;++i)
+                    delete_sprite(codesprs[i]);
+                break;
+            }
+        }
+        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                if(selection < 2) {
+                    mode = (mode == 0) ? selection + 1 : 0;
+                    switch(mode) {
+                    case 0:
+                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, foreground_color, background_color);
+                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, foreground_color, background_color);
+                        OAM_SPRITE_TABLE[textbg]->draw = false;
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numsprs;++i)
+                            delete_sprite(sprs[i]);
+                        for(int i=0;i<numcodesprs;++i)
+                            delete_sprite(codesprs[i]);
+                        break;
+                    case 1:
+                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                        OAM_SPRITE_TABLE[textbg]->draw = true;
+                        OAM_SPRITE_TABLE[textbg]->posY = 240-21-184;
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numsprs;++i)
+                            delete_sprite(sprs[i]);
+                        break;
+                    case 2:
+                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color);
+                        OAM_SPRITE_TABLE[textbg]->draw = true;
+                        OAM_SPRITE_TABLE[textbg]->posY = 240-21-152;
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numcodesprs;++i)
+                            delete_sprite(codesprs[i]);
+                        break;
+                    }
+                } else {
+                    colorbuf = (selection == 2) ? &settings.RGB_colour : &settings.RGB_colour_2;
+                    delete_all_sprites();
+                    return 9;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -1010,6 +1127,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_all_settings},
     {&menusetup3[0], 9, menufunc_pwm_output_settings},
     {&menusetup3[0], 9, menufunc_pwm_output_set},
+    {&menusetup3[0], 9, menufunc_rgb_lighting},
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {

@@ -387,7 +387,7 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
     }
 
     // ets_printf("RECEIVED DATA:\n%s\n", sets);
-    sscanf(sets, "ws=%[^&]&wp=%[^&]&t=%d&b=%d&rb=%d&rs=%d&rm=%d&rc=%%23%hhx%hhx%hhx&rc2=%%23%hhx%hhx%hhx&p=%d&l=%d", settings.wifi_name, settings.wifi_pass, &settings.disp_theme, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
+    sscanf(sets, "ws=%[^&]&wp=%[^&]&t=%d&b=%d&rb=%hd&rs=%d&rm=%d&rc=%%23%hhx%hhx%hhx&rc2=%%23%hhx%hhx%hhx&p=%d&l=%d", settings.wifi_name, settings.wifi_pass, &settings.disp_theme, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
     ets_printf("SETTINGS SUBMITTED!\n");
     write_to_file(&settings);
 
