@@ -1066,6 +1066,7 @@ static int menufunc_rgb_lighting(void) {
                 draw_all_sprites(spi);
                 for(int i=0;i<numcodesprs;++i)
                     delete_sprite(codesprs[i]);
+                rgb_update();
                 break;
             }
         }

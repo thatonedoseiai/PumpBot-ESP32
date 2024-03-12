@@ -317,11 +317,6 @@ void app_main(void) {
     // draw_all_sprites(spi);
     // delete_all_sprites();
 
-    settings.RGB_mode = RGB_MODE_FADE;
-    settings.RGB_colour.pixelR = 255;
-    settings.RGB_colour_2.pixelG = 255;
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, 4, 0x3fc0));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, 4));
     rgb_init();
 
     // settings.RGB_colour.pixelR = 0;
@@ -368,8 +363,8 @@ void app_main(void) {
     //     (void) start_menu_tree(0);
     //     // write_to_file(&settings);
     // }
-    // (void) start_menu_tree(11, true);
-    (void) start_menu_tree(14, true);
+    (void) start_menu_tree(11, true);
+    // (void) start_menu_tree(14, true);
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
 

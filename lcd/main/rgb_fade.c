@@ -27,8 +27,8 @@ static void fade_rgb_callback(void* arg) {
         ledc_set_duty(LEDC_LOW_SPEED_MODE, i+4, curcol[i]);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, i+4);
     }
-    if(((curcol[0] >> 6) == ((settings.RGB_colour_2.pixelR * (settings.RGB_brightness >> 8)) >> 6) && !goingup) || 
-            (((curcol[0] >> 6) == ((settings.RGB_colour.pixelR * (settings.RGB_brightness >> 8)) >> 6) && goingup)))
+    if(((curcol[0]) <= ((settings.RGB_colour_2.pixelR * (settings.RGB_brightness >> 8))) && !goingup) || 
+        (((curcol[0]) >= ((settings.RGB_colour.pixelR * (settings.RGB_brightness >> 8))) && goingup)))
         goingup = !goingup;
 }
 
@@ -41,7 +41,7 @@ static void rainbow_rgb_callback(void* arg) {
         goingup = !goingup;
         curchan = (curchan + 2) % 3;
     }
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, curval << 6);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, curval * (settings.RGB_brightness >> 8));
     ledc_update_duty(LEDC_LOW_SPEED_MODE, curchan+4);
 }
 
