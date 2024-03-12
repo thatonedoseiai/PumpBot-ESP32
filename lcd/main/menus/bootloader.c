@@ -13,6 +13,7 @@
 #include "esp_wifi.h"
 #include "board_config.h"
 #include "file_server.h"
+#include "rgb_fade.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -995,6 +996,7 @@ char RGB_Mode_Fade[] = "Fade";
 char RGB_Mode_Rainbow[] = "Rainbow";
 char* RGB_Mode_Names[] = {RGB_Mode_Off, RGB_Mode_Solid, RGB_Mode_Fade, RGB_Mode_Rainbow};
 static int menufunc_rgb_lighting(void) {
+    rgb_update();
     uint24_RGB* hicolor = &RED;
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
@@ -1063,6 +1065,7 @@ static int menufunc_rgb_lighting(void) {
                 draw_all_sprites(spi);
                 for(int i=0;i<numcodesprs;++i)
                     delete_sprite(codesprs[i]);
+                rgb_update();
                 break;
             }
         }

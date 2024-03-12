@@ -13,6 +13,7 @@ set(srcs
     "settings.c"
     "http.c"
     "file_server.c"
+    "rgb_fade.c"
     )
 
 idf_component_register(SRCS ${srcs}

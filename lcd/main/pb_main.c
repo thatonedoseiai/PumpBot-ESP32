@@ -21,6 +21,7 @@
 #include "http.h"
 #include "file_server.h"
 #include "esp_timer.h"
+#include "rgb_fade.h"
 
 // #include "esp_http_client.h"
 // #include "esp_crt_bundle.h"
@@ -85,36 +86,6 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
         connect_flag = 1;
     }
-}
-
-int curcol[] = {0, 0, 0};
-static void fade_rgb_callback(void* arg) {
-    static char goingup = 0;
-    int largerdiff;
-    for(int i=0;i<3;++i) {
-        largerdiff = ((unsigned char*) &settings.RGB_colour)[i]-((unsigned char*) &settings.RGB_colour_2)[i];
-        if(goingup)
-            curcol[i] += largerdiff / 4;
-        else
-            curcol[i] -= largerdiff / 4;
-        ledc_set_duty(LEDC_LOW_SPEED_MODE, i+4, curcol[i]);
-        ledc_update_duty(LEDC_LOW_SPEED_MODE, i+4);
-    }
-    if(((curcol[0] >> 6) == settings.RGB_colour_2.pixelR && !goingup) || (((curcol[0] >> 6) == settings.RGB_colour.pixelR) && goingup))
-        goingup = !goingup;
-}
-
-static void rainbow_rgb_callback(void* arg) {
-    static char goingup = 1;
-    static char curchan = 1;
-    static char curval = 0;
-    curval += goingup ? 1 : -1;
-    if(curval == 0 || curval == 255) {
-        goingup = !goingup;
-        curchan = (curchan + 2) % 3;
-    }
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, curval << 6);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, curchan+4);
 }
 
 int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
@@ -346,29 +317,41 @@ void app_main(void) {
     // draw_all_sprites(spi);
     // delete_all_sprites();
 
+    settings.RGB_mode = RGB_MODE_FADE;
     settings.RGB_colour.pixelR = 255;
     settings.RGB_colour_2.pixelG = 255;
     ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, 4, 0x3fc0));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, 4));
-    curcol[0] = settings.RGB_colour.pixelR << 6;
-    curcol[1] = settings.RGB_colour.pixelG << 6;
-    curcol[2] = settings.RGB_colour.pixelB << 6;
-    
-    const esp_timer_create_args_t periodic_timer_args = {
-        // .callback = &rainbow_rgb_callback,
-        .callback = &fade_rgb_callback,
-        .name = "periodic"
-    };
+    rgb_init();
 
-    esp_timer_handle_t periodic_timer;
-    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 100000));
+    // settings.RGB_colour.pixelR = 0;
+    // settings.RGB_colour.pixelB = 255;
+    // update_rgb_mode(true);
+    // vTaskDelay(1000);
+
+    // settings.RGB_colour.pixelR = 255;
+    // settings.RGB_colour.pixelB = 255;
+    // update_rgb_mode(true);
+
+    // curcol[0] = settings.RGB_colour.pixelR << 6;
+    // curcol[1] = settings.RGB_colour.pixelG << 6;
+    // curcol[2] = settings.RGB_colour.pixelB << 6;
+    
+    // const esp_timer_create_args_t periodic_timer_args = {
+    //     // .callback = &rainbow_rgb_callback,
+    //     .callback = &fade_rgb_callback
+    // };
+
+    // esp_timer_handle_t periodic_timer;
+    // ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    // ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 100000));
 
 
 
     // ESP_ERROR_CHECK(esp_wifi_start());
     // (void) start_menu_tree(5);
 
+    // ESP_ERROR_CHECK(esp_timer_init());
     char setup_flag = 0;
     if(read_from_file(&settings)) {
         settings.disp_brightness = 255;
@@ -379,12 +362,15 @@ void app_main(void) {
             settings.pwm_max_limit[i] = 0x3fff;
         settings.RGB_brightness = 0x3fff;
     }
+    rgb_update();
     assign_theme_from_settings();
     // if(setup_flag) {
     //     (void) start_menu_tree(0);
     //     // write_to_file(&settings);
     // }
-    (void) start_menu_tree(11, true);
+    // (void) start_menu_tree(11, true);
+    (void) start_menu_tree(14, true);
+    // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
 
 
