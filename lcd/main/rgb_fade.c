@@ -46,13 +46,18 @@ static void fade_rgb_callback(void* arg) {
 static void rainbow_rgb_callback(void* arg) {
     static char goingup = 1;
     static char curchan = 1;
-    static char curval = 0;
-    curval += goingup ? 1 : -1;
-    if(curval == 0 || curval == 255) {
+    static int curval = 0;
+    // curval += goingup ? (settings.RGB_speed/3) : -(settings.RGB_speed/3);
+    curval += goingup ? (12288 / settings.RGB_speed) : -(12288 / settings.RGB_speed);
+    if(curval <= 0 || curval >= 16383) {
         goingup = !goingup;
         curchan = (curchan + 2) % 3;
     }
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, curval * (settings.RGB_brightness >> 8));
+    if(curval > 16383)
+        curval = 16383;
+    if(curval < 0)
+        curval = 0;
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, curchan+4, (curval * settings.RGB_brightness) >> 14);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, curchan+4);
 }
 
