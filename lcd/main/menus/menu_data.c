@@ -285,7 +285,7 @@ const MENU_ELEMENT menuhome[] = {
     },
     {
         .text = "3-On",
-        .x = 224,
+        .x = 217,
         .y = 16,
         .center = false,
         .textsize = 12,
@@ -294,7 +294,7 @@ const MENU_ELEMENT menuhome[] = {
     },
     { 
         .text = "0%",
-        .x = 224,
+        .x = 217,
         .y = 2,
         .center = false,
         .textsize = 12,

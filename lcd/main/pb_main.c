@@ -360,6 +360,7 @@ void app_main(void) {
     }
     rgb_update();
     assign_theme_from_settings();
+
     // if(setup_flag) {
     //     (void) start_menu_tree(0);
     //     // write_to_file(&settings);
