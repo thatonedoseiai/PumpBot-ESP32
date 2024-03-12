@@ -1057,6 +1057,7 @@ static int menufunc_rgb_lighting(void) {
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
                     delete_sprite(sprs[i]);
+                rgb_update();
                 break;
             case 2:
                 settings.RGB_mode = (settings.RGB_mode + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
@@ -1065,7 +1066,6 @@ static int menufunc_rgb_lighting(void) {
                 draw_all_sprites(spi);
                 for(int i=0;i<numcodesprs;++i)
                     delete_sprite(codesprs[i]);
-                rgb_update();
                 break;
             }
         }
