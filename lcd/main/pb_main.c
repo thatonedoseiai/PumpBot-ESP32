@@ -356,6 +356,7 @@ void app_main(void) {
         for(int i=0;i<4;++i)
             settings.pwm_max_limit[i] = 0x3fff;
         settings.RGB_brightness = 0x3fff;
+        settings.RGB_speed = 32;
     }
     rgb_update();
     assign_theme_from_settings();

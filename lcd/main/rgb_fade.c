@@ -9,27 +9,38 @@ extern SETTINGS_t settings;
 
 // static esp_timer_handle_t rgb_timer;
 int curcol[] = {0, 0, 0};
+int curcycle = 0;
 gptimer_handle_t rainbow_timer;
 gptimer_handle_t fade_timer;
 
 static void fade_rgb_callback(void* arg) {
     static char goingup = 0;
     // ets_printf("%d %d %d\n", curcol[0], curcol[1], curcol[2]);
-    int largerdiff;
+    // int largerdiff;
+    int diff;
+    int32_t largerdiff;
     for(int i=0;i<3;++i) {
-        largerdiff = ((((unsigned char*) &settings.RGB_colour)[i]-((unsigned char*) &settings.RGB_colour_2)[i]) * (settings.RGB_brightness >> 8)) / 64;
+        // largerdiff = ((((unsigned char*) &settings.RGB_colour)[i]-((unsigned char*) &settings.RGB_colour_2)[i]) * (settings.RGB_brightness >> 8)) / 64;
+        diff = ((unsigned char*) &settings.RGB_colour)[i]-((unsigned char*) &settings.RGB_colour_2)[i];
+        largerdiff = ((diff * settings.RGB_brightness) / (settings.RGB_speed << 10));
         if(goingup)
-            curcol[i] += (largerdiff / 4);
+            curcol[i] += (largerdiff);
         else
-            curcol[i] -= (largerdiff / 4);
+            curcol[i] -= (largerdiff);
         if(curcol[i] < 0)
             curcol[i] = 0;
+        if(curcol[i] > 16383)
+            curcol[i] = 16383;
         ledc_set_duty(LEDC_LOW_SPEED_MODE, i+4, curcol[i]);
         ledc_update_duty(LEDC_LOW_SPEED_MODE, i+4);
     }
-    if(((curcol[0]) <= ((settings.RGB_colour_2.pixelR * (settings.RGB_brightness >> 8))) && !goingup) || 
-        (((curcol[0]) >= ((settings.RGB_colour.pixelR * (settings.RGB_brightness >> 8))) && goingup)))
+    // if(((curcol[0]) <= ((settings.RGB_colour_2.pixelR * (settings.RGB_brightness >> 8))) && !goingup) || 
+    //     (((curcol[0]) >= ((settings.RGB_colour.pixelR * (settings.RGB_brightness >> 8))) && goingup)))
+    curcycle++;
+    if(curcycle == (settings.RGB_speed << 2)) {
         goingup = !goingup;
+        curcycle = 0;
+    }
 }
 
 static void rainbow_rgb_callback(void* arg) {
@@ -60,9 +71,10 @@ void rgb_update() {
     gptimer_stop(fade_timer);
     switch(settings.RGB_mode) {
     case RGB_MODE_FADE:
-        curcol[0] = ((settings.RGB_colour.pixelR) * (settings.RGB_brightness >> 8));
-        curcol[1] = ((settings.RGB_colour.pixelG) * (settings.RGB_brightness >> 8));
-        curcol[2] = ((settings.RGB_colour.pixelB) * (settings.RGB_brightness >> 8));
+        curcol[0] = ((settings.RGB_colour.pixelR) * (settings.RGB_brightness)) >> 8;
+        curcol[1] = ((settings.RGB_colour.pixelG) * (settings.RGB_brightness)) >> 8;
+        curcol[2] = ((settings.RGB_colour.pixelB) * (settings.RGB_brightness)) >> 8;
+        curcycle = 0;
         gptimer_start(fade_timer);
         break;
     case RGB_MODE_RAINBOW:

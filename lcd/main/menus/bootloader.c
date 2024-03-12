@@ -1003,26 +1003,32 @@ static int menufunc_rgb_lighting(void) {
     rotary_encoder_event_t rotencev;
     int sprs[11];
     int codesprs[11];
+    int speedsprs[11];
     int numsprs;
     int numcodesprs;
+    int numspeedsprs;
     int cursor;
     int selection = 0;
     char percentage[5];
+    char speed_val[5];
     int mode = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprintf(percentage, "%d%%", settings.RGB_brightness / 163);
+    sprintf(speed_val, "%d", settings.RGB_speed);
     draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 120, speed_val, typeFace, NULL, NULL, foreground_color, background_color);
     draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, NULL, NULL, foreground_color, background_color);
     sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, "RGB Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color);
     draw_text(32, 152, "Mode", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Color 1", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 88, "Color 2", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 120, "Speed", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 88, "Color 1", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 56, "Color 2", typeFace, NULL, NULL, foreground_color, background_color);
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
-    sprite_rectangle(200, 112, 30, 30, &settings.RGB_colour);
-    sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour_2);
+    sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour);
+    sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2);
     draw_all_sprites(spi);
     delete_all_sprites();
     int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
@@ -1034,7 +1040,7 @@ static int menufunc_rgb_lighting(void) {
             switch(mode) {
             case 0:
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
-                selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+                selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 4)) % 5;
                 OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
                 draw_sprites(spi, &cursorbg, 1);
                 draw_sprites(spi, &cursor, 1);
@@ -1068,22 +1074,44 @@ static int menufunc_rgb_lighting(void) {
                     delete_sprite(codesprs[i]);
                 rgb_update();
                 break;
+            case 3:
+                if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+                    if(settings.RGB_speed + 1 < 0xff)
+                        settings.RGB_speed += 1;
+                    else
+                        settings.RGB_speed = 0xff;
+                } else {
+                    if(settings.RGB_speed > 1)
+                        settings.RGB_speed -= 1;
+                    else
+                        settings.RGB_speed = 1;
+                }
+                sprintf(speed_val, "%d", settings.RGB_speed);
+                draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color);
+                OAM_SPRITE_TABLE[textbg]->draw = true;
+                draw_all_sprites(spi);
+                for(int i=0;i<numspeedsprs;++i)
+                    delete_sprite(speedsprs[i]);
+                rgb_update();
             }
         }
         if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
-                if(selection < 2) {
+                if(selection < 3) {
                     mode = (mode == 0) ? selection + 1 : 0;
                     switch(mode) {
                     case 0:
                         draw_text(200, 184, percentage, typeFace, sprs, &numsprs, foreground_color, background_color);
                         draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, foreground_color, background_color);
+                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, foreground_color, background_color);
                         OAM_SPRITE_TABLE[textbg]->draw = false;
                         draw_all_sprites(spi);
                         for(int i=0;i<numsprs;++i)
                             delete_sprite(sprs[i]);
                         for(int i=0;i<numcodesprs;++i)
                             delete_sprite(codesprs[i]);
+                        for(int i=0;i<numspeedsprs;++i)
+                            delete_sprite(speedsprs[i]);
                         break;
                     case 1:
                         draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
@@ -1101,9 +1129,17 @@ static int menufunc_rgb_lighting(void) {
                         for(int i=0;i<numcodesprs;++i)
                             delete_sprite(codesprs[i]);
                         break;
+                    case 3:
+                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color);
+                        OAM_SPRITE_TABLE[textbg]->draw = true;
+                        OAM_SPRITE_TABLE[textbg]->posY = 240-21-120;
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numspeedsprs;++i)
+                            delete_sprite(speedsprs[i]);
+                        break;
                     }
                 } else {
-                    colorbuf = (selection == 2) ? &settings.RGB_colour : &settings.RGB_colour_2;
+                    colorbuf = (selection == 3) ? &settings.RGB_colour : &settings.RGB_colour_2;
                     delete_all_sprites();
                     return 9;
                 }
