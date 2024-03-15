@@ -236,6 +236,7 @@ static int l_center_sprite_group_x(lua_State* L) {
 static int l_right_justify_sprite_group_x(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
+    int pad = luaL_checkinteger(L, 2);
     // int* sprites = malloc(k);
     int sprites[k];
     for(int i=1;i<=k;++i) {
@@ -243,7 +244,7 @@ static int l_right_justify_sprite_group_x(lua_State* L) {
         lua_gettable(L, 1);
         sprites[i-1] = luaL_checkinteger(L, -1);
     }
-    right_justify_sprite_group_x(sprites, k);
+    right_justify_sprite_group_x(sprites, k, pad);
     // free(sprites);
     return 0;
 }

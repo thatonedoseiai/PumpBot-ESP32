@@ -56,7 +56,7 @@ static int menufunc_setup(void) {
     int currlang = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     while(true) {
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3) {
                 settings.language = currlang;
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | 7;
@@ -64,7 +64,7 @@ static int menufunc_setup(void) {
             if(event.pin == 0)
                 return MENU_POP_FLAG;
         }
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             currlang = ((unsigned) rotencev.state.position) % 3;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
@@ -147,7 +147,7 @@ refresh:
 
     selection = 0;
     while(!connect_flag) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
             selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % ap_count : (selection + ap_count - 1) % ap_count;
             if(selection > page_start + 4 || selection < page_start) {
@@ -164,7 +164,7 @@ refresh:
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
             if(event.pin == 3) {
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
                 draw_sprites(spi, &cursorbg, 1);
@@ -238,7 +238,7 @@ static int menufunc_text_write(void) {
     draw_textreel(curtable, selection, &loc);
 
     while(true) {
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
                 sprite_rectangle(300, 0, 20, 22, background_color);
@@ -279,7 +279,7 @@ static int menufunc_text_write(void) {
                 delete_all_sprites();
             } 
         }
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
                 selection = (selection + 1) % string_lengths[curtable];
             } else {
@@ -294,7 +294,7 @@ static int menufunc_text_write(void) {
 static int menufunc_welcome(void) {
     button_event_t event;
     while(true) {
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
             return MENU_SETUP_ONLY_TRANSITION_FLAG | 1;
         }
     }
@@ -320,7 +320,7 @@ static int menufunc_http_setup(void) {
     ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
     button_event_t event;
     while(!connect_flag) {
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
             stop_file_server();
             return MENU_POP_FLAG;
         }
@@ -382,14 +382,14 @@ static int menufunc_network_preview(void) {
     draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
             selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % 4 : (selection + 3) % 4;
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 // draw_text(0, 88, );
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
@@ -453,7 +453,7 @@ static int menufunc_pb_setup_method (void) {
     draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     draw_all_sprites(spi);
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = selection ? 240-88-14 : 240-120-14;
             selection = !selection;
             OAM_SPRITE_TABLE[cursor]->posY = selection ? 240-88-14 : 240-120-14;
@@ -465,7 +465,7 @@ static int menufunc_pb_setup_method (void) {
             }
             draw_all_sprites(spi);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | (selection ? 2 : 5);
@@ -522,7 +522,7 @@ static int menufunc_display_settings(void) {
     int num_themespr;
     int theme_sprite[5];
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
             case 0:
                 OAM_SPRITE_TABLE[cursorbg]->posY = selection ? 240-152-14 : 240-184-14;
@@ -555,7 +555,7 @@ static int menufunc_display_settings(void) {
             default:
             }
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 if(mode == 2) {
                     // start the colour menu!
@@ -651,7 +651,7 @@ static int menufunc_color_picker(void) {
     OAM_SPRITE_TABLE[blue_rec]->draw = false;
     int colorrec;
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
             case 0:
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -671,7 +671,7 @@ static int menufunc_color_picker(void) {
             draw_sprites(spi, &colorrec, 1);
             delete_sprite(colorrec);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 mode = (mode == 0) ? selection + 1 : 0;
                 (void) itoa(buffer[selection], numbuf, 10);
@@ -730,14 +730,14 @@ static int menufunc_add_on_settings(void) {
     delete_all_sprites();
     (void) sprite_rectangle(190, 178, 100, 28, background_color);
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             settings.pressure_units = (settings.pressure_units + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1)) % 4;
             draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, sprs, &numsprs, foreground_color, background_color);
             draw_all_sprites(spi);
             for(int i=0;i<numsprs;++i)
                 delete_sprite(sprs[i]);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_RETURN_FLAG;
@@ -780,7 +780,7 @@ static int menufunc_all_settings(void) {
         delete_sprite(sprs[i]);
     delete_sprite(titlebg);
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
             selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 6)) % 7;
             page_start = (selection > 4) ? selection - 4 : 0;
@@ -791,7 +791,7 @@ static int menufunc_all_settings(void) {
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 return selection_to_menu[selection];
@@ -829,14 +829,14 @@ static int menufunc_pwm_output_settings(void) {
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
             selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 selected_pwm = selection;
@@ -886,7 +886,7 @@ static int menufunc_pwm_output_set(void) {
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
             case 0:
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -934,7 +934,7 @@ static int menufunc_pwm_output_set(void) {
                     delete_sprite(sprs[i]);
             }
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 if(selection < 2) {
                     mode = (mode == 0) ? selection + 1 : 0;
@@ -1036,7 +1036,7 @@ static int menufunc_rgb_lighting(void) {
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
-        if(xQueueReceive(infop->queue, &rotencev, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
             case 0:
                 OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -1095,7 +1095,7 @@ static int menufunc_rgb_lighting(void) {
                 rgb_update();
             }
         }
-        if(xQueueReceive(*button_events, &event, 50/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 if(selection < 3) {
                     mode = (mode == 0) ? selection + 1 : 0;
@@ -1206,27 +1206,18 @@ int start_menu_tree(int startmenu, char settings_mode) {
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements) {
     int err;
     static int sizeControl = 0;
-//    static FT_Size_RequestRec ftsize = {
-//        .type = FT_SIZE_REQUEST_TYPE_NOMINAL,
-//        .width = 0,
-//        .height = 0,
-//        .horiResolution = 150,
-//        .vertResolution = 0
-//    };
 
     for (int i = 0; i < numElements; i++) {
-        if (elems[i].hline) {
+        if (elems[i].flags & MENU_FLAG_IS_HLINE) {
             draw_hline(elems[i].y, elems[i].textsize, *(elems[i].col));
             continue;
         }
-        if (elems[i].vline) {
+        if (elems[i].flags & MENU_FLAG_IS_VLINE) {
             draw_vline(elems[i].x, elems[i].textsize, *(elems[i].col));
             continue;
         }
         if (sizeControl != elems[i].textsize) {
             err = FT_Set_Char_Size (typeFace, elems[i].textsize << 6, 0, 100, 0); // 0 = copy last value
-            // ftsize.width = elems[i].textsize << 6;
-            // err = FT_Request_Size(typeFace, &ftsize);
             if (err) {
                 ets_printf("!!error in draw_menu_elements: could not set size.\n");
                 return 1;
@@ -1234,17 +1225,18 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
             sizeControl = elems[i].textsize;
         }
 
-        // ets_printf("%d %d", elems[i].textlen, elems[i].numspaces);
-        // int spriteArray[elems[i].textlen - elems[i].numspaces];
         int numsprs;
         int spriteArray[64];
 
         err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL);
-        if (elems[i].center)
-            // center_sprite_group_x(spriteArray, elems[i].textlen - elems[i].numspaces);
-            center_sprite_group_x(spriteArray, numsprs);
         if (err)
             return err;
+        if (elems[i].flags & MENU_FLAG_CENTER) {
+            center_sprite_group_x(spriteArray, numsprs);
+            continue;
+        }
+        if (elems[i].flags & MENU_FLAG_RIGHT_JUSTIFY)
+            right_justify_sprite_group_x(spriteArray, numsprs, elems[i].x);
     }
     return 0;
 }

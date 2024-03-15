@@ -191,7 +191,7 @@ void center_sprite_group_x(int* sprites, int numsprites) {
         OAM_SPRITE_TABLE[sprites[i]]->posX += offset;
 }
 
-void right_justify_sprite_group_x(int* sprites, int numsprites) {
+void right_justify_sprite_group_x(int* sprites, int numsprites, int pad) {
 	int minX = 320;
     int maxX = 0;
     SPRITE_24_H* spr;
@@ -204,7 +204,7 @@ void right_justify_sprite_group_x(int* sprites, int numsprites) {
     }
     if(minX >= maxX)
         return;
-    int offset = 320 - maxX;
+    int offset = 320 - pad - maxX;
     for(int i=0;i<numsprites;++i)
         OAM_SPRITE_TABLE[sprites[i]]->posX += offset;
 }
