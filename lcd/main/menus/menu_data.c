@@ -186,10 +186,11 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "SET", //Settings menu, will be custom icon later
-        .x = 271,
+        .text = "⚙", //Settings menu, will be custom icon later
+        .x = 2,
         .y = 2,
-        .textsize = 18,
+        .textsize = 22,
+        .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
     },
     {
