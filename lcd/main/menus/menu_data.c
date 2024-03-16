@@ -186,7 +186,7 @@ const MENU_ELEMENT menuhome[] = {
         .col = &foreground_color
     },
     {
-        .text = "⚙", //Settings menu, will be custom icon later
+        .text = "│ ⚙", //Settings menu, will be custom icon later
         .x = 2,
         .y = 2,
         .textsize = 22,
