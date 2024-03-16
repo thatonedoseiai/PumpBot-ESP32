@@ -409,6 +409,11 @@ static int l_flush_text_cache(lua_State* L) {
     return 0;
 }
 
+static int l_delete_all_sprites(lua_State* L) {
+    delete_all_sprites();
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -431,6 +436,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "background_color", l_get_background },
     { "flush_text_cache", l_flush_text_cache },
     { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
+    { "delete_all_sprites", l_delete_all_sprites },
     { NULL, NULL }
 };
 

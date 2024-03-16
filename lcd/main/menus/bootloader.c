@@ -800,7 +800,7 @@ static int menufunc_all_settings(void) {
                 delete_all_sprites();
                 write_to_file(&settings);
                 assign_theme_from_settings();
-                return MENU_POP_FLAG;
+                return MENU_RETURN_FLAG;
             }
         }
     }

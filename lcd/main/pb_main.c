@@ -138,7 +138,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/MeiryoUImid.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/PB-Sans.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	size_t total = 0, used = 0;
@@ -365,7 +365,6 @@ void app_main(void) {
     //     (void) start_menu_tree(0);
     //     // write_to_file(&settings);
     // }
-    (void) start_menu_tree(11, true);
     // (void) start_menu_tree(14, true);
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
@@ -373,13 +372,17 @@ void app_main(void) {
 
 
 
-    send_color(spi, background_color);
-    error = draw_menu_elements(&menuhome[0], typeFace, 14); 
-    draw_all_sprites(spi);
-    delete_all_sprites();
-    if (error)
-        ets_printf("draw menu element\n");
-    (void) luaL_dofile(L, "/mainfs/test.lua");
+    while(true) {
+        send_color(spi, background_color);
+        error = draw_menu_elements(&menuhome[0], typeFace, 14); 
+        draw_all_sprites(spi);
+        delete_all_sprites();
+        if (error)
+            ets_printf("draw menu element\n");
+        (void) luaL_dofile(L, "/mainfs/test.lua");
+        delete_all_sprites();
+        (void) start_menu_tree(11, true);
+    }
 
     // ets_printf("cache size: %d\n", text_cache_size);
 

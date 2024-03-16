@@ -5,11 +5,11 @@ fgcol = l.foreground_color();
 selecting_channels = false
 
 l.set_char_size(12<<6)
-on_text = l.draw_text(89, 16, "n", fgcol, bgcol)
-off_text = l.draw_text(89, 16, "ff", fgcol, bgcol)
+on_text = l.draw_text(85, 16, "n", fgcol, bgcol)
+off_text = l.draw_text(85, 16, "ff", fgcol, bgcol)
 l.set_char_size(18<<6)
-on_btn_text = l.draw_text(21, 2, "N", fgcol, bgcol)
-off_btn_text = l.draw_text(21, 2, "FF", fgcol, bgcol)
+on_btn_text = l.draw_text(19, 2, "N", fgcol, bgcol)
+off_btn_text = l.draw_text(19, 2, "FF", fgcol, bgcol)
 channels_text = {{},{},{},{}}
 channels_text_bg = {}
 for ck=1,4 do
@@ -21,11 +21,11 @@ k=1
 l.set_char_size(42<<6)
 spr = {}
 f=0
-print("lua start")
+-- print("lua start")
 collectgarbage("stop")
 back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
 back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
-back_on_off = l.draw_rectangle(89,240-208-16,12,16,bgcol)
+back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol)
 back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol)
 l.draw_sprites({back,back_btn_text})
 oldrotenc = true
@@ -51,9 +51,8 @@ function update_screen_text(x, y, bg, k, center)
     l.draw_sprites(spr)
 end
 
-print("start loop")
+-- print("start loop")
 update_screen_text(40, 134, {back}, k, true)
--- l.flush_text_cache()
 
 while(true) do
     buttons = l.getgpio()
@@ -111,25 +110,26 @@ while(true) do
             l.draw_sprites({channels_text_bg[k]})
             l.draw_sprites(channels_text[k])
             l.sprite_move_x({back_small}, xs[k])
-            l.sprite_move_x({back_on_off}, xs[k]+31)
-            l.sprite_move_x(on_text, xs[k]+31)
-            l.sprite_move_x({off_text[1]}, xs[k]+31)
-            l.sprite_move_x({off_text[2]}, xs[k]+37)
+            l.sprite_move_x({back_on_off}, xs[k]+27)
+            l.sprite_move_x(on_text, xs[k]+27)
+            l.sprite_move_x({off_text[1]}, xs[k]+27)
+            l.sprite_move_x({off_text[2]}, xs[k]+33)
             update_screen_text(40, 134, {back}, k, true)
         end
     end
 end
 
 l.enable_text_cache_auto_delete(true);
-delete_sprite(on_text[1])
-delete_sprite(off_text[1])
-delete_sprite(off_text[2])
-delete_sprite(on_btn_text[1])
-delete_sprite(off_btn_text[1])
-delete_sprite(off_btn_text[2])
-delete_sprite(back_small)
-delete_sprite(back_on_off)
-delete_sprite(back_btn_text)
-delete_sprite(back)
+-- delete_sprite(on_text[1])
+-- delete_sprite(off_text[1])
+-- delete_sprite(off_text[2])
+-- delete_sprite(on_btn_text[1])
+-- delete_sprite(off_btn_text[1])
+-- delete_sprite(off_btn_text[2])
+-- delete_sprite(back_small)
+-- delete_sprite(back_on_off)
+-- delete_sprite(back_btn_text)
+-- delete_sprite(back)
 -- delete_sprite(largenums)
 -- delete_sprite(smolnums)
+delete_all_sprites()
