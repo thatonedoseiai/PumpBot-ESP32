@@ -65,6 +65,7 @@ int find_empty_index(uint8_t* inds) {
             return i;
 		i=(i+1)%OAM_SIZE;
     } while(i!=last_index);
+	ets_printf("no free sprite indices!\n");
     return -1;
 }
 
@@ -143,19 +144,26 @@ void delete_all_sprites() {
 void delete_sprite(int sprite) {
     SPRITE_BITMAP* bt = OAM_SPRITE_TABLE[sprite]->bitmap;
     bt->refcount--;
-    if(text_cache_auto_delete && bt->refcount == 0) {
-        free(bt);
-        for(int i=0;i<text_cache_size;++i) {
+	int i;
+    if(bt->refcount == 0) {
+        for(i=0;i<text_cache_size;++i) {
             if(bitmap_cache[i] == bt) {
-                bitmap_cache[i] = bitmap_cache[text_cache_size-1];
-                text_cache[i] = text_cache[text_cache_size-1];
-                text_size_cache[i] = text_size_cache[text_cache_size-1];
-				fg_cache[i] = fg_cache[text_cache_size-1];
-				bg_cache[i] = bg_cache[text_cache_size-1];
-                text_cache_size--;
+				if(text_cache_auto_delete) {
+					bitmap_cache[i] = bitmap_cache[text_cache_size-1];
+					text_cache[i] = text_cache[text_cache_size-1];
+					text_size_cache[i] = text_size_cache[text_cache_size-1];
+					fg_cache[i] = fg_cache[text_cache_size-1];
+					bg_cache[i] = bg_cache[text_cache_size-1];
+					text_cache_size--;
+				}
                 break;
             }
         }
+		if(i == text_cache_size || text_cache_auto_delete) {
+			free(bt->c);
+			free(bt);
+		}
+		// free(bt);
     }
 	free(OAM_SPRITE_TABLE[sprite]);
 	OAM_SPRITE_TABLE[sprite] = NULL;
@@ -163,12 +171,17 @@ void delete_sprite(int sprite) {
 
 int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col) {
 	uint24_RGB* spritebuf = (uint24_RGB*) malloc(sizeX * sizeY * 3);
+	if(!spritebuf) {
+		ets_printf("yes, blue, we ran out of memory. Free: %d\n", esp_get_free_heap_size());
+	}
 	SPRITE_BITMAP* bitmap = malloc(sizeof(SPRITE_BITMAP));
 	for(int i=0;i<sizeY*sizeX;++i) {
-		spritebuf[i] = *col;
+		spritebuf[i].pixelR = col->pixelR;
+		spritebuf[i].pixelG = col->pixelG;
+		spritebuf[i].pixelB = col->pixelB;
 	}
 	bitmap->c = spritebuf;
-	bitmap->refcount = 1;
+	bitmap->refcount = 0;
 	return init_sprite(bitmap, posX, 240-posY-sizeY, sizeX, sizeY, false, false, true);
 }
 

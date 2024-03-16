@@ -209,6 +209,9 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
         sprite_rectangle(xs[i], 113, 26, 27, background_color);
     draw_text(0, 120, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
     for(int i=0;i<9;++i) {
+        if(OAM_SPRITE_TABLE[sprs[i]] == NULL) {
+            ets_printf("accessing deleted sprite!\n");
+        }
         OAM_SPRITE_TABLE[sprs[i]]->posX = xs[i];
     }
     draw_all_sprites(spi);
@@ -237,6 +240,7 @@ static int menufunc_text_write(void) {
     draw_text(147, 88, "^", typeFace, NULL, NULL, foreground_color, background_color);
     draw_textreel(curtable, selection, &loc);
 
+    set_text_cache_auto_delete(false);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
@@ -288,6 +292,8 @@ static int menufunc_text_write(void) {
             draw_textreel(curtable, selection, &loc);
         }
     }
+    set_text_cache_auto_delete(true);
+    flush_text_cache();
     return MENU_POP_FLAG;
 }
 

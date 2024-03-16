@@ -185,6 +185,9 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 	esp_err_t ret;
 	int x;
 	static spi_transaction_t trans[6];
+	
+	if(sx > 320)
+		return;
 
 	for (x=0; x<6; x++) {
 		memset(&trans[x], 0, sizeof(spi_transaction_t));
