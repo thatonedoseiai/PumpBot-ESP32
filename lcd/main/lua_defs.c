@@ -29,7 +29,7 @@ extern spi_device_handle_t spi;
 extern pwm_fade_info_t pfade_channels[8];
 extern QueueHandle_t* button_events;
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol) {
+int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -44,6 +44,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
     uint8_t alphaR, alphaG, alphaB;
     uint24_RGB* bg;
     uint64_t advance_x;
+    int yloc = startY;
     uint16_t width;
     uint16_t height;
     FT_Int bmp_top;
@@ -60,10 +61,17 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         for(int x=0;x<text_cache_size;++x) {
             if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
                 bmp = bitmap_cache[x];
-                bmp_top = 240 - y_loc_cache[x] - startY;
+                bmp_top = 240 - y_loc_cache[x] - yloc;
                 advance_x = advance_x_cache[x];
                 width = width_cache[x];
                 height = height_cache[x];
+
+                if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+                    yloc -= newline_offset;
+                    offset.y = yloc << 6;
+                    offset.x = startX << 6;
+                    bmp_top += newline_offset;
+                }
                 goto skip_bitmap_assignment;
             }
         }
@@ -91,6 +99,12 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
         advance_x = slot->advance.x;
         width = slot->bitmap.width;
         height = slot->bitmap.rows/3;
+        if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+            yloc -= newline_offset;
+            offset.y = yloc << 6;
+            offset.x = startX << 6;
+            bmp_top += newline_offset;
+        }
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
@@ -98,7 +112,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
             bitmap_cache[text_cache_size] = bmp;
             text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             advance_x_cache[text_cache_size] = advance_x;
-            y_loc_cache[text_cache_size] = 240 - startY - bmp_top;
+            y_loc_cache[text_cache_size] = 240 - yloc - bmp_top;
             width_cache[text_cache_size] = width;
             height_cache[text_cache_size] = height;
             text_cache_size++;
@@ -156,7 +170,7 @@ static int l_draw_text(lua_State* L) {
     bgcol.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 6);
 
-    draw_text(x, y, str, typeFace, sprites, NULL, &fgcol, &bgcol);
+    draw_text(x, y, str, typeFace, sprites, NULL, &fgcol, &bgcol, 0);
     lua_newtable(L);
     for(int i=1;i<=len;++i) {
         lua_pushnumber(L, i);

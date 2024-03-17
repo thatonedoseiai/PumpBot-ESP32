@@ -68,7 +68,7 @@ static int menufunc_setup(void) {
             currlang = ((unsigned) rotencev.state.position) % 3;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
-            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color);
+            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color, 0);
             draw_all_sprites(spi);
             delete_all_sprites();
         }
@@ -83,7 +83,7 @@ static void draw_options(char** options, int bgrect) {
     OAM_SPRITE_TABLE[bgrect]->draw = true;
     for(int i=0;i<5;++i) {
         if(options[i] != NULL) {
-            draw_text(0, ys[i], options[i], typeFace, &sprs[0], &name_length, foreground_color, background_color);
+            draw_text(0, ys[i], options[i], typeFace, &sprs[0], &name_length, foreground_color, background_color, 0);
             // name_length = strlen(options[i]);
             center_sprite_group_x(sprs, name_length);
         }
@@ -116,7 +116,7 @@ static int menufunc_wifi_scan() {
     int cursor;
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     OAM_SPRITE_TABLE[cursor]->draw = false;
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -207,7 +207,7 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
     visibleBuffer[substrend] = 0;
     for(int i=0;i<9;++i)
         sprite_rectangle(xs[i], 26, 26, 27, background_color);
-    draw_text(0, 33, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
+    draw_text(0, 33, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color, 0);
     for(int i=0;i<9;++i) {
         OAM_SPRITE_TABLE[sprs[i]]->posX = xs[i];
     }
@@ -231,10 +231,10 @@ static int menufunc_text_write(void) {
     unsigned int selection = 0;
     unsigned int curtable = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(300, 5, "a", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(147, 51, "▿", typeFace, NULL, NULL, foreground_color, background_color);
-    // draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 24);
+    draw_text(300, 5, "a", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(147, 51, "▿", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    // draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_textreel(curtable, selection, &loc);
 
     set_text_cache_auto_delete(false);
@@ -243,10 +243,10 @@ static int menufunc_text_write(void) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
                 sprite_rectangle(300, 0, 20, 22, background_color);
-                draw_text(300, 5, tablename[curtable], typeFace, NULL, NULL, foreground_color, background_color);
+                draw_text(300, 5, tablename[curtable], typeFace, NULL, NULL, foreground_color, background_color, 0);
                 draw_textreel(curtable, selection, &loc);
             }
-            if(event.pin == 18 && event.event == BUTTON_DOWN && numtyped < 64) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 selectedchar = loc + utf8substrlen((char*) loc, 4);
                 // ets_printf("typing!\n");
                 if(selectedchar[0] == 0xe2 &&
@@ -259,23 +259,29 @@ static int menufunc_text_write(void) {
                     // ets_printf("input: %s\n", ibuf);
                 } else if(selectedchar[0] == 0xe2 &&
                         selectedchar[1] == 0x9c &&
-                        selectedchar[2] == 0x93) {
+                        selectedchar[2] == 0x93 && numtyped < 128) {
                     break;
                 } else if(selectedchar[0] == 0xe2 &&
                         selectedchar[1] == 0x90 &&
-                        selectedchar[2] == 0xa3) {
+                        selectedchar[2] == 0xa3 && numtyped < 128) {
                     ibuf[cursor] = ' ';
                     cursor++;
                     // ets_printf("input: %s\n", ibuf);
                     numtyped++;
-                } else {
+                } else if (numtyped < 128){
                     utf8cpychr(&ibuf[cursor], (char*) selectedchar, &cursor);
                     // ets_printf("input: %s\n", ibuf);
                     numtyped++;
                 }
-                sprite_rectangle(0, 191, 320, 14, background_color);
-                sprite_rectangle(0, 179, 320, 12, background_color);
-                draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
+                int r = sprite_rectangle(0, 191, 320, 16, background_color);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+16, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+32, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+48, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+64, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+80, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+96, 320, 16, false, false, true);
+                draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 24);
                 draw_all_sprites(spi);
                 delete_all_sprites();
             } 
@@ -350,11 +356,11 @@ static int menufunc_network_preview(void) {
     }
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
 
-    draw_text(32, 184, "Network", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Password", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color);
+    draw_text(32, 184, "Network", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Password", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color, 0);
     center_sprite_group_x(k, lenk);
-    draw_text(32, 88, "Connect", typeFace, k, &lenk, foreground_color, background_color);
+    draw_text(32, 88, "Connect", typeFace, k, &lenk, foreground_color, background_color, 0);
     center_sprite_group_x(k, lenk);
     if(strlen(settings.wifi_name) > 10) {
         for(int i=0;i<10;++i) {
@@ -364,9 +370,9 @@ static int menufunc_network_preview(void) {
         namebuf[12] = '.';
         namebuf[13] = '.';
         namebuf[14] = 0;
-        draw_text(150, 184, namebuf, typeFace, NULL, NULL, foreground_color, background_color);
+        draw_text(150, 184, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     } else {
-        draw_text(150, 184, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color);
+        draw_text(150, 184, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
     }
     if(strlen(settings.wifi_pass) > 10) {
         for(int i=0;i<10;++i) {
@@ -376,16 +382,16 @@ static int menufunc_network_preview(void) {
         namebuf[12] = '.';
         namebuf[13] = '.';
         namebuf[14] = 0;
-        draw_text(150, 152, namebuf, typeFace, NULL, NULL, foreground_color, background_color);
+        draw_text(150, 152, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     } else {
-        draw_text(150, 152, &settings.wifi_pass[0], typeFace, NULL, NULL, foreground_color, background_color);
+        draw_text(150, 152, &settings.wifi_pass[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
     }
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
     int cursor;
     int selection = 0;
-    draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -397,7 +403,7 @@ static int menufunc_network_preview(void) {
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
-                // draw_text(0, 88, );
+                // draw_text(0, 88, , 0);
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
@@ -444,20 +450,20 @@ static int menufunc_pb_setup_method (void) {
     int tooltip_bg = sprite_rectangle(0, 25, 320, 16, background_color);
     int tooltip_bg2 = sprite_rectangle(0, 41, 320, 16, background_color);
     int tooltip_bg3 = sprite_rectangle(0, 57, 320, 16, background_color);
-    draw_text(0, 52, options_1, typeFace, tooltip_1, &lentt, foreground_color, background_color);
+    draw_text(0, 52, options_1, typeFace, tooltip_1, &lentt, foreground_color, background_color, 0);
     center_sprite_group_x(tooltip_1, lentt);
-    draw_text(0, 34, options_2, typeFace, tooltip_1 + lentt, &lenttline2, foreground_color, background_color);
+    draw_text(0, 34, options_2, typeFace, tooltip_1 + lentt, &lenttline2, foreground_color, background_color, 0);
     center_sprite_group_x(tooltip_1+lentt, lenttline2);
-    draw_text(0, 52, options_3, typeFace, tooltip_2, &lentt, foreground_color, background_color);
+    draw_text(0, 52, options_3, typeFace, tooltip_2, &lentt, foreground_color, background_color, 0);
     center_sprite_group_x(tooltip_2, lentt);
-    draw_text(0, 34, options_4, typeFace, tooltip_2+lentt, &lenttline2, foreground_color, background_color);
+    draw_text(0, 34, options_4, typeFace, tooltip_2+lentt, &lenttline2, foreground_color, background_color, 0);
     center_sprite_group_x(tooltip_2+lentt, lenttline2);
     for(int i=0;i<44;++i) {
         OAM_SPRITE_TABLE[tooltip_2[i]]->draw = false;
     }
     int cursorbg = sprite_rectangle(10, 120, 20, 16, background_color);
     int cursor;
-    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -508,12 +514,12 @@ static int menufunc_display_settings(void) {
     unsigned char selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprite_rectangle(0, 216, 320, 16, background_color);
-    draw_text(0, 216, "Display Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "Display Settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(150, 184, bright, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Theme", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(150, 184, bright, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Theme", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
@@ -522,7 +528,7 @@ static int menufunc_display_settings(void) {
     int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
     OAM_SPRITE_TABLE[bright_rec]->draw = false;
     OAM_SPRITE_TABLE[theme_rec]->draw = false;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     int num_brspr;
     int br_sprite[4]; 
@@ -545,7 +551,7 @@ static int menufunc_display_settings(void) {
                     settings.disp_brightness = 0;
                 }
                 (void) itoa(settings.disp_brightness, bright, 10);
-                draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, &hicolor, background_color);
+                draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, &hicolor, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<num_brspr;++i)
                     delete_sprite(br_sprite[i]);
@@ -554,7 +560,7 @@ static int menufunc_display_settings(void) {
                 break;
             case 2:
                 settings.disp_theme = (settings.disp_theme + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
-                draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, &hicolor, background_color);
+                draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, &hicolor, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<num_themespr;++i)
                     delete_sprite(theme_sprite[i]);
@@ -581,8 +587,8 @@ static int menufunc_display_settings(void) {
                 mode = mode == 0 ? selection + 1 : 0;
                 switch(mode) {
                 case 0:
-                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, foreground_color, background_color);
-                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, foreground_color, background_color);
+                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, foreground_color, background_color, 0);
+                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, foreground_color, background_color, 0);
                     draw_all_sprites(spi);
                     for(int i=0;i<num_brspr;++i)
                         delete_sprite(br_sprite[i]);
@@ -592,14 +598,14 @@ static int menufunc_display_settings(void) {
                     OAM_SPRITE_TABLE[theme_rec]->draw = false;
                     break;
                 case 1:
-                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, &RED, background_color);
+                    draw_text(150, 184, bright, typeFace, br_sprite, &num_brspr, &RED, background_color, 0);
                     draw_all_sprites(spi);
                     for(int i=0;i<num_brspr;++i)
                         delete_sprite(br_sprite[i]);
                     OAM_SPRITE_TABLE[bright_rec]->draw = true;
                     break;
                 case 2:
-                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, &RED, background_color);
+                    draw_text(150, 152, theme_names[settings.disp_theme], typeFace, theme_sprite, &num_themespr, &RED, background_color, 0);
                     draw_all_sprites(spi);
                     for(int i=0;i<num_themespr;++i)
                         delete_sprite(theme_sprite[i]);
@@ -633,23 +639,23 @@ static int menufunc_color_picker(void) {
     int mode = 0;
     unsigned char buffer[3] = {colorbuf->pixelR, colorbuf->pixelG, colorbuf->pixelB};
     char numbuf[3];
-    draw_text(0, 216, "Pick a Color", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "Pick a Color", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Red", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Green", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Blue", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(32, 184, "Red", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Green", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 120, "Blue", typeFace, NULL, NULL, foreground_color, background_color, 0);
     (void) itoa(buffer[0], numbuf, 10);
-    draw_text(150, 184, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(150, 184, numbuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     (void) itoa(buffer[1], numbuf, 10);
-    draw_text(150, 152, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(150, 152, numbuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     (void) itoa(buffer[2], numbuf, 10);
-    draw_text(150, 120, numbuf, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(10, 184, ">", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(150, 120, numbuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(10, 184, ">", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     int red_rec = sprite_rectangle(150, 184, 100, 16, background_color);
     int green_rec = sprite_rectangle(150, 152, 100, 16, background_color);
     int blue_rec = sprite_rectangle(150, 120, 100, 16, background_color);
@@ -669,7 +675,7 @@ static int menufunc_color_picker(void) {
             default:
                 buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 255) % 256;
                 (void) itoa(buffer[selection], numbuf, 10);
-                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, &RED, background_color);
+                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, &RED, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
                     delete_sprite(sprs[i]);
@@ -682,7 +688,7 @@ static int menufunc_color_picker(void) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 mode = (mode == 0) ? selection + 1 : 0;
                 (void) itoa(buffer[selection], numbuf, 10);
-                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, (mode == 0) ? foreground_color : &RED, background_color);
+                draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, (mode == 0) ? foreground_color : &RED, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
                     delete_sprite(sprs[i]);
@@ -729,9 +735,9 @@ static int menufunc_add_on_settings(void) {
     int sprs[14];
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprite_rectangle(85, 211, 150, 21, background_color);
-    draw_text(0, 216, "Add-on Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
-    draw_text(32, 184, "Pressure Units", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(0, 216, "Add-on Settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    draw_text(32, 184, "Pressure Units", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, NULL, NULL, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_all_sprites(spi);
     delete_all_sprites();
@@ -739,7 +745,7 @@ static int menufunc_add_on_settings(void) {
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             settings.pressure_units = (settings.pressure_units + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1)) % 4;
-            draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, sprs, &numsprs, foreground_color, background_color);
+            draw_text(190, 184, pressure_names[settings.pressure_units], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
             draw_all_sprites(spi);
             for(int i=0;i<numsprs;++i)
                 delete_sprite(sprs[i]);
@@ -778,9 +784,9 @@ static int menufunc_all_settings(void) {
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
-    draw_text(0, 216, "Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "Settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_options((char**)settings_en, textbg);
     for(int i=0;i<numsprs;++i)
@@ -824,17 +830,17 @@ static int menufunc_pwm_output_settings(void) {
     int selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprite_rectangle(85, 211, 150, 21, background_color);
-    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Output 0", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Output 1", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Output 2", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 88, "Output 3", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(32, 184, "Output 0", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Output 1", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 120, "Output 2", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 88, "Output 3", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -874,23 +880,23 @@ static int menufunc_pwm_output_set(void) {
     int mode = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
-    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color, 0);
     sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
-    draw_text(200, 152, percentage, typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 152, percentage, typeFace, NULL, NULL, foreground_color, background_color, 0);
     sprite_rectangle(85, 211, 150, 21, background_color);
-    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "PWM settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Minimum PWM", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Maximum PWM", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Setup Wizard", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 88, "Output Mode", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(32, 184, "Minimum PWM", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Maximum PWM", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 120, "Setup Wizard", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 88, "Output Mode", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
     int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -916,7 +922,7 @@ static int menufunc_pwm_output_set(void) {
                         settings.pwm_min_limit[selected_pwm] = 0;
                 }
                 sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
-                draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color);
+                draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<num_minsprs;++i)
                     delete_sprite(minsprs[i]);
@@ -935,7 +941,7 @@ static int menufunc_pwm_output_set(void) {
                         settings.pwm_max_limit[selected_pwm] = 0;
                 }
                 sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
-                draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color, 0);
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
                     delete_sprite(sprs[i]);
@@ -949,9 +955,9 @@ static int menufunc_pwm_output_set(void) {
                     case 0:
                         OAM_SPRITE_TABLE[textbg]->draw = false;
                         sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
-                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, foreground_color, background_color);
+                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, foreground_color, background_color, 0);
                         sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
-                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, foreground_color, background_color);
+                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, foreground_color, background_color, 0);
                         draw_all_sprites(spi);
                         for(int i=0;i<numsprs;++i)
                             delete_sprite(sprs[i]);
@@ -962,7 +968,7 @@ static int menufunc_pwm_output_set(void) {
                         OAM_SPRITE_TABLE[textbg]->draw = true;
                         OAM_SPRITE_TABLE[textbg]->posY = 240-21-184;
                         sprintf(percentage, "%d%%", settings.pwm_min_limit[selected_pwm] / 163);
-                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color);
+                        draw_text(200, 184, percentage, typeFace, minsprs, &num_minsprs, hicolor, background_color, 0);
                         draw_all_sprites(spi);
                         for(int i=0;i<num_minsprs;++i)
                             delete_sprite(minsprs[i]);
@@ -971,7 +977,7 @@ static int menufunc_pwm_output_set(void) {
                         OAM_SPRITE_TABLE[textbg]->draw = true;
                         OAM_SPRITE_TABLE[textbg]->posY = 240-21-152;
                         sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
-                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                        draw_text(200, 152, percentage, typeFace, sprs, &numsprs, hicolor, background_color, 0);
                         draw_all_sprites(spi);
                         for(int i=0;i<numsprs;++i)
                             delete_sprite(sprs[i]);
@@ -982,7 +988,7 @@ static int menufunc_pwm_output_set(void) {
                     OAM_SPRITE_TABLE[textbg]->draw = true;
                     OAM_SPRITE_TABLE[textbg]->posY = 240-16-88;
                     settings.output_set_on_off_only[selected_pwm] = !settings.output_set_on_off_only[selected_pwm];
-                    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, sprs, &numsprs, foreground_color, background_color);
+                    draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? digital_mode : analog_mode, typeFace, sprs, &numsprs, foreground_color, background_color, 0);
                     draw_all_sprites(spi);
                     for(int i=0;i<numsprs;++i)
                         delete_sprite(sprs[i]);
@@ -1022,25 +1028,25 @@ static int menufunc_rgb_lighting(void) {
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprintf(percentage, "%d%%", settings.RGB_brightness / 163);
     sprintf(speed_val, "%d", settings.RGB_speed);
-    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(200, 120, speed_val, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(200, 184, percentage, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(200, 120, speed_val, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, NULL, NULL, foreground_color, background_color, 0);
     sprite_rectangle(85, 211, 150, 21, background_color);
-    draw_text(0, 216, "RGB Settings", typeFace, sprs, &numsprs, foreground_color, background_color);
+    draw_text(0, 216, "RGB Settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 152, "Mode", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 120, "Speed", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 88, "Color 1", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(32, 56, "Color 2", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(32, 184, "Brightness", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, "Mode", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 120, "Speed", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 88, "Color 1", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 56, "Color 2", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour);
     sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2);
     draw_all_sprites(spi);
     delete_all_sprites();
     int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
     int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -1065,7 +1071,7 @@ static int menufunc_rgb_lighting(void) {
                         settings.RGB_brightness = 0;
                 }
                 sprintf(percentage, "%d%%", settings.RGB_brightness / 163);
-                draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color, 0);
                 OAM_SPRITE_TABLE[textbg]->draw = true;
                 draw_all_sprites(spi);
                 for(int i=0;i<numsprs;++i)
@@ -1074,7 +1080,7 @@ static int menufunc_rgb_lighting(void) {
                 break;
             case 2:
                 settings.RGB_mode = (settings.RGB_mode + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
-                draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color);
+                draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color, 0);
                 OAM_SPRITE_TABLE[textbg]->draw = true;
                 draw_all_sprites(spi);
                 for(int i=0;i<numcodesprs;++i)
@@ -1094,7 +1100,7 @@ static int menufunc_rgb_lighting(void) {
                         settings.RGB_speed = 1;
                 }
                 sprintf(speed_val, "%d", settings.RGB_speed);
-                draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color);
+                draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color, 0);
                 OAM_SPRITE_TABLE[textbg]->draw = true;
                 draw_all_sprites(spi);
                 for(int i=0;i<numspeedsprs;++i)
@@ -1108,9 +1114,9 @@ static int menufunc_rgb_lighting(void) {
                     mode = (mode == 0) ? selection + 1 : 0;
                     switch(mode) {
                     case 0:
-                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, foreground_color, background_color);
-                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, foreground_color, background_color);
-                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, foreground_color, background_color);
+                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, foreground_color, background_color, 0);
+                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, foreground_color, background_color, 0);
                         OAM_SPRITE_TABLE[textbg]->draw = false;
                         draw_all_sprites(spi);
                         for(int i=0;i<numsprs;++i)
@@ -1121,7 +1127,7 @@ static int menufunc_rgb_lighting(void) {
                             delete_sprite(speedsprs[i]);
                         break;
                     case 1:
-                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color);
+                        draw_text(200, 184, percentage, typeFace, sprs, &numsprs, hicolor, background_color, 0);
                         OAM_SPRITE_TABLE[textbg]->draw = true;
                         OAM_SPRITE_TABLE[textbg]->posY = 240-21-184;
                         draw_all_sprites(spi);
@@ -1129,7 +1135,7 @@ static int menufunc_rgb_lighting(void) {
                             delete_sprite(sprs[i]);
                         break;
                     case 2:
-                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color);
+                        draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode], typeFace, codesprs, &numcodesprs, hicolor, background_color, 0);
                         OAM_SPRITE_TABLE[textbg]->draw = true;
                         OAM_SPRITE_TABLE[textbg]->posY = 240-21-152;
                         draw_all_sprites(spi);
@@ -1137,7 +1143,7 @@ static int menufunc_rgb_lighting(void) {
                             delete_sprite(codesprs[i]);
                         break;
                     case 3:
-                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color);
+                        draw_text(200, 120, speed_val, typeFace, speedsprs, &numspeedsprs, hicolor, background_color, 0);
                         OAM_SPRITE_TABLE[textbg]->draw = true;
                         OAM_SPRITE_TABLE[textbg]->posY = 240-21-120;
                         draw_all_sprites(spi);
@@ -1235,7 +1241,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
         int numsprs;
         int spriteArray[64];
 
-        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL);
+        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL, 0);
         if (err)
             return err;
         if (elems[i].flags & MENU_FLAG_CENTER) {
