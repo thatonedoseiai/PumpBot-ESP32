@@ -206,12 +206,9 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
     }
     visibleBuffer[substrend] = 0;
     for(int i=0;i<9;++i)
-        sprite_rectangle(xs[i], 49, 26, 27, background_color);
-    draw_text(0, 56, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
+        sprite_rectangle(xs[i], 26, 26, 27, background_color);
+    draw_text(0, 33, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
     for(int i=0;i<9;++i) {
-        if(OAM_SPRITE_TABLE[sprs[i]] == NULL) {
-            ets_printf("accessing deleted sprite!\n");
-        }
         OAM_SPRITE_TABLE[sprs[i]]->posX = xs[i];
     }
     draw_all_sprites(spi);
@@ -236,8 +233,8 @@ static int menufunc_text_write(void) {
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
     draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
     draw_text(300, 5, "a", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(147, 83, "▿", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(147, 51, "▿", typeFace, NULL, NULL, foreground_color, background_color);
+    // draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color);
     draw_textreel(curtable, selection, &loc);
 
     set_text_cache_auto_delete(false);
@@ -1166,7 +1163,7 @@ MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
     {&menusetup3[0], 9, menufunc_wifi_scan},
-    {&menusetup3[0], 9, menufunc_text_write},
+    {&menutextenter[0], 4, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
     {&menusetup2a[0], 3, menufunc_http_setup},
     {&menusetup3[0], 10, menufunc_network_preview},

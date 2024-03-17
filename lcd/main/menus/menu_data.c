@@ -629,6 +629,36 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     }
 };
 
+const MENU_ELEMENT menutextenter[] = {
+    {
+        .text = "Enter Text",
+        .x = 0,
+        .y = 216,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {      
+        .y = 208,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 24,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Back",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    }
+};
+
 const MENU_ELEMENT menusetupdone[] = {
        {
         .text = "Setup Complete!",

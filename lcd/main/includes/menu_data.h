@@ -12,7 +12,6 @@ extern const MENU_ELEMENT menuwifistarting[];
 extern const MENU_ELEMENT menusetup2a[];
 extern const MENU_ELEMENT menusetup3[];
 extern const MENU_ELEMENT menusetupdone[];
-extern const MENU_ELEMENT welcome_menu[];
-extern const MENU_ELEMENT text_test[];
+extern const MENU_ELEMENT menutextenter[];
 
 #endif
