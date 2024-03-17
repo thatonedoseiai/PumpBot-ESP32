@@ -206,8 +206,8 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
     }
     visibleBuffer[substrend] = 0;
     for(int i=0;i<9;++i)
-        sprite_rectangle(xs[i], 113, 26, 27, background_color);
-    draw_text(0, 120, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
+        sprite_rectangle(xs[i], 49, 26, 27, background_color);
+    draw_text(0, 56, (char*) visibleBuffer, typeFace, sprs, NULL, foreground_color, background_color);
     for(int i=0;i<9;++i) {
         if(OAM_SPRITE_TABLE[sprs[i]] == NULL) {
             ets_printf("accessing deleted sprite!\n");
@@ -235,9 +235,9 @@ static int menufunc_text_write(void) {
     unsigned int curtable = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
     draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(300, 3, "a", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(147, 152, "v", typeFace, NULL, NULL, foreground_color, background_color);
-    draw_text(147, 88, "^", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(300, 5, "a", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(147, 83, "▿", typeFace, NULL, NULL, foreground_color, background_color);
+    draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color);
     draw_textreel(curtable, selection, &loc);
 
     set_text_cache_auto_delete(false);
@@ -246,7 +246,7 @@ static int menufunc_text_write(void) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
                 sprite_rectangle(300, 0, 20, 22, background_color);
-                draw_text(300, 3, tablename[curtable], typeFace, NULL, NULL, foreground_color, background_color);
+                draw_text(300, 5, tablename[curtable], typeFace, NULL, NULL, foreground_color, background_color);
                 draw_textreel(curtable, selection, &loc);
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN && numtyped < 64) {
