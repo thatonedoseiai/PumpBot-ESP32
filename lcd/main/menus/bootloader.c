@@ -281,6 +281,8 @@ static int menufunc_text_write(void) {
                 init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+64, 320, 16, false, false, true);
                 init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+80, 320, 16, false, false, true);
                 init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+96, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+112, 320, 16, false, false, true);
+                init_sprite(OAM_SPRITE_TABLE[r]->bitmap, 0, 240-191+128, 320, 12, false, false, true);
                 draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 24);
                 draw_all_sprites(spi);
                 delete_all_sprites();
