@@ -282,6 +282,8 @@ static int menufunc_text_write(void) {
                 draw_all_sprites(spi);
                 delete_all_sprites();
             } 
+            if(event.pin == 0 && event.event == BUTTON_DOWN)
+                break;
         }
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
@@ -346,6 +348,7 @@ static int menufunc_network_preview(void) {
     if(ibuf != NULL) {
         strncpy(settings.wifi_pass, ibuf, 64);
         free(ibuf);
+        ets_printf("freeing ibuf from %p; %d\n", ibuf, esp_get_free_heap_size());
         ibuf = NULL;
     }
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
@@ -408,6 +411,7 @@ static int menufunc_network_preview(void) {
                     return MENU_POP_FLAG;
                 case 1:
                     ibuf = calloc(256, sizeof(char));
+                    ets_printf("mallocing ibuf @ %p; %d\n", ibuf, esp_get_free_heap_size());
                     strcpy(ibuf, &settings.wifi_pass[0]);
                     delete_all_sprites();
                     return 3;
@@ -1251,8 +1255,10 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
 
 int draw_hline(int y, int thickness, uint24_RGB* colour) {
     uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));
+    ets_printf("mallocing spritebuf for hline @ y=%d %p thickness %d; %d\n", y, spriteBuf, thickness, esp_get_free_heap_size());
     SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
-    bmp->refcount = 1;
+    ets_printf("mallocing bitmap for hline @ y=%d %p thickness %d; %d\n", y, bmp, thickness, esp_get_free_heap_size());
+    bmp->refcount = 0;
     bmp->c = spriteBuf;
     for(int p=0;p<320*thickness;p++) {
         spriteBuf[p].pixelB = colour->pixelB;
@@ -1264,8 +1270,10 @@ int draw_hline(int y, int thickness, uint24_RGB* colour) {
 
 int draw_vline(int x, int thickness, uint24_RGB* colour) {
     uint24_RGB* spriteBuf = (uint24_RGB*) malloc(240*thickness*sizeof(uint24_RGB));
+    ets_printf("mallocing bitmap for vline @ x=%d %p thickness %d; %d\n", x, spriteBuf, thickness, esp_get_free_heap_size());
     SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
-    bmp->refcount = 1;
+    ets_printf("mallocing bitmap for vline @ x=%d %p thickness %d; %d\n", x, bmp, thickness, esp_get_free_heap_size());
+    bmp->refcount = 0;
     bmp->c = spriteBuf;
     for(int p=0;p<240*thickness;p++) {
         spriteBuf[p].pixelB = colour->pixelB;

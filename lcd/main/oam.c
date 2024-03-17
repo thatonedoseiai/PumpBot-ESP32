@@ -47,7 +47,10 @@ void flush_text_cache() {
 	// memset(width_cache, 0, text_cache_size);
 	// memset(height_cache, 0, text_cache_size);
 	for(int i=0;i<text_cache_size;++i) {
+		free(bitmap_cache[i]->c);
+		ets_printf("freeing bitmap cache entry @ %p; %d\n", bitmap_cache[i]->c, esp_get_free_heap_size());
 		free(bitmap_cache[i]);
+		ets_printf("freeing bitmap cache entry @ %p; %d\n", bitmap_cache[i], esp_get_free_heap_size());
 	}
 	text_cache_size = 0;
 }
@@ -83,6 +86,7 @@ void init_oam() {
 
 int init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, bool flipX, bool flipY, bool draw) {
 	SPRITE_24_H* sprite = (SPRITE_24_H*) malloc(sizeof(SPRITE_24_H));
+	ets_printf("mallocing sprite metadata @ %d %d %p; %d\n", posX, posY, sprite, esp_get_free_heap_size());
     bitmap->refcount++;
 	sprite->bitmap = bitmap;
 	sprite->posX = posX;
@@ -139,6 +143,7 @@ void delete_all_sprites() {
 			delete_sprite(i);
 		}
 	}
+	ets_printf("FREE SIZE: %d\n", esp_get_free_heap_size());
 }
 
 void delete_sprite(int sprite) {
@@ -160,21 +165,26 @@ void delete_sprite(int sprite) {
             }
         }
 		if(i == text_cache_size || text_cache_auto_delete) {
+			ets_printf("freeing sprite spritebuf @ %d %d %p; %d\n", OAM_SPRITE_TABLE[sprite]->posX, OAM_SPRITE_TABLE[sprite]->posY, bt->c, esp_get_free_heap_size());
 			free(bt->c);
+			ets_printf("freeing sprite bitmap @ %d %d %p; %d\n", OAM_SPRITE_TABLE[sprite]->posX, OAM_SPRITE_TABLE[sprite]->posY, bt, esp_get_free_heap_size());
 			free(bt);
 		}
 		// free(bt);
     }
 	free(OAM_SPRITE_TABLE[sprite]);
+	ets_printf("freeing sprite @ %d %d %p; %d\n", OAM_SPRITE_TABLE[sprite]->posX, OAM_SPRITE_TABLE[sprite]->posY, OAM_SPRITE_TABLE[sprite], esp_get_free_heap_size());
 	OAM_SPRITE_TABLE[sprite] = NULL;
 }
 
 int sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col) {
 	uint24_RGB* spritebuf = (uint24_RGB*) malloc(sizeX * sizeY * 3);
-	if(!spritebuf) {
-		ets_printf("yes, blue, we ran out of memory. Free: %d\n", esp_get_free_heap_size());
-	}
+	ets_printf("mallocing sprite buffer for rectangle @ %d %d %p; %d\n", posX, posY, spritebuf, esp_get_free_heap_size());
+	// if(!spritebuf) {
+		// ets_printf("yes, blue, we ran out of memory. Free: %d\n", esp_get_free_heap_size());
+	// }
 	SPRITE_BITMAP* bitmap = malloc(sizeof(SPRITE_BITMAP));
+	ets_printf("mallocing bitmap for rectangle @ %d %d %p; %d\n", posX, posY, spritebuf, esp_get_free_heap_size());
 	for(int i=0;i<sizeY*sizeX;++i) {
 		spritebuf[i].pixelR = col->pixelR;
 		spritebuf[i].pixelG = col->pixelG;
