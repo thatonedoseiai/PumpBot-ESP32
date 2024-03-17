@@ -132,4 +132,5 @@ l.enable_text_cache_auto_delete(true);
 -- delete_sprite(back)
 -- delete_sprite(largenums)
 -- delete_sprite(smolnums)
+collectgarbage("collect")
 delete_all_sprites()
