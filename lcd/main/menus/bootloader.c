@@ -233,8 +233,8 @@ static int menufunc_text_write(void) {
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0), "FT_Set_Char_Size");
     draw_text(0, 184, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 24);
     draw_text(300, 5, "a", typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(147, 51, "▿", typeFace, NULL, NULL, foreground_color, background_color, 0);
-    // draw_text(147, 26, "▵", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    // draw_text(147, 51, "▿", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(147, 2, "▵", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_textreel(curtable, selection, &loc);
 
     set_text_cache_auto_delete(false);
@@ -285,8 +285,11 @@ static int menufunc_text_write(void) {
                 draw_all_sprites(spi);
                 delete_all_sprites();
             } 
-            if(event.pin == 0 && event.event == BUTTON_DOWN)
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                free(ibuf);
+                ibuf = NULL;
                 break;
+            }
         }
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
