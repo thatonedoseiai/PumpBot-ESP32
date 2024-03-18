@@ -42,6 +42,9 @@ typedef struct {
     enum RGB_MODE_t RGB_mode;
     uint24_RGB RGB_colour;
     uint24_RGB RGB_colour_2;
+    uint8_t server_ip[4];
+    uint16_t server_port;
+    char server_password[64];
     enum PRESSURE_UNIT_t pressure_units;
     enum LANGUAGE_t language;
     uint16_t pwm_min_limit[4];
