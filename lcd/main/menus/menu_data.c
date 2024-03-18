@@ -927,3 +927,74 @@ const MENU_ELEMENT menuserversettings[] = {
         .col = &foreground_color
     }
 };
+
+const MENU_ELEMENT menunetworksettings[] = {
+    {
+        .text = "Network Settings",
+        .x = 0,
+        .y = 204,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 18,
+        .col = &foreground_color
+    },
+    // {
+    //     .text = "setup PumpBot?",
+    //     .x = 0,
+    //     .y = 176,
+    //     .flags = MENU_FLAG_CENTER,
+    //     .textsize = 18,
+    //     .col = &foreground_color
+    // },
+    {
+        .text = "Wifi Settings", 
+        .x = 32,
+        .y = 120,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = "Server Settings",
+        .x = 32,
+        .y = 88,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {      
+        .y = 144,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 112,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 80,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 48,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { //Bottom menu
+        .y = 24, //24
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Back",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    }
+};

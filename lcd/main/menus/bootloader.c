@@ -41,6 +41,11 @@ extern lua_State* L;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
+void setup_cursor(int* cursorbg, int* cursor, int y) {
+    *cursorbg = sprite_rectangle(10, y, 20, 16, background_color);
+    draw_text(10, y, ">", typeFace, cursor, NULL, foreground_color, background_color, 0);
+}
+
 char languages[][15] = {
     "English",
     "日本語",
@@ -115,11 +120,12 @@ static int menufunc_wifi_scan() {
     connect_flag = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    // error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
     OAM_SPRITE_TABLE[cursor]->draw = false;
     OAM_SPRITE_TABLE[cursorbg]->draw = false;
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -411,10 +417,12 @@ static int menufunc_network_preview(void) {
     }
     draw_all_sprites(spi);
     delete_all_sprites();
-    int cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
+    // int cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
+    int cursorbg;
     int cursor;
     int selection = 0;
-    draw_text(2, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -484,9 +492,10 @@ static int menufunc_pb_setup_method (void) {
     for(int i=0;i<44;++i) {
         OAM_SPRITE_TABLE[tooltip_2[i]]->draw = false;
     }
-    int cursorbg = sprite_rectangle(10, 120, 20, 16, background_color);
+    int cursorbg; // = sprite_rectangle(10, 120, 20, 16, background_color);
     int cursor;
-    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    // draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 120);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -545,13 +554,14 @@ static int menufunc_display_settings(void) {
     draw_text(32, 152, "Theme", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
     int bright_rec = sprite_rectangle(150, 184, 150, 16, background_color);
     int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
     OAM_SPRITE_TABLE[bright_rec]->draw = false;
     OAM_SPRITE_TABLE[theme_rec]->draw = false;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     int num_brspr;
     int br_sprite[4]; 
@@ -676,9 +686,10 @@ static int menufunc_color_picker(void) {
     draw_text(10, 184, ">", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
     int red_rec = sprite_rectangle(150, 184, 100, 16, background_color);
     int green_rec = sprite_rectangle(150, 152, 100, 16, background_color);
     int blue_rec = sprite_rectangle(150, 120, 100, 16, background_color);
@@ -801,13 +812,15 @@ static int menufunc_all_settings(void) {
     rotary_encoder_event_t rotencev;
     int sprs[8];
     int numsprs;
+    int cursorbg;
     int cursor;
     int selection = 0;
     int page_start = 0;
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
     int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, "Settings", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
@@ -854,6 +867,7 @@ static int menufunc_pwm_output_settings(void) {
     rotary_encoder_event_t rotencev;
     int sprs[11];
     int numsprs;
+    int cursorbg;
     int cursor;
     int selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
@@ -867,8 +881,9 @@ static int menufunc_pwm_output_settings(void) {
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
@@ -902,6 +917,7 @@ static int menufunc_pwm_output_set(void) {
     int minsprs[6];
     int num_minsprs;
     int numsprs;
+    int cursorbg;
     int cursor;
     int selection = 0;
     char percentage[5];
@@ -923,8 +939,9 @@ static int menufunc_pwm_output_set(void) {
     draw_all_sprites(spi);
     delete_all_sprites();
     int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -1048,6 +1065,7 @@ static int menufunc_rgb_lighting(void) {
     int numsprs;
     int numcodesprs;
     int numspeedsprs;
+    int cursorbg;
     int cursor;
     int selection = 0;
     char percentage[5];
@@ -1073,8 +1091,9 @@ static int menufunc_rgb_lighting(void) {
     draw_all_sprites(spi);
     delete_all_sprites();
     int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     OAM_SPRITE_TABLE[textbg]->draw = false;
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -1220,9 +1239,10 @@ static int menufunc_applications(void) {
     if(i < 63)
         names[i+1] = NULL;
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 184);
+    // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, "Applications", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
@@ -1280,6 +1300,7 @@ int menufunc_file_run_delete() {
     int ys[] = {120, 88, 56};
     button_event_t event;
     rotary_encoder_event_t rotencev;
+    int cursorbg;
     int cursor;
     int k;
     char* c;
@@ -1289,8 +1310,9 @@ int menufunc_file_run_delete() {
     draw_all_sprites(spi);
     delete_all_sprites();
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
-    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    setup_cursor(&cursorbg, &cursor, 120);
+    // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -1418,6 +1440,60 @@ int menufunc_download_file(void) {
     }
 }
 
+static int menufunc_network_settings(void) {
+    int ys[] = {120, 88, 56};
+    int cursorbg;
+    int cursor;
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    char namebuf[15];
+    int selection = 0;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    if(settings.wifi_name[0]) {
+        if(strlen(settings.wifi_name) > 10) {
+            for(int i=0;i<10;++i) {
+                namebuf[i] = settings.wifi_name[i];
+            }
+            namebuf[11] = '.';
+            namebuf[12] = '.';
+            namebuf[13] = '.';
+            namebuf[14] = 0;
+            draw_text(150, 120, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+        } else {
+            draw_text(150, 120, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
+        }
+    } else {
+        draw_text(150, 120, "disconnected", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    }
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    setup_cursor(&cursorbg, &cursor, 120);
+    draw_all_sprites(spi);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+            selection = !selection;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                if(selection) {
+                    
+                } else {
+                    delete_all_sprites();
+                    return 2;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -1437,7 +1513,8 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_applications},
     {&menuapprundelete[0], 9, menufunc_file_run_delete},
     {NULL, 0, menufunc_execute_ibuf_file},
-    {&menudownloadapp[0], 7, menufunc_download_file}
+    {&menudownloadapp[0], 7, menufunc_download_file},
+    {&menunetworksettings[0], 9, menufunc_network_settings}
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {
