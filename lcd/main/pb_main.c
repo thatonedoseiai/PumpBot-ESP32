@@ -382,9 +382,10 @@ void app_main(void) {
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
 
+    button_event_t event;
     if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3 && event.event == BUTTON_HELD) {
-        char* buf = calloc(256);
-        if(!read_default_app(buf))
+        char* buf = calloc(256, sizeof(char));
+        if(!read_default_app(buf, 256))
             (void) luaL_dofile(L, buf);
         free(buf);
     }

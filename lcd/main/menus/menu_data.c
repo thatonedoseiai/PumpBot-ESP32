@@ -398,6 +398,7 @@ const MENU_ELEMENT menusetup1[] = {
         .col = &foreground_color
     }
 };
+
 const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
     {
         .text = "Connecting to Wi-Fi Network...", 
@@ -422,6 +423,7 @@ const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
         .col = &foreground_color
     },
 };
+
 const MENU_ELEMENT menusetup2a[] = {
     {
         .text = "Connect to this Wi-Fi Network",
@@ -510,6 +512,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = &foreground_color
     }
 };
+
 const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Setting menu and the likes
     {
         .text = "Wi-Fi Settings",
@@ -807,6 +810,116 @@ const MENU_ELEMENT menudownloadapp[] = {
     },
     { 
         .text = "Go!", 
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .flags = MENU_FLAG_RIGHT_JUSTIFY,
+        .col = &foreground_color
+    }
+};
+
+const MENU_ELEMENT menuserversettings[] = {
+    {
+        .text = "Server Settings",
+        .x = 0,
+        .y = 216,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = "IP Address",
+        .x = 32,
+        .y = 184,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = "Password", 
+        .x = 0,
+        .y = 152,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = "Port", 
+        .x = 0,
+        .y = 120,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    //{
+    //    .text = "", 
+    //    .x = 0,
+    //    .y = 88,
+    //    //.textlen = 16,
+    //    //.numspaces = 2,
+    //    .flags = MENU_FLAG_CENTER,
+    //    .textsize = 14,
+    //   //     .col = &foreground_color
+    //},
+    // {
+    //     .text = "[Text goes here]", //last option on the screen, would get overwritten with a tooltip
+    //     .x = 0,
+    //     .y = 56,
+    //     //.textlen = 16,
+    //     //.numspaces = 2,
+    //     .flags = MENU_FLAG_CENTER,
+    //     .textsize = 14,
+    //    //     .col = &foreground_color
+    // },
+    {      
+        .y = 208,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 176,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {      
+        .y = 144,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 112,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 80,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    // {
+    //     .y = 48, //last line on the screen, would get overwritten if there was a tooltip
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    { //Bottom menu
+        .y = 24,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Back",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Next", // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+        // .x = 275,
         .x = 2,
         .y = 2,
         .textsize = 14,

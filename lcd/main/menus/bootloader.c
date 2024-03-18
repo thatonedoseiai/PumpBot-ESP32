@@ -1281,6 +1281,8 @@ int menufunc_file_run_delete() {
     button_event_t event;
     rotary_encoder_event_t rotencev;
     int cursor;
+    int k;
+    char* c;
     int selection = 0;
     FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0);
     draw_text(10, 156, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
@@ -1303,16 +1305,16 @@ int menufunc_file_run_delete() {
                 delete_all_sprites();
                 switch(selection) {
                 case 0:
-                    int k = strlen(ibuf);
-                    char* c = calloc(k+22, sizeof(char));
+                    k = strlen(ibuf);
+                    c = calloc(k+22, sizeof(char));
                     strcpy(c, "/mainfs/applications/");
                     strncpy(c+21, ibuf, k+1);
                     free(ibuf);
                     ibuf = c;
                     return 17;
                 case 1:
-                    int k = strlen(ibuf);
-                    char* c = calloc(k+22, sizeof(char));
+                    k = strlen(ibuf);
+                    c = calloc(k+22, sizeof(char));
                     strcpy(c, "/mainfs/applications/");
                     strncpy(c+21, ibuf, k+1);
                     if(remove(c))

@@ -1,5 +1,6 @@
 #include <rom/ets_sys.h>
 #include "settings.h"
+#include <string.h>
 
 void write_to_file(SETTINGS_t* settings) {
 	FILE* sf = fopen(SETTINGS_FILE, "wb");
@@ -22,7 +23,7 @@ void set_default_app(char* name) {
 	FILE* f = fopen("/mainfs/default_app", "w");
 	if(!f)
 		ets_printf("ERROR OCCURRED OPENING DEFAULT APP FILE");
-	fwrite(ibuf);
+	fwrite(name, sizeof(char), strlen(name), f);
 	fclose(f);
 }
 

@@ -15,5 +15,6 @@ extern const MENU_ELEMENT menusetupdone[];
 extern const MENU_ELEMENT menutextenter[];
 extern const MENU_ELEMENT menuapprundelete[];
 extern const MENU_ELEMENT menudownloadapp[];
+extern const MENU_ELEMENT menuserversettings[];
 
 #endif
