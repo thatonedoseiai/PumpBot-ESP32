@@ -23,6 +23,8 @@
 #include "esp_timer.h"
 #include "rgb_fade.h"
 
+// #include <dirent.h>
+
 // #include "esp_http_client.h"
 // #include "esp_crt_bundle.h"
 // #include "esp_tls.h"
@@ -48,7 +50,7 @@ char connect_flag = 0;
 spi_device_handle_t spi;
 // static char redraw_flag = 0;
 // static int nums[5] = {0,0,0,0,0};
-static lua_State* L;
+lua_State* L;
 FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
 QueueHandle_t* button_events = NULL; // also because of lua
@@ -347,6 +349,17 @@ void app_main(void) {
     // (void) start_menu_tree(5);
 
     // ESP_ERROR_CHECK(esp_timer_init());
+
+    // DIR* d;
+    // struct dirent* dir;
+    // d = opendir("/mainfs/applications");
+    // if(d) {
+    //     while((dir = readdir(d)) != NULL) {
+    //         ets_printf("%s\n", dir->d_name);
+    //     }
+    //     closedir(d);
+    // }
+
     char setup_flag = 0;
     if(read_from_file(&settings)) {
         settings.disp_brightness = 255;

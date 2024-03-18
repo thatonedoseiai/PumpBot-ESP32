@@ -14,6 +14,7 @@
 #include "board_config.h"
 #include "file_server.h"
 #include "rgb_fade.h"
+#include <dirent.h>
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -35,6 +36,7 @@ extern SETTINGS_t settings;
 static char* ibuf;
 static uint24_RGB* colorbuf;
 extern unsigned char wifi_restart_counter;
+extern lua_State* L;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
@@ -776,7 +778,7 @@ const char set_addon[] = "Add-on";
 const char set_apps[] = "Apps";
 const char set_devs[] = "Developer";
 const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
-const int selection_to_menu[] = {8, 2, 12, 14, 10, MENU_RETURN_FLAG, MENU_RETURN_FLAG};
+const int selection_to_menu[] = {8, 2, 12, 14, 10, 15, MENU_RETURN_FLAG};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
@@ -801,7 +803,12 @@ static int menufunc_all_settings(void) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
             selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 6)) % 7;
-            page_start = (selection > 4) ? selection - 4 : 0;
+            // page_start = (selection > 4) ? selection - 4 : 0;
+            if(selection > page_start + 4) {
+                page_start = selection - 4;
+            } else if(selection < page_start) {
+                page_start = selection;
+            }
             if((selection-page_start == 0) || (selection-page_start == 4)) {
                 draw_options((char**) (&settings_en[page_start]), textbg);
             }
@@ -1170,6 +1177,148 @@ static int menufunc_rgb_lighting(void) {
     }
 }
 
+static int menufunc_applications(void) {
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int sprs[13];
+    int downloadsprs[8];
+    int numsprs;
+    int cursor;
+    int selection = 0;
+    int page_start = 0;
+    char* names[64];
+    int num_names = 0;
+    DIR* d = opendir("/mainfs/applications");
+    struct dirent* dir;
+    int i=0;
+    if(d) {
+        while((dir = readdir(d)) != NULL && i < 64) {
+            names[i] = calloc(strlen(dir->d_name) + 1, sizeof(char));
+            strncpy(names[i], dir->d_name, strlen(dir->d_name));
+            num_names++;
+            i++;
+        }
+        closedir(d);
+    }
+    if(i < 63)
+        names[i+1] = NULL;
+    int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, "Applications", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(2, 2, "Download", typeFace, downloadsprs, NULL, foreground_color, background_color, 0);
+    right_justify_sprite_group_x(downloadsprs, 8, 2);
+    draw_options((char**)names, textbg);
+    for(int i=0;i<numsprs;++i)
+        delete_sprite(sprs[i]);
+    for(int i=0;i<8;++i)
+        delete_sprite(downloadsprs[i]);
+    delete_sprite(titlebg);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
+            selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : num_names - 1)) % num_names;
+            if(selection > page_start + 4) {
+                page_start = selection - 4;
+            } else if(selection < page_start) {
+                page_start = selection;
+            }
+            // page_start = (selection > page_start + 4) ? selection - 4 : (0);
+            if((selection-page_start == 0) || (selection-page_start == 4)) {
+                draw_options((char**) (&names[page_start]), textbg);
+            }
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection - page_start]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                for(int i=0;i<num_names;++i)
+                    if(i != selection)
+                        free(names[i]);
+                ibuf = names[selection];
+                return 16;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                for(int i=0;i<num_names;++i)
+                    free(names[i]);
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
+int menufunc_file_run_delete() {
+    if(!ibuf)
+        return MENU_POP_FLAG;
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int cursor;
+    int selection = 0;
+    FT_Set_Char_Size(typeFace, 18 << 6, 0, 100, 0);
+    draw_text(10, 156, ibuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    draw_text(10, 120, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
+    draw_all_sprites(spi);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-(selection ? 88 : 120)-14;
+            selection = !selection;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-(selection ? 88 : 120)-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                if(selection) {
+                    int k = strlen(ibuf);
+                    char* c = calloc(k+22, sizeof(char));
+                    strcpy(c, "/mainfs/applications/");
+                    strncpy(c+21, ibuf, k+1);
+                    if(remove(c))
+                        ets_printf("error removing file %s!\n");
+                    free(c);
+                    free(ibuf);
+                    ibuf = NULL;
+                    return MENU_POP_FLAG;
+                } else {
+                    int k = strlen(ibuf);
+                    char* c = calloc(k+22, sizeof(char));
+                    strcpy(c, "/mainfs/applications/");
+                    strncpy(c+21, ibuf, k+1);
+                    free(ibuf);
+                    ibuf = c;
+                    return 17;
+                }
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                free(ibuf);
+                ibuf = NULL;
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
+int menufunc_execute_ibuf_file(void) {
+    (void) luaL_dofile(L, ibuf);
+    free(ibuf);
+    ibuf = NULL;
+    return MENU_POP_FLAG;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -1186,6 +1335,9 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_pwm_output_settings},
     {&menusetup3[0], 9, menufunc_pwm_output_set},
     {&menusetup3[0], 9, menufunc_rgb_lighting},
+    {&menusetup3[0], 9, menufunc_applications},
+    {&menuapprundelete[0], 8, menufunc_file_run_delete},
+    {NULL, 0, menufunc_execute_ibuf_file}
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {
@@ -1198,9 +1350,11 @@ int start_menu_tree(int startmenu, char settings_mode) {
     do {
         send_color(spi, background_color);
         currmenu = &allmenus[menu_stack[menu_stackp]];
-        draw_menu_elements(currmenu->background, typeFace, currmenu->num_elements);
-        draw_all_sprites(spi);
-        delete_all_sprites();
+        if(currmenu->background != NULL) {
+            draw_menu_elements(currmenu->background, typeFace, currmenu->num_elements);
+            draw_all_sprites(spi);
+            delete_all_sprites();
+        }
         nextmenu = currmenu->menu_functionality();
         if(nextmenu & MENU_POP_FLAG) {
             menu_stackp--;

@@ -678,3 +678,72 @@ const MENU_ELEMENT menusetupdone[] = {
     },
 };
 
+const MENU_ELEMENT menuapprundelete[] = {
+    {
+        .text = "Manage App",
+        .x = 0,
+        .y = 204,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 18,
+        .col = &foreground_color
+    },
+    // {
+    //     .text = "setup PumpBot?",
+    //     .x = 0,
+    //     .y = 176,
+    //     .flags = MENU_FLAG_CENTER,
+    //     .textsize = 18,
+    //     .col = &foreground_color
+    // },
+    {
+        .text = "Run App", 
+        .x = 0,
+        .y = 120,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = "Delete App",
+        .x = 0,
+        .y = 88,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {      
+        .y = 144,
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 112,
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 80,
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { //Bottom menu
+        .y = 24, //24
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Back",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+};
