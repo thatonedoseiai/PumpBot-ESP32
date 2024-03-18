@@ -1277,7 +1277,7 @@ static int menufunc_applications(void) {
 int menufunc_file_run_delete() {
     if(!ibuf)
         return MENU_POP_FLAG;
-    int ys[] = {184, 152, 120, 88, 56};
+    int ys[] = {120, 88, 56};
     button_event_t event;
     rotary_encoder_event_t rotencev;
     int cursor;
@@ -1292,16 +1292,25 @@ int menufunc_file_run_delete() {
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            OAM_SPRITE_TABLE[cursorbg]->posY = 240-(selection ? 88 : 120)-14;
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
             selection = !selection;
-            OAM_SPRITE_TABLE[cursor]->posY = 240-(selection ? 88 : 120)-14;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                if(selection) {
+                switch(selection) {
+                case 0:
+                    int k = strlen(ibuf);
+                    char* c = calloc(k+22, sizeof(char));
+                    strcpy(c, "/mainfs/applications/");
+                    strncpy(c+21, ibuf, k+1);
+                    free(ibuf);
+                    ibuf = c;
+                    return 17;
+                case 1:
                     int k = strlen(ibuf);
                     char* c = calloc(k+22, sizeof(char));
                     strcpy(c, "/mainfs/applications/");
@@ -1312,14 +1321,10 @@ int menufunc_file_run_delete() {
                     free(ibuf);
                     ibuf = NULL;
                     return MENU_POP_FLAG;
-                } else {
-                    int k = strlen(ibuf);
-                    char* c = calloc(k+22, sizeof(char));
-                    strcpy(c, "/mainfs/applications/");
-                    strncpy(c+21, ibuf, k+1);
-                    free(ibuf);
-                    ibuf = c;
-                    return 17;
+                case 2:
+                    ets_printf("setting default!\n");
+                    set_default_app(ibuf);
+                default:
                 }
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
@@ -1422,7 +1427,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_pwm_output_set},
     {&menusetup3[0], 9, menufunc_rgb_lighting},
     {&menusetup3[0], 9, menufunc_applications},
-    {&menuapprundelete[0], 8, menufunc_file_run_delete},
+    {&menuapprundelete[0], 9, menufunc_file_run_delete},
     {NULL, 0, menufunc_execute_ibuf_file},
     {&menudownloadapp[0], 7, menufunc_download_file}
 };

@@ -382,8 +382,12 @@ void app_main(void) {
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
 
-
-
+    if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3 && event.event == BUTTON_HELD) {
+        char* buf = calloc(256);
+        if(!read_default_app(buf))
+            (void) luaL_dofile(L, buf);
+        free(buf);
+    }
 
     while(true) {
         send_color(spi, background_color);

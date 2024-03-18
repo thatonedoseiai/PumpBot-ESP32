@@ -17,3 +17,20 @@ int read_from_file(SETTINGS_t* settings) {
 	fclose(sf);
 	return 0;
 }
+
+void set_default_app(char* name) {
+	FILE* f = fopen("/mainfs/default_app", "w");
+	if(!f)
+		ets_printf("ERROR OCCURRED OPENING DEFAULT APP FILE");
+	fwrite(ibuf);
+	fclose(f);
+}
+
+int read_default_app(char* buf, int buflen) {
+	FILE* f = fopen("/mainfs/default_app", "r");
+	if(!f)
+		return 1;
+	fread(buf, sizeof(char), buflen, f);
+	fclose(f);
+	return 0;
+}

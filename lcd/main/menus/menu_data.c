@@ -711,6 +711,14 @@ const MENU_ELEMENT menuapprundelete[] = {
         .textsize = 14,
         .col = &foreground_color
     },
+    {
+        .text = "Set Default",
+        .x = 0,
+        .y = 56,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
     {      
         .y = 144,
         .textsize = 2,
@@ -727,6 +735,13 @@ const MENU_ELEMENT menuapprundelete[] = {
     },
     {
         .y = 80,
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .y = 48,
         .textsize = 2,
         // .hline = true,
         .flags = MENU_FLAG_IS_HLINE,
@@ -771,13 +786,6 @@ const MENU_ELEMENT menudownloadapp[] = {
         .textsize = 14,
         .col = &foreground_color
     },
-    // {
-    //     .text = "https://", //Really would help with right justification!!! Please!!!
-    //     .x = 220,
-    //     .y = 152,
-    //     .textsize = 14,
-    //     .col = &foreground_color
-    // },
     {      
         .y = 144,
         .textsize = 2,
