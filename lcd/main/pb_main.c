@@ -383,11 +383,13 @@ void app_main(void) {
     // ets_printf("%s\n", &settings.wifi_name);
 
     button_event_t event;
-    if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3 && event.event == BUTTON_HELD) {
+    if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
         char* buf = calloc(256, sizeof(char));
         if(!read_default_app(buf, 256))
             (void) luaL_dofile(L, buf);
         free(buf);
+    } else {
+        ets_printf("press: %d %d\n", event.pin, event.event);
     }
 
     while(true) {

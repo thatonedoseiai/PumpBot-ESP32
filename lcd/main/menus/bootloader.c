@@ -1295,16 +1295,16 @@ int menufunc_file_run_delete() {
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
-            selection = !selection;
+            selection = ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? selection + 1 : selection + 2) % 3;
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
-                delete_all_sprites();
                 switch(selection) {
                 case 0:
+                    delete_all_sprites();
                     k = strlen(ibuf);
                     c = calloc(k+22, sizeof(char));
                     strcpy(c, "/mainfs/applications/");
@@ -1313,6 +1313,7 @@ int menufunc_file_run_delete() {
                     ibuf = c;
                     return 17;
                 case 1:
+                    delete_all_sprites();
                     k = strlen(ibuf);
                     c = calloc(k+22, sizeof(char));
                     strcpy(c, "/mainfs/applications/");
@@ -1325,7 +1326,12 @@ int menufunc_file_run_delete() {
                     return MENU_POP_FLAG;
                 case 2:
                     ets_printf("setting default!\n");
-                    set_default_app(ibuf);
+                    k = strlen(ibuf);
+                    c = calloc(k+22, sizeof(char));
+                    strcpy(c, "/mainfs/applications/");
+                    strncpy(c+21, ibuf, k+1);
+                    set_default_app(c);
+                    free(c);
                 default:
                 }
             }
