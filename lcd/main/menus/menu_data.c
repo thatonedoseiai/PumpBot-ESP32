@@ -836,14 +836,14 @@ const MENU_ELEMENT menuserversettings[] = {
     },
     {
         .text = "Password", 
-        .x = 0,
+        .x = 32,
         .y = 152,
         .textsize = 14,
         .col = &foreground_color
     },
     {
         .text = "Port", 
-        .x = 0,
+        .x = 32,
         .y = 120,
         .textsize = 14,
         .col = &foreground_color

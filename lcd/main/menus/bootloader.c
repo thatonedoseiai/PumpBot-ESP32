@@ -1479,11 +1479,84 @@ static int menufunc_network_settings(void) {
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
-                if(selection) {
-                    
+                delete_all_sprites();
+                return selection ? 20 : 2;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
+static int menufunc_server_settings(void) {
+    if(ibuf != NULL) {
+        switch(connect_flag) {
+        case 1:
+            uint8_t temp[4];
+            int numvars = sscanf(ibuf, "%hhu.%hhu.%hhu.%hhu", &temp[0], &temp[1], &temp[2], &temp[3]);
+            if(numvars == 4)
+                for(int i=0;i<4;++i)
+                    settings.server_ip[i] = temp[i];
+            break;
+        case 2:
+            sprintf(ibuf, "%ls", &settings.server_port);
+            break;
+        case 3:
+            strncpy(settings.server_password, ibuf, 64);
+            settings.server_password[63] = 0;
+            break;
+        default:
+        }
+        connect_flag = 0;
+        free(ibuf);
+        ibuf = NULL;
+    }
+    int ys[] = {184, 152, 120, 88, 56};
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    int cursorbg;
+    int cursor;
+    int selection = 0;
+    char ip_buf[16];
+    char pass_buf[16];
+    char port_buf[6];
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);
+    draw_text(150, 184, ip_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    int k = strlen(settings.server_password);
+    if(k > 12) {
+        strncpy(pass_buf, ibuf+k-12, 12);
+        strcpy(pass_buf+12, "...");
+    } else {
+        strncpy(pass_buf, ibuf, 15);
+    }
+    draw_text(150, 152, pass_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    itoa(settings.server_port, port_buf, 10);
+    port_buf[5] = 0;
+    draw_text(150, 120, port_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    setup_cursor(&cursorbg, &cursor, 184);
+    draw_all_sprites(spi);
+    while(true) {
+        if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
+            selection = ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? selection+1 : selection+3) % 4;
+            OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
+            draw_sprites(spi, &cursorbg, 1);
+            draw_sprites(spi, &cursor, 1);
+        }
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                if(selection == 3) {
+                    // connect to the server
                 } else {
                     delete_all_sprites();
-                    return 2;
+                    connect_flag = selection+1;
+                    ibuf = calloc(256, sizeof(char));
+                    return 3;
                 }
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
@@ -1492,6 +1565,7 @@ static int menufunc_network_settings(void) {
             }
         }
     }
+    return MENU_RETURN_FLAG;
 }
 
 MENU_INFO_t allmenus[] = {
@@ -1514,11 +1588,12 @@ MENU_INFO_t allmenus[] = {
     {&menuapprundelete[0], 9, menufunc_file_run_delete},
     {NULL, 0, menufunc_execute_ibuf_file},
     {&menudownloadapp[0], 7, menufunc_download_file},
-    {&menunetworksettings[0], 9, menufunc_network_settings}
+    {&menunetworksettings[0], 9, menufunc_network_settings},
+    {&menuserversettings[0], 12, menufunc_server_settings}
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {
-    int menu_stack[20];
+    int menu_stack[32];
     int menu_stackp = 0;
     int nextmenu;
     char do_text_menu = 0;
