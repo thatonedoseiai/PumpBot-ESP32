@@ -15,6 +15,7 @@
 #include "file_server.h"
 #include "rgb_fade.h"
 #include <dirent.h>
+#include "http.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -319,17 +320,32 @@ static int menufunc_welcome(void) {
 }
 
 static int menufunc_connect_wifi(void) {
+    button_event_t event;
     strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
     strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ESP_ERROR_CHECK(esp_wifi_connect());
     ets_printf("connecting...\n");
-    while(!connect_flag);
+    while(!connect_flag) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 0 && event.event == 0) {
+            wifi_restart_counter = 10;
+            return MENU_POP_FLAG;
+        }
+    }
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     if(wifi_restart_counter >= 10) {
         ets_printf("FAILED!\n");
+        draw_text(32, 60, "Connection Failed!", typeFace, NULL, NULL, foreground_color, background_color, 0);
+        draw_all_sprites(spi);
+        delete_all_sprites();
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
         return MENU_POP_FLAG;
     }
     ets_printf("success!\n");
+    draw_text(32, 60, "Connection Success!", typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
     return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
 }
 
@@ -1244,6 +1260,10 @@ static int menufunc_applications(void) {
                 ibuf = names[selection];
                 return 16;
             }
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return 18;
+            }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 for(int i=0;i<num_names;++i)
@@ -1319,6 +1339,72 @@ int menufunc_execute_ibuf_file(void) {
     return MENU_POP_FLAG;
 }
 
+void parse_to_url(char* x) {
+    if(strncmp(x, "https://", 8)) {
+        char* newurl = calloc(290, sizeof(char));
+        sprintf(newurl, "https://raw.githubusercontent.com/%s", ibuf);
+        free(ibuf);
+        ibuf = newurl;
+    }
+}
+
+int menufunc_download_file(void) {
+    if(!ibuf) {
+        ibuf = calloc(256, sizeof(char));
+        strcpy(ibuf, "https://");
+    }
+    button_event_t event;
+    rotary_encoder_event_t rotencev;
+    char displayName[16];
+    int k = strlen(ibuf);
+    int sprs[14];
+    int numsprs;
+    int i;
+    char* filename;
+    if(k > 12) {
+        strcpy(displayName, "...");
+        strncpy(displayName+3, ibuf+k-12, 12);
+    } else {
+        strncpy(displayName, ibuf, 15);
+    }
+    displayName[15]=0;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    draw_text(100, 152, displayName, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    while(true) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+                draw_text(0, 120, "Downloading...", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+                draw_all_sprites(spi);
+                delete_all_sprites();
+                parse_to_url(ibuf);
+                k = strlen(ibuf);
+                for(i=k-1;ibuf[i]!='/';--i);
+                filename = malloc(k-i+22);
+                strcpy(filename, "/mainfs/applications");
+                strcpy(filename+20, &ibuf[i]);
+                ets_printf("downloading %s to %s\n", ibuf, filename);
+                http_wget(ibuf, filename);
+                free(filename);
+                free(ibuf);
+                ibuf = NULL;
+                return MENU_POP_FLAG;
+            }
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return 3;
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                free(ibuf);
+                ibuf = NULL;
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -1337,7 +1423,8 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_rgb_lighting},
     {&menusetup3[0], 9, menufunc_applications},
     {&menuapprundelete[0], 8, menufunc_file_run_delete},
-    {NULL, 0, menufunc_execute_ibuf_file}
+    {NULL, 0, menufunc_execute_ibuf_file},
+    {&menudownloadapp[0], 7, menufunc_download_file}
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {

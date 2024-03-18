@@ -16,6 +16,8 @@ esp_err_t http_wget(char* url, char* filename) {
         ets_printf("Status = %d, content_length = %d\n",
             esp_http_client_get_status_code(client),
             content_length);
+    } else {
+        remove(filename);
     }
     esp_http_client_cleanup(client);
     return err;

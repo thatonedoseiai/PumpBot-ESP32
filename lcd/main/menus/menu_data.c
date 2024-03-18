@@ -258,7 +258,6 @@ const MENU_ELEMENT menuhome[] = {
     }
 };
 
-
 const MENU_ELEMENT menusetup0[] = {
     {
         .text = "Choose your Language",
@@ -320,6 +319,7 @@ const MENU_ELEMENT menusetup0[] = {
         .col = &foreground_color
     }
 };
+
 const MENU_ELEMENT menusetup1[] = {
     {
         .text = "How would you like to",
@@ -746,4 +746,63 @@ const MENU_ELEMENT menuapprundelete[] = {
         .textsize = 14,
         .col = &foreground_color
     },
+};
+
+const MENU_ELEMENT menudownloadapp[] = {
+    {
+        .text = "Download From URL",
+        .x = 0,
+        .y = 204,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 18,
+        .col = &foreground_color
+    },
+    {
+        .y = 176,
+        .textsize = 2,
+        // .hline = true,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    {
+        .text = "URL", 
+        .x = 32,
+        .y = 152,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    // {
+    //     .text = "https://", //Really would help with right justification!!! Please!!!
+    //     .x = 220,
+    //     .y = 152,
+    //     .textsize = 14,
+    //     .col = &foreground_color
+    // },
+    {      
+        .y = 144,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { //Bottom menu
+        .y = 24,
+        .textsize = 2,
+        .flags = MENU_FLAG_IS_HLINE,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Back",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    { 
+        .text = "Go!", 
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .flags = MENU_FLAG_RIGHT_JUSTIFY,
+        .col = &foreground_color
+    }
 };
