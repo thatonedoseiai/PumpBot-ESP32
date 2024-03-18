@@ -805,7 +805,7 @@ const char set_addon[] = "Add-on";
 const char set_apps[] = "Apps";
 const char set_devs[] = "Developer";
 const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
-const int selection_to_menu[] = {8, 2, 12, 14, 10, 15, MENU_RETURN_FLAG};
+const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, MENU_RETURN_FLAG};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
