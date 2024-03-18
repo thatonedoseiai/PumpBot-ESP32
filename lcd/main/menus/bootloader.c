@@ -1522,6 +1522,8 @@ static int menufunc_server_settings(void) {
     char ip_buf[16];
     char pass_buf[16];
     char port_buf[6];
+    int sprs[7];
+    int numsprs;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);
     draw_text(150, 184, ip_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
@@ -1536,6 +1538,8 @@ static int menufunc_server_settings(void) {
     itoa(settings.server_port, port_buf, 10);
     port_buf[5] = 0;
     draw_text(150, 120, port_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(150, 120, "Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    center_sprite_group_x(sprs, numsprs);
     draw_all_sprites(spi);
     delete_all_sprites();
     setup_cursor(&cursorbg, &cursor, 184);

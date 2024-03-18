@@ -19,6 +19,7 @@ set(srcs
 idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS 
                         "./includes"
+                        "../components/esp-idf-lua/"
                         "./freetype2"
 )
 
