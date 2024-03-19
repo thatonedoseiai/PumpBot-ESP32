@@ -17,8 +17,10 @@ static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_
 		uint16_t k = atomic_load(&(pwms[i].cyclesLeft));
 		if(k == 1)
 			update_pwm(i);
-		if(k)
+		if(k) {
 			atomic_fetch_sub(&(pwms[i].cyclesLeft), 1);
+			// ets_printf("channel %d: %d\n", k-1);
+		}
 	}
 	return true;
 }
@@ -33,7 +35,7 @@ void init_pb_output_info() {
 	gptimer_alarm_config_t alarm_config = {
 		.reload_count = 0,
 		.alarm_count = 20000,
-		.flags.auto_reload_on_alarm = false,
+		.flags.auto_reload_on_alarm = true,
 	};
 	gptimer_event_callbacks_t cbs = { .on_alarm = pwm_callback };
 	ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &pwm_irq_timer));
@@ -66,6 +68,9 @@ void output_set_value(int channel, int level) {
 
 // cs = 1 means 100 cs = 0.1s on
 void output_set_value_timeout(int channel, int level, int cs) {
+	if(atomic_load(&pwms[channel].off))
+		return;
+	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, level, 0);
 	pwms[channel].cyclesLeft = cs*5;
 }
 
