@@ -1501,11 +1501,14 @@ static int menufunc_server_settings(void) {
                     settings.server_ip[i] = temp[i];
             break;
         case 2:
-            sprintf(ibuf, "%ls", &settings.server_port);
-            break;
-        case 3:
             strncpy(settings.server_password, ibuf, 64);
             settings.server_password[63] = 0;
+            break;
+        case 3:
+            unsigned int m;
+            sscanf(ibuf, "%u", &m);
+            if(m <= 0xffff)
+                settings.server_port = m;
             break;
         default:
         }
@@ -1529,16 +1532,16 @@ static int menufunc_server_settings(void) {
     draw_text(150, 184, ip_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     int k = strlen(settings.server_password);
     if(k > 12) {
-        strncpy(pass_buf, ibuf+k-12, 12);
+        strncpy(pass_buf, settings.server_password+k-12, 12);
         strcpy(pass_buf+12, "...");
     } else {
-        strncpy(pass_buf, ibuf, 15);
+        strncpy(pass_buf, settings.server_password, 15);
     }
     draw_text(150, 152, pass_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     itoa(settings.server_port, port_buf, 10);
     port_buf[5] = 0;
     draw_text(150, 120, port_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(150, 120, "Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    draw_text(150, 88, "Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_all_sprites(spi);
     delete_all_sprites();

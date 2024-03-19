@@ -21,7 +21,6 @@ k=1
 l.set_char_size(42<<6)
 spr = {}
 f=0
--- print("lua start")
 collectgarbage("stop")
 back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
 back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
@@ -35,7 +34,6 @@ leftbtncircbufi = 1
 channel = {0, 0, 0, 0}
 channel_active = {true, true, true, true}
 xs = {58,111,164,217}
-timeout = 0
 l.draw_sprites(off_btn_text)
 l.enable_text_cache_auto_delete(false)
 
@@ -51,20 +49,17 @@ function update_screen_text(x, y, bg, k, center)
     l.draw_sprites(spr)
 end
 
--- print("start loop")
 update_screen_text(40, 134, {back}, k, true)
 
 while(true) do
     buttons = l.getgpio()
     if(buttons ~= nil and buttons[1] == 3 and buttons[2] == 1) then
-        -- print("end: "..buttons[1].." "..buttons[2])
         break
     end
     f = l.readrotary()
     if(buttons ~= nil) then
         if(buttons[1] == 0 and buttons[2] == 1) then
             channel_active[k] = not channel_active[k]
-            timeout = 500
             if(channel_active[k]) then
                 l.set_pwm(k, channel[k]*163)
                 l.draw_sprites({back_on_off, back_btn_text})
@@ -73,7 +68,6 @@ while(true) do
                 l.stop_pwm(k)
                 l.draw_sprites({back_on_off, back_btn_text})
                 l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
-                -- print(off_text[2])
                 l.draw_sprites({off_text[2]})
             end
         elseif (buttons[1] == 18 and buttons[2] == 1) then
@@ -120,17 +114,5 @@ while(true) do
 end
 
 l.enable_text_cache_auto_delete(true);
--- delete_sprite(on_text[1])
--- delete_sprite(off_text[1])
--- delete_sprite(off_text[2])
--- delete_sprite(on_btn_text[1])
--- delete_sprite(off_btn_text[1])
--- delete_sprite(off_btn_text[2])
--- delete_sprite(back_small)
--- delete_sprite(back_on_off)
--- delete_sprite(back_btn_text)
--- delete_sprite(back)
--- delete_sprite(largenums)
--- delete_sprite(smolnums)
 collectgarbage("collect")
 delete_all_sprites()
