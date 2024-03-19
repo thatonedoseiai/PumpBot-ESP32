@@ -22,12 +22,7 @@
 #include "file_server.h"
 #include "esp_timer.h"
 #include "rgb_fade.h"
-
-// #include <dirent.h>
-
-// #include "esp_http_client.h"
-// #include "esp_crt_bundle.h"
-// #include "esp_tls.h"
+#include "pwm_output.h"
 
 #include "lua_exports.h"
 
@@ -133,6 +128,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
         channel_config.channel = i;
         ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
     }
+    ESP_ERROR_CHECK(ledc_fade_func_install(ESP_INTR_FLAG_INTRDISABLED));
 
     (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
@@ -140,7 +136,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 
     int error;
 	FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
-	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/PB-Sans.ttf", 0, typeFace), "FT_New_Face");
+	FT_ERR_HANDLE(FT_New_Face(*lib, "/mainfs/PB-Sans-China.ttf", 0, typeFace), "FT_New_Face");
 	FT_ERR_HANDLE(FT_Select_Charmap(*typeFace, FT_ENCODING_UNICODE), "FT_Select_Charmap");
 
 	size_t total = 0, used = 0;
@@ -150,6 +146,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 	} else {
 		ets_printf("Partition size: total: %d, used: %d\n", total, used);
 	}
+
 done:
 	return ret;
 }
@@ -320,6 +317,7 @@ void app_main(void) {
     // delete_all_sprites();
 
     rgb_init();
+    init_pb_output_info();
 
     // settings.RGB_colour.pixelR = 0;
     // settings.RGB_colour.pixelB = 255;
@@ -432,6 +430,7 @@ void app_main(void) {
     // }
     // scroll_buffer(spi, 0, true);
 
+    done_pb_output_info();
     ESP_ERROR_CHECK(esp_wifi_stop());
     free(framebuf);
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));

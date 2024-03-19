@@ -32,7 +32,7 @@ oldleftbtn = true
 leftbtncircbuf = {true, true, true, true, true, true, true, true, true, true}
 leftbtncircbufi = 1
 channel = {0, 0, 0, 0}
-channel_active = {true, true, true, true}
+-- channel_active = {true, true, true, true}
 xs = {58,111,164,217}
 l.draw_sprites(off_btn_text)
 l.enable_text_cache_auto_delete(false)
@@ -42,7 +42,7 @@ function update_screen_text(x, y, bg, k, center)
         l.delete_sprite(spr[s])
     end
     l.draw_sprites(bg)
-    spr = l.draw_text(x, y, string.format("%.0f%%", channel[k]), fgcol, bgcol);
+    spr = l.draw_text(x, y, string.format("%.0f%%", l.get_output_value(k)/163), fgcol, bgcol);
     if(center) then
         l.center_sprites_x(spr)
     end
@@ -59,17 +59,26 @@ while(true) do
     f = l.readrotary()
     if(buttons ~= nil) then
         if(buttons[1] == 0 and buttons[2] == 1) then
-            channel_active[k] = not channel_active[k]
-            if(channel_active[k]) then
-                l.set_pwm(k, channel[k]*163)
-                l.draw_sprites({back_on_off, back_btn_text})
-                l.draw_sprites({on_text[1], off_btn_text[1], off_btn_text[2]})
-            else
-                l.stop_pwm(k)
+            l.toggle_output(k)
+            if(l.output_off(k)) then
                 l.draw_sprites({back_on_off, back_btn_text})
                 l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
                 l.draw_sprites({off_text[2]})
+            else
+                l.draw_sprites({back_on_off, back_btn_text})
+                l.draw_sprites({on_text[1], off_btn_text[1], off_btn_text[2]})
             end
+            -- channel_active[k] = not channel_active[k]
+            -- if(channel_active[k]) then
+            --     l.set_output(k, channel[k]*163)
+            --     l.draw_sprites({back_on_off, back_btn_text})
+            --     l.draw_sprites({on_text[1], off_btn_text[1], off_btn_text[2]})
+            -- else
+            --     l.stop_pwm(k)
+            --     l.draw_sprites({back_on_off, back_btn_text})
+            --     l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
+            --     l.draw_sprites({off_text[2]})
+            -- end
         elseif (buttons[1] == 18 and buttons[2] == 1) then
             selecting_channels = not selecting_channels
         end
@@ -77,23 +86,28 @@ while(true) do
 
     if(f ~= nil) then
         if selecting_channels == false then
-            if(f[1] == 2) then channel[k] = channel[k] - 1 else channel[k] = channel[k] + 1 end
-            if(channel[k] >= 0 and channel[k] <= 100) then
+            -- if(f[1] == 2) then channel[k] = channel[k] - 1 else channel[k] = channel[k] + 1 end
+            if(f[1] == 2) then
+                l.increment_output(k, -163)
+            else
+                l.increment_output(k, 163)
+            end
+            -- if(channel[k] >= 0 and channel[k] <= 100) then
                 update_screen_text(40, 134, {back}, k, true)
                 l.sprite_move_x({back_small}, xs[k])
                 l.set_char_size(12<<6)
                 update_screen_text(xs[k], 2, {back_small}, k, false)
                 l.set_char_size(42<<6)
-                if(channel_active[k]) then
-                    l.set_pwm(k, channel[k]*163)
-                end
-            else
-                if(channel[k] > 100) then
-                    channel[k] = 100
-                else
-                    channel[k] = 0
-                end
-            end
+                -- if(channel_active[k]) then
+                --     l.set_pwm(k, channel[k]*163)
+                -- end
+            -- else
+                -- if(channel[k] > 100) then
+                --     channel[k] = 100
+                -- else
+                --     channel[k] = 0
+                -- end
+            -- end
         else
             if(f[1] == 2) then k = k - 1 else k = k + 1 end
             if k == 5 then

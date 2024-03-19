@@ -1,12 +1,25 @@
 #include "pwm_output.h"
 
 pb_output_info_t* pwms;
+gptimer_handle_t pwm_irq_timer;
+
+void update_pwm(int channel) {
+	if(atomic_load(&pwms[channel].off)) {
+		ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
+		return;
+	}
+	uint16_t power = output_get_value(channel);
+	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
+}
 
 static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
-	pb_output_info_t* p = (pb_output_info_t*) user_ctx;
-	if(p->has_timer)
-		atomic_store(&p->output, p->prev_value);
-	p->has_timer = 0;
+	for(int i=0;i<4;++i) {
+		uint16_t k = atomic_load(&(pwms[i].cyclesLeft));
+		if(k == 1)
+			update_pwm(i);
+		if(k)
+			atomic_fetch_sub(&(pwms[i].cyclesLeft), 1);
+	}
 	return true;
 }
 
@@ -19,29 +32,19 @@ void init_pb_output_info() {
 	};
 	gptimer_alarm_config_t alarm_config = {
 		.reload_count = 0,
-		.alarm_count = 1000000,
+		.alarm_count = 20000,
 		.flags.auto_reload_on_alarm = false,
 	};
 	gptimer_event_callbacks_t cbs = { .on_alarm = pwm_callback };
-	for(int i=0;i<4;++i) {
-		ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &pwms[i].timeout));
-		ESP_ERROR_CHECK(gptimer_set_alarm_action(pwms[i].timeout, &alarm_config));
-		ESP_ERROR_CHECK(gptimer_register_event_callbacks(pwms[i].timeout, &cbs, (void*) &pwms[i]));
-	}
-}
-
-void update_pwm(int channel) {
-	if(atomic_load(&pwms[channel].off)) {
-		ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
-		return;
-	}
-	uint16_t power = output_get_value(channel);
-	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
+	ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &pwm_irq_timer));
+	ESP_ERROR_CHECK(gptimer_set_alarm_action(pwm_irq_timer, &alarm_config));
+	ESP_ERROR_CHECK(gptimer_register_event_callbacks(pwm_irq_timer, &cbs, NULL));
+	ESP_ERROR_CHECK(gptimer_enable(pwm_irq_timer));
+	ESP_ERROR_CHECK(gptimer_start(pwm_irq_timer));
 }
 
 void done_pb_output_info() {
-	for(int i=0;i<4;++i)
-		gptimer_del_timer(pwms[i].timeout);
+	gptimer_del_timer(pwm_irq_timer);
 	free(pwms);
 }
 
@@ -57,34 +60,30 @@ void output_toggle(int channel) {
 
 void output_set_value(int channel, int level) {
 	atomic_store(&(pwms[channel].output), level);
-	pwms[channel].has_timer = 0;
+	pwms[channel].cyclesLeft = 0;
 	update_pwm(channel);
 }
 
-void output_set_value_timeout(int channel, int level, int ms) {
-	gptimer_alarm_config_t alarm_config = {
-		.reload_count = 0,
-		.alarm_count = ms*1000,
-		.flags.auto_reload_on_alarm = false,
-	};
-	ESP_ERROR_CHECK(gptimer_set_alarm_action(pwms[channel].timeout, &alarm_config));
-	pwms[channel].has_timer = 1;
-	gptimer_start(pwms[channel].timeout);
+// cs = 1 means 100 cs = 0.1s on
+void output_set_value_timeout(int channel, int level, int cs) {
+	pwms[channel].cyclesLeft = cs*5;
 }
 
-inline int output_get_value(int channel) {
+int output_get_value(int channel) {
 	return atomic_load(&(pwms[channel].output));
 }
 
-inline char is_off(int channel) {
+char is_off(int channel) {
 	return atomic_load(&(pwms[channel].off));
 }
 
 void output_add_value(int channel, int increment) {
 	if(increment > 0)
 		atomic_fetch_add(&(pwms[channel].output), increment);
-	else
-		atomic_fetch_sub(&(pwms[channel].output), increment);
-	pwms[channel].has_timer = 0;
+	else if(atomic_load(&(pwms[channel].output)) >= increment)
+		atomic_fetch_sub(&(pwms[channel].output), -increment);
+	if(atomic_load(&(pwms[channel].output)) > 16383)
+		atomic_store(&(pwms[channel].output), 16383);
+	pwms[channel].cyclesLeft = 0;
 	update_pwm(channel);
 }

@@ -6,6 +6,7 @@
 #include "utf8.h"
 #include "pwm_fade.h"
 #include "button.h"
+#include "pwm_output.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -349,39 +350,61 @@ static int l_move_sprite_y(lua_State* L) {
 
 // pwm indices: 0 1 2 3 R G B screen
 //              0 1 2 3 4 5 6 7
-static int l_setup_fade(lua_State* L) {
-    int channel = luaL_checkinteger(L, 1);
-    int start = luaL_checkinteger(L, 2);
-    int stop = luaL_checkinteger(L, 3);
-    int step = luaL_checkinteger(L, 4);
-    pwm_setup_fade(&pfade_channels[channel], start, stop, step);
-    return 0;
-}
+// static int l_setup_fade(lua_State* L) {
+//     int channel = luaL_checkinteger(L, 1);
+//     int start = luaL_checkinteger(L, 2);
+//     int stop = luaL_checkinteger(L, 3);
+//     int step = luaL_checkinteger(L, 4);
+//     pwm_setup_fade(&pfade_channels[channel], start, stop, step);
+//     return 0;
+// }
 
 // step a table of channels' fades
-static int l_step_fade(lua_State* L) {
-    luaL_checktype(L, 1, LUA_TTABLE);
-    unsigned int k = lua_rawlen(L, 1);
-    for(int i=1;i<=k;++i) {
-        lua_pushinteger(L, i);
-        lua_gettable(L, 1);
-        pwm_step_fade(&pfade_channels[luaL_checkinteger(L, -1)]);
-    }
-    return 0;
-}
+// static int l_step_fade(lua_State* L) {
+//     luaL_checktype(L, 1, LUA_TTABLE);
+//     unsigned int k = lua_rawlen(L, 1);
+//     for(int i=1;i<=k;++i) {
+//         lua_pushinteger(L, i);
+//         lua_gettable(L, 1);
+//         pwm_step_fade(&pfade_channels[luaL_checkinteger(L, -1)]);
+//     }
+//     return 0;
+// }
 
 static int l_set_pwm(lua_State* L) {
     int channel = luaL_checkinteger(L, 1);
     int value = luaL_checkinteger(L, 2);
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, channel-1, value);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, channel-1);
+    output_set_value(channel-1, value);
+    // ledc_set_duty(LEDC_LOW_SPEED_MODE, channel-1, value);
+    // ledc_update_duty(LEDC_LOW_SPEED_MODE, channel-1);
     return 0;
 }
 
-static int l_stop_pwm(lua_State* L) {
+static int l_toggle_pwm(lua_State* L) {
     int channel = luaL_checkinteger(L, 1);
-    ledc_stop(LEDC_LOW_SPEED_MODE, channel-1, 0);
+    output_toggle(channel-1);
+    // ledc_stop(LEDC_LOW_SPEED_MODE, channel-1, 0);
     return 0;
+}
+
+static int l_get_output_value(lua_State* L) {
+    int channel = luaL_checkinteger(L, 1);
+    int c = output_get_value(channel-1);
+    lua_pushnumber(L, c);
+    return 1;
+}
+
+static int l_output_add_value(lua_State* L) {
+    int channel = luaL_checkinteger(L, 1);
+    int increment = luaL_checkinteger(L, 2);
+    output_add_value(channel-1, increment);
+    return 0;
+}
+
+static int l_output_off(lua_State* L) {
+    int k = luaL_checkinteger(L, 1);
+    lua_pushboolean(L, (int) is_off(k-1));
+    return 1;
 }
 
 static int l_get_foreground(lua_State* L) {
@@ -442,10 +465,11 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "sprite_set_draw", l_set_sprite_draw_flags },
     { "sprite_move_x", l_move_sprite_x },
     { "sprite_move_y", l_move_sprite_y },
-    { "set_pwm", l_set_pwm },
-    { "stop_pwm", l_stop_pwm },
-    { "setup_fade", l_setup_fade },
-    { "step_fade", l_step_fade },
+    { "set_output", l_set_pwm },
+    { "toggle_output", l_toggle_pwm },
+    { "output_off", l_output_off },
+    { "increment_output", l_output_add_value },
+    { "get_output_value", l_get_output_value },
     { "foreground_color", l_get_foreground },
     { "background_color", l_get_background },
     { "flush_text_cache", l_flush_text_cache },
