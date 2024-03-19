@@ -10,6 +10,8 @@ typedef struct pb_output_info_t_ {
     atomic_uchar off;
     uint16_t prev_value;
     atomic_uint_fast16_t cyclesLeft;
+    atomic_uint_fast16_t old_output;
+    char was_updated;
 } pb_output_info_t;
 
 void init_pb_output_info(void);
@@ -21,5 +23,6 @@ void output_set_value_timeout(int channel, int level, int ms);
 int output_get_value(int channel);
 char is_off(int channel);
 void output_add_value(int channel, int increment);
+char output_was_updated(int channel);
 
 #endif

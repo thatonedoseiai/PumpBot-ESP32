@@ -407,6 +407,12 @@ static int l_output_off(lua_State* L) {
     return 1;
 }
 
+static int l_output_was_updated(lua_State* L) {
+    int k = luaL_checkinteger(L, 1);
+    lua_pushboolean(L, (int) output_was_updated(k-1));
+    return 1;
+}
+
 static int l_get_foreground(lua_State* L) {
     lua_newtable(L);
     lua_pushnumber(L, 1);
@@ -468,6 +474,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "set_output", l_set_pwm },
     { "toggle_output", l_toggle_pwm },
     { "output_off", l_output_off },
+    { "output_was_updated", l_output_was_updated },
     { "increment_output", l_output_add_value },
     { "get_output_value", l_get_output_value },
     { "foreground_color", l_get_foreground },

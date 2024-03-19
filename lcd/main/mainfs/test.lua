@@ -42,7 +42,7 @@ function update_screen_text(x, y, bg, k, center)
         l.delete_sprite(spr[s])
     end
     l.draw_sprites(bg)
-    spr = l.draw_text(x, y, string.format("%.0f%%", l.get_output_value(k)/163), fgcol, bgcol);
+    spr = l.draw_text(x, y, string.format("%.0f%%", l.get_output_value(k)//163), fgcol, bgcol);
     if(center) then
         l.center_sprites_x(spr)
     end
@@ -93,11 +93,11 @@ while(true) do
                 l.increment_output(k, 163)
             end
             -- if(channel[k] >= 0 and channel[k] <= 100) then
-                update_screen_text(40, 134, {back}, k, true)
-                l.sprite_move_x({back_small}, xs[k])
-                l.set_char_size(12<<6)
-                update_screen_text(xs[k], 2, {back_small}, k, false)
-                l.set_char_size(42<<6)
+            -- update_screen_text(40, 134, {back}, k, true)
+            -- l.sprite_move_x({back_small}, xs[k])
+            -- l.set_char_size(12<<6)
+            -- update_screen_text(xs[k], 2, {back_small}, k, false)
+            -- l.set_char_size(42<<6)
                 -- if(channel_active[k]) then
                 --     l.set_pwm(k, channel[k]*163)
                 -- end
@@ -124,6 +124,13 @@ while(true) do
             l.sprite_move_x({off_text[2]}, xs[k]+33)
             update_screen_text(40, 134, {back}, k, true)
         end
+    end
+    if(l.output_was_updated(k)) then
+        update_screen_text(40, 134, {back}, k, true)
+        l.sprite_move_x({back_small}, xs[k])
+        l.set_char_size(12<<6)
+        update_screen_text(xs[k], 2, {back_small}, k, false)
+        l.set_char_size(42<<6)
     end
 end
 

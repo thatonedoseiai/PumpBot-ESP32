@@ -8,6 +8,7 @@ void update_pwm(int channel) {
 		ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
 		return;
 	}
+	pwms[channel].was_updated = 1;
 	uint16_t power = output_get_value(channel);
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
 }
@@ -15,8 +16,11 @@ void update_pwm(int channel) {
 static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
 	for(int i=0;i<4;++i) {
 		uint16_t k = atomic_load(&(pwms[i].cyclesLeft));
-		if(k == 1)
+		if(k == 1) {
+			uint16_t b = atomic_load(&(pwms[i].old_output));
+			atomic_store(&(pwms[i].output), b);
 			update_pwm(i);
+		}
 		if(k) {
 			atomic_fetch_sub(&(pwms[i].cyclesLeft), 1);
 			// ets_printf("channel %d: %d\n", k-1);
@@ -70,8 +74,12 @@ void output_set_value(int channel, int level) {
 void output_set_value_timeout(int channel, int level, int cs) {
 	if(atomic_load(&pwms[channel].off))
 		return;
+	uint16_t k = atomic_exchange(&pwms[channel].output, level);
+	atomic_store(&pwms[channel].old_output, k);
+	
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, level, 0);
 	pwms[channel].cyclesLeft = cs*5;
+	pwms[channel].was_updated = 1;
 }
 
 int output_get_value(int channel) {
@@ -85,10 +93,16 @@ char is_off(int channel) {
 void output_add_value(int channel, int increment) {
 	if(increment > 0)
 		atomic_fetch_add(&(pwms[channel].output), increment);
-	else if(atomic_load(&(pwms[channel].output)) >= increment)
+	else if(atomic_load(&(pwms[channel].output)) >= -increment)
 		atomic_fetch_sub(&(pwms[channel].output), -increment);
 	if(atomic_load(&(pwms[channel].output)) > 16383)
 		atomic_store(&(pwms[channel].output), 16383);
 	pwms[channel].cyclesLeft = 0;
 	update_pwm(channel);
+}
+
+char output_was_updated(int channel) {
+	char x = pwms[channel].was_updated;
+	pwms[channel].was_updated = 0;
+	return x;
 }
