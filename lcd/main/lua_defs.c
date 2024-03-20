@@ -4,7 +4,6 @@
 #include "board_config.h"
 #include "lua_exports.h"
 #include "utf8.h"
-#include "pwm_fade.h"
 #include "button.h"
 #include "pwm_output.h"
 #include "system_status.h"
@@ -29,7 +28,6 @@ extern uint24_RGB* foreground_color;
 extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
-extern pwm_fade_info_t pfade_channels[8];
 extern QueueHandle_t* button_events;
 
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {

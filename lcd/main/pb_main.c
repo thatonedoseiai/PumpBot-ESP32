@@ -9,7 +9,6 @@
 #include "rotenc.h"
 #include "menus.h"
 #include "menu_data.h"
-#include "pwm_fade.h"
 
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -50,7 +49,7 @@ lua_State* L;
 FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
 QueueHandle_t* button_events = NULL; // also because of lua
-pwm_fade_info_t pfade_channels[8]; // this one too
+// pwm_fade_info_t pfade_channels[8]; // this one too
 SETTINGS_t settings;
 
 unsigned char wifi_restart_counter = 0;
@@ -236,8 +235,8 @@ void app_main(void) {
     //     pwm_step_fade(&pfade_channels[5]);
     //     vTaskDelay(10);
     // }
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel, 0x3fff);
-	ledc_update_duty(LEDC_LOW_SPEED_MODE, pfade_channels[7].channel);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, 7, 0x3fff);
+	ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
 
 	// send_color(spi, background_color);
     // buffer_fillcolor(background_color);
