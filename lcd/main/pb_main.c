@@ -211,9 +211,9 @@ void app_main(void) {
 	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);
     // event_queue = rotary_encoder_create_queue(); 
     L = lua_init();
-    for(int i=0;i<LEDC_CHANNEL_MAX;++i) {
-        init_pwm_fade_info(&pfade_channels[i], i);
-    }
+    // for(int i=0;i<LEDC_CHANNEL_MAX;++i) {
+    //     init_pwm_fade_info(&pfade_channels[i], i);
+    // }
 
 	if(ret!=ESP_OK) {
 		ets_printf("initializations failed!\n");

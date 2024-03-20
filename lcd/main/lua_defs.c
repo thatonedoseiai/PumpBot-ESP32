@@ -7,6 +7,8 @@
 #include "pwm_fade.h"
 #include "button.h"
 #include "pwm_output.h"
+#include "system_status.h"
+#include "socket.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -457,6 +459,32 @@ static int l_delete_all_sprites(lua_State* L) {
     return 0;
 }
 
+static int l_wifi_is_connected(lua_State* L) {
+    lua_pushboolean(L, system_flags & FLAG_WIFI_CONNECTED);
+    return 1;
+}
+
+static int l_server_is_connected(lua_State* L) {
+    lua_pushboolean(L, system_flags & FLAG_SERVER_CONNECTED);
+    return 1;
+}
+
+static int l_server_send_message(lua_State* L) {
+    size_t len;
+    const char* str = luaL_checklstring(L, 3, &len);
+    int k = send_message(str, len);
+    lua_pushinteger(L, k);
+    return 1;
+}
+
+static int l_server_get_message(lua_State* L) {
+    char buf[1024];
+    memset(buf, 0, 1024);
+    get_message(buf, 1023);
+    lua_pushstring(L, buf);
+    return 1;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -482,6 +510,10 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "flush_text_cache", l_flush_text_cache },
     { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
     { "delete_all_sprites", l_delete_all_sprites },
+    { "wifi_is_connected", l_wifi_is_connected },
+    { "server_is_connected", l_server_is_connected },
+    { "server_send_message", l_server_send_message },
+    { "server_get_message", l_server_get_message },
     { NULL, NULL }
 };
 

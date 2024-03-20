@@ -3,7 +3,7 @@ set(srcs
     "board_config.c"
     "ILIDriver.c"
     "oam.c"
-    "pwm_fade.c"
+    # "pwm_fade.c"
     "menus/bootloader.c"
     "lua_defs.c"
     "pb_main.c"
