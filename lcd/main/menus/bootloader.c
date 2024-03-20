@@ -17,6 +17,7 @@
 #include <dirent.h>
 #include "http.h"
 #include "system_status.h"
+#include "socket.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -348,6 +349,7 @@ static int menufunc_connect_wifi(void) {
         draw_all_sprites(spi);
         delete_all_sprites();
         vTaskDelay(3000 / portTICK_PERIOD_MS);
+        system_flags &= ~FLAG_WIFI_TIMED_OUT;
         return MENU_POP_FLAG;
     }
     ets_printf("success!\n");
@@ -376,7 +378,7 @@ static int menufunc_http_setup(void) {
 static int menufunc_network_preview(void) {
     int ys[] = {184, 152, 120, 88, 56};
     char namebuf[14];
-    int k[8];
+    int k[10];
     int lenk;
     button_event_t event;
     rotary_encoder_event_t rotencev;
@@ -393,7 +395,7 @@ static int menufunc_network_preview(void) {
     draw_text(32, 152, "Password", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color, 0);
     center_sprite_group_x(k, lenk);
-    draw_text(32, 88, "Connect", typeFace, k, &lenk, foreground_color, background_color, 0);
+    draw_text(32, 88, (system_flags & FLAG_WIFI_CONNECTED) ? "Disconnect" : "Connect", typeFace, k, &lenk, foreground_color, background_color, 0);
     center_sprite_group_x(k, lenk);
     if(strlen(settings.wifi_name) > 10) {
         for(int i=0;i<10;++i) {
@@ -457,6 +459,13 @@ static int menufunc_network_preview(void) {
                     break;
                 case 3:
                     delete_all_sprites();
+                    if(system_flags & FLAG_WIFI_CONNECTED) {
+                        memset(&settings.wifi_name, 0, 32);
+                        memset(&settings.wifi_pass, 0, 64);
+                        esp_wifi_disconnect();
+                        system_flags &= ~FLAG_WIFI_CONNECTED;
+                        return MENU_POP_FLAG;
+                    }
                     return 4;
                 }
             }
@@ -1453,7 +1462,8 @@ static int menufunc_network_settings(void) {
     char namebuf[15];
     int selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    if(settings.wifi_name[0]) {
+    // if(settings.wifi_name[0]) {
+    if(system_flags & FLAG_WIFI_CONNECTED) {
         if(strlen(settings.wifi_name) > 10) {
             for(int i=0;i<10;++i) {
                 namebuf[i] = settings.wifi_name[i];
@@ -1484,7 +1494,7 @@ static int menufunc_network_settings(void) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return selection ? 20 : 2;
+                return selection ? 20 : ((system_flags & FLAG_WIFI_CONNECTED) ? 6 : 2);
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
@@ -1530,8 +1540,9 @@ static int menufunc_server_settings(void) {
     char ip_buf[16];
     char pass_buf[16];
     char port_buf[6];
-    int sprs[7];
+    int sprs[16];
     int numsprs;
+    int rect1;
     sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);
     draw_text(150, 184, ip_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     int k = strlen(settings.server_password);
@@ -1545,7 +1556,7 @@ static int menufunc_server_settings(void) {
     itoa(settings.server_port, port_buf, 10);
     port_buf[5] = 0;
     draw_text(150, 120, port_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(150, 88, "Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    draw_text(150, 88, (system_flags & FLAG_WIFI_CONNECTED) ? "Connect" : "Can't Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_all_sprites(spi);
     delete_all_sprites();
@@ -1563,6 +1574,30 @@ static int menufunc_server_settings(void) {
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 if(selection == 3) {
                     // connect to the server
+                    if(system_flags & FLAG_WIFI_CONNECTED) {
+                        if(system_flags & FLAG_SERVER_CONNECTED) {
+                            disconnect_from_server();
+                            system_flags &= ~FLAG_SERVER_CONNECTED;
+                        } else {
+                            int r = connect_to_server(*(uint32_t*) &settings.server_ip, settings.server_port);
+                            if(r) {
+                                draw_text(32, 56, "Failed to connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+                                draw_all_sprites(spi);
+                                for(int i=0;i<numsprs;++i)
+                                    delete_sprite(sprs[i]);
+                                goto failed;
+                            }
+                            system_flags |= FLAG_SERVER_CONNECTED;
+                        }
+                        rect1 = sprite_rectangle(32, 88, 176, 20, background_color);
+                        draw_text(150, 88, (system_flags & FLAG_SERVER_CONNECTED) ? "Disconnect" : "Connect", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+                        center_sprite_group_x(sprs, numsprs);
+                        draw_all_sprites(spi);
+                        for(int i=0;i<numsprs;++i)
+                            delete_sprite(sprs[i]);
+                        delete_sprite(rect1);
+                    }
+failed:
                 } else {
                     delete_all_sprites();
                     ibuf_mode = selection+1;

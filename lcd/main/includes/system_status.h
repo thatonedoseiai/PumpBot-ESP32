@@ -4,6 +4,7 @@
 #define FLAG_WIFI_CONNECTED   0x0001
 #define FLAG_WIFI_TIMED_OUT   0x0002
 #define FLAG_HTTP_SERVER_DONE 0x0004
+#define FLAG_SERVER_CONNECTED 0x0008
 
 extern uint8_t system_flags;
 
