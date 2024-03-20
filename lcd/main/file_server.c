@@ -30,6 +30,8 @@
 #include "settings.h"
 #include "esp_wifi.h"
 
+#include "system_status.h"
+
 /* Max length a file path can have on storage */
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 
@@ -50,7 +52,7 @@ struct file_server_data {
 };
 
 extern SETTINGS_t settings;
-extern char connect_flag;
+// extern char connect_flag;
 
 static const char *TAG = "file_server";
 
@@ -397,7 +399,8 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
 #ifdef CONFIG_EXAMPLE_HTTPD_CONN_CLOSE_HEADER
     httpd_resp_set_hdr(req, "Connection", "close");
 #endif
-    connect_flag = 1;
+    // connect_flag = 1;
+    system_flags |= FLAG_HTTP_SERVER_DONE;
 
     return ESP_OK;
 }

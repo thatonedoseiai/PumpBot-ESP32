@@ -16,6 +16,7 @@
 #include "rgb_fade.h"
 #include <dirent.h>
 #include "http.h"
+#include "system_status.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -31,13 +32,14 @@ extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 // extern uint24_RGB WHITE;
-extern char connect_flag;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
 static char* ibuf;
+static char ibuf_mode;
 static uint24_RGB* colorbuf;
 extern unsigned char wifi_restart_counter;
 extern lua_State* L;
+
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
@@ -117,7 +119,7 @@ static int menufunc_wifi_scan() {
     wifi_ap_record_t ap_info[10];
     uint16_t ap_count = 0;
     memset(ap_info, 0, sizeof(ap_info));
-    connect_flag = 0;
+    system_flags &= ~FLAG_WIFI_CONNECTED;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
@@ -155,7 +157,7 @@ refresh:
         ap_count = 10;
 
     selection = 0;
-    while(!connect_flag) {
+    while((system_flags & FLAG_WIFI_CONNECTED) == 0) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
             selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % ap_count : (selection + ap_count - 1) % ap_count;
@@ -332,14 +334,15 @@ static int menufunc_connect_wifi(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ESP_ERROR_CHECK(esp_wifi_connect());
     ets_printf("connecting...\n");
-    while(!connect_flag) {
+    while((system_flags & (FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT)) == 0) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 0 && event.event == 0) {
             wifi_restart_counter = 10;
             return MENU_POP_FLAG;
         }
     }
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    if(wifi_restart_counter >= 10) {
+    // if(wifi_restart_counter >= 10) {
+    if(system_flags & FLAG_WIFI_TIMED_OUT) {
         ets_printf("FAILED!\n");
         draw_text(32, 60, "Connection Failed!", typeFace, NULL, NULL, foreground_color, background_color, 0);
         draw_all_sprites(spi);
@@ -356,15 +359,16 @@ static int menufunc_connect_wifi(void) {
 }
 
 static int menufunc_http_setup(void) {
-    connect_flag = 0;
+    system_flags &= ~FLAG_HTTP_SERVER_DONE;
     ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
     button_event_t event;
-    while(!connect_flag) {
+    while((system_flags & FLAG_HTTP_SERVER_DONE) == 0) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
             stop_file_server();
             return MENU_POP_FLAG;
         }
     }
+    system_flags &= ~FLAG_HTTP_SERVER_DONE;
     stop_file_server();
     return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
 }
@@ -1491,8 +1495,9 @@ static int menufunc_network_settings(void) {
 }
 
 static int menufunc_server_settings(void) {
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     if(ibuf != NULL) {
-        switch(connect_flag) {
+        switch(ibuf_mode) {
         case 1:
             uint8_t temp[4];
             int numvars = sscanf(ibuf, "%hhu.%hhu.%hhu.%hhu", &temp[0], &temp[1], &temp[2], &temp[3]);
@@ -1512,7 +1517,7 @@ static int menufunc_server_settings(void) {
             break;
         default:
         }
-        connect_flag = 0;
+        ibuf_mode = 0;
         free(ibuf);
         ibuf = NULL;
     }
@@ -1527,7 +1532,6 @@ static int menufunc_server_settings(void) {
     char port_buf[6];
     int sprs[7];
     int numsprs;
-    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);
     draw_text(150, 184, ip_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
     int k = strlen(settings.server_password);
@@ -1561,7 +1565,7 @@ static int menufunc_server_settings(void) {
                     // connect to the server
                 } else {
                     delete_all_sprites();
-                    connect_flag = selection+1;
+                    ibuf_mode = selection+1;
                     ibuf = calloc(256, sizeof(char));
                     return 3;
                 }
@@ -1636,7 +1640,7 @@ int start_menu_tree(int startmenu, char settings_mode) {
 
 int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements) {
     int err;
-    static int sizeControl = 0;
+    int sizeControl = 0;
 
     for (int i = 0; i < numElements; i++) {
         if (elems[i].flags & MENU_FLAG_IS_HLINE) {

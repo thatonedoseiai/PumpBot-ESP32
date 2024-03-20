@@ -23,6 +23,7 @@
 #include "esp_timer.h"
 #include "rgb_fade.h"
 #include "pwm_output.h"
+#include "system_status.h"
 
 #include "lua_exports.h"
 
@@ -41,7 +42,7 @@ extern uint24_RGB* foreground_color;
 extern const uint24_RGB WHITE;
 //
 
-char connect_flag = 0;
+uint8_t system_flags = 0;
 spi_device_handle_t spi;
 // static char redraw_flag = 0;
 // static int nums[5] = {0,0,0,0,0};
@@ -68,6 +69,8 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ets_printf("connected to station \"%s\"!\n", event->ssid);
         wifi_restart_counter = 0;
     } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        system_flags &= ~(FLAG_WIFI_TIMED_OUT | FLAG_WIFI_CONNECTED);
+        wifi_restart_counter = 0;
         esp_wifi_connect();
         ets_printf("starting connection...\n");
     } else if(event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
@@ -76,12 +79,15 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         if(wifi_restart_counter < 10) {
             esp_wifi_connect();
         } else {
-            connect_flag = 1;
+            // connect_flag = 1;
+            system_flags |= FLAG_WIFI_TIMED_OUT;
+            ets_printf("failed to connect!\n");
         }
     } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
-        connect_flag = 1;
+        system_flags |= FLAG_WIFI_CONNECTED;
+        // connect_flag = 1;
     }
 }
 
