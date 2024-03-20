@@ -24,6 +24,7 @@
 #define MENU_POP_FLAG 0x4000
 #define MENU_REDRAW_FLAG 0x2000
 #define MENU_SETUP_ONLY_TRANSITION_FLAG 0x1000
+#define MENU_SELF_POP_FLAG 0x800
 #define IBUF_SIZE 256
 
 extern FT_Face typeFace;
@@ -120,7 +121,7 @@ static int menufunc_wifi_scan() {
     wifi_ap_record_t ap_info[10];
     uint16_t ap_count = 0;
     memset(ap_info, 0, sizeof(ap_info));
-    system_flags &= ~FLAG_WIFI_CONNECTED;
+    // system_flags &= ~FLAG_WIFI_CONNECTED;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
@@ -158,7 +159,7 @@ refresh:
         ap_count = 10;
 
     selection = 0;
-    while((system_flags & FLAG_WIFI_CONNECTED) == 0) {
+    while(1) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
             selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % ap_count : (selection + ap_count - 1) % ap_count;
@@ -198,7 +199,7 @@ refresh:
                 return MENU_POP_FLAG;
         }
     }
-    return MENU_RETURN_FLAG;
+    // return MENU_RETURN_FLAG;
 }
 
 unsigned char table1[] = "EF⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
@@ -357,7 +358,7 @@ static int menufunc_connect_wifi(void) {
     draw_all_sprites(spi);
     delete_all_sprites();
     vTaskDelay(3000 / portTICK_PERIOD_MS);
-    return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_SELF_POP_FLAG | 8;
 }
 
 static int menufunc_http_setup(void) {
@@ -365,7 +366,7 @@ static int menufunc_http_setup(void) {
     ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
     button_event_t event;
     while((system_flags & FLAG_HTTP_SERVER_DONE) == 0) {
-        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 3) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 0 && event.event == BUTTON_DOWN) {
             stop_file_server();
             return MENU_POP_FLAG;
         }
@@ -462,8 +463,9 @@ static int menufunc_network_preview(void) {
                     if(system_flags & FLAG_WIFI_CONNECTED) {
                         memset(&settings.wifi_name, 0, 32);
                         memset(&settings.wifi_pass, 0, 64);
+                        wifi_restart_counter = 20;
                         esp_wifi_disconnect();
-                        system_flags &= ~FLAG_WIFI_CONNECTED;
+                        system_flags &= ~(FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT);
                         return MENU_POP_FLAG;
                     }
                     return 4;
@@ -1620,7 +1622,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_wifi_scan},
     {&menutextenter[0], 4, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
-    {&menusetup2a[0], 3, menufunc_http_setup},
+    {&menusetup2a[0], 12, menufunc_http_setup},
     {&menusetup3[0], 10, menufunc_network_preview},
     {&menusetup1[0], 10, menufunc_pb_setup_method},
     {&menusetup3[0], 10, menufunc_display_settings},
@@ -1654,7 +1656,14 @@ int start_menu_tree(int startmenu, char settings_mode) {
             delete_all_sprites();
         }
         nextmenu = currmenu->menu_functionality();
-        if(nextmenu & MENU_POP_FLAG) {
+        if(nextmenu & MENU_SELF_POP_FLAG) {
+            if((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
+                menu_stackp--;
+                if(menu_stackp < 0)
+                    menu_stackp = 0;
+            } else
+                menu_stack[menu_stackp] = nextmenu & 0xff;
+        } else if(nextmenu & MENU_POP_FLAG) {
             menu_stackp--;
             if(menu_stackp < 0) {
                 menu_stackp = 0;
@@ -1664,7 +1673,7 @@ int start_menu_tree(int startmenu, char settings_mode) {
             nextmenu = 0;
         } else if (!(nextmenu & MENU_REDRAW_FLAG)) {
             menu_stackp++;
-            menu_stack[menu_stackp] = nextmenu;
+            menu_stack[menu_stackp] = nextmenu & 0xff;
         }
     } while((nextmenu & MENU_RETURN_FLAG) == 0);
     return menu_stackp;

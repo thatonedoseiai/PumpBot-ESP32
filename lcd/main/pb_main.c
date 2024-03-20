@@ -80,6 +80,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         } else {
             // connect_flag = 1;
             system_flags |= FLAG_WIFI_TIMED_OUT;
+            wifi_restart_counter = 0;
             ets_printf("failed to connect!\n");
         }
     } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
@@ -377,11 +378,6 @@ void app_main(void) {
     rgb_update();
     assign_theme_from_settings();
 
-    // if(setup_flag) {
-    //     (void) start_menu_tree(0);
-    //     // write_to_file(&settings);
-    // }
-    // (void) start_menu_tree(14, true);
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
 
@@ -391,9 +387,13 @@ void app_main(void) {
         if(!read_default_app(buf, 256))
             (void) luaL_dofile(L, buf);
         free(buf);
-    } else {
-        ets_printf("press: %d %d\n", event.pin, event.event);
     }
+
+    if(setup_flag) {
+        (void) start_menu_tree(0, false);
+        // write_to_file(&settings);
+    }
+    // (void) start_menu_tree(14, true);
 
     while(true) {
         send_color(spi, background_color);
