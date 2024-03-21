@@ -402,9 +402,9 @@ static int menufunc_network_preview(void) {
 
     draw_text(32, 184, "Network", typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_text(32, 152, "Password", typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color, 0);
-    center_sprite_group_x(k, lenk);
-    draw_text(32, 88, (system_flags & FLAG_WIFI_CONNECTED) ? "Disconnect" : "Connect", typeFace, k, &lenk, foreground_color, background_color, 0);
+    // draw_text(32, 120, "Advanced", typeFace, k, &lenk, foreground_color, background_color, 0);
+    // center_sprite_group_x(k, lenk);
+    draw_text(32, 120, (system_flags & FLAG_WIFI_CONNECTED) ? "Disconnect" : "Connect", typeFace, k, &lenk, foreground_color, background_color, 0);
     center_sprite_group_x(k, lenk);
     if(strlen(settings.wifi_name) > 10) {
         for(int i=0;i<10;++i) {
@@ -442,7 +442,7 @@ static int menufunc_network_preview(void) {
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection]-14;
-            selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % 4 : (selection + 3) % 4;
+            selection = (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (selection + 1) % 3 : (selection + 2) % 3;
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection]-14;
             draw_sprites(spi, &cursorbg, 1);
             draw_sprites(spi, &cursor, 1);
@@ -465,8 +465,6 @@ static int menufunc_network_preview(void) {
                     delete_all_sprites();
                     return 3;
                 case 2:
-                    break;
-                case 3:
                     delete_all_sprites();
                     if(system_flags & FLAG_WIFI_CONNECTED) {
                         memset(&settings.wifi_name, 0, 32);
