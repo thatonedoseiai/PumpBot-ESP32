@@ -17,5 +17,6 @@ extern const MENU_ELEMENT menuapprundelete[];
 extern const MENU_ELEMENT menudownloadapp[];
 extern const MENU_ELEMENT menuserversettings[];
 extern const MENU_ELEMENT menunetworksettings[];
+extern const MENU_ELEMENT menuskipwifi[];
 
 #endif

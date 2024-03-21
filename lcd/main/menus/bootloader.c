@@ -111,9 +111,12 @@ static void draw_options(char** options, int bgrect) {
 
 char SEARCH_TEXT[] = "Searching...";
 static int menufunc_wifi_scan() {
+    int error;
+    int sprs[6];
+    int numsprs;
+
     int ys[] = {184, 152, 120, 88, 56};
 
-    int error;
     char* list_options[5];
     uint8_t selection = 0;
     uint8_t page_start = 0;
@@ -123,11 +126,16 @@ static int menufunc_wifi_scan() {
     memset(ap_info, 0, sizeof(ap_info));
     // system_flags &= ~FLAG_WIFI_CONNECTED;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
+    // error = draw_text(270, 2, "Search", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    // right_justify_sprite_group_x(sprs, numsprs, 2);
+    // draw_all_sprites(spi);
+    // delete_all_sprites();
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
     button_event_t event;
     rotary_encoder_event_t rotencev;
+
     // error = draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     setup_cursor(&cursorbg, &cursor, 184);
     OAM_SPRITE_TABLE[cursor]->draw = false;
@@ -442,7 +450,7 @@ static int menufunc_network_preview(void) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 // draw_text(0, 88, , 0);
-                return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | 22;
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
                 switch(selection) {
@@ -526,7 +534,7 @@ static int menufunc_pb_setup_method (void) {
             draw_all_sprites(spi);
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            if(event.pin == 3 && event.event == BUTTON_DOWN) {
+            if((event.pin == 3 || event.pin == 18) && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | (selection ? 2 : 5);
             }
@@ -802,7 +810,7 @@ static int menufunc_add_on_settings(void) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
-                return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_RETURN_FLAG;
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | 21;
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 delete_all_sprites();
@@ -1613,7 +1621,27 @@ failed:
             }
         }
     }
-    return MENU_RETURN_FLAG;
+}
+
+static int menufunc_setup_done(void) {
+    button_event_t event;
+    while(true) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN && event.pin == 18) {
+            return MENU_RETURN_FLAG;
+        }
+    }
+}
+
+static int menufunc_skip_wifi(void) {
+    button_event_t event;
+    while(true) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
+            if(event.pin == 0)
+                return MENU_POP_FLAG;
+            if(event.pin == 3)
+                return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_SELF_POP_FLAG | 8;
+        }
+    }
 }
 
 MENU_INFO_t allmenus[] = {
@@ -1637,7 +1665,9 @@ MENU_INFO_t allmenus[] = {
     {NULL, 0, menufunc_execute_ibuf_file},
     {&menudownloadapp[0], 7, menufunc_download_file},
     {&menunetworksettings[0], 9, menufunc_network_settings},
-    {&menuserversettings[0], 12, menufunc_server_settings}
+    {&menuserversettings[0], 12, menufunc_server_settings},
+    {&menusetupdone[0], 2, menufunc_setup_done},
+    {&menuskipwifi[0], 5, menufunc_skip_wifi}
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {

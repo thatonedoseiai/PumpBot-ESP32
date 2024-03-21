@@ -368,6 +368,7 @@ void app_main(void) {
     if(read_from_file(&settings)) {
         settings.disp_brightness = 255;
         settings.disp_theme = 0;
+        settings.pressure_units = PSI;
         setup_flag = 1;
         memset(settings.pwm_min_limit, 0, 4*sizeof(uint16_t));
         for(int i=0;i<4;++i)

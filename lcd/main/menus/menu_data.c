@@ -666,7 +666,7 @@ const MENU_ELEMENT menusetupdone[] = {
        {
         .text = "Setup Complete!",
         .x = 0,
-        .y = 224,
+        .y = 195,
         .flags = MENU_FLAG_CENTER,
         .textsize = 18,
         .col = &foreground_color
@@ -995,6 +995,48 @@ const MENU_ELEMENT menunetworksettings[] = {
         .x = 2,
         .y = 2,
         .textsize = 14,
+        .col = &foreground_color
+    }
+};
+
+const MENU_ELEMENT menuskipwifi[] = {
+    {
+        .text = "Continue without",
+        .x = 0,
+        .y = 195,
+        .textsize = 18,
+        .flags = MENU_FLAG_CENTER,
+        .col = &foreground_color
+    },
+    {
+        .text = "Connecting to",
+        .x = 0,
+        .y = 154,
+        .textsize = 18,
+        .flags = MENU_FLAG_CENTER,
+        .col = &foreground_color
+    },
+    {
+        .text = "Wi-fi?",
+        .x = 0,
+        .y = 113,
+        .textsize = 18,
+        .flags = MENU_FLAG_CENTER,
+        .col = &foreground_color
+    },
+    { 
+        .text = "No",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    { 
+        .text = "OK",
+        .x = 2,
+        .y = 2,
+        .textsize = 14,
+        .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
     }
 };
