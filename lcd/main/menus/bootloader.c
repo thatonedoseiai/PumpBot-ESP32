@@ -60,6 +60,7 @@ char languages[][15] = {
     "繁體中文",
     "Pусский",
     "Deutsch",
+    "한국어"
 };
 static int menufunc_setup(void) {
     int error;
@@ -77,7 +78,7 @@ static int menufunc_setup(void) {
                 return MENU_POP_FLAG;
         }
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            currlang = ((unsigned) rotencev.state.position) % 3;
+            currlang = ((unsigned) rotencev.state.position) % 10;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
             draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color, 0);

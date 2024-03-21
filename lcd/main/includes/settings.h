@@ -28,7 +28,8 @@ enum LANGUAGE_t {
     ZH = 5,
     CN = 6,
     RU = 7,
-    DE = 8
+    DE = 8,
+    KO = 9
 };
 
 typedef struct {
