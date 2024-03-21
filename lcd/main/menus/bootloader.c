@@ -126,10 +126,12 @@ static int menufunc_wifi_scan() {
     memset(ap_info, 0, sizeof(ap_info));
     // system_flags &= ~FLAG_WIFI_CONNECTED;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    // error = draw_text(270, 2, "Search", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
-    // right_justify_sprite_group_x(sprs, numsprs, 2);
-    // draw_all_sprites(spi);
-    // delete_all_sprites();
+
+    error = draw_text(270, 2, "Search", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    right_justify_sprite_group_x(sprs, numsprs, 2);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+
     int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
     int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
