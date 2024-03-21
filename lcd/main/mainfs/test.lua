@@ -6,8 +6,8 @@ selecting_channels = false
 
 l.set_char_size(12<<6)
 wifi_symbol_status = l.wifi_is_connected();
-w = l.draw_text(306, 226, "w", fgcol, bgcol)
-n = l.draw_text(306, 226, "n", fgcol, bgcol)
+w = l.draw_text(306, 226, "󰖩", fgcol, bgcol)
+n = l.draw_text(306, 226, "󰖪", fgcol, bgcol)
 if(wifi_symbol_status) then
     l.draw_sprites(w)
 else

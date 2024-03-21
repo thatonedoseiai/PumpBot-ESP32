@@ -59,8 +59,7 @@ char languages[][15] = {
     "简化中文",
     "繁體中文",
     "Pусский",
-    "Deutsch",
-    "한국어"
+    "Deutsch"
 };
 static int menufunc_setup(void) {
     int error;
@@ -69,7 +68,7 @@ static int menufunc_setup(void) {
     int currlang = 0;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
     while(true) {
-        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
             if(event.pin == 3) {
                 settings.language = currlang;
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | 7;
@@ -78,7 +77,7 @@ static int menufunc_setup(void) {
                 return MENU_POP_FLAG;
         }
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            currlang = ((unsigned) rotencev.state.position) % 10;
+            currlang = ((unsigned) rotencev.state.position) % 9;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
             draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color, 0);
@@ -1665,7 +1664,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_pwm_output_set},
     {&menusetup3[0], 9, menufunc_rgb_lighting},
     {&menusetup3[0], 9, menufunc_applications},
-    {&menuapprundelete[0], 9, menufunc_file_run_delete},
+    {&menuapprundelete[0], 10, menufunc_file_run_delete},
     {NULL, 0, menufunc_execute_ibuf_file},
     {&menudownloadapp[0], 7, menufunc_download_file},
     {&menunetworksettings[0], 9, menufunc_network_settings},

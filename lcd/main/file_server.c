@@ -258,7 +258,7 @@ static esp_err_t get_wifi_handler(httpd_req_t *req) {
 }
 
 static esp_err_t get_language_handler(httpd_req_t *req) {
-    const char get_handler_resp[][3] = {"en", "jp", "fr", "es", "pt", "zh", "cn", "ru", "de", "ko"};
+    const char get_handler_resp[][3] = {"en", "jp", "fr", "es", "pt", "zh", "cn", "ru", "de"};
     httpd_resp_send(req, get_handler_resp[settings.language], HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
