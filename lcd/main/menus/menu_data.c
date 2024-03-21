@@ -458,7 +458,7 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = &foreground_color
     },
     {
-        .text = "http://192.168.1.4/",
+        .text = "192.168.4.1/index.html",
         .x = 0,
         .y = 88,
         .flags = MENU_FLAG_CENTER,

@@ -384,7 +384,7 @@ static int menufunc_http_setup(void) {
     }
     system_flags &= ~FLAG_HTTP_SERVER_DONE;
     stop_file_server();
-    return MENU_SETUP_ONLY_TRANSITION_FLAG | 8;
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | 21;
 }
 
 static int menufunc_network_preview(void) {
@@ -827,9 +827,10 @@ const char set_outp[] = "Output";
 const char set_RGB[] = "RGB";
 const char set_addon[] = "Add-on";
 const char set_apps[] = "Apps";
+const char set_lang[] = "Language";
 const char set_devs[] = "Developer";
-const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_devs, NULL};
-const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, MENU_RETURN_FLAG};
+const char* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_lang, set_devs, NULL};
+const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, 1, MENU_RETURN_FLAG};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
@@ -855,7 +856,7 @@ static int menufunc_all_settings(void) {
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             OAM_SPRITE_TABLE[cursorbg]->posY = 240-ys[selection - page_start]-14;
-            selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 6)) % 7;
+            selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 7)) % 8;
             // page_start = (selection > 4) ? selection - 4 : 0;
             if(selection > page_start + 4) {
                 page_start = selection - 4;

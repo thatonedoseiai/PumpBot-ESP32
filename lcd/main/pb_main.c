@@ -377,8 +377,8 @@ void app_main(void) {
         settings.RGB_brightness = 0x3fff;
         settings.RGB_speed = 32;
     }
-    rgb_update();
-    assign_theme_from_settings();
+    // rgb_update();
+    // assign_theme_from_settings();
 
     // ESP_ERROR_CHECK(esp_timer_deinit());
     // ets_printf("%s\n", &settings.wifi_name);
@@ -395,6 +395,8 @@ void app_main(void) {
         (void) start_menu_tree(0, false);
         // write_to_file(&settings);
     }
+    rgb_update();
+    assign_theme_from_settings();
     // (void) start_menu_tree(14, true);
 
     while(true) {

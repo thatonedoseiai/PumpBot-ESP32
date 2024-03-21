@@ -30,9 +30,11 @@
           document.getElementById(ids[i]).value = k[i];
         }
       });
-    function submission() {
-      document.getElementById("send_confirm").innerHTML = "Settings saved! Check pumpbot!";
-    }
+      function submission() {
+        document.getElementById("send_confirm").innerHTML = "Settings saved! Check pumpbot!";
+      }
+      button = document.getElementById("submissionButton");
+      addEventListener("submit", (event) => {submission});
   </script>
 </head>
 <body>
@@ -85,7 +87,8 @@
       <option value="8">Deutsch</option>
       <option value="9">한국어</option>
     </select><br><br>
-    <input type="submit" onclick="submission()" value="Save and Exit">
+    <input type="submit" value="Save and Exit" id="submissionButton">
+<!-- onclick="submission()" --> 
 </form>
 <p id="send_confirm"> </p>
 <p id="getreq">
