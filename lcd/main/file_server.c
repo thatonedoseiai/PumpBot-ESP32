@@ -29,6 +29,7 @@
 #include "file_server.h"
 #include "settings.h"
 #include "esp_wifi.h"
+#include "board_config.h"
 
 #include "system_status.h"
 
@@ -257,14 +258,14 @@ static esp_err_t get_wifi_handler(httpd_req_t *req) {
 }
 
 static esp_err_t get_language_handler(httpd_req_t *req) {
-    const char get_handler_resp[][3] = {"en", "jp", "fr", "es", "pt", "zh", "cn", "ru", "de"};
+    const char get_handler_resp[][3] = {"en", "jp", "fr", "es", "pt", "zh", "cn", "ru", "de", "ko"};
     httpd_resp_send(req, get_handler_resp[settings.language], HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
 
 static esp_err_t get_settings_handler(httpd_req_t *req) {
     char settings_buffer[200];
-    sprintf(&settings_buffer[0], "%s,%s,%d,%d,%d,%d,%d,%x%x%x,%x%x%x,%d,%d", settings.wifi_name, settings.wifi_pass, settings.disp_theme, settings.disp_brightness, settings.RGB_brightness, settings.RGB_speed, settings.RGB_mode, settings.RGB_colour.pixelR, settings.RGB_colour.pixelG, settings.RGB_colour.pixelB, settings.RGB_colour_2.pixelR, settings.RGB_colour_2.pixelG, settings.RGB_colour_2.pixelB, settings.pressure_units, settings.language);
+    sprintf(&settings_buffer[0], "%s,%s,%d,%x%x%x,%d,%d,%d,%d,%x%x%x,%x%x%x,%d,%d", settings.wifi_name, settings.wifi_pass, settings.disp_theme, settings.custom_theme_color.pixelR, settings.custom_theme_color.pixelG, settings.custom_theme_color.pixelB, settings.disp_brightness, settings.RGB_brightness, settings.RGB_speed, settings.RGB_mode, settings.RGB_colour.pixelR, settings.RGB_colour.pixelG, settings.RGB_colour.pixelB, settings.RGB_colour_2.pixelR, settings.RGB_colour_2.pixelG, settings.RGB_colour_2.pixelB, settings.pressure_units, settings.language);
     httpd_resp_send(req, settings_buffer, HTTPD_RESP_USE_STRLEN);
     return ESP_OK;
 }
@@ -406,7 +407,17 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
     }
     while(sets[i]!='&') i++;
     // int r = sscanf(sets, "ws=%[^&]&wp=%[^&]&t=%d&b=%d&rb=%hd&rs=%d&rm=%d&rc=%%23%hhx%hhx%hhx&rc2=%%23%hhx%hhx%hhx&p=%d&l=%d", settings.wifi_name, settings.wifi_pass, &settings.disp_theme, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
-    int r = sscanf(sets+i, "&t=%d&b=%d&rb=%hu&rs=%d&rm=%d&rc=%%23%2hhx%2hhx%2hhx&rc2=%%23%2hhx%2hhx%2hhx&p=%d&l=%d", &settings.disp_theme, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
+    int r = sscanf(sets+i, "&t=%d&tc=%%23%2hhx%2hhx%2hhx&b=%d&rb=%hu&rs=%d&rm=%d&rc=%%23%2hhx%2hhx%2hhx&rc2=%%23%2hhx%2hhx%2hhx&p=%d&l=%d", &settings.disp_theme, &settings.custom_theme_color.pixelR, &settings.custom_theme_color.pixelG, &settings.custom_theme_color.pixelB, &settings.disp_brightness, &settings.RGB_brightness, &settings.RGB_speed, (int*)&settings.RGB_mode, &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelG, &settings.RGB_colour.pixelB, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, (int*)&settings.pressure_units, (int*)&settings.language);
+    settings.RGB_brightness <<= 6;
+    if(settings.wifi_name[0])
+    strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
+    strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    while((system_flags & FLAG_WIFI_CONNECTED) == 0);
+    if(system_flags & FLAG_WIFI_TIMED_OUT) {
+        system_flags &= ~(FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT);
+    }
     ets_printf("SETTINGS SUBMITTED! %d\n", r);
     write_to_file(&settings);
 

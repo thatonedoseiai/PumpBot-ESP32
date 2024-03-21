@@ -22,7 +22,7 @@
       .then(response => response.text())
       .then(text => {
         var k = text.split(",");
-        var ids=["ws","wp","t","b","rb","rs","rm","rc","rc2","p","l"];
+        var ids=["ws","wp","t","tc","b","rb","rs","rm","rc","rc2","p","l"];
         var c = document.createElement("option");
         c.text = k[0];
         document.getElementById("ws").options.add(c);
@@ -49,13 +49,16 @@
     <select id="t" name="t">
       <option value="0">dark</option>
       <option value="1">light</option>
-    </select><br><br>
+      <option value="2">custom</option>
+    </select> <br><br>
+    <label for="tc">RGB color 1:</label>
+    <input type="color" id="tc" name="tc" value="#e66465"><br><br>
     <label for="b">display brightness:</label>
     <input type="range" min="0" max="255" value="230" id="b" name="b"><br><br>
     <label for="rb">RGB brightness:</label>
     <input type="range" min="0" max="255" value="230" id="rb" name="rb"><br><br>
     <label for="rs">RGB speed:</label>
-    <input type="range" min="0" max="10" value="5" id="rs" name="rs"><br><br>
+    <input type="range" min="0" max="100" value="5" id="rs" name="rs"><br><br>
     <label for="rm">RGB mode:</label>
     <select id="rm" name="rm">
       <option value="0">off</option>

@@ -384,6 +384,8 @@ static int menufunc_http_setup(void) {
     }
     system_flags &= ~FLAG_HTTP_SERVER_DONE;
     stop_file_server();
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, 7, settings.disp_brightness << 6);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
     return MENU_SETUP_ONLY_TRANSITION_FLAG | 21;
 }
 
