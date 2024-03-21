@@ -76,6 +76,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         ets_printf("retrying connection...\n");
         wifi_restart_counter++;
         if(wifi_restart_counter < 10) {
+            system_flags &= ~FLAG_WIFI_CONNECTED;
             esp_wifi_connect();
         } else {
             // connect_flag = 1;
