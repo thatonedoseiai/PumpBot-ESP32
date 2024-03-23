@@ -185,16 +185,27 @@ const char text_wifi_setup_cn[] = "網上設定";
 // const char text_wifi_setup_de[] = "";
 const char *const text_wifi_setup[] = {text_wifi_setup_en, text_wifi_setup_jp, text_wifi_setup_en, text_wifi_setup_en, text_wifi_setup_en, text_wifi_setup_en, text_wifi_setup_cn, text_wifi_setup_en, text_wifi_setup_en};
 
-const char text_tooltip_wifi_setup_en[] = "Set up PumpBot by connecting another device";
-const char text_tooltip_wifi_setup_jp[] = "他のデバイスに接続して設定する";
+const char text_tooltip_wifi_setup_en[] = "Set up PumpBot by connecting";
+const char text_tooltip_wifi_setup_jp[] = "他のデバイスに接続して";
 // const char text_tooltip_wifi_setup_fr[] = "";
 // const char text_tooltip_wifi_setup_es[] = "";
 // const char text_tooltip_wifi_setup_pt[] = "";
 // const char text_tooltip_wifi_setup_zh[] = "";
-const char text_tooltip_wifi_setup_cn[] = "連接第二部機來設置PumpBot";
+const char text_tooltip_wifi_setup_cn[] = "連接第二部機來";
 // const char text_tooltip_wifi_setup_ru[] = "";
 // const char text_tooltip_wifi_setup_de[] = "";
 const char *const text_tooltip_wifi_setup[] = {text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_jp, text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_cn, text_tooltip_wifi_setup_en, text_tooltip_wifi_setup_en};
+
+const char text_tooltip_wifi_setup_a_en[] = "another device";
+const char text_tooltip_wifi_setup_a_jp[] = "設定する";
+// const char text_tooltip_wifi_setup_a_fr[] = "";
+// const char text_tooltip_wifi_setup_a_es[] = "";
+// const char text_tooltip_wifi_setup_a_pt[] = "";
+// const char text_tooltip_wifi_setup_a_zh[] = "";
+const char text_tooltip_wifi_setup_a_cn[] = "設置PumpBot";
+// const char text_tooltip_wifi_setup_a_ru[] = "";
+// const char text_tooltip_wifi_setup_a_de[] = "";
+const char *const text_tooltip_wifi_setup_a[] = {text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_jp, text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_cn, text_tooltip_wifi_setup_a_en, text_tooltip_wifi_setup_a_en};
 
 const char text_connect_here_en[] = "Connect to this Wi-Fi network";
 const char text_connect_here_jp[] = "PumpBotを設定するためにこの";
@@ -317,16 +328,27 @@ const char text_standalone_setup_cn[] = "獨立設定";
 // const char text_standalone_setup_de[] = "";
 const char *const text_standalone_setup[] = {text_standalone_setup_en, text_standalone_setup_jp, text_standalone_setup_en, text_standalone_setup_en, text_standalone_setup_en, text_standalone_setup_en, text_standalone_setup_cn, text_standalone_setup_en, text_standalone_setup_en};
 
-const char text_tooltip_standalone_setup_en[] = "Set up PumpBot without connecting another device";
-const char text_tooltip_standalone_setup_jp[] = "Wi-Fiネットワークに接続と切断";
+const char text_tooltip_standalone_setup_en[] = "Set up PumpBot without connecting";
+const char text_tooltip_standalone_setup_jp[] = "他のデバイスに";
 // const char text_tooltip_standalone_setup_fr[] = "";
 // const char text_tooltip_standalone_setup_es[] = "";
 // const char text_tooltip_standalone_setup_pt[] = "";
 // const char text_tooltip_standalone_setup_zh[] = "";
-const char text_tooltip_standalone_setup_cn[] = "不要連接其他部機來設定PumpBot";
+const char text_tooltip_standalone_setup_cn[] = "不要連接其他部機來";
 // const char text_tooltip_standalone_setup_ru[] = "";
 // const char text_tooltip_standalone_setup_de[] = "";
 const char *const text_tooltip_standalone_setup[] = {text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_jp, text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_cn, text_tooltip_standalone_setup_en, text_tooltip_standalone_setup_en};
+
+const char text_tooltip_standalone_setup_a_en[] = "another device";
+const char text_tooltip_standalone_setup_a_jp[] = "接続せずに設定する";
+// const char text_tooltip_standalone_setup_a_fr[] = "";
+// const char text_tooltip_standalone_setup_a_es[] = "";
+// const char text_tooltip_standalone_setup_a_pt[] = "";
+// const char text_tooltip_standalone_setup_a_zh[] = "";
+const char text_tooltip_standalone_setup_a_cn[] = "設定PumpBot";
+// const char text_tooltip_standalone_setup_a_ru[] = "";
+// const char text_tooltip_standalone_setup_a_de[] = "";
+const char *const text_tooltip_standalone_setup_a[] = {text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_jp, text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_cn, text_tooltip_standalone_setup_a_en, text_tooltip_standalone_setup_a_en};
 
 const char text_wifi_settings_en[] = "Wi-Fi Settings";
 const char text_wifi_settings_jp[] = "Wi-Fi設定";
@@ -426,6 +448,17 @@ const char text_connect_cn[] = "連線";
 // const char text_connect_ru[] = "";
 // const char text_connect_de[] = "";
 const char *const text_connect[] = {text_connect_en, text_connect_jp, text_connect_en, text_connect_en, text_connect_en, text_connect_en, text_connect_cn, text_connect_en, text_connect_en};
+
+const char text_cant_connect_en[] = "Can't Connect";
+const char text_cant_connect_jp[] = "接続できません";
+// const char text_cant_connect_fr[] = "";
+// const char text_cant_connect_es[] = "";
+// const char text_cant_connect_pt[] = "";
+// const char text_cant_connect_zh[] = "";
+const char text_cant_connect_cn[] = "不可連線";
+// const char text_cant_connect_ru[] = "";
+// const char text_cant_connect_de[] = "";
+const char *const text_cant_connect[] = {text_cant_connect_en, text_cant_connect_jp, text_cant_connect_en, text_cant_connect_en, text_cant_connect_en, text_cant_connect_en, text_cant_connect_cn, text_cant_connect_en, text_cant_connect_en};
 
 const char text_disconnect_en[] = "Disconnect";
 const char text_disconnect_jp[] = "切断";
@@ -691,6 +724,17 @@ const char text_rgb_mode_cn[] = "RGB模式";
 // const char text_rgb_mode_de[] = "";
 const char *const text_rgb_mode[] = {text_rgb_mode_en, text_rgb_mode_jp, text_rgb_mode_en, text_rgb_mode_en, text_rgb_mode_en, text_rgb_mode_en, text_rgb_mode_cn, text_rgb_mode_en, text_rgb_mode_en};
 
+const char text_rgb_off_en[] = "Off";
+const char text_rgb_off_jp[] = "なし";
+// const char text_rgb_off_fr[] = "";
+// const char text_rgb_off_es[] = "";
+// const char text_rgb_off_pt[] = "";
+// const char text_rgb_off_zh[] = "";
+const char text_rgb_off_cn[] = "無";
+// const char text_rgb_off_ru[] = "";
+// const char text_rgb_off_de[] = "";
+const char *const text_rgb_off[] = {text_rgb_off_en, text_rgb_off_jp, text_rgb_off_en, text_rgb_off_en, text_rgb_off_en, text_rgb_off_en, text_rgb_off_cn, text_rgb_off_en, text_rgb_off_en};
+
 const char text_rainbow_en[] = "Rainbow";
 const char text_rainbow_jp[] = "虹色";
 // const char text_rainbow_fr[] = "";
@@ -779,7 +823,7 @@ const char text_addon_settings_cn[] = "選澤顏色";
 // const char text_addon_settings_de[] = "";
 const char *const text_addon_settings[] = {text_addon_settings_en, text_addon_settings_jp, text_addon_settings_en, text_addon_settings_en, text_addon_settings_en, text_addon_settings_en, text_addon_settings_cn, text_addon_settings_en, text_addon_settings_en};
 
-const char text_mprls_en[] = "Unit of Pressure (as in psi/bar)";
+const char text_mprls_en[] = "Unit of Pressure";
 const char text_mprls_jp[] = "空気圧の単位";
 // const char text_mprls_fr[] = "";
 // const char text_mprls_es[] = "";
@@ -978,12 +1022,12 @@ const char text_settings_network_cn[] = "網絡";
 const char *const text_settings_network[] = {text_settings_network_en, text_settings_network_jp, text_settings_network_en, text_settings_network_en, text_settings_network_en, text_settings_network_en, text_settings_network_cn, text_settings_network_en, text_settings_network_en};
 
 const char text_settings_output_en[] = "Output";
-const char text_settings_output_jp[] = "出力設定";
+const char text_settings_output_jp[] = "出力";
 // const char text_settings_output_fr[] = "";
 // const char text_settings_output_es[] = "";
 // const char text_settings_output_pt[] = "";
 // const char text_settings_output_zh[] = "";
-const char text_settings_output_cn[] = "出力設定";
+const char text_settings_output_cn[] = "出力";
 // const char text_settings_output_ru[] = "";
 // const char text_settings_output_de[] = "";
 const char *const text_settings_output[] = {text_settings_output_en, text_settings_output_jp, text_settings_output_en, text_settings_output_en, text_settings_output_en, text_settings_output_en, text_settings_output_cn, text_settings_output_en, text_settings_output_en};
@@ -1053,6 +1097,17 @@ const char text_app_download_cn[] = "下載應用";
 // const char text_app_download_ru[] = "";
 // const char text_app_download_de[] = "";
 const char *const text_app_download[] = {text_app_download_en, text_app_download_jp, text_app_download_en, text_app_download_en, text_app_download_en, text_app_download_en, text_app_download_cn, text_app_download_en, text_app_download_en};
+
+const char text_app_downloading_en[] = "Downloading...";
+const char text_app_downloading_jp[] = "読み込み中";
+// const char text_app_downloading_fr[] = "";
+// const char text_app_downloading_es[] = "";
+// const char text_app_downloading_pt[] = "";
+// const char text_app_downloading_zh[] = "";
+const char text_app_downloading_cn[] = "下載中";
+// const char text_app_downloading_ru[] = "";
+// const char text_app_downloading_de[] = "";
+const char *const text_app_downloading[] = {text_app_downloading_en, text_app_downloading_jp, text_app_downloading_en, text_app_downloading_en, text_app_downloading_en, text_app_downloading_en, text_app_downloading_cn, text_app_downloading_en, text_app_downloading_en};
 
 const char text_app_dl_from_url_en[] = "Download from URL";
 const char text_app_dl_from_url_jp[] = "リンクから読み込み";
