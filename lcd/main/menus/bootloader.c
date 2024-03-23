@@ -992,7 +992,7 @@ static int menufunc_pwm_output_set(void) {
     draw_text(0, 216, text_output_settings[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_lowest_value[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(32, 152, text_hightest_value[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
+    draw_text(32, 152, text_highest_value[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_text(32, 120, text_pwm_wizard[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_text(32, 88, text_output_mode[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
     draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? text_digital[settings.language] : text_analog[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);

@@ -966,16 +966,16 @@ const char text_lowest_value_cn[] = "最低的限度";
 // const char text_lowest_value_de[] = "";
 const char *const text_lowest_value[] = {text_lowest_value_en, text_lowest_value_jp, text_lowest_value_en, text_lowest_value_en, text_lowest_value_en, text_lowest_value_en, text_lowest_value_cn, text_lowest_value_en, text_lowest_value_en};
 
-const char text_hightest_value_en[] = "Highest Value";
-const char text_hightest_value_jp[] = "最高強さ";
-// const char text_hightest_value_fr[] = "";
-// const char text_hightest_value_es[] = "";
-// const char text_hightest_value_pt[] = "";
-// const char text_hightest_value_zh[] = "";
-const char text_hightest_value_cn[] = "最高的限度";
-// const char text_hightest_value_ru[] = "";
-// const char text_hightest_value_de[] = "";
-const char *const text_hightest_value[] = {text_hightest_value_en, text_hightest_value_jp, text_hightest_value_en, text_hightest_value_en, text_hightest_value_en, text_hightest_value_en, text_hightest_value_cn, text_hightest_value_en, text_hightest_value_en};
+const char text_highest_value_en[] = "Highest Value";
+const char text_highest_value_jp[] = "最高強さ";
+// const char text_highest_value_fr[] = "";
+// const char text_highest_value_es[] = "";
+// const char text_highest_value_pt[] = "";
+// const char text_highest_value_zh[] = "";
+const char text_highest_value_cn[] = "最高的限度";
+// const char text_highest_value_ru[] = "";
+// const char text_highest_value_de[] = "";
+const char *const text_highest_value[] = {text_highest_value_en, text_highest_value_jp, text_highest_value_en, text_highest_value_en, text_highest_value_en, text_highest_value_en, text_highest_value_cn, text_highest_value_en, text_highest_value_en};
 
 const char text_usb_connected_en[] = "USB Connected!";
 const char text_usb_connected_jp[] = "USB接続済み";

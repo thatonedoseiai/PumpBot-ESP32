@@ -70,6 +70,7 @@ extern const char *const text_rgb_mode[];
 extern const char *const text_rainbow[];
 extern const char *const text_fade[];
 extern const char *const text_solid[];
+extern const char *const text_rgb_off[];
 extern const char *const text_color[];
 extern const char *const text_color_1[];
 extern const char *const text_color_2[];
@@ -88,7 +89,7 @@ extern const char *const text_digital[];
 extern const char *const text_pwm_wizard[];
 extern const char *const text_map_pwm_range[];
 extern const char *const text_lowest_value[];
-extern const char *const text_hightest_value[];
+extern const char *const text_highest_value[];
 extern const char *const text_usb_connected[];
 extern const char *const text_usb_disconnected[];
 extern const char *const text_settings_display[];
@@ -111,6 +112,5 @@ extern const char *const text_app_manage[];
 extern const char *const text_enter_text[];
 extern const char *const text_port[];
 extern const char *const text_network_settings[];
-extern const char *const text_rgb_off[];
 
 #endif
