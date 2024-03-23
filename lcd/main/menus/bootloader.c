@@ -325,10 +325,12 @@ static int menufunc_welcome(void) {
     int currlang = 0;
     int sprs1[15];
     int sprs2[15];
-    int numsprs1, numsprs2;
+    int sprs3[45];
+    int numsprs1, numsprs2, numsprs3;
     FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
     sprite_rectangle(60, 146, 200, 44, background_color);
     sprite_rectangle(60, 190, 200, 40, background_color);
+    sprite_rectangle(60, 5, 200, 20, background_color);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
             delete_all_sprites();
@@ -339,13 +341,19 @@ static int menufunc_welcome(void) {
             currlang = (currlang+1) % 9;
             draw_text(60, 195, text_welcome[currlang], typeFace, sprs1, &numsprs1, foreground_color, background_color, 0);
             draw_text(60, 154, text_welcome_a[currlang], typeFace, sprs2, &numsprs2, foreground_color, background_color, 0);
+            FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+            draw_text(60, 10, text_pressenc[currlang], typeFace, sprs3, &numsprs3, foreground_color, background_color, 0);
+            FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
             center_sprite_group_x(sprs1, numsprs1);
             center_sprite_group_x(sprs2, numsprs2);
+            center_sprite_group_x(sprs3, numsprs3);
             draw_all_sprites(spi);
             for(int i=0;i<numsprs1;++i)
                 delete_sprite(sprs1[i]);
             for(int i=0;i<numsprs2;++i)
                 delete_sprite(sprs2[i]);
+            for(int i=0;i<numsprs3;++i)
+                delete_sprite(sprs3[i]);
             counter = 200;
         }
     }
