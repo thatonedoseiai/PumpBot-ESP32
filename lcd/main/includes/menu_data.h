@@ -4,7 +4,7 @@
 #pragma once
 
 extern const MENU_ELEMENT welcome_menu[];
-extern const MENU_ELEMENT text_test[];
+/* extern const MENU_ELEMENT text_test[]; */
 extern const MENU_ELEMENT menuhome[];
 extern const MENU_ELEMENT menusetup0[];
 extern const MENU_ELEMENT menusetup1[];

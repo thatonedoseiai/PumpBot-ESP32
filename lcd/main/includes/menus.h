@@ -10,17 +10,14 @@
 #define MENU_FLAG_IS_VLINE 0x2
 #define MENU_FLAG_CENTER 0x4
 #define MENU_FLAG_RIGHT_JUSTIFY 0x8
+#define MENU_FLAG_LANGUAGE_AGNOSTIC 0x10
 
 typedef struct {
-    char* text;
+    const char* const* text;
     uint16_t x;
     uint16_t y;
     int textsize;
     unsigned char flags;
-    /* bool hline; */
-    /* bool vline; */
-    /* bool center; */
-    /* bool right_justified; */
     uint24_RGB** col;
 } MENU_ELEMENT;
 

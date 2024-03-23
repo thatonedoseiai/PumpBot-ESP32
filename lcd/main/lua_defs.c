@@ -83,6 +83,10 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
             return err;
 
 		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+        if(spriteBuf == NULL) {
+            advance_x = slot->advance.x;
+            goto make_no_sprite;
+        }
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
         bmp->refcount = 0;
         bmp->c = spriteBuf;
@@ -128,6 +132,7 @@ skip_bitmap_assignment:
             if(num_sprites != NULL)
                 (*num_sprites)++;
         }
+make_no_sprite:
 
 		offset.x += advance_x;
 		offset.y += slot->advance.y;

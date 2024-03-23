@@ -18,6 +18,7 @@
 #include "http.h"
 #include "system_status.h"
 #include "socket.h"
+#include "lang.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -50,17 +51,6 @@ void setup_cursor(int* cursorbg, int* cursor, int y) {
     draw_text(10, y, ">", typeFace, cursor, NULL, foreground_color, background_color, 0);
 }
 
-char languages[][15] = {
-    "English",
-    "日本語",
-    "Français",
-    "Español",
-    "Português",
-    "简化中文",
-    "繁體中文",
-    "Pусский",
-    "Deutsch"
-};
 static int menufunc_setup(void) {
     int error;
     button_event_t event;
@@ -80,7 +70,7 @@ static int menufunc_setup(void) {
             currlang = ((unsigned) rotencev.state.position) % 9;
             int sprs[15];
             sprite_rectangle(220, 240-73-22, 100, 22, background_color);
-            draw_text(220, 152, &languages[currlang][0], typeFace, &sprs[0], NULL, foreground_color, background_color, 0);
+            draw_text(220, 152, text_language_name[currlang], typeFace, &sprs[0], NULL, foreground_color, background_color, 0);
             draw_all_sprites(spi);
             delete_all_sprites();
         }
@@ -109,7 +99,6 @@ static void draw_options(char** options, int bgrect) {
     OAM_SPRITE_TABLE[bgrect]->draw = false;
 }
 
-char SEARCH_TEXT[] = "Searching...";
 static int menufunc_wifi_scan() {
     int error;
     int sprs[6];
@@ -127,7 +116,7 @@ static int menufunc_wifi_scan() {
     // system_flags &= ~FLAG_WIFI_CONNECTED;
     FT_ERR_HANDLE(FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0), "FT_Set_Char_Size");
 
-    error = draw_text(270, 2, "Search", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    error = draw_text(270, 2, text_search[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     right_justify_sprite_group_x(sprs, numsprs, 2);
     draw_all_sprites(spi);
     delete_all_sprites();
@@ -146,7 +135,7 @@ static int menufunc_wifi_scan() {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
 
 refresh:
-    list_options[0] = SEARCH_TEXT;
+    list_options[0] = text_searching[settings.language];
     for(int i=1;i<5;++i) {
         list_options[i] = NULL;
     }
@@ -332,9 +321,32 @@ static int menufunc_text_write(void) {
 
 static int menufunc_welcome(void) {
     button_event_t event;
+    int counter = 200;
+    int currlang = 0;
+    int sprs1[15];
+    int sprs2[15];
+    int numsprs1, numsprs2;
+    FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
+    sprite_rectangle(60, 146, 200, 44, background_color);
+    sprite_rectangle(60, 190, 200, 40, background_color);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
+            delete_all_sprites();
             return MENU_SETUP_ONLY_TRANSITION_FLAG | 1;
+        }
+        counter--;
+        if(counter == 0) {
+            currlang = (currlang+1) % 9;
+            draw_text(60, 195, text_welcome[currlang], typeFace, sprs1, &numsprs1, foreground_color, background_color, 0);
+            draw_text(60, 154, text_welcome_a[currlang], typeFace, sprs2, &numsprs2, foreground_color, background_color, 0);
+            center_sprite_group_x(sprs1, numsprs1);
+            center_sprite_group_x(sprs2, numsprs2);
+            draw_all_sprites(spi);
+            for(int i=0;i<numsprs1;++i)
+                delete_sprite(sprs1[i]);
+            for(int i=0;i<numsprs2;++i)
+                delete_sprite(sprs2[i]);
+            counter = 200;
         }
     }
 }
@@ -1740,7 +1752,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
         int numsprs;
         int spriteArray[64];
 
-        err = draw_text(elems[i].x, elems[i].y, elems[i].text, typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL, 0);
+        err = draw_text(elems[i].x, elems[i].y, (elems[i].flags & MENU_FLAG_LANGUAGE_AGNOSTIC) ? elems[i].text[0] : elems[i].text[settings.language], typeFace, &spriteArray[0], &numsprs, *(elems[i].col), NULL, 0);
         if (err)
             return err;
         if (elems[i].flags & MENU_FLAG_CENTER) {

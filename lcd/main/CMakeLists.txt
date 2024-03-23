@@ -5,6 +5,7 @@ set(srcs
     "oam.c"
     "menus/bootloader.c"
     "lua_defs.c"
+    "lang.c"
     "pb_main.c"
     "rotenc.c"
     "utf8.c"
