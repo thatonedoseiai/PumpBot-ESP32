@@ -483,8 +483,11 @@ static int l_server_send_message(lua_State* L) {
 static int l_server_get_message(lua_State* L) {
     char buf[1024];
     memset(buf, 0, 1024);
-    get_message(buf, 1023);
-    lua_pushstring(L, buf);
+    int len = get_message(buf, 1023);
+    if(len > 0)
+        lua_pushstring(L, buf);
+    else
+        lua_pushnil(L);
     return 1;
 }
 
