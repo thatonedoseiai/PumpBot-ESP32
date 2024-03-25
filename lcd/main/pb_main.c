@@ -409,6 +409,7 @@ void app_main(void) {
         (void) luaL_dofile(L, "/mainfs/test.lua");
         delete_all_sprites();
         (void) start_menu_tree(11, true);
+        flush_text_cache();
     }
 
     // ets_printf("cache size: %d\n", text_cache_size);

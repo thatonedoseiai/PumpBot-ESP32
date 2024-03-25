@@ -1,7 +1,9 @@
 #include "pwm_output.h"
+#include "settings.h"
 
 pb_output_info_t* pwms;
 gptimer_handle_t pwm_irq_timer;
+extern SETTINGS_t settings;
 
 void update_pwm(int channel) {
 	if(atomic_load(&pwms[channel].off)) {
@@ -9,7 +11,18 @@ void update_pwm(int channel) {
 		return;
 	}
 	pwms[channel].was_updated = 1;
-	uint16_t power = output_get_value(channel);
+	unsigned int power = output_get_value(channel);
+	int range = settings.pwm_max_limit[channel] - settings.pwm_min_limit[channel];
+	int offset = settings.pwm_min_limit[channel];
+	if(range < 0) {
+		range = -range;
+		offset = settings.pwm_max_limit[channel];
+	}
+	power = ((power * range) >> 14) + offset;
+	if(power > 16383)
+		power = 16383;
+	else if(power < 0)
+		power = 0;
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
 }
 
