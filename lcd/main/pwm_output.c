@@ -4,13 +4,14 @@
 pb_output_info_t* pwms;
 gptimer_handle_t pwm_irq_timer;
 extern SETTINGS_t settings;
+extern uint16_t button_disable_counter;
 
 void update_pwm(int channel) {
+	pwms[channel].was_updated = 1;
 	if(atomic_load(&pwms[channel].off)) {
 		ledc_stop(LEDC_LOW_SPEED_MODE, channel, 0);
 		return;
 	}
-	pwms[channel].was_updated = 1;
 	unsigned int power = output_get_value(channel);
 	int range = settings.pwm_max_limit[channel] - settings.pwm_min_limit[channel];
 	int offset = settings.pwm_min_limit[channel];
@@ -39,6 +40,8 @@ static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_
 			// ets_printf("channel %d: %d\n", k-1);
 		}
 	}
+	if(button_disable_counter > 0)
+		button_disable_counter--;
 	return true;
 }
 

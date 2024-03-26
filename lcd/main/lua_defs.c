@@ -30,6 +30,8 @@ extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern QueueHandle_t* button_events;
 
+uint16_t button_disable_counter;
+
 int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
     FT_Vector offset;
     FT_GlyphSlot slot;
@@ -199,7 +201,7 @@ static int l_setsize(lua_State* L) {
 static int l_readrotary(lua_State* L) {
     rotary_encoder_event_t event;
     // rotary_encoder_get_state(infop, &state);
-    if(xQueueReceive(infop->queue, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+    if(button_disable_counter <= 0 && xQueueReceive(infop->queue, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
         lua_newtable(L);
         lua_pushnumber(L, 1);
         lua_pushinteger(L, event.state.direction);
@@ -217,7 +219,7 @@ static int l_getgpio(lua_State* L) {
     button_event_t ev;
     // int x = luaL_checkinteger(L, 1);
     // int d = gpio_get_level(x);
-    if(xQueueReceive(*button_events, &ev, 10/portTICK_PERIOD_MS) == pdTRUE && ev.event == BUTTON_DOWN) {
+    if(button_disable_counter <= 0 && xQueueReceive(*button_events, &ev, 10/portTICK_PERIOD_MS) == pdTRUE && ev.event == BUTTON_DOWN) {
         lua_newtable(L);
         lua_pushnumber(L, 1);
         lua_pushinteger(L, ev.pin);
@@ -474,7 +476,7 @@ static int l_server_is_connected(lua_State* L) {
 
 static int l_server_send_message(lua_State* L) {
     size_t len;
-    const char* str = luaL_checklstring(L, 3, &len);
+    const char* str = luaL_checklstring(L, 1, &len);
     int k = send_message(str, len);
     lua_pushinteger(L, k);
     return 1;
@@ -495,14 +497,39 @@ static int l_output_set_timeout(lua_State* L) {
     int c = luaL_checkinteger(L, 1);
     int level = luaL_checkinteger(L, 2);
     int cs = luaL_checkinteger(L, 3);
-    output_set_value_timeout(c, level, cs);
+    output_set_value_timeout(c-1, level, cs);
     return 0;
 }
 
 static int l_output_increment_timeout(lua_State* L) {
     int c = luaL_checkinteger(L, 1);
     int k = luaL_checkinteger(L, 2);
-    pwm_timeout_add_value(c, k);
+    pwm_timeout_add_value(c-1, k);
+    return 0;
+}
+
+static int l_disable_hid(lua_State* L) {
+    int c = luaL_checkinteger(L, 1);
+    button_disable_counter = 5*c; // disable for c centiseconds
+    return 0;
+}
+
+static int l_disable_hid_increment(lua_State* L) {
+    int c = luaL_checkinteger(L, 1);
+    if(0xffff - button_disable_counter < 5*c) {
+        button_disable_counter = 0xffff;
+    } else if(button_disable_counter < -5*c) {
+        button_disable_counter = 0;
+    } else {
+        button_disable_counter += c;
+    }
+    return 0;
+}
+
+static int l_set_pwm_enable(lua_State* L) {
+    int c = luaL_checkinteger(L, 1);
+    char en = lua_toboolean(L, 2);
+    output_set_power(c-1, en);
     return 0;
 }
 
@@ -522,6 +549,7 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "sprite_move_y", l_move_sprite_y },
     { "set_output", l_set_pwm },
     { "toggle_output", l_toggle_pwm },
+    { "set_output_enable", l_set_pwm_enable },
     { "output_off", l_output_off },
     { "output_was_updated", l_output_was_updated },
     { "increment_output", l_output_add_value },
@@ -537,6 +565,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "server_is_connected", l_server_is_connected },
     { "server_send_message", l_server_send_message },
     { "server_get_message", l_server_get_message },
+    { "disable_hid", l_disable_hid },
+    { "increment_hid", l_disable_hid_increment },
     { NULL, NULL }
 };
 

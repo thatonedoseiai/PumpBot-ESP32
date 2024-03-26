@@ -47,15 +47,27 @@ xs = {58,111,164,217}
 l.draw_sprites(off_btn_text)
 l.enable_text_cache_auto_delete(false)
 
+function update_off_text(k)
+    if(l.output_off(k)) then
+        l.draw_sprites({back_on_off, back_btn_text})
+        l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
+        l.draw_sprites({off_text[2]})
+    else
+        l.draw_sprites({back_on_off, back_btn_text})
+        l.draw_sprites({on_text[1], off_btn_text[1], off_btn_text[2]})
+    end
+end
+
 function parse_message(message)
     opcode = string.byte(message, 1)
     optable = {
         [1] = function(m)
-            local v = ((string.byte(m, 2) & 0x3f) << 8) | 
-                (string.byte(m, 3) & 0xff)
-            local c = string.byte(m, 4) & 0xff
-            time = ((string.byte(m, 5) & 0x3f) << 8) | 
-                    (string.byte(m, 6) & 0xff)
+            v, c, time = select(2, string.unpack(">BI2I1I2", m))
+            -- local v = ((string.byte(m, 2) & 0x3f) << 8) | 
+            --     (string.byte(m, 3) & 0xff)
+            -- local c = string.byte(m, 4) & 0xff
+            -- time = ((string.byte(m, 5) & 0x3f) << 8) | 
+            --         (string.byte(m, 6) & 0xff)
             if(c < 5 and c > 0) then
                 if(time == 0) then
                     l.set_output(c, v)
@@ -65,13 +77,39 @@ function parse_message(message)
             end
         end,
         [3] = function(m)
-            local v = ((string.byte(m, 2) & 0x3f) << 8) | 
-                (string.byte(m, 3) & 0xff)
-            local c = string.byte(m, 4) & 0xff
+            local v, c = select(2, string.unpack(">Bi2I1", m)) -- 2nd integer is signed
+            -- local v = ((string.byte(m, 2) & 0x3f) << 8) | 
+            --     (string.byte(m, 3) & 0xff)
+            -- local c = string.byte(m, 4) & 0xff
             if(c < 5 and c > 0) then
                 l.increment_output(c, v)
             end
         end,
+        [4] = function(m)
+            local op, c = string.unpack(">BB", m)
+            if(op & 0x80 ~= 0) then
+                l.toggle_output(c)
+            end
+            if(op & 0x40 ~= 0) then
+                l.set_output_enable(c, true)
+            end
+            if(op & 0x20 ~= 0) then
+                l.set_output_enable(c, false)
+            end
+            if(op & 0x10 ~= 0) then
+                local s = string.pack(">I2B", l.get_output_value(c), l.output_off(c) and 1 or 0)
+                l.server_send_message(s)
+            end
+            update_off_text(c)
+        end,
+        [8] = function(m)
+            v = select(2, string.unpack(">BI2", m))
+            l.disable_hid(v)
+        end,
+        [10] = function(m)
+            v = select(2, string.unpack(">Bi2", m)) -- 2nd integer is signed
+            l.increment_hid(v)
+        end
     }
     f = optable[opcode & 0xf]
     print(f)
