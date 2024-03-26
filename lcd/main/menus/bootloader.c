@@ -1529,12 +1529,12 @@ static int menufunc_network_settings(void) {
             namebuf[12] = '.';
             namebuf[13] = '.';
             namebuf[14] = 0;
-            draw_text(150, 120, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+            draw_text(170, 120, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
         } else {
-            draw_text(150, 120, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
+            draw_text(170, 120, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
         }
     } else {
-        draw_text(150, 120, text_disconnected[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
+        draw_text(170, 120, text_disconnected[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
     }
     draw_all_sprites(spi);
     delete_all_sprites();

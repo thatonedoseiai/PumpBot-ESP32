@@ -19,6 +19,9 @@ void update_pwm(int channel) {
 		range = -range;
 		offset = settings.pwm_max_limit[channel];
 	}
+	if(settings.output_set_on_off_only[channel]) {
+		power = 16383;
+	}
 	power = ((power * range) >> 14) + offset;
 	if(power > 16383)
 		power = 16383;
