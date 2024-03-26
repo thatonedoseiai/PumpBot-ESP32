@@ -485,10 +485,25 @@ static int l_server_get_message(lua_State* L) {
     memset(buf, 0, 1024);
     int len = get_message(buf, 1023);
     if(len > 0)
-        lua_pushstring(L, buf);
+        lua_pushlstring(L, buf, 1024);
     else
         lua_pushnil(L);
     return 1;
+}
+
+static int l_output_set_timeout(lua_State* L) {
+    int c = luaL_checkinteger(L, 1);
+    int level = luaL_checkinteger(L, 2);
+    int cs = luaL_checkinteger(L, 3);
+    output_set_value_timeout(c, level, cs);
+    return 0;
+}
+
+static int l_output_increment_timeout(lua_State* L) {
+    int c = luaL_checkinteger(L, 1);
+    int k = luaL_checkinteger(L, 2);
+    pwm_timeout_add_value(c, k);
+    return 0;
 }
 
 static const struct luaL_Reg lpb_funcs[] = {
@@ -510,6 +525,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "output_off", l_output_off },
     { "output_was_updated", l_output_was_updated },
     { "increment_output", l_output_add_value },
+    { "set_output_timeout", l_output_set_timeout },
+    { "increment_output_timeout", l_output_increment_timeout },
     { "get_output_value", l_get_output_value },
     { "foreground_color", l_get_foreground },
     { "background_color", l_get_background },

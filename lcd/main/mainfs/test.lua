@@ -5,13 +5,19 @@ fgcol = l.foreground_color();
 selecting_channels = false
 
 l.set_char_size(12<<6)
-wifi_symbol_status = l.wifi_is_connected();
+wifi_symbol_status = l.wifi_is_connected()
+server_symbol_status = l.server_is_connected()
 w = l.draw_text(306, 226, "󰖩", fgcol, bgcol)
 n = l.draw_text(306, 226, "󰖪", fgcol, bgcol)
+sc = l.draw_text(294, 226, "+", fgcol, bgcol)
+snc = {l.draw_rectangle(294, 226, 12, 12, bgcol)}
 if(wifi_symbol_status) then
     l.draw_sprites(w)
 else
     l.draw_sprites(n)
+end
+if(server_symbol_status) then
+    l.draw_sprites(sc)
 end
 on_text = l.draw_text(85, 16, "n", fgcol, bgcol)
 off_text = l.draw_text(85, 16, "ff", fgcol, bgcol)
@@ -40,6 +46,37 @@ l.draw_sprites({back,back_btn_text})
 xs = {58,111,164,217}
 l.draw_sprites(off_btn_text)
 l.enable_text_cache_auto_delete(false)
+
+function parse_message(message)
+    opcode = string.byte(message, 1)
+    optable = {
+        [1] = function(m)
+            local v = ((string.byte(m, 2) & 0x3f) << 8) | 
+                (string.byte(m, 3) & 0xff)
+            local c = string.byte(m, 4) & 0xff
+            time = ((string.byte(m, 5) & 0x3f) << 8) | 
+                    (string.byte(m, 6) & 0xff)
+            if(c < 5 and c > 0) then
+                if(time == 0) then
+                    l.set_output(c, v)
+                else
+                    l.set_output_timeout(c, v, time)
+                end
+            end
+        end,
+        [3] = function(m)
+            local v = ((string.byte(m, 2) & 0x3f) << 8) | 
+                (string.byte(m, 3) & 0xff)
+            local c = string.byte(m, 4) & 0xff
+            if(c < 5 and c > 0) then
+                l.increment_output(c, v)
+            end
+        end,
+    }
+    f = optable[opcode & 0xf]
+    print(f)
+    if(f ~= nil) then f(message) end
+end
 
 function update_screen_text(x, y, bg, k, center)
     for s=1,#spr do
@@ -115,6 +152,18 @@ while(true) do
         else
             l.draw_sprites(n)
         end
+    end
+    if(server_symbol_status ~= l.server_is_connected()) then
+        server_symbol_status = l.server_is_connected()
+        if(server_symbol_status) then
+            l.draw_sprites(sc)
+        else
+            l.draw_sprites(snc)
+        end
+    end
+    message = l.server_get_message()
+    if(message ~= nil) then
+        parse_message(message)
     end
 end
 

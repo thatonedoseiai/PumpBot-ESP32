@@ -1597,7 +1597,7 @@ static int menufunc_server_settings(void) {
     char ip_buf[16];
     char pass_buf[16];
     char port_buf[6];
-    int sprs[16];
+    int sprs[32];
     int numsprs;
     int rect1;
     sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);

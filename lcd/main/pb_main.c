@@ -376,6 +376,10 @@ void app_main(void) {
             settings.pwm_max_limit[i] = 0x3fff;
         settings.RGB_brightness = 0x3fff;
         settings.RGB_speed = 32;
+        settings.server_ip[0] = 192;
+        settings.server_ip[1] = 168;
+        settings.server_ip[2] = 0;
+        settings.server_ip[3] = 105;
     }
     // rgb_update();
     // assign_theme_from_settings();

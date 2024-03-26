@@ -24,5 +24,6 @@ int output_get_value(int channel);
 char is_off(int channel);
 void output_add_value(int channel, int increment);
 char output_was_updated(int channel);
+void pwm_timeout_add_value(int channel, int increment);
 
 #endif

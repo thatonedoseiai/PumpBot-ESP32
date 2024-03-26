@@ -103,6 +103,18 @@ char is_off(int channel) {
 	return atomic_load(&(pwms[channel].off));
 }
 
+void pwm_timeout_add_value(int channel, int increment) {
+	uint16_t k = atomic_load(&(pwms[channel].output));
+	if(0xffff - k < increment) {
+		k = 0xffff;
+	} else if(k < -increment) {
+		k = 0;
+	} else {
+		k += increment;
+	}
+	atomic_store(&(pwms[channel].output), k);
+}
+
 void output_add_value(int channel, int increment) {
 	if(increment > 0)
 		atomic_fetch_add(&(pwms[channel].output), increment);
