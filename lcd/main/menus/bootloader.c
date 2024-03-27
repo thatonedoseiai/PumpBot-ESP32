@@ -856,7 +856,7 @@ static int menufunc_add_on_settings(void) {
 // const char set_devs[] = "Developer";
 // const char* const* settings_en[] = {set_disp, set_net, set_outp, set_RGB, set_addon, set_apps, set_lang, set_devs, NULL};
 // const char* const* settings_en[] = {text_settings_display, text_settings_network, text_settings_output, text_settings_rgb, text_Settings_add_ons, text_settings_apps, text_settings_developer, NULL};
-const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, 1, MENU_RETURN_FLAG};
+const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, 1, 23};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
     char* settings_options_list[] = {
@@ -1691,6 +1691,39 @@ static int menufunc_skip_wifi(void) {
     }
 }
 
+static int menufunc_developer(void) {
+    int cursor;
+    int cursorbg;
+    int numsprs;
+    int sprs[50];
+    button_event_t event;
+    FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+    sprite_rectangle(85, 211, 150, 21, background_color);
+    draw_text(0, 216, text_settings_developer[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(0, 184, "Factory reset", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    center_sprite_group_x(sprs, numsprs);
+    setup_cursor(&cursorbg, &cursor, 184);
+    draw_all_sprites(spi);
+    delete_all_sprites();
+    while(true) {
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            if(event.pin == 18 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                delete_settings_file();
+                FILE* colfile = fopen("/mainfs/colors", "w");
+                fprintf(colfile, "#%02x%02x%02x\n#%02x%02x%02x\n%x,%x,%x", settings.RGB_colour.pixelR, settings.RGB_colour.pixelB, settings.RGB_colour.pixelG, settings.RGB_colour_2.pixelR, settings.RGB_colour_2.pixelG, settings.RGB_colour_2.pixelB, settings.RGB_mode, settings.RGB_brightness, settings.RGB_speed);
+                fclose(colfile);
+                esp_restart();
+            }
+            if(event.pin == 0 && event.event == BUTTON_DOWN) {
+                delete_all_sprites();
+                return MENU_POP_FLAG;
+            }
+        }
+    }
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome},
     {&menusetup0[0], 8, menufunc_setup},
@@ -1714,7 +1747,8 @@ MENU_INFO_t allmenus[] = {
     {&menunetworksettings[0], 9, menufunc_network_settings},
     {&menuserversettings[0], 12, menufunc_server_settings},
     {&menusetupdone[0], 2, menufunc_setup_done},
-    {&menuskipwifi[0], 5, menufunc_skip_wifi}
+    {&menuskipwifi[0], 5, menufunc_skip_wifi},
+    {&menusetup3[0], 9, menufunc_developer},
 };
 
 int start_menu_tree(int startmenu, char settings_mode) {

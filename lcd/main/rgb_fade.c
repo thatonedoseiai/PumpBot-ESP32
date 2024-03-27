@@ -121,5 +121,4 @@ void rgb_init() {
     ESP_ERROR_CHECK(gptimer_register_event_callbacks(fade_timer, &cbf, NULL));
     ESP_ERROR_CHECK(gptimer_enable(rainbow_timer));
     ESP_ERROR_CHECK(gptimer_enable(fade_timer));
-    ESP_ERROR_CHECK(gptimer_start(fade_timer));
 }

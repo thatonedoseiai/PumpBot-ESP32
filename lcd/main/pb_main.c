@@ -367,24 +367,17 @@ void app_main(void) {
 
     char setup_flag = 0;
     if(read_from_file(&settings)) {
-        settings.disp_brightness = 255;
-        settings.disp_theme = 0;
-        settings.pressure_units = PSI;
+        // settings.RGB_brightness = 0x2fff;
+        // settings.RGB_speed = 32;
+        set_settings_to_default(&settings);
         setup_flag = 1;
-        memset(settings.pwm_min_limit, 0, 4*sizeof(uint16_t));
-        for(int i=0;i<4;++i)
-            settings.pwm_max_limit[i] = 0x3fff;
-        settings.RGB_brightness = 0x3fff;
-        settings.RGB_speed = 32;
-        settings.server_ip[0] = 192;
-        settings.server_ip[1] = 168;
-        settings.server_ip[2] = 0;
-        settings.server_ip[3] = 105;
         FILE* colfile = fopen("/mainfs/colors", "r");
         if(colfile) {
-            fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB);
+            int err = fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx\n%x,%hx,%x", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, &settings.RGB_mode, &settings.RGB_brightness, &settings.RGB_speed);
             fclose(colfile);
         }
+        rgb_update();
+        assign_theme_from_settings();
     }
     // rgb_update();
     // assign_theme_from_settings();

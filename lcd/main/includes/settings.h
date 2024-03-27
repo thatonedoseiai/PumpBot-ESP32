@@ -54,7 +54,9 @@ typedef struct {
 
 void write_to_file(SETTINGS_t* settings);
 int read_from_file(SETTINGS_t* settings);
+void delete_settings_file();
 void set_default_app(char* name);
 int read_default_app(char* buf, int buflen);
+void set_settings_to_default(SETTINGS_t* settings);
 
 #endif
