@@ -380,6 +380,11 @@ void app_main(void) {
         settings.server_ip[1] = 168;
         settings.server_ip[2] = 0;
         settings.server_ip[3] = 105;
+        FILE* colfile = fopen("/mainfs/colors", "r");
+        if(colfile) {
+            fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB);
+            fclose(colfile);
+        }
     }
     // rgb_update();
     // assign_theme_from_settings();
