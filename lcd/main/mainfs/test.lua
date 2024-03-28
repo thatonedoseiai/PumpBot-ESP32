@@ -112,7 +112,7 @@ function parse_message(message)
         end
     }
     f = optable[opcode & 0xf]
-    print(f)
+    -- print(f)
     if(f ~= nil) then f(message) end
 end
 
@@ -154,7 +154,7 @@ while(true) do
 
     if(f ~= nil) then
         if selecting_channels == false then
-            print(f[3])
+            -- print(f[3])
             if(f[1] == 2) then
                 l.increment_output(k, -163 * f[3])
             else

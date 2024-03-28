@@ -605,8 +605,8 @@ static int menufunc_display_settings(void) {
     delete_all_sprites();
     int cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
     int cursor;
-    int bright_rec = sprite_rectangle(150, 184, 150, 16, background_color);
-    int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
+    volatile int bright_rec = sprite_rectangle(150, 184, 150, 16, background_color);
+    volatile int theme_rec = sprite_rectangle(150, 147, 100, 25, background_color);
     OAM_SPRITE_TABLE[bright_rec]->draw = false;
     OAM_SPRITE_TABLE[theme_rec]->draw = false;
     setup_cursor(&cursorbg, &cursor, 184);
@@ -626,7 +626,7 @@ static int menufunc_display_settings(void) {
                 draw_all_sprites(spi);
                 break;
             case 1:
-                settings.disp_brightness += (rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1;
+                settings.disp_brightness += rotencev.state.multiplier * ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1);
                 if(settings.disp_brightness > 255) {
                     settings.disp_brightness = 255;
                 } else if(settings.disp_brightness < 0) {
@@ -676,6 +676,7 @@ static int menufunc_display_settings(void) {
                         delete_sprite(br_sprite[i]);
                     for(int i=0;i<num_themespr;++i)
                         delete_sprite(theme_sprite[i]);
+                    // ets_printf("%d %d\n", bright_rec, theme_rec);
                     OAM_SPRITE_TABLE[bright_rec]->draw = false;
                     OAM_SPRITE_TABLE[theme_rec]->draw = false;
                     break;
@@ -756,7 +757,7 @@ static int menufunc_color_picker(void) {
                 draw_all_sprites(spi);
                 break;
             default:
-                buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 255) % 256;
+                buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? rotencev.state.multiplier : 256 - rotencev.state.multiplier) % 256;
                 (void) itoa(buffer[selection], numbuf, 10);
                 draw_text(150, ys[selection], numbuf, typeFace, sprs, &numsprs, &RED, background_color, 0);
                 draw_all_sprites(spi);
@@ -1024,14 +1025,14 @@ static int menufunc_pwm_output_set(void) {
                 break;
             case 1:
                 if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
-                    if(settings.pwm_min_limit[selected_pwm] + 163 < 0x3fff) {
-                        settings.pwm_min_limit[selected_pwm] += 163;
+                    if(settings.pwm_min_limit[selected_pwm] + (163 * rotencev.state.multiplier) < 0x3fff) {
+                        settings.pwm_min_limit[selected_pwm] += 163 * rotencev.state.multiplier;
                     } else {
                         settings.pwm_min_limit[selected_pwm] = 0x3fff;
                     }
                 } else {
-                    if(settings.pwm_min_limit[selected_pwm] > 163)
-                        settings.pwm_min_limit[selected_pwm] -= 163;
+                    if(settings.pwm_min_limit[selected_pwm] > (163 * rotencev.state.multiplier))
+                        settings.pwm_min_limit[selected_pwm] -= (163 * rotencev.state.multiplier);
                     else
                         settings.pwm_min_limit[selected_pwm] = 0;
                 }
@@ -1043,14 +1044,14 @@ static int menufunc_pwm_output_set(void) {
                 break;
             case 2:
                 if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
-                    if(settings.pwm_max_limit[selected_pwm] + 163 < 0x3fff) {
-                        settings.pwm_max_limit[selected_pwm] += 163;
+                    if(settings.pwm_max_limit[selected_pwm] + (163 * rotencev.state.multiplier) < 0x3fff) {
+                        settings.pwm_max_limit[selected_pwm] += 163 * rotencev.state.multiplier;
                     } else {
                         settings.pwm_max_limit[selected_pwm] = 0x3fff;
                     }
                 } else {
-                    if(settings.pwm_max_limit[selected_pwm] > 163)
-                        settings.pwm_max_limit[selected_pwm] -= 163;
+                    if(settings.pwm_max_limit[selected_pwm] > (163 * rotencev.state.multiplier))
+                        settings.pwm_max_limit[selected_pwm] -= (163 * rotencev.state.multiplier);
                     else
                         settings.pwm_max_limit[selected_pwm] = 0;
                 }
@@ -1177,13 +1178,13 @@ static int menufunc_rgb_lighting(void) {
                 break;
             case 1:
                 if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
-                    if(settings.RGB_brightness + 163 < 0x3fff)
-                        settings.RGB_brightness += 163;
+                    if(settings.RGB_brightness + (163 * rotencev.state.multiplier) < 0x3fff)
+                        settings.RGB_brightness += (163 * rotencev.state.multiplier);
                     else
                         settings.RGB_brightness = 0x3fff;
                 } else {
-                    if(settings.RGB_brightness > 163)
-                        settings.RGB_brightness -= 163;
+                    if(settings.RGB_brightness > (163 * rotencev.state.multiplier))
+                        settings.RGB_brightness -= (163 * rotencev.state.multiplier);
                     else
                         settings.RGB_brightness = 0;
                 }
@@ -1206,13 +1207,13 @@ static int menufunc_rgb_lighting(void) {
                 break;
             case 3:
                 if(rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
-                    if(settings.RGB_speed + 1 < 0xff)
-                        settings.RGB_speed += 1;
+                    if(settings.RGB_speed + (rotencev.state.multiplier) < 0xff)
+                        settings.RGB_speed += rotencev.state.multiplier;
                     else
                         settings.RGB_speed = 0xff;
                 } else {
-                    if(settings.RGB_speed > 1)
-                        settings.RGB_speed -= 1;
+                    if(settings.RGB_speed > rotencev.state.multiplier)
+                        settings.RGB_speed -= rotencev.state.multiplier;
                     else
                         settings.RGB_speed = 1;
                 }
