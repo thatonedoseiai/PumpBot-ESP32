@@ -209,6 +209,9 @@ static int l_readrotary(lua_State* L) {
         lua_pushnumber(L, 2);
         lua_pushinteger(L, event.state.position);
         lua_settable(L, -3);
+        lua_pushnumber(L, 3);
+        lua_pushinteger(L, event.state.multiplier);
+        lua_settable(L, -3);
         return 1;
     }
     lua_pushnil(L);

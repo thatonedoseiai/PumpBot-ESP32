@@ -73,6 +73,7 @@ typedef uint8_t table_row_t[TABLE_COLS];
 typedef struct {
 	rotary_encoder_position_t position;	///< Numerical position since reset. This value increments on clockwise rotation, and decrements on counter-clockewise rotation. Counts full or half steps depending on mode. Set to zero on reset.
 	rotary_encoder_direction_t direction;  ///< Direction of last movement. Set to NOT_SET on reset.
+	uint16_t multiplier;
 } rotary_encoder_state_t;
 
 /**

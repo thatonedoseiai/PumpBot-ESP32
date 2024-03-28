@@ -92,8 +92,10 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include <rom/ets_sys.h>
+#include "stdatomic.h"
 
 #define TAG "rotary_encoder"
+#define ROTENC_THRESHOLD 32
 
 //#define ROTARY_ENCODER_DEBUG
 
@@ -165,20 +167,39 @@ static uint8_t _process(rotary_encoder_info_t * info) {
 	return event;
 }
 
+volatile atomic_uint_fast16_t rotenc_multiplier_counter;
+
 static void _isr_rotenc(void * args) {
 	rotary_encoder_info_t * info = (rotary_encoder_info_t *)args;
 	uint8_t event = _process(info);
 	bool send_event = false;
+	uint32_t delaydelta;
 
 	switch (event) {
 	case DIR_CW:
+		// delaydelta = atomic_exchange(&time_since_last_input, 1);
+		delaydelta = atomic_load(&rotenc_multiplier_counter);
+		if(delaydelta+4 < ROTENC_THRESHOLD) {
+			atomic_compare_exchange_strong(&rotenc_multiplier_counter, &delaydelta, delaydelta+4);
+		} else {
+			atomic_compare_exchange_strong(&rotenc_multiplier_counter, &delaydelta, ROTENC_THRESHOLD);
+		}
 		++info->state.position;
 		info->state.direction = ROTARY_ENCODER_DIRECTION_CLOCKWISE;
+		info->state.multiplier = (delaydelta >> 3) + 1;
 		send_event = true;
 		break;
 	case DIR_CCW:
+		delaydelta = atomic_load(&rotenc_multiplier_counter);
+		if(delaydelta+4 < ROTENC_THRESHOLD) {
+			atomic_compare_exchange_strong(&rotenc_multiplier_counter, &delaydelta, delaydelta+4);
+		} else {
+			atomic_compare_exchange_strong(&rotenc_multiplier_counter, &delaydelta, ROTENC_THRESHOLD);
+		}
+		// delaydelta = atomic_exchange(&time_since_last_input, 1);
 		--info->state.position;
 		info->state.direction = ROTARY_ENCODER_DIRECTION_COUNTER_CLOCKWISE;
+		info->state.multiplier = (delaydelta >> 3) + 1;
 		send_event = true;
 		break;
 	default:
@@ -186,10 +207,12 @@ static void _isr_rotenc(void * args) {
 	}
 
 	if (send_event && info->queue) {
+		delaydelta = atomic_load(&rotenc_multiplier_counter);
 		rotary_encoder_event_t queue_event = {
 			.state = {
 				.position = info->state.position,
 				.direction = info->state.direction,
+				.multiplier = (delaydelta >> 3) + 1
 			},
 		};
 		BaseType_t task_woken = pdFALSE;
@@ -198,6 +221,8 @@ static void _isr_rotenc(void * args) {
 			portYIELD_FROM_ISR();
 		}
 	}
+
+	// atomic_store(&time_since_last_input, 1);
 }
 
 // static void _isr_btn(void* args) {
@@ -255,6 +280,7 @@ esp_err_t rotary_encoder_init(rotary_encoder_info_t * info, gpio_num_t pin_a, gp
 		gpio_isr_handler_add(info->pin_a, _isr_rotenc, info);
 		gpio_isr_handler_add(info->pin_b, _isr_rotenc, info);
 		// gpio_isr_handler_add(info->pin_btn, _isr_btn, info);
+		atomic_store(&rotenc_multiplier_counter, 0);
 	} else {
 		ESP_LOGE(TAG, "info is NULL");
 		err = ESP_ERR_INVALID_ARG;

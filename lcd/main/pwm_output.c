@@ -1,10 +1,12 @@
 #include "pwm_output.h"
 #include "settings.h"
+#include "rom/ets_sys.h"
 
 pb_output_info_t* pwms;
 gptimer_handle_t pwm_irq_timer;
 extern SETTINGS_t settings;
 extern uint16_t button_disable_counter;
+extern volatile atomic_uint_fast16_t rotenc_multiplier_counter;
 
 void update_pwm(int channel) {
 	pwms[channel].was_updated = 1;
@@ -30,7 +32,7 @@ void update_pwm(int channel) {
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
 }
 
-static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
+static bool pwm_callback(gptimer_handle_t timer_handle, const gptimer_alarm_event_data_t* edata, void* user_ctx) {
 	for(int i=0;i<4;++i) {
 		uint16_t k = atomic_load(&(pwms[i].cyclesLeft));
 		if(k == 1) {
@@ -45,6 +47,11 @@ static bool pwm_callback(gptimer_handle_t timer, const gptimer_alarm_event_data_
 	}
 	if(button_disable_counter > 0)
 		button_disable_counter--;
+	uint32_t timer = atomic_load(&rotenc_multiplier_counter);
+	if(timer > 0) {
+		// atomic_compare_exchange_strong(&time_since_last_input, &timer, timer - 1);
+		atomic_fetch_sub(&rotenc_multiplier_counter, 1);
+	}
 	return true;
 }
 

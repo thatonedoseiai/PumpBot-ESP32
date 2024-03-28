@@ -154,16 +154,17 @@ while(true) do
 
     if(f ~= nil) then
         if selecting_channels == false then
+            print(f[3])
             if(f[1] == 2) then
-                l.increment_output(k, -163)
+                l.increment_output(k, -163 * f[3])
             else
-                l.increment_output(k, 163)
+                l.increment_output(k, 163 * f[3])
             end
         else
-            if(f[1] == 2) then k = k - 1 else k = k + 1 end
-            if k == 5 then
+            if(f[1] == 2) then k = k - f[3] else k = k + f[3] end
+            if k >= 5 then
                 k = 1
-            elseif k == 0 then
+            elseif k <= 0 then
                 k = 4
             end
             l.draw_sprites({channels_text_bg[k]})
