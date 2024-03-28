@@ -411,15 +411,15 @@ const MENU_ELEMENT menusetup2a[] = {
         .textsize = 14,
         .col = &foreground_color
     },
-    { 
-        .text = text_next, // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
-        // .x = 275,
-        .x = 2,
-        .y = 2,
-        .textsize = 14,
-        .flags = MENU_FLAG_RIGHT_JUSTIFY,
-        .col = &foreground_color
-    }
+    // { 
+    //     .text = text_next, // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
+    //     // .x = 275,
+    //     .x = 2,
+    //     .y = 2,
+    //     .textsize = 14,
+    //     .flags = MENU_FLAG_RIGHT_JUSTIFY,
+    //     .col = &foreground_color
+    // }
 };
 
 const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Setting menu and the likes

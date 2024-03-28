@@ -1731,7 +1731,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 9, menufunc_wifi_scan},
     {&menutextenter[0], 4, menufunc_text_write},
     {&menuwifistarting[0], 3, menufunc_connect_wifi},
-    {&menusetup2a[0], 12, menufunc_http_setup},
+    {&menusetup2a[0], 11, menufunc_http_setup},
     {&menusetup3[0], 10, menufunc_network_preview},
     {&menusetup1[0], 10, menufunc_pb_setup_method},
     {&menusetup3[0], 10, menufunc_display_settings},
