@@ -1,10 +1,54 @@
 <head>
   <meta charset="utf-8" />
+  <style>
+    * { font-family: sans-serif; }
+  </style>
   <script>
+    function settext(x, b) { document.getElementById(x).innerHTML = b; }
+    const wsellabel = ["Searching...", "検索中...", "Recherche...", "", "Procurando...", "", "搜查中", "Идёт поиск...", "Suche..."];
+    const wifipasslabel = ["Password", "パスワード", "Mot de passe", "", "Senha", "", "網絡密碼", "Пароль", "Passwort"];
+    const themelabel = ["Theme", "テーマ:", "Thème", "", "Tema", "", "顏色模式", "Тема", "Theme"];
+    const themecolorlabel = ["Color", "色", "Couleur", "", "Cor", "", "顏色", "Цвет", "Farbe"];
+    const dispbrightlabel = ["Brightness", "明るさ", "Luminosité", "", "Brilho", "", "光度", "Яркость", "Helligkeit"];
+    const themeoptdark = ["Dark Mode", "ダークモード", "Mode sombre", "", "Modo Escuro", "", "深色模式", "Тёмный режим", "Dunkler Modus"];
+    const themeoptlight = ["Light Mode", "ライトモード", "Mode clair", "", "Modo Claro", "", "淺色模式", "Светлый режим", "Heller Modus"];
+    const themeoptcustom = ["Custom", "カスタム", "Personnalisé", "", "Personalizado", "", "自定義", "Пользовательский", "Benutzerdefiniert"];
+    const rgbbrilabel = ["RGB Brightness", "RGBの明るさ", "Luminosité RVB", "", "Brilho de RGB", "", "RGB光度", "Яркость РГБ", "RGB Helligkeit"];
+    const rgbspeedlabel = ["RGB Speed", "RGBの速さ", "Vitesse RVB", "", "Velocidade de RGB", "", "RGB速度", "Скорость РГБ", "RGB Geschwindigkeit"];
+    const rgbmodelabel = ["RGB Mode", "RGBモード", "Mode RVB", "", "Modo de RGB", "", "RGB模式", "Режим РГБ", "RGB Modus"];
+    const rgboffopt = ["Off", "色なし", "Éteint", "", "Desligado", "", "熄滅", "Выключить", "Aus"];
+    const rgbsolidopt = ["Solid Color", "変らない色", "Couleur unie", "", "Cor Sólida", "", "不變顏色", "Сплошной цвет", "Feste Farbe"];
+    const rgbfadingopt = ["Fade ", "変る色", "Fondu", "", "Gradiente", "", "週期顏色", "Тусклость", "Fade"];
+    const rgbrainbowopt = ["Rainbow", "虹色", "Arc-en-ciel", "", "Arco-Íris", "", "彩虹色", "Радуга", "Regenbogen"];
+    const rgbcolopt = ["Color 1", "第一の色", "Couleur 1", "", "Cor 1", "", "第一個顏色", "Цвет 1", "Farbe 1"];
+    const rgbcol2opt = ["Color 2", "第二の色", "Couleur 2", "", "Cor 2", "", "第二個顏色", "Цвет 2", "Farbe 2"];
+    const pressureunitslabel = ["Unit of Pressure", "空気圧の単位", "Unité de pression", "", "Unidade de Pressão", "", "氣壓單位", "Единицы измерения", "Druckeinheit"];
+    const langopt = ["Language", "言語", "Langue", "", "Idioma", "", "語言", "Язык", "Sprache"];
+
     fetch("/get_language", {method: "GET"})
       .then(response => response.text())
       .then(text => {
+        lang = parseInt(text, 10);
         document.getElementById("getreq").innerHTML = text;
+        settext("wifi_selection_label", wsellabel[lang]);
+        settext("wifipasslabel", wifipasslabel [lang]);
+        settext("themelabel", themelabel [lang]);
+        settext("themecolorlabel", themecolorlabel [lang]);
+        settext("dispbrightlabel", dispbrightlabel [lang]);
+        settext("themeoptdark", themeoptdark [lang]);
+        settext("themeoptlight", themeoptlight [lang]);
+        settext("themeoptcustom", themeoptcustom [lang]);
+        settext("rgbbrilabel", rgbbrilabel [lang]);
+        settext("rgbspeedlabel", rgbspeedlabel [lang]);
+        settext("rgbmodelabel", rgbmodelabel [lang]);
+        settext("rgboffopt", rgboffopt [lang]);
+        settext("rgbsolidopt", rgbsolidopt [lang]);
+        settext("rgbfadingopt", rgbfadingopt [lang]);
+        settext("rgbrainbowopt", rgbrainbowopt [lang]);
+        settext("rgbcolopt", rgbcolopt [lang]);
+        settext("rgbcol2opt", rgbcol2opt [lang]);
+        settext("pressureunitslabel", pressureunitslabel [lang]);
+        settext("langopt", langopt [lang]);
       });
     fetch("/get_wifi", {method: "GET"})
       .then(response => response.text())
@@ -40,44 +84,44 @@
 <body>
 <iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
 <form action="/set_settings" method="post" target="dummyframe">
-    <label for="ws">wifi:</label>
+    <label for="ws" id="wslabel">Wi-Fi:</label>
     <select id="ws" name="ws">
     </select><label for="ws" id="wifi_selection_label">searching...</label><br><br>
-  	<label for="wp">wifi password:</label>
+  	<label for="wp" id="wifipasslabel">wifi password:</label>
   	<input type="text" id="wp" name="wp"><br><br>
-  	<label for="t">display theme:</label>
+  	<label for="t" id="themelabel">display theme:</label>
     <select id="t" name="t">
-      <option value="0">dark</option>
-      <option value="1">light</option>
-      <option value="2">custom</option>
+      <option value="0" id="themeoptdark">dark</option>
+      <option value="1" id="themeoptlight">light</option>
+      <option value="2" id="themeoptcustom">custom</option>
     </select> <br><br>
-    <label for="tc">RGB color 1:</label>
+    <label for="tc" id="themecolorlabel">color:</label>
     <input type="color" id="tc" name="tc" value="#e66465"><br><br>
-    <label for="b">display brightness:</label>
+    <label for="b" id="dispbrightlabel">display brightness:</label>
     <input type="range" min="0" max="255" value="230" id="b" name="b"><br><br>
-    <label for="rb">RGB brightness:</label>
+    <label for="rb" id="rgbbrilabel">RGB brightness:</label>
     <input type="range" min="0" max="255" value="230" id="rb" name="rb"><br><br>
-    <label for="rs">RGB speed:</label>
+    <label for="rs" id="rgbspeedlabel">RGB speed:</label>
     <input type="range" min="0" max="100" value="5" id="rs" name="rs"><br><br>
-    <label for="rm">RGB mode:</label>
+    <label for="rm" id="rgbmodelabel">RGB mode:</label>
     <select id="rm" name="rm">
-      <option value="0">off</option>
-      <option value="1">solid</option>
-      <option value="2">fading</option>
-      <option value="3">rainbow</option>
+      <option value="0" id="rgboffopt">off</option>
+      <option value="1" id="rgbsolidopt">solid</option>
+      <option value="2" id="rgbfadingopt">fading</option>
+      <option value="3" id="rgbrainbowopt">rainbow</option>
     </select><br><br>
-    <label for="rc">RGB color 1:</label>
+    <label for="rc" id="rgbcolopt">RGB color 1:</label>
     <input type="color" id="rc" name="rc" value="#e66465">
-    <label for="rc2">RGB color 2:</label>
+    <label for="rc2" id="rgbcol2opt">RGB color 2:</label>
     <input type="color" id="rc2" name="rc2" value="#e66465"><br><br>
-    <label for="p">Units of pressure:</label>
+    <label for="p" id="pressureunitslabel">Units of pressure:</label>
     <select id="p" name="p">
-      <option value="0">KPA</option>
-      <option value="1">BAR</option>
-      <option value="2">PSI</option>
-      <option value="3">MMHG</option>
+      <option value="0" id="kpaopt">KPA</option>
+      <option value="1" id="baropt">BAR</option>
+      <option value="2" id="psiopt">PSI</option>
+      <option value="3" id="mmhgopt">MMHG</option>
     </select><br><br>
-    <label for="l">Language:</label>
+    <label for="l" id="langopt">Language:</label>
     <select id="l" name="l">
       <option value="0">English</option>
       <option value="1">日本語</option>
@@ -88,7 +132,6 @@
       <option value="6">繁體中文</option>
       <option value="7">Pусский</option>
       <option value="8">Deutsch</option>
-      <option value="9">한국어</option>
     </select><br><br>
     <input type="submit" value="Save and Exit" id="submissionButton">
 <!-- onclick="submission()" --> 
