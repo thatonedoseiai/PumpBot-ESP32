@@ -93,7 +93,7 @@ const char text_back_es[] = "Atrás";
 const char text_back_pt[] = "Voltar";
 const char text_back_zh[] = "返回";
 const char text_back_cn[] = "返回";
-const char text_back_ru[] = "Назад";
+const char text_back_ru[] = "Назаԭ";
 const char text_back_de[] = "Zurück";
 const char *const text_back[] = {text_back_en, text_back_jp, text_back_fr, text_back_es, text_back_pt, text_back_zh, text_back_cn, text_back_ru, text_back_de};
 
@@ -104,7 +104,7 @@ const char text_yes_es[] = "Si";
 const char text_yes_pt[] = "Sim";
 const char text_yes_zh[] = "是";
 const char text_yes_cn[] = "是";
-const char text_yes_ru[] = "Да";
+const char text_yes_ru[] = "Ԭа";
 const char text_yes_de[] = "Ja";
 const char *const text_yes[] = {text_yes_en, text_yes_jp, text_yes_fr, text_yes_es, text_yes_pt, text_yes_zh, text_yes_cn, text_yes_ru, text_yes_de};
 
@@ -137,7 +137,7 @@ const char text_next_es[] = "Siguiente";
 const char text_next_pt[] = "Próximo";
 const char text_next_zh[] = "继续";
 const char text_next_cn[] = "繼續";
-const char text_next_ru[] = "Следующее";
+const char text_next_ru[] = "Слеԭԩюԝее";
 const char text_next_de[] = "Nächstes";
 const char *const text_next[] = {text_next_en, text_next_jp, text_next_fr, text_next_es, text_next_pt, text_next_zh, text_next_cn, text_next_ru, text_next_de};
 
@@ -1138,7 +1138,7 @@ const char text_app_go_es[] = "¡Vamos!";
 const char text_app_go_pt[] = "Iniciar!";
 const char text_app_go_zh[] = "行动";
 const char text_app_go_cn[] = "行動";
-const char text_app_go_ru[] = "Вперёд!";
+const char text_app_go_ru[] = "Впеԗёԭ!";
 const char text_app_go_de[] = "Los!";
 const char *const text_app_go[] = {text_app_go_en, text_app_go_jp, text_app_go_fr, text_app_go_es, text_app_go_pt, text_app_go_zh, text_app_go_cn, text_app_go_ru, text_app_go_de};
 
