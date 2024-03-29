@@ -23,12 +23,12 @@ extern const char *const text_tooltip_wifi_setup_a[];
 extern const char *const text_connect_here[];
 extern const char *const text_connect_here_a[];
 extern const char *const text_go_to_url[];
+extern const char *const text_go_to_url_a[];
 extern const char *const text_wifi_starting[];
 extern const char *const text_wifi_stop[];
 extern const char *const text_save_exit[];
 extern const char *const text_wifi_continue_without[];
 extern const char *const text_wifi_continue_without_a[];
-extern const char *const text_wifi_continue_without_b[];
 extern const char *const text_setup_complete[];
 extern const char *const text_standalone_setup[];
 extern const char *const text_tooltip_standalone_setup[];
@@ -112,5 +112,7 @@ extern const char *const text_app_manage[];
 extern const char *const text_enter_text[];
 extern const char *const text_port[];
 extern const char *const text_network_settings[];
+extern const char *const text_reset[];
+extern const char *const text_factory_reset[];
 
 #endif

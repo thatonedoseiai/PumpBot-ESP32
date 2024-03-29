@@ -367,9 +367,17 @@ const MENU_ELEMENT menusetup2a[] = {
         .col = &foreground_color
     },
     {
-        .text = &url_name,
+        .text = text_go_to_url_a, 
         .x = 0,
         .y = 88,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
+    {
+        .text = &url_name,
+        .x = 0,
+        .y = 56,
         .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
         .textsize = 14,
         .col = &foreground_color
@@ -833,14 +841,14 @@ const MENU_ELEMENT menuskipwifi[] = {
         .flags = MENU_FLAG_CENTER,
         .col = &foreground_color
     },
-    {
-        .text = text_wifi_continue_without_b,
-        .x = 0,
-        .y = 113,
-        .textsize = 18,
-        .flags = MENU_FLAG_CENTER,
-        .col = &foreground_color
-    },
+    // {
+    //     .text = text_wifi_continue_without_b,
+    //     .x = 0,
+    //     .y = 113,
+    //     .textsize = 18,
+    //     .flags = MENU_FLAG_CENTER,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_no,
         .x = 2,

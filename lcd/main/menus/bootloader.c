@@ -328,9 +328,11 @@ static int menufunc_welcome(void) {
     int sprs3[45];
     int numsprs1, numsprs2, numsprs3;
     FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
-    sprite_rectangle(60, 146, 200, 44, background_color);
-    sprite_rectangle(60, 190, 200, 40, background_color);
-    sprite_rectangle(60, 5, 200, 20, background_color);
+    sprite_rectangle(10, 168, 300, 22, background_color);
+    sprite_rectangle(10, 146, 300, 22, background_color);
+    sprite_rectangle(10, 210, 300, 20, background_color);
+    sprite_rectangle(10, 190, 300, 20, background_color);
+    sprite_rectangle(10, 5, 300, 20, background_color);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
             delete_all_sprites();
@@ -816,7 +818,7 @@ static int menufunc_add_on_settings(void) {
     button_event_t event;
     rotary_encoder_event_t rotencev;
     int numsprs;
-    int sprs[14];
+    int sprs[32];
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, text_addon_settings[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
@@ -879,7 +881,7 @@ static int menufunc_all_settings(void) {
     int cursor;
     int selection = 0;
     int page_start = 0;
-    int textbg = sprite_rectangle(50, 184, 220, 21, background_color);
+    int textbg = sprite_rectangle(30, 184, 260, 21, background_color);
     // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
     // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
@@ -1008,7 +1010,7 @@ static int menufunc_pwm_output_set(void) {
     draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
+    int textbg = sprite_rectangle(200, 184, 120, 21, background_color);
     setup_cursor(&cursorbg, &cursor, 184);
     // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
@@ -1287,8 +1289,8 @@ static int menufunc_applications(void) {
     int ys[] = {184, 152, 120, 88, 56};
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    int sprs[20];
-    int downloadsprs[20];
+    int sprs[40];
+    int downloadsprs[40];
     int numdownloadsprs;
     int numsprs;
     int cursor;
@@ -1323,7 +1325,7 @@ static int menufunc_applications(void) {
     draw_options((char**)names, textbg);
     for(int i=0;i<numsprs;++i)
         delete_sprite(sprs[i]);
-    for(int i=0;i<8;++i)
+    for(int i=0;i<numdownloadsprs;++i)
         delete_sprite(downloadsprs[i]);
     delete_sprite(titlebg);
     while(true) {
@@ -1748,7 +1750,7 @@ MENU_INFO_t allmenus[] = {
     {&menunetworksettings[0], 9, menufunc_network_settings},
     {&menuserversettings[0], 12, menufunc_server_settings},
     {&menusetupdone[0], 2, menufunc_setup_done},
-    {&menuskipwifi[0], 5, menufunc_skip_wifi},
+    {&menuskipwifi[0], 4, menufunc_skip_wifi},
     {&menusetup3[0], 9, menufunc_developer},
 };
 
