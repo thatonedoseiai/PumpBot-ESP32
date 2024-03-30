@@ -49,11 +49,8 @@ void set_settings_to_default(SETTINGS_t* settings) {
 		settings->pwm_min_limit[i] = 0;
 		settings->pwm_max_limit[i] = 0x3fff;
 		settings->output_set_on_off_only[i] = 0;
+		settings->server_ip[i] = 0;
 	}
-	settings->server_ip[0] = 192;
-	settings->server_ip[1] = 168;
-	settings->server_ip[2] = 0;
-	settings->server_ip[3] = 105;
 	settings->server_port = 0;
 	memset(&settings->server_password, 0, 64);
 	settings->pressure_units = PSI;
