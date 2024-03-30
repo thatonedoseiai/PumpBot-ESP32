@@ -590,7 +590,7 @@ static int menufunc_display_settings(void) {
         return MENU_REDRAW_FLAG;
     }
     int numsprs;
-    int sprs[21];
+    int sprs[32];
     char bright[4];
     (void) itoa(settings.disp_brightness, bright, 10);
     int mode = 0;
@@ -875,7 +875,7 @@ static int menufunc_all_settings(void) {
     };
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    int sprs[20];
+    int sprs[32];
     int numsprs;
     int cursorbg;
     int cursor;
@@ -1704,7 +1704,7 @@ static int menufunc_developer(void) {
     sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, text_settings_developer[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_text(0, 184, "Factory reset", typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    draw_text(0, 184, text_reset[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     setup_cursor(&cursorbg, &cursor, 184);
     draw_all_sprites(spi);
