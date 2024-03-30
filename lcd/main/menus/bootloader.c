@@ -34,7 +34,6 @@ extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
-// extern uint24_RGB WHITE;
 extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SETTINGS_t settings;
 static char* ibuf;
