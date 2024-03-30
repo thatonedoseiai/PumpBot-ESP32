@@ -101,7 +101,7 @@ static void draw_options(char** options, int bgrect) {
 
 static int menufunc_wifi_scan() {
     int error;
-    int sprs[6];
+    int sprs[10];
     int numsprs;
 
     int ys[] = {184, 152, 120, 88, 56};
@@ -413,7 +413,7 @@ static int menufunc_http_setup(void) {
 static int menufunc_network_preview(void) {
     int ys[] = {184, 152, 120, 88, 56};
     char namebuf[14];
-    int k[10];
+    int k[15];
     int lenk;
     button_event_t event;
     rotary_encoder_event_t rotencev;
@@ -590,13 +590,13 @@ static int menufunc_display_settings(void) {
         return MENU_REDRAW_FLAG;
     }
     int numsprs;
-    int sprs[15];
+    int sprs[21];
     char bright[4];
     (void) itoa(settings.disp_brightness, bright, 10);
     int mode = 0;
     unsigned char selection = 0;
     FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
-    sprite_rectangle(0, 216, 320, 16, background_color);
+    sprite_rectangle(20, 211, 280, 21, background_color);
     draw_text(0, 216, text_display_setting[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_brightness[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
@@ -617,7 +617,7 @@ static int menufunc_display_settings(void) {
     int num_brspr;
     int br_sprite[4]; 
     int num_themespr;
-    int theme_sprite[5];
+    int theme_sprite[40];
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
@@ -1163,7 +1163,7 @@ static int menufunc_rgb_lighting(void) {
     sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2);
     draw_all_sprites(spi);
     delete_all_sprites();
-    int textbg = sprite_rectangle(200, 184, 100, 21, background_color);
+    int textbg = sprite_rectangle(200, 184, 120, 21, background_color);
     setup_cursor(&cursorbg, &cursor, 184);
     // int cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
     // draw_text(10, 184, ">", typeFace, &cursor, NULL, foreground_color, background_color, 0);
@@ -1532,12 +1532,12 @@ static int menufunc_network_settings(void) {
             namebuf[12] = '.';
             namebuf[13] = '.';
             namebuf[14] = 0;
-            draw_text(170, 120, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
+            draw_text(190, 120, namebuf, typeFace, NULL, NULL, foreground_color, background_color, 0);
         } else {
-            draw_text(170, 120, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
+            draw_text(190, 120, &settings.wifi_name[0], typeFace, NULL, NULL, foreground_color, background_color, 0);
         }
     } else {
-        draw_text(170, 120, text_disconnected[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
+        draw_text(190, 120, text_disconnected[settings.language], typeFace, NULL, NULL, foreground_color, background_color, 0);
     }
     draw_all_sprites(spi);
     delete_all_sprites();

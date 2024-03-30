@@ -541,7 +541,7 @@ const MENU_ELEMENT menusetupdone[] = {
     {
         .text = text_pressenc,
         .x = 0,
-        .y = 32,
+        .y = 10,
         .flags = MENU_FLAG_CENTER,
         .textsize = 14,
         .col = &foreground_color
