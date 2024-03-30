@@ -77,7 +77,7 @@ static int menufunc_setup(void) {
     }
 }
 
-static void draw_options(char** options, int bgrect) {
+static void draw_options(const char** options, int bgrect) {
     int ys[] = {184, 152, 120, 88, 56};
     int sprs[32];
 
@@ -106,7 +106,7 @@ static int menufunc_wifi_scan() {
 
     int ys[] = {184, 152, 120, 88, 56};
 
-    char* list_options[5];
+    const char* list_options[5];
     uint8_t selection = 0;
     uint8_t page_start = 0;
     uint16_t aprecnum = 10;
@@ -515,10 +515,10 @@ static int menufunc_network_preview(void) {
 static int menufunc_pb_setup_method (void) {
     button_event_t event;
     rotary_encoder_event_t rotencev;
-    char* options_1 = text_tooltip_wifi_setup[settings.language];
-    char* options_2 = text_tooltip_wifi_setup_a[settings.language];
-    char* options_3 = text_tooltip_standalone_setup[settings.language];
-    char* options_4 = text_tooltip_standalone_setup_a[settings.language];
+    const char* options_1 = text_tooltip_wifi_setup[settings.language];
+    const char* options_2 = text_tooltip_wifi_setup_a[settings.language];
+    const char* options_3 = text_tooltip_standalone_setup[settings.language];
+    const char* options_4 = text_tooltip_standalone_setup_a[settings.language];
     unsigned char selection = 0;
     int lentt;
     int lenttline2;
@@ -526,10 +526,10 @@ static int menufunc_pb_setup_method (void) {
     int lentt2;
     int tooltip_1[60];
     int tooltip_2[60];
-    int err = FT_Set_Char_Size (typeFace, 12 << 6, 0, 100, 0);
-    int tooltip_bg = sprite_rectangle(0, 25, 320, 16, background_color);
-    int tooltip_bg2 = sprite_rectangle(0, 41, 320, 16, background_color);
-    int tooltip_bg3 = sprite_rectangle(0, 57, 320, 16, background_color);
+    FT_Set_Char_Size (typeFace, 12 << 6, 0, 100, 0);
+    sprite_rectangle(0, 25, 320, 16, background_color);
+    sprite_rectangle(0, 41, 320, 16, background_color);
+    sprite_rectangle(0, 57, 320, 16, background_color);
     draw_text(0, 52, options_1, typeFace, tooltip_1, &lentt, foreground_color, background_color, 0);
     center_sprite_group_x(tooltip_1, lentt);
     draw_text(0, 34, options_2, typeFace, tooltip_1 + lentt, &lenttline2, foreground_color, background_color, 0);
@@ -862,7 +862,7 @@ static int menufunc_add_on_settings(void) {
 const int selection_to_menu[] = {8, 19, 12, 14, 10, 15, 1, 23};
 static int menufunc_all_settings(void) {
     int ys[] = {184, 152, 120, 88, 56};
-    char* settings_options_list[] = {
+    const char* settings_options_list[] = {
         text_settings_display[settings.language],
         text_settings_network[settings.language],
         text_settings_output[settings.language],
@@ -889,7 +889,7 @@ static int menufunc_all_settings(void) {
     int titlebg = sprite_rectangle(85, 211, 150, 21, background_color);
     draw_text(0, 216, text_settings[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
-    draw_options((char**)settings_options_list, textbg);
+    draw_options((const char**)settings_options_list, textbg);
     for(int i=0;i<numsprs;++i)
         delete_sprite(sprs[i]);
     delete_sprite(titlebg);
@@ -904,7 +904,7 @@ static int menufunc_all_settings(void) {
                 page_start = selection;
             }
             if((selection-page_start == 0) || (selection-page_start == 4)) {
-                draw_options((char**) (&settings_options_list[page_start]), textbg);
+                draw_options((const char**) (&settings_options_list[page_start]), textbg);
             }
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection - page_start]-14;
             draw_sprites(spi, &cursorbg, 1);
@@ -1322,7 +1322,7 @@ static int menufunc_applications(void) {
     center_sprite_group_x(sprs, numsprs);
     draw_text(2, 2, text_app_download[settings.language], typeFace, downloadsprs, &numdownloadsprs, foreground_color, background_color, 0);
     right_justify_sprite_group_x(downloadsprs, numdownloadsprs, 2);
-    draw_options((char**)names, textbg);
+    draw_options((const char**)names, textbg);
     for(int i=0;i<numsprs;++i)
         delete_sprite(sprs[i]);
     for(int i=0;i<numdownloadsprs;++i)
@@ -1339,7 +1339,7 @@ static int menufunc_applications(void) {
             }
             // page_start = (selection > page_start + 4) ? selection - 4 : (0);
             if((selection-page_start == 0) || (selection-page_start == 4)) {
-                draw_options((char**) (&names[page_start]), textbg);
+                draw_options((const char**) (&names[page_start]), textbg);
             }
             OAM_SPRITE_TABLE[cursor]->posY = 240-ys[selection - page_start]-14;
             draw_sprites(spi, &cursorbg, 1);
@@ -1462,7 +1462,6 @@ int menufunc_download_file(void) {
         strcpy(ibuf, "https://");
     }
     button_event_t event;
-    rotary_encoder_event_t rotencev;
     char displayName[16];
     int k = strlen(ibuf);
     int sprs[14];
@@ -1758,7 +1757,6 @@ int start_menu_tree(int startmenu, char settings_mode) {
     int menu_stack[32];
     int menu_stackp = 0;
     int nextmenu;
-    char do_text_menu = 0;
     MENU_INFO_t* currmenu;
     menu_stack[menu_stackp] = startmenu;
     do {

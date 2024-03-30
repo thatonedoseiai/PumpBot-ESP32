@@ -20,8 +20,8 @@ uint16_t width_cache[OAM_SIZE];
 uint16_t height_cache[OAM_SIZE];
 uint24_RGB fg_cache[OAM_SIZE];
 uint24_RGB bg_cache[OAM_SIZE];
-uint24_RGB* background_color;
-uint24_RGB* foreground_color;
+const uint24_RGB* background_color;
+const uint24_RGB* foreground_color;
 char text_cache_auto_delete;
 const uint24_RGB WHITE = {
     .pixelR = 0xff,

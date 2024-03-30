@@ -22,7 +22,7 @@ int get_message(char* buffer, int buflen) {
 	return recv(sockfd, buffer, buflen, MSG_DONTWAIT);
 }
 
-int send_message(char* buffer, int buflen) {
+int send_message(const char* buffer, int buflen) {
 	return send(sockfd, buffer, buflen, MSG_DONTWAIT);
 }
 

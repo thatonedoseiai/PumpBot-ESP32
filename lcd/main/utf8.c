@@ -22,7 +22,7 @@ int utf8substrlen(char* s, int len) {
 	return k;
 }
 
-size_t utf8strlen(char* s) {
+size_t utf8strlen(const char* s) {
     size_t count = 0;
     while (*s) {
         count += (*s++ & 0xC0) != 0x80;
@@ -46,7 +46,7 @@ void utf8bspc(char* s, uint8_t* curs) {
 }
 
 // Stops at any null characters.
-int decode_code_point(char **s) {
+int decode_code_point(const char **s) {
   int k = **s ? __builtin_clz(~(**s << 24)) : 0;  // Count # of leading 1 bits.
   int mask = (1 << (8 - k)) - 1;                  // All 1's with k leading 0's.
   int value = **s & mask;

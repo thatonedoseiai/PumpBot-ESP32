@@ -373,7 +373,7 @@ void app_main(void) {
         setup_flag = 1;
         FILE* colfile = fopen("/mainfs/colors", "r");
         if(colfile) {
-            int err = fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx\n%x,%hx,%x", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, &settings.RGB_mode, &settings.RGB_brightness, &settings.RGB_speed);
+            fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx\n%x,%hx,%x", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, &settings.RGB_mode, &settings.RGB_brightness, &settings.RGB_speed);
             fclose(colfile);
         }
         rgb_update();

@@ -32,7 +32,7 @@ extern QueueHandle_t* button_events;
 
 uint16_t button_disable_counter;
 
-int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
+int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
     FT_Vector offset;
     FT_GlyphSlot slot;
 
@@ -41,7 +41,7 @@ int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprit
 	offset.y = startY << 6;
 
     int i = 0;
-    char* reader_head = string; // so that there is no modification
+    const char* reader_head = string; // so that there is no modification
     int err;
     int curchar;
     uint8_t alphaR, alphaG, alphaB;

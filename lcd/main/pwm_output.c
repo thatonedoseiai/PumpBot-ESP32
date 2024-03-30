@@ -24,11 +24,12 @@ void update_pwm(int channel) {
 	if(settings.output_set_on_off_only[channel]) {
 		power = 16383;
 	}
-	power = ((power * range) >> 14) + offset;
+	if(((power * range) >> 14) < -offset)
+		power = 0;
+	else
+		power = ((power * range) >> 14) + offset;
 	if(power > 16383)
 		power = 16383;
-	else if(power < 0)
-		power = 0;
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
 }
 

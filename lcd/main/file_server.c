@@ -367,7 +367,7 @@ static esp_err_t set_settings_handler(httpd_req_t *req) {
     if(remaining > 1024) {
         ESP_LOGE(TAG, "FAILURE: length of sent data longer than intended!\n");
     }
-    int contentlength = remaining;
+    // int contentlength = remaining;
     int received;
 
     while (remaining > 0) {
