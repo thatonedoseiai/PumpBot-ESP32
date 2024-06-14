@@ -21,13 +21,19 @@ void update_pwm(int channel) {
 		range = -range;
 		offset = settings.pwm_max_limit[channel];
 	}
-	if(settings.output_set_on_off_only[channel]) {
-		power = 16383;
-	}
-	if(((power * range) >> 14) < -offset)
-		power = 0;
-	else
+	if(power == 16383) {
+		power = settings.pwm_max_limit[channel];
+	} else {
+		if(settings.output_set_on_off_only[channel]) {
+			power = 16383;
+		}
+		// if(((power * range) >> 14) < offset)// -offset)
+		// 	power = 0;
+		// else
+		// 	power = ((power * range) >> 14) + offset;
 		power = ((power * range) >> 14) + offset;
+	}
+	// printf("POWER: %d, CHANNEL: %d, MIN: %d, OFF: %d, %d\n", power, channel, settings.pwm_min_limit[channel], offset, (power * range) >> 14);
 	if(power > 16383)
 		power = 16383;
 	ledc_set_duty_and_update(LEDC_LOW_SPEED_MODE, channel, power, 0);
@@ -134,6 +140,8 @@ void output_add_value(int channel, int increment) {
 		atomic_fetch_add(&(pwms[channel].output), increment);
 	else if(atomic_load(&(pwms[channel].output)) >= -increment)
 		atomic_fetch_sub(&(pwms[channel].output), -increment);
+	else
+		atomic_store(&(pwms[channel].output), 0);
 	if(atomic_load(&(pwms[channel].output)) > 16383)
 		atomic_store(&(pwms[channel].output), 16383);
 	pwms[channel].cyclesLeft = 0;
