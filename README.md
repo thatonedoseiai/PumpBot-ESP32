@@ -1,5 +1,5 @@
-## PumpBot ESP-32
-firmware for pumpbot. Run on ESP-32. 
+## PumpBot ESP32
+Firmware for PumpBot. Runs on ESP32-S3-based PumpBot board. 
 
 Dependencies:
 - esp-idf
