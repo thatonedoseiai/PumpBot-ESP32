@@ -23,6 +23,7 @@
 #include "rgb_fade.h"
 #include "pwm_output.h"
 #include "system_status.h"
+#include "socket.h"
 
 #include "lua_exports.h"
 
@@ -189,6 +190,22 @@ void app_main(void) {
         if(colfile) {
             fscanf(colfile, "#%2hhx%2hhx%2hhx\n#%2hhx%2hhx%2hhx\n%x,%hx,%x", &settings.RGB_colour.pixelR, &settings.RGB_colour.pixelB, &settings.RGB_colour.pixelG, &settings.RGB_colour_2.pixelR, &settings.RGB_colour_2.pixelG, &settings.RGB_colour_2.pixelB, &settings.RGB_mode, &settings.RGB_brightness, &settings.RGB_speed);
             fclose(colfile);
+        }
+    } else {
+        strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
+        strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
+        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+        esp_wifi_connect();
+        while(!(system_flags & (FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT)));
+        if(system_flags & FLAG_WIFI_CONNECTED) {
+            if(connect_to_server(*(uint32_t*) &settings.server_ip, settings.server_port)) {
+                system_flags &= ~FLAG_SERVER_CONNECTED;
+            } else {
+                system_flags |= FLAG_SERVER_CONNECTED;
+            }
+            ets_printf("%d\n", system_flags & FLAG_SERVER_CONNECTED);
+        } else {
+            ets_printf("failed to connect to wifi!\n");
         }
     }
     rgb_update();

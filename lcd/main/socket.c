@@ -27,5 +27,6 @@ int send_message(const char* buffer, int buflen) {
 }
 
 int disconnect_from_server(void) {
-	return shutdown(sockfd, SHUT_RDWR);
+	shutdown(sockfd, SHUT_RDWR);
+	return close(sockfd);
 }

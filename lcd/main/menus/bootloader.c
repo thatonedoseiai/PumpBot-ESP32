@@ -1614,7 +1614,13 @@ static int menufunc_server_settings(void) {
     itoa(settings.server_port, port_buf, 10);
     port_buf[5] = 0;
     draw_text(150, 120, port_buf, typeFace, NULL, NULL, foreground_color, background_color, 0);
-    draw_text(150, 88, (system_flags & FLAG_WIFI_CONNECTED) ? text_connect[settings.language] : text_cant_connect[settings.language], typeFace, sprs, &numsprs, foreground_color, background_color, 0);
+    draw_text(150, 88, 
+            ((system_flags & FLAG_WIFI_CONNECTED) ? 
+                ((system_flags & FLAG_SERVER_CONNECTED) ? 
+                    text_disconnect 
+                    : text_connect) 
+                : text_cant_connect)[settings.language],
+            typeFace, sprs, &numsprs, foreground_color, background_color, 0);
     center_sprite_group_x(sprs, numsprs);
     draw_all_sprites(spi);
     delete_all_sprites();
