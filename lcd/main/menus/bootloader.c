@@ -1752,7 +1752,7 @@ MENU_INFO_t allmenus[] = {
     {NULL, 0, menufunc_execute_ibuf_file},
     {&menudownloadapp[0], 7, menufunc_download_file},
     {&menunetworksettings[0], 9, menufunc_network_settings},
-    {&menuserversettings[0], 12, menufunc_server_settings},
+    {&menuserversettings[0], 11, menufunc_server_settings},
     {&menusetupdone[0], 2, menufunc_setup_done},
     {&menuskipwifi[0], 4, menufunc_skip_wifi},
     {&menusetup3[0], 9, menufunc_developer},

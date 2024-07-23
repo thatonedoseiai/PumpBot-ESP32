@@ -24,6 +24,7 @@
 #include "pwm_output.h"
 #include "system_status.h"
 #include "socket.h"
+#include <pthread.h>
 
 #include "lua_exports.h"
 
@@ -150,6 +151,19 @@ done:
 	return ret;
 }
 
+void* connect_server_thread_start(void* arg) {
+    pthread_detach(pthread_self());
+
+    if(connect_to_server(*(uint32_t*) &settings.server_ip, settings.server_port)) {
+        system_flags &= ~FLAG_SERVER_CONNECTED;
+    } else {
+        system_flags |= FLAG_SERVER_CONNECTED;
+    }
+    ets_printf("%d\n", system_flags & FLAG_SERVER_CONNECTED);
+
+    pthread_exit(NULL);
+}
+
 void app_main(void) {
 	static FT_Library lib;
 	static FT_Error error;
@@ -198,12 +212,8 @@ void app_main(void) {
         esp_wifi_connect();
         while(!(system_flags & (FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT)));
         if(system_flags & FLAG_WIFI_CONNECTED) {
-            if(connect_to_server(*(uint32_t*) &settings.server_ip, settings.server_port)) {
-                system_flags &= ~FLAG_SERVER_CONNECTED;
-            } else {
-                system_flags |= FLAG_SERVER_CONNECTED;
-            }
-            ets_printf("%d\n", system_flags & FLAG_SERVER_CONNECTED);
+            pthread_t ptid;
+            pthread_create(&ptid, NULL, &connect_server_thread_start, NULL);
         } else {
             ets_printf("failed to connect to wifi!\n");
         }
