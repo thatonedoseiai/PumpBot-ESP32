@@ -200,9 +200,9 @@ refresh:
     // return MENU_RETURN_FLAG;
 }
 
-unsigned char table1[] = "EF⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
-unsigned char table2[] = "ef⌫✓abcdefghijklmnopqrstuvwxyz␣⌫✓abcd";
-unsigned char table3[] = "?@⌫✓!\"#$%&'()*+,-./0123456789:;<=>?@␣⌫✓!\"#$%";
+unsigned char table1[] = "Z␣⌫✓ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓ABCD";
+unsigned char table2[] = "z␣⌫✓abcdefghijklmnopqrstuvwxyz␣⌫✓abcd";
+unsigned char table3[] = "?@␣⌫✓!\"#$%&'()*+,-./0123456789:;<=>?@␣⌫✓!\"#$%";
 unsigned char* metatable[] = {table1, table2, table3};
 unsigned char string_lengths[] = {29, 29, 36};
 char tablename[][2] = {"a", "@", "A"};
