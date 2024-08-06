@@ -10,6 +10,7 @@ server_symbol_status = l.server_is_connected()
 w = l.draw_text(306, 226, "󰖩", fgcol, bgcol)
 n = l.draw_text(306, 226, "󰖪", fgcol, bgcol)
 sc = l.draw_text(294, 226, "+", fgcol, bgcol)
+snc = l.draw_text(294, 226, "-", fgcol, bgcol)
 snc = {l.draw_rectangle(294, 226, 12, 12, bgcol)}
 if(wifi_symbol_status) then
     l.draw_sprites(w)
@@ -18,6 +19,8 @@ else
 end
 if(server_symbol_status) then
     l.draw_sprites(sc)
+else
+    l.draw_sprites(snc)
 end
 on_text = l.draw_text(85, 16, "n", fgcol, bgcol)
 off_text = l.draw_text(85, 16, "ff", fgcol, bgcol)
@@ -193,6 +196,7 @@ while(true) do
         end
     end
     if(server_symbol_status ~= l.server_is_connected()) then
+        print("s: "..server_symbol_status)
         server_symbol_status = l.server_is_connected()
         if(server_symbol_status) then
             l.draw_sprites(sc)
@@ -200,7 +204,9 @@ while(true) do
             l.draw_sprites(snc)
         end
     end
+    -- print("LUA: GETTING MESSAGE")
     message = l.server_get_message()
+    -- print("LUA: FINISHED GETTING MESSAGE")
     if(message ~= nil) then
         parse_message(message)
     end

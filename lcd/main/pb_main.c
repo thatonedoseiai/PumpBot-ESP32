@@ -84,7 +84,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         }
     } else if(event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ets_printf("got ip:\n", IP2STR(&event->ip_info.ip));
+        ets_printf("got ip: %d.%d.%d.%d\n", IP2STR(&event->ip_info.ip));
         system_flags |= FLAG_WIFI_CONNECTED;
     }
 }
