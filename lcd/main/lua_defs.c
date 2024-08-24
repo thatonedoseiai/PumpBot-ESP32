@@ -473,6 +473,7 @@ static int l_wifi_is_connected(lua_State* L) {
 }
 
 static int l_server_is_connected(lua_State* L) {
+    // ets_printf("S: %x, %x, %x\n", system_flags & FLAG_SERVER_CONNECTED, system_flags, FLAG_SERVER_CONNECTED);
     lua_pushboolean(L, system_flags & FLAG_SERVER_CONNECTED);
     return 1;
 }

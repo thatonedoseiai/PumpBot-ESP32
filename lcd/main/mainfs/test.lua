@@ -196,7 +196,7 @@ while(true) do
         end
     end
     if(server_symbol_status ~= l.server_is_connected()) then
-        print("s: "..server_symbol_status)
+        print("s: "..tostring(server_symbol_status))
         server_symbol_status = l.server_is_connected()
         if(server_symbol_status) then
             l.draw_sprites(sc)
@@ -204,9 +204,7 @@ while(true) do
             l.draw_sprites(snc)
         end
     end
-    -- print("LUA: GETTING MESSAGE")
     message = l.server_get_message()
-    -- print("LUA: FINISHED GETTING MESSAGE")
     if(message ~= nil) then
         parse_message(message)
     end
@@ -214,4 +212,4 @@ end
 
 l.enable_text_cache_auto_delete(true);
 collectgarbage("collect")
-delete_all_sprites()
+l.delete_all_sprites()

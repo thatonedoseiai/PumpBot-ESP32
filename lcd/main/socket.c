@@ -89,6 +89,7 @@ int disconnect_from_server(void) {
 	if(ping_flag) {
 		ets_printf("killing the ping thread!\n");
 		ping_flag = false;
+		while(system_flags & FLAG_SERVER_CONNECTED);
 		// if(ping_thread_id != pthread_self())
 		// 	(void) pthread_join(ping_thread_id, NULL);
 	}

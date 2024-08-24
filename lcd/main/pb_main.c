@@ -209,6 +209,7 @@ void app_main(void) {
         strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
         strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
         ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+        settings.server_port = 7867;
         esp_wifi_connect();
         while(!(system_flags & (FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT)));
         if(system_flags & FLAG_WIFI_CONNECTED) {
@@ -243,6 +244,7 @@ void app_main(void) {
         if (error)
             ets_printf("draw menu element\n");
         (void) luaL_dofile(L, "/mainfs/test.lua");
+        ets_printf("%s\n", lua_tostring(L,-1));
         delete_all_sprites();
         (void) start_menu_tree(11, true);
         flush_text_cache();
