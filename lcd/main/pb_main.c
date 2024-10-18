@@ -228,6 +228,49 @@ void app_main(void) {
         if(!read_default_app(buf, 256))
             (void) luaL_dofile(L, buf);
         free(buf);
+    } else if(event.pin == 18) {
+        // encoder switch
+
+        int old_rgb = settings.RGB_mode;
+        uint24_RGB old_rgbcol = settings.RGB_colour;
+        settings.RGB_mode = RGB_MODE_SOLID;
+        settings.RGB_colour.pixelR = 255;
+        settings.RGB_colour.pixelG = 0;
+        settings.RGB_colour.pixelB = 0;
+        for(int i=0;i<4;++i)
+            output_set_value(i, 0);
+        rgb_update();
+        send_color(spi, &settings.RGB_colour);
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_DOWN));
+        settings.RGB_colour.pixelR = 0;
+        settings.RGB_colour.pixelG = 255;
+        for(int i=0;i<4;++i)
+            output_set_value(i, 4096);
+        rgb_update();
+        send_color(spi, &settings.RGB_colour);
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_DOWN));
+        settings.RGB_colour.pixelG = 0;
+        settings.RGB_colour.pixelB = 255;
+        for(int i=0;i<4;++i)
+            output_set_value(i, 8192);
+        rgb_update();
+        send_color(spi, &settings.RGB_colour);
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_DOWN));
+        settings.RGB_colour.pixelB = 0;
+        for(int i=0;i<4;++i)
+            output_set_value(i, 12288);
+        rgb_update();
+        send_color(spi, &settings.RGB_colour);
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_DOWN));
+        for(int i=0;i<4;++i)
+            output_set_value(i, 16383);
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_DOWN));
+        settings.RGB_mode = old_rgb;
+        settings.RGB_colour = old_rgbcol;
+        for(int i=0;i<4;++i)
+            output_set_value(i, 0);
+        rgb_update();
+        while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_UP));
     }
 
     if(setup_flag) {
