@@ -18,6 +18,8 @@ uint64_t advance_x_cache[OAM_SIZE];
 uint16_t y_loc_cache[OAM_SIZE];
 uint16_t width_cache[OAM_SIZE];
 uint16_t height_cache[OAM_SIZE];
+uint16_t offset_y_cache[OAM_SIZE];
+uint16_t offset_x_cache[OAM_SIZE];
 uint24_RGB fg_cache[OAM_SIZE];
 uint24_RGB bg_cache[OAM_SIZE];
 const uint24_RGB* background_color;

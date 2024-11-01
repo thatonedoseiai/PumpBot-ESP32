@@ -19,6 +19,7 @@
 #include "system_status.h"
 #include "socket.h"
 #include "lang.h"
+#include "fontfile.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 #define MENU_RETURN_FLAG 0x8000
@@ -326,7 +327,8 @@ static int menufunc_welcome(void) {
     int sprs2[15];
     int sprs3[45];
     int numsprs1, numsprs2, numsprs3;
-    FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
+    // FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
+    set_font_size(24);
     sprite_rectangle(10, 168, 300, 22, background_color);
     sprite_rectangle(10, 146, 300, 22, background_color);
     sprite_rectangle(10, 210, 300, 20, background_color);
@@ -340,11 +342,19 @@ static int menufunc_welcome(void) {
         counter--;
         if(counter == 0) {
             currlang = (currlang+1) % 9;
+// #include "driver/ledc.h"
+// ledc_set_duty(LEDC_LOW_SPEED_MODE, 6, 0x8ff);
+// ledc_update_duty(LEDC_LOW_SPEED_MODE, 6);
             draw_text(60, 195, text_welcome[currlang], typeFace, sprs1, &numsprs1, foreground_color, background_color, 0);
+// ledc_set_duty(LEDC_LOW_SPEED_MODE, 6, 0);
+// ledc_update_duty(LEDC_LOW_SPEED_MODE, 6);
+
             draw_text(60, 154, text_welcome_a[currlang], typeFace, sprs2, &numsprs2, foreground_color, background_color, 0);
-            FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
+            set_font_size(14);
+            // FT_Set_Char_Size(typeFace, 14 << 6, 0, 100, 0);
             draw_text(60, 10, text_pressenc[currlang], typeFace, sprs3, &numsprs3, foreground_color, background_color, 0);
-            FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
+            set_font_size(24);
+            // FT_Set_Char_Size(typeFace, 24 << 6, 0, 100, 0);
             center_sprite_group_x(sprs1, numsprs1);
             center_sprite_group_x(sprs2, numsprs2);
             center_sprite_group_x(sprs3, numsprs3);
@@ -355,6 +365,7 @@ static int menufunc_welcome(void) {
                 delete_sprite(sprs2[i]);
             for(int i=0;i<numsprs3;++i)
                 delete_sprite(sprs3[i]);
+            // flush_text_cache();
             counter = 200;
         }
     }
@@ -1813,9 +1824,10 @@ int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numEleme
             continue;
         }
         if (sizeControl != elems[i].textsize) {
-            err = FT_Set_Char_Size (typeFace, elems[i].textsize << 6, 0, 100, 0); // 0 = copy last value
+            // err = FT_Set_Char_Size (typeFace, elems[i].textsize << 6, 0, 100, 0); // 0 = copy last value
+            err = set_font_size(elems[i].textsize);
             if (err) {
-                ets_printf("!!error in draw_menu_elements: could not set size.\n");
+                ets_printf("!!error in draw_menu_elements: could not set size to %d.\n", elems[i].textsize);
                 return 1;
             }
             sizeControl = elems[i].textsize;

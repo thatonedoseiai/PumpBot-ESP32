@@ -16,6 +16,7 @@ set(srcs
     "rgb_fade.c"
     "pwm_output.c"
     "socket.c"
+    "fontfile.c"
     )
 
 idf_component_register(SRCS ${srcs}

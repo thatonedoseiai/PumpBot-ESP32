@@ -221,9 +221,12 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 	//Queue all transactions.
 	for (x=0; x<6; x++) {
 		ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
-		assert(ret==ESP_OK);
+		if(ret!=ESP_OK) {
+            ets_printf("%d %d %d, %x: %dx%d\n", ret, ESP_OK, ret==ESP_OK, bitmap, width, height);
+            assert(false);
+        }
+		// assert(ret==ESP_OK);
 	}
-
 }
 
 void scroll_screen(spi_device_handle_t spi, uint16_t value) {

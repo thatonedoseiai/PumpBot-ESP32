@@ -8,6 +8,7 @@
 #include "pwm_output.h"
 #include "system_status.h"
 #include "socket.h"
+#include "fontfile.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
@@ -21,6 +22,8 @@ extern uint64_t advance_x_cache[SPRITE_LIMIT];
 extern uint16_t y_loc_cache[SPRITE_LIMIT];
 extern uint16_t width_cache[SPRITE_LIMIT];
 extern uint16_t height_cache[SPRITE_LIMIT];
+extern uint16_t offset_y_cache[SPRITE_LIMIT];
+extern uint16_t offset_x_cache[SPRITE_LIMIT];
 extern uint24_RGB fg_cache[SPRITE_LIMIT];
 extern uint24_RGB bg_cache[SPRITE_LIMIT];
 extern uint24_RGB* foreground_color;
@@ -33,12 +36,14 @@ extern QueueHandle_t* button_events;
 uint16_t button_disable_counter;
 
 int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
-    FT_Vector offset;
-    FT_GlyphSlot slot;
+    // FT_Vector offset;
+    // FT_GlyphSlot slot;
 
-	slot = typeFace->glyph;
-	offset.x = startX << 6;
-	offset.y = startY << 6;
+	// slot = typeFace->glyph;
+	// offset.x = startX << 6;
+	// offset.y = startY << 6;
+    int offset_y = startY;
+    int offset_x = startX;
 
     int i = 0;
     const char* reader_head = string; // so that there is no modification
@@ -50,6 +55,8 @@ int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int*
     int yloc = startY;
     uint16_t width;
     uint16_t height;
+    uint16_t origin_x_off;
+    int16_t origin_y_off;
     FT_Int bmp_top;
     if (bgcol == NULL)
         bg = background_color;
@@ -62,64 +69,85 @@ int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int*
         curchar = decode_code_point(&reader_head);
 
         for(int x=0;x<text_cache_size;++x) {
-            if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
+            // if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
+            if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
                 bmp = bitmap_cache[x];
-                bmp_top = 240 - y_loc_cache[x] - yloc;
+                // bmp_top = 240 - y_loc_cache[x] - yloc;
                 advance_x = advance_x_cache[x];
                 width = width_cache[x];
                 height = height_cache[x];
+                origin_x_off = offset_x_cache[x];
+                origin_y_off = offset_y_cache[x];
 
-                if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+                // if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+                if(offset_x + width > 320 && newline_offset > 0) {
                     yloc -= newline_offset;
-                    offset.y = yloc << 6;
-                    offset.x = startX << 6;
-                    bmp_top += newline_offset;
+                    // offset.y = yloc << 6;
+                    // offset.x = startX << 6;
+                    // bmp_top += newline_offset;
+                    offset_y = yloc;
+                    offset_x = startX;
                 }
                 goto skip_bitmap_assignment;
             }
         }
 
-		FT_Set_Transform(typeFace, NULL, &offset);
-		err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-        if(err)
-            return err;
+		// FT_Set_Transform(typeFace, NULL, &offset);
+		// err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
+        // if(err)
+            // return err;
 
-		uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
-        if(spriteBuf == NULL) {
-            advance_x = slot->advance.x;
+		// uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
+        uint24_RGB* spriteBuf;
+        load_char(&spriteBuf, &cm, curchar);
+        // if(spriteBuf == NULL) {
+        //     advance_x = slot->advance.x;
+        //     goto make_no_sprite;
+        // }
+        advance_x = cm.advance;
+        if(cm.height == 0 || cm.width == 0)
             goto make_no_sprite;
-        }
+        width = cm.width;
+        height = cm.height;
+        origin_x_off = cm.x;
+        origin_y_off = cm.y;
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
         bmp->refcount = 0;
         bmp->c = spriteBuf;
-		int sz = slot->bitmap.rows*slot->bitmap.width / 3;
-		for(int p=0;p<sz;p++) {
-            alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
-            alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
-            alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
-			spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
-			spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
-			spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
-		}
+		// int sz = slot->bitmap.rows*slot->bitmap.width / 3;
+		// for(int p=0;p<sz;p++) {
+            // alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
+            // alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
+            // alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
+		// 	spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
+		// 	spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
+		// 	spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
+		// }
 
-		bmp_top = 240 - slot->bitmap_top;
-        advance_x = slot->advance.x;
-        width = slot->bitmap.width;
-        height = slot->bitmap.rows/3;
-        if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+		// bmp_top = 240 - slot->bitmap_top;
+        // advance_x = slot->advance.x;
+        // width = slot->bitmap.width;
+        // height = slot->bitmap.rows/3;
+        // if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+        if(offset_x + cm.x + cm.width > 320 && newline_offset > 0) {
             yloc -= newline_offset;
-            offset.y = yloc << 6;
-            offset.x = startX << 6;
-            bmp_top += newline_offset;
+            // offset.y = yloc << 6;
+            // offset.x = startX << 6;
+            // bmp_top += newline_offset;
+            offset_y = yloc;
+            offset_x = startX;
         }
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
             memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
             memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
             bitmap_cache[text_cache_size] = bmp;
-            text_size_cache[text_cache_size] = typeFace->size->metrics.height;
-            advance_x_cache[text_cache_size] = advance_x;
-            y_loc_cache[text_cache_size] = 240 - yloc - bmp_top;
+            // text_size_cache[text_cache_size] = typeFace->size->metrics.height;
+            text_size_cache[text_cache_size] = fm.font_size;
+            advance_x_cache[text_cache_size] = cm.advance;
+            offset_x_cache[text_cache_size] = origin_x_off;
+            offset_y_cache[text_cache_size] = origin_y_off;
+            // y_loc_cache[text_cache_size] = 240 - yloc - bmp_top;
             width_cache[text_cache_size] = width;
             height_cache[text_cache_size] = height;
             text_cache_size++;
@@ -127,7 +155,8 @@ int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int*
 
 skip_bitmap_assignment:
 		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-		int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
+		//1 int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
+        int inx = init_sprite(bmp, offset_x + origin_x_off, 240 - offset_y - origin_y_off, width, height/3, false, false, true);
 
         if (sprites && curchar != ' ') {
             sprites[i++] = inx;
@@ -136,8 +165,9 @@ skip_bitmap_assignment:
         }
 make_no_sprite:
 
-		offset.x += advance_x;
-		offset.y += slot->advance.y;
+// 		offset.x += advance_x;
+// 		offset.y += slot->advance.y;
+        offset_x += advance_x;
 	}
 
     return 0;
