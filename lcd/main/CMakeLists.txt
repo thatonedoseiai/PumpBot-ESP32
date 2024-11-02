@@ -23,7 +23,7 @@ idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS 
                         "./includes"
                         "../components/esp-idf-lua/"
-                        "./freetype2"
+                        # "./freetype2"
 )
 
 # littlefs_create_partition_image(filesystem mainfs)

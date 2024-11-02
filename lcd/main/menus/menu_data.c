@@ -33,7 +33,8 @@ const MENU_ELEMENT welcome_menu[] = {
 };
 
 const char zeroper[] = "0%";
-const char rotateenc[] = "⟳";
+// const char rotateenc[] = "⟳";
+const char rotateenc[] = "o";
 const char ch0[] = "CH0⤓";
 const char off[] = "OFF";
 const char set[] = "│ ⚙";
@@ -79,7 +80,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = offp, //OFF or ON for current channel
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 18,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -87,8 +88,8 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = setp, //Settings menu, will be custom icon later
         .x = 2,
-        .y = 2,
-        .textsize = 22,
+        .y = 4,
+        .textsize = 24, // WAS 22
         .flags = MENU_FLAG_RIGHT_JUSTIFY | MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
     },
@@ -103,7 +104,7 @@ const MENU_ELEMENT menuhome[] = {
     { 
         .text = zeroperp,
         .x = 58,
-        .y = 2,
+        .y = 4,
         .textsize = 12,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -119,7 +120,7 @@ const MENU_ELEMENT menuhome[] = {
     { 
         .text = zeroperp,
         .x = 111,
-        .y = 2,
+        .y = 4,
         .textsize = 12,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -135,7 +136,7 @@ const MENU_ELEMENT menuhome[] = {
     { 
         .text = zeroperp,
         .x = 164,
-        .y = 2,
+        .y = 4,
         .textsize = 12,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -151,7 +152,7 @@ const MENU_ELEMENT menuhome[] = {
     { 
         .text = zeroperp,
         .x = 217,
-        .y = 2,
+        .y = 4,
         .textsize = 12,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -212,7 +213,7 @@ const MENU_ELEMENT menusetup0[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -220,7 +221,7 @@ const MENU_ELEMENT menusetup0[] = {
         .text = text_next, // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
         // .x = 275,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
@@ -291,7 +292,7 @@ const MENU_ELEMENT menusetup1[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -299,7 +300,7 @@ const MENU_ELEMENT menusetup1[] = {
         .text = text_ok, // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
         // .x = 293,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
@@ -325,7 +326,7 @@ const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
     { 
         .text = text_cancel,
         .x = 0,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -415,7 +416,7 @@ const MENU_ELEMENT menusetup2a[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -484,7 +485,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -492,7 +493,7 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .text = text_next, // ALSO WISH I HAD RIGFHGT FCHNNGJH JUSTIFICATION
         // .x = 275,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
@@ -523,7 +524,7 @@ const MENU_ELEMENT menutextenter[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     }
@@ -619,7 +620,7 @@ const MENU_ELEMENT menuapprundelete[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -663,14 +664,14 @@ const MENU_ELEMENT menudownloadapp[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
     { 
         .text = text_app_go, 
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
@@ -746,7 +747,7 @@ const MENU_ELEMENT menuserversettings[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
@@ -818,7 +819,7 @@ const MENU_ELEMENT menunetworksettings[] = {
     { 
         .text = text_back,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     }
@@ -852,14 +853,14 @@ const MENU_ELEMENT menuskipwifi[] = {
     { 
         .text = text_no,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .col = &foreground_color
     },
     { 
         .text = text_ok,
         .x = 2,
-        .y = 2,
+        .y = 4,
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color

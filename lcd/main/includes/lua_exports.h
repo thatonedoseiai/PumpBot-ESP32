@@ -1,12 +1,12 @@
 #ifndef LUA_EXPORTS_H 
 #define LUA_EXPORTS_H
 
-#include "freetype/freetype.h"
+/* #include "freetype/freetype.h" */
 #include <lua/lua.h>
 #include <lua/lauxlib.h>
 #include <lua/lualib.h>
 
-int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset);
+int draw_text(int startX, int startY, const char* string, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset);
 
 /* int l_draw_text(lua_State* L); */
 /* int l_setsize(lua_State* L); */

@@ -28,14 +28,14 @@ extern uint24_RGB fg_cache[SPRITE_LIMIT];
 extern uint24_RGB bg_cache[SPRITE_LIMIT];
 extern uint24_RGB* foreground_color;
 
-extern FT_Face typeFace;
+// extern FT_Face typeFace;
 extern rotary_encoder_info_t* infop;
 extern spi_device_handle_t spi;
 extern QueueHandle_t* button_events;
 
 uint16_t button_disable_counter;
 
-int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
+int draw_text(int startX, int startY, const char* string, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
     // FT_Vector offset;
     // FT_GlyphSlot slot;
 
@@ -57,7 +57,7 @@ int draw_text(int startX, int startY, const char* string, FT_Face typeFace, int*
     uint16_t height;
     uint16_t origin_x_off;
     int16_t origin_y_off;
-    FT_Int bmp_top;
+    // FT_Int bmp_top;
     if (bgcol == NULL)
         bg = background_color;
     else
@@ -208,7 +208,7 @@ static int l_draw_text(lua_State* L) {
     bgcol.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 6);
 
-    draw_text(x, y, str, typeFace, sprites, NULL, &fgcol, &bgcol, 0);
+    draw_text(x, y, str, sprites, NULL, &fgcol, &bgcol, 0);
     lua_newtable(L);
     for(int i=1;i<=len;++i) {
         lua_pushnumber(L, i);
@@ -224,7 +224,8 @@ static int l_draw_text(lua_State* L) {
 static int l_setsize(lua_State* L) {
     int x = luaL_checkinteger(L, 1);
     int error;
-	FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, x, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
+	// FT_ERR_HANDLE(FT_Set_Char_Size (typeFace, x, 0, 100, 0), "FT_Set_Char_Size"); // 0 = copy last value
+    set_font_size(x);
     return 0;
 }
 

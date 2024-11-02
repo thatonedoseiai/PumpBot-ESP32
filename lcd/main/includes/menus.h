@@ -4,7 +4,7 @@
 #pragma once
 
 #include "oam.h"
-#include <freetype/freetype.h>
+/* #include <freetype/freetype.h> */
 
 #define MENU_FLAG_IS_HLINE 0x1
 #define MENU_FLAG_IS_VLINE 0x2
@@ -32,7 +32,7 @@ typedef struct {
  */
 int start_menu_tree(int, char);
 
-int draw_menu_elements(const MENU_ELEMENT* elems, FT_Face typeFace, int numElements);
+int draw_menu_elements(const MENU_ELEMENT* elems, int numElements);
 
 /* int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol); */
 

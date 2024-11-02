@@ -4,11 +4,11 @@ bgcol = l.background_color();
 fgcol = l.foreground_color();
 selecting_channels = false
 
-l.set_char_size(12<<6)
+l.set_char_size(12)
 wifi_symbol_status = l.wifi_is_connected()
 server_symbol_status = l.server_is_connected()
-w = l.draw_text(306, 226, "󰖩", fgcol, bgcol)
-n = l.draw_text(306, 226, "󰖪", fgcol, bgcol)
+w = l.draw_text(306, 226, "", fgcol, bgcol) -- 󰖩
+n = l.draw_text(306, 226, "", fgcol, bgcol) -- 󰖪
 sc = l.draw_text(294, 226, "+", fgcol, bgcol)
 snc = l.draw_text(294, 226, "-", fgcol, bgcol)
 snc = {l.draw_rectangle(294, 226, 12, 12, bgcol)}
@@ -24,7 +24,7 @@ else
 end
 on_text = l.draw_text(85, 16, "n", fgcol, bgcol)
 off_text = l.draw_text(85, 16, "ff", fgcol, bgcol)
-l.set_char_size(18<<6)
+l.set_char_size(18)
 on_btn_text = l.draw_text(19, 2, "N", fgcol, bgcol)
 off_btn_text = l.draw_text(19, 2, "FF", fgcol, bgcol)
 channels_text = {{},{},{},{}}
@@ -37,7 +37,7 @@ for ck=1,4 do
 end
 f=0
 k=1
-l.set_char_size(42<<6)
+l.set_char_size(42)
 spr = {}
 collectgarbage("stop")
 back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
@@ -183,9 +183,9 @@ while(true) do
     if(l.output_was_updated(k)) then
         update_screen_text(40, 134, {back}, k, true)
         l.sprite_move_x({back_small}, xs[k])
-        l.set_char_size(12<<6)
+        l.set_char_size(12)
         update_screen_text(xs[k], 2, {back_small}, k, false)
-        l.set_char_size(42<<6)
+        l.set_char_size(42)
     end
     if(wifi_symbol_status ~= l.wifi_is_connected()) then
         wifi_symbol_status = l.wifi_is_connected()

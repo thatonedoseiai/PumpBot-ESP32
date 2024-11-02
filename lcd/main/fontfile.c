@@ -11,9 +11,11 @@ CHAR_METADATA cm;
 int set_font_size(int sz) {
     char* font_name;
     switch(sz){
-        case 14: font_name = "/mainfs/ts_14.cbf"; break;
-        case 18: font_name = "/mainfs/ts_18.cbf"; break;
-        case 24: font_name = "/mainfs/ts_24.cbf"; break;
+        case 12: font_name = "/mainfs/NC_12.cbf"; break;
+        case 14: font_name = "/mainfs/NC_14.cbf"; break;
+        case 18: font_name = "/mainfs/NC_18.cbf"; break;
+        case 24: font_name = "/mainfs/NC_24.cbf"; break;
+        case 42: font_name = "/mainfs/NC_42.cbf"; break;
         default: return -1;
     }
     if(font_file_open) {
@@ -122,7 +124,10 @@ uint32_t binary_search(FILE* f, uint16_t k) {
 
 int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar) {
     uint32_t offset = binary_search(FONT_FILE, curchar);
-    if(offset == 0) return -1;
+    if(offset == 0) {
+        ets_printf("char not found: %x\n", curchar);
+        return -1;
+    }
     fseek(FONT_FILE, offset, SEEK_SET);
     fread(&cm->advance, 2, 1, FONT_FILE);
     fread(&cm->x, 2, 1, FONT_FILE);
@@ -136,6 +141,9 @@ int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar) {
     unsigned char* data = malloc(cm->width * cm->height + 2);
     uint24_RGB* decompressed = malloc(cm->width * cm->height);
     fread(data, cm->width * cm->height + 2, 1, FONT_FILE);
+    if(cm->width == 0 || cm->height == 0) {
+        ets_printf("BAD CHAR: %x has width %d height %d\n", cm->width, cm->height);
+    }
     cm->vertical = (cm->advance & 0x1000) >> 12;
     cm->advance &= 0x4fff;
     if(cm->vertical)

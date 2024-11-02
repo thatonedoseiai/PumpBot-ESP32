@@ -1,10 +1,10 @@
 #include "ILIDriver.h"
 #include "settings.h"
 #include "button.h"
-#include "freetype2/ft2build.h"
+// #include "freetype2/ft2build.h"
 #include <stdio.h>
 #include <rom/ets_sys.h>
-#include FT_FREETYPE_H
+// #include FT_FREETYPE_H
 #include "oam.h"
 #include "rotenc.h"
 #include "menus.h"
@@ -46,7 +46,7 @@ extern const uint24_RGB WHITE;
 uint8_t system_flags = 0;
 spi_device_handle_t spi;
 lua_State* L;
-FT_Face typeFace; // because lua is required to use this, it must remain global
+// FT_Face typeFace; // because lua is required to use this, it must remain global
 rotary_encoder_info_t* infop; // also because of lua
 QueueHandle_t* button_events = NULL; // also because of lua
 SETTINGS_t settings;
@@ -89,7 +89,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events, FT_Library* lib, FT_Face* typeFace) {
+int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* btn_events) {
     esp_err_t k = nvs_flash_init();
     if (k == ESP_ERR_NVS_NO_FREE_PAGES || k == ESP_ERR_NVS_NEW_VERSION_FOUND) {
       ESP_ERROR_CHECK(nvs_flash_erase());
@@ -165,15 +165,16 @@ void* connect_server_thread_start(void* arg) {
 }
 
 void app_main(void) {
-	static FT_Library lib;
-	static FT_Error error;
+    int error;
+	// static FT_Library lib;
+	// static FT_Error error;
 	static rotary_encoder_info_t info = { 0 };
 	static QueueHandle_t btn_events;
     background_color = (uint24_RGB*) &fillColor;
     foreground_color = (uint24_RGB*) &WHITE;
 
 	// initializations
-	esp_err_t ret = inits(&spi, &info, &btn_events, &lib, &typeFace);
+	esp_err_t ret = inits(&spi, &info, &btn_events);
     L = lua_init();
 
 	if(ret!=ESP_OK) {
@@ -281,7 +282,7 @@ void app_main(void) {
 
     while(true) {
         send_color(spi, background_color);
-        error = draw_menu_elements(&menuhome[0], typeFace, 14); 
+        error = draw_menu_elements(&menuhome[0], 14); 
         draw_all_sprites(spi);
         delete_all_sprites();
         if (error)
@@ -299,8 +300,8 @@ void app_main(void) {
 	ESP_ERROR_CHECK(rotary_encoder_uninit(&info));
     ESP_ERROR_CHECK(esp_wifi_deinit());
     esp_vfs_littlefs_unregister(conf.partition_label);
-	FT_Done_Face (typeFace);
-	FT_Done_FreeType(lib);
+	// FT_Done_Face (typeFace);
+	// FT_Done_FreeType(lib);
 }
 
 // vim: foldmethod=marker
