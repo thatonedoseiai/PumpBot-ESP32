@@ -100,6 +100,21 @@ int draw_text(int startX, int startY, const char* string, int* sprites, int* num
 		// uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         uint24_RGB* spriteBuf;
         load_char(&spriteBuf, &cm, curchar);
+        // uint8_t* spriteBufB = (uint8_t*) spriteBuf;
+        // uint16_t fg_alpha, bg_alpha;
+        for(int i=0;i<cm.width*cm.height/3;++i) {
+            alphaR = spriteBuf[i].pixelR;
+            alphaG = spriteBuf[i].pixelG;
+            alphaB = spriteBuf[i].pixelB;
+			spriteBuf[i].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
+			spriteBuf[i].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
+			spriteBuf[i].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
+
+            // fg_alpha = spriteBufB[i]*((uint8_t*)color)[i%3];
+            // ets_printf("%d: %d\n", i, 255-spriteBufB[i]);
+            // bg_alpha = (255 - spriteBufB[i]) * ((uint8_t*)bgcol)[i%3];
+            // spriteBufB[i] = (fg_alpha + bg_alpha) / 255;
+        }
         // if(spriteBuf == NULL) {
         //     advance_x = slot->advance.x;
         //     goto make_no_sprite;

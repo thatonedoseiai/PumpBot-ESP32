@@ -3,6 +3,7 @@
 
 #include "oam.h"
 #include "settings.h"
+#include <pthread.h>
 
 SPRITE_24_H** OAM_SPRITE_TABLE;
 // array of free indices. first value stores the length of array.
@@ -102,7 +103,28 @@ int init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint16_t si
 	return ind;
 }
 
+void* draw_all_sprites_thread(void* arg) {
+	spi_device_handle_t spi = *(spi_device_handle_t*) arg;
+	// pthread_detach(pthread_self());
+
+	SPRITE_24_H* spr;
+	for(int i=0;i<OAM_SIZE;++i) {
+		spr = OAM_SPRITE_TABLE[i];
+		if(spr != NULL && spr->draw) {
+			ets_printf("drawing sprite:%d\n", i);
+			draw_sprite(spi, spr->posX, spr->posY, spr->sizeX, spr->sizeY, spr->bitmap->c);
+			send_line_finish(spi);
+		}
+	}
+	pthread_exit(NULL);
+}
+
 void draw_all_sprites(spi_device_handle_t spi) {
+	// static pthread_t ptid = 0;
+	// if(ptid != 0)
+	// 	pthread_join(ptid, NULL);
+	// pthread_create(&ptid, NULL, &draw_all_sprites_thread, &spi);
+
 	SPRITE_24_H* spr;
 	for(int i=0;i<OAM_SIZE;++i) {
 		spr = OAM_SPRITE_TABLE[i];
