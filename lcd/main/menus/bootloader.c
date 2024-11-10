@@ -1796,7 +1796,8 @@ int start_menu_tree(int startmenu, char settings_mode) {
     MENU_INFO_t* currmenu;
     menu_stack[menu_stackp] = startmenu;
     do {
-        send_color(spi, background_color);
+        // send_color(spi, background_color);
+        gen_bg(spi);
         currmenu = &allmenus[menu_stack[menu_stackp]];
         if(currmenu->background != NULL) {
             draw_menu_elements(currmenu->background, currmenu->num_elements);

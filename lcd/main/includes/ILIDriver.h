@@ -198,6 +198,10 @@ void send_line_finish(spi_device_handle_t spi);
  */
 void send_scroll_finish(spi_device_handle_t spi);
 
+void gen_bg(spi_device_handle_t spi);
+
+void draw_bg(spi_device_handle_t spi, uint24_RGB* x);
+
 #ifdef __cplusplus
 }
 #endif

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <rom/ets_sys.h>
+#include <string.h>
 
 FILE* FONT_FILE;
 char font_file_open = false;
@@ -152,5 +153,28 @@ int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar) {
         decode(data, (unsigned char*) decompressed);
     free(data);
     *buf = decompressed;
+    return 0;
+}
+
+int load_bgimg(uint24_RGB* buf, char* name) {
+    FILE* f = fopen(name, "rb");
+    char header[3];
+    fread(header, 3, 1, f);
+    if(strncmp(header, "cbi", 3)) {
+        fclose(f);
+        return -1;
+    }
+    uint16_t width, height;
+    fread(&width, 2, 1, f);
+    fread(&height, 2, 1, f);
+    if(width != 240 || height != 320) {
+        fclose(f);
+        ets_printf("width: %d, height: %d\n", width, height);
+        return -2;
+    }
+    uint8_t* compressed = malloc(320*240*3);
+    fread(compressed, 320*240, 3, f);
+    fclose(f);
+    decode(compressed, (uint8_t*) buf);
     return 0;
 }
