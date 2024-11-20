@@ -12,7 +12,7 @@
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
-extern SPRITE_24_H** OAM_SPRITE_TABLE;
+// extern SPRITE_24_H** OAM_SPRITE_TABLE;
 extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
 extern int text_cache[SPRITE_LIMIT];
 extern int text_size_cache[SPRITE_LIMIT];
@@ -24,8 +24,8 @@ extern uint16_t width_cache[SPRITE_LIMIT];
 extern uint16_t height_cache[SPRITE_LIMIT];
 extern uint16_t offset_y_cache[SPRITE_LIMIT];
 extern uint16_t offset_x_cache[SPRITE_LIMIT];
-extern uint24_RGB fg_cache[SPRITE_LIMIT];
-extern uint24_RGB bg_cache[SPRITE_LIMIT];
+// extern uint24_RGB fg_cache[SPRITE_LIMIT];
+// extern uint24_RGB bg_cache[SPRITE_LIMIT];
 extern uint24_RGB* foreground_color;
 
 // extern FT_Face typeFace;
@@ -35,33 +35,27 @@ extern QueueHandle_t* button_events;
 
 uint16_t button_disable_counter;
 
-int draw_text(int startX, int startY, const char* string, int* sprites, int* num_sprites, uint24_RGB* color, uint24_RGB* bgcol, int newline_offset) {
-    // FT_Vector offset;
-    // FT_GlyphSlot slot;
-
-	// slot = typeFace->glyph;
-	// offset.x = startX << 6;
-	// offset.y = startY << 6;
+extern const uint24_RGB black;
+int draw_text(int startX, int startY, const char* string, SPRITE_NODE** sprites, int* num_sprites, uint24_RGB fg, uint24_RGB bg, int newline_offset, bool bg_iscolor, bool persistent) {
     int offset_y = startY;
     int offset_x = startX;
 
     int i = 0;
     const char* reader_head = string; // so that there is no modification
-    int err;
+    // int err;
     int curchar;
-    uint8_t alphaR, alphaG, alphaB;
-    uint24_RGB* bg;
+    // uint8_t alphaR, alphaG, alphaB;
+    // uint24_RGB* bg;
     uint64_t advance_x;
     int yloc = startY;
     uint16_t width;
     uint16_t height;
     uint16_t origin_x_off;
     int16_t origin_y_off;
-    // FT_Int bmp_top;
-    if (bgcol == NULL)
-        bg = background_color;
-    else
-        bg = bgcol;
+    // if (bgcol == NULL)
+    //     bg = background_color;
+    // else
+    //     bg = bgcol;
     SPRITE_BITMAP* bmp;
     if(num_sprites != NULL)
         *num_sprites = 0;
@@ -69,22 +63,17 @@ int draw_text(int startX, int startY, const char* string, int* sprites, int* num
         curchar = decode_code_point(&reader_head);
 
         for(int x=0;x<text_cache_size;++x) {
-            // if(text_cache[x] == curchar && text_size_cache[x] == typeFace->size->metrics.height && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
-            if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
+            // if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
+            if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size) {
                 bmp = bitmap_cache[x];
-                // bmp_top = 240 - y_loc_cache[x] - yloc;
                 advance_x = advance_x_cache[x];
                 width = width_cache[x];
                 height = height_cache[x];
                 origin_x_off = offset_x_cache[x];
                 origin_y_off = offset_y_cache[x];
 
-                // if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
                 if(offset_x + width > 320 && newline_offset > 0) {
                     yloc -= newline_offset;
-                    // offset.y = yloc << 6;
-                    // offset.x = startX << 6;
-                    // bmp_top += newline_offset;
                     offset_y = yloc;
                     offset_x = startX;
                 }
@@ -92,32 +81,15 @@ int draw_text(int startX, int startY, const char* string, int* sprites, int* num
             }
         }
 
-		// FT_Set_Transform(typeFace, NULL, &offset);
-		// err = FT_Load_Char(typeFace, curchar, FT_LOAD_RENDER | FT_LOAD_TARGET_LCD_V);
-        // if(err)
-            // return err;
-
-		// uint24_RGB* spriteBuf = (uint24_RGB*) malloc(slot->bitmap.rows * slot->bitmap.width);
         uint24_RGB* spriteBuf;
         load_char(&spriteBuf, &cm, curchar);
-        // uint8_t* spriteBufB = (uint8_t*) spriteBuf;
-        // uint16_t fg_alpha, bg_alpha;
-        for(int i=0;i<cm.width*cm.height/3;++i) {
-            alphaR = spriteBuf[i].pixelR;
-            alphaG = spriteBuf[i].pixelG;
-            alphaB = spriteBuf[i].pixelB;
-			spriteBuf[i].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
-			spriteBuf[i].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
-			spriteBuf[i].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
-
-            // fg_alpha = spriteBufB[i]*((uint8_t*)color)[i%3];
-            // ets_printf("%d: %d\n", i, 255-spriteBufB[i]);
-            // bg_alpha = (255 - spriteBufB[i]) * ((uint8_t*)bgcol)[i%3];
-            // spriteBufB[i] = (fg_alpha + bg_alpha) / 255;
-        }
-        // if(spriteBuf == NULL) {
-        //     advance_x = slot->advance.x;
-        //     goto make_no_sprite;
+        // for(int i=0;i<cm.width*cm.height/3;++i) {
+        //     alphaR = spriteBuf[i].pixelR;
+        //     alphaG = spriteBuf[i].pixelG;
+        //     alphaB = spriteBuf[i].pixelB;
+			// spriteBuf[i].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
+			// spriteBuf[i].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
+			// spriteBuf[i].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
         // }
         advance_x = cm.advance;
         if(cm.height == 0 || cm.width == 0)
@@ -129,49 +101,30 @@ int draw_text(int startX, int startY, const char* string, int* sprites, int* num
         bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
         bmp->refcount = 0;
         bmp->c = spriteBuf;
-		// int sz = slot->bitmap.rows*slot->bitmap.width / 3;
-		// for(int p=0;p<sz;p++) {
-            // alphaB = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3)%slot->bitmap.rows)*slot->bitmap.width];
-            // alphaG = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+1)%slot->bitmap.rows)*slot->bitmap.width];
-            // alphaR = slot->bitmap.buffer[((p*3/slot->bitmap.rows))+((p*3+2)%slot->bitmap.rows)*slot->bitmap.width];
-		// 	spriteBuf[p].pixelB = ((255-alphaB) * bg->pixelB + alphaB * color->pixelB) / 255;
-		// 	spriteBuf[p].pixelG = ((255-alphaG) * bg->pixelG + alphaG * color->pixelG) / 255;
-		// 	spriteBuf[p].pixelR = ((255-alphaR) * bg->pixelR + alphaR * color->pixelR) / 255;
-		// }
-
-		// bmp_top = 240 - slot->bitmap_top;
-        // advance_x = slot->advance.x;
-        // width = slot->bitmap.width;
-        // height = slot->bitmap.rows/3;
-        // if(((offset.x >> 6) + width) > 320 && newline_offset > 0) {
+        bmp->w = width;
+        bmp->h = height / 3;
         if(offset_x + cm.x + cm.width > 320 && newline_offset > 0) {
             yloc -= newline_offset;
-            // offset.y = yloc << 6;
-            // offset.x = startX << 6;
-            // bmp_top += newline_offset;
             offset_y = yloc;
             offset_x = startX;
         }
         if(text_cache_size < SPRITE_LIMIT) {
             text_cache[text_cache_size] = curchar;
-            memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
-            memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
+            // memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
+            // memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
             bitmap_cache[text_cache_size] = bmp;
-            // text_size_cache[text_cache_size] = typeFace->size->metrics.height;
             text_size_cache[text_cache_size] = fm.font_size;
             advance_x_cache[text_cache_size] = cm.advance;
             offset_x_cache[text_cache_size] = origin_x_off;
             offset_y_cache[text_cache_size] = origin_y_off;
-            // y_loc_cache[text_cache_size] = 240 - yloc - bmp_top;
             width_cache[text_cache_size] = width;
             height_cache[text_cache_size] = height;
             text_cache_size++;
         }
 
 skip_bitmap_assignment:
-		// int inx = init_sprite(bmp, slot->bitmap_left, bmp_top, slot->bitmap.width, slot->bitmap.rows/3, false, false, true);
-		//1 int inx = init_sprite(bmp, offset.x >> 6, bmp_top, width, height, false, false, true);
-        int inx = init_sprite(bmp, offset_x + origin_x_off, 240 - offset_y - origin_y_off, width, height/3, false, false, true);
+        SPRITE_NODE* inx = init_sprite(bmp, offset_x + origin_x_off, 240 - offset_y - origin_y_off, fg, bg, bg_iscolor, false, false, true, persistent);
+        ets_printf("draw char %x @ %x\n", curchar, inx);
 
         if (sprites && curchar != ' ') {
             sprites[i++] = inx;
@@ -179,9 +132,6 @@ skip_bitmap_assignment:
                 (*num_sprites)++;
         }
 make_no_sprite:
-
-// 		offset.x += advance_x;
-// 		offset.y += slot->advance.y;
         offset_x += advance_x;
 	}
 
@@ -197,9 +147,10 @@ static int l_draw_text(lua_State* L) {
     len = utf8strlen(str);
     luaL_checktype(L, 4, LUA_TTABLE);
     luaL_checktype(L, 5, LUA_TTABLE);
+    bool persistent = lua_toboolean(L, 6);
     uint24_RGB fgcol, bgcol;
     // int* sprites = malloc(len);
-    int sprites[len];
+    SPRITE_NODE* sprites[len];
 
     lua_pushinteger(L, 1);
     lua_gettable(L, 4);
@@ -223,11 +174,11 @@ static int l_draw_text(lua_State* L) {
     bgcol.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 6);
 
-    draw_text(x, y, str, sprites, NULL, &fgcol, &bgcol, 0);
+    draw_text(x, y, str, sprites, NULL, fgcol, bgcol, 0, false, persistent);
     lua_newtable(L);
     for(int i=1;i<=len;++i) {
         lua_pushnumber(L, i);
-        lua_pushnumber(L, sprites[i-1]);
+        lua_pushnumber(L, (int) sprites[i-1]);
         lua_settable(L, -3);
     }
 
@@ -293,11 +244,11 @@ static int l_center_sprite_group_x(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
     // int* sprites = malloc(k);
-    int sprites[k];
+    SPRITE_NODE* sprites[k];
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        sprites[i-1] = luaL_checkinteger(L, -1);
+        sprites[i-1] = (SPRITE_NODE*) (luaL_checkinteger(L, -1) & 0xffffffff);
     }
     center_sprite_group_x(sprites, k);
     // free(sprites);
@@ -309,11 +260,11 @@ static int l_right_justify_sprite_group_x(lua_State* L) {
     unsigned int k = lua_rawlen(L, 1);
     int pad = luaL_checkinteger(L, 2);
     // int* sprites = malloc(k);
-    int sprites[k];
+    SPRITE_NODE* sprites[k];
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        sprites[i-1] = luaL_checkinteger(L, -1);
+        sprites[i-1] = (SPRITE_NODE*) (luaL_checkinteger(L, -1) & 0xffffffff);
     }
     right_justify_sprite_group_x(sprites, k, pad);
     // free(sprites);
@@ -324,11 +275,11 @@ static int l_draw_sprites(lua_State* L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     unsigned int k = lua_rawlen(L, 1);
     // int* sprites = malloc(k);
-    int sprites[k];
+    SPRITE_NODE* sprites[k];
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        sprites[i-1] = luaL_checkinteger(L, -1);
+        sprites[i-1] = (SPRITE_NODE*) (luaL_checkinteger(L, -1) & 0xffffffff);
     }
     draw_sprites(spi, sprites, k);
     // free(sprites);
@@ -336,8 +287,9 @@ static int l_draw_sprites(lua_State* L) {
 }
 
 static int l_delete_sprites(lua_State* L) {
-    int k = luaL_checkinteger(L, 1);
-    delete_sprite(k);
+    SPRITE_NODE* k = (SPRITE_NODE*) (luaL_checkinteger(L, 1) & 0xffffffff);
+    // delete_sprite(k);
+    delete_node(k);
     return 0;
 }
 
@@ -347,6 +299,7 @@ static int l_create_rectangle(lua_State* L) {
     int y = luaL_checkinteger(L, 2);
     int width = luaL_checkinteger(L, 3);
     int height = luaL_checkinteger(L, 4);
+    char persistent = lua_toboolean(L, 6);
     luaL_checktype(L, 5, LUA_TTABLE);
     lua_pushinteger(L, 1);
     lua_gettable(L, 5);
@@ -361,7 +314,8 @@ static int l_create_rectangle(lua_State* L) {
     col.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 3);
 
-    lua_pushinteger(L, sprite_rectangle(x, y, width, height, &col));
+    int r = (int) sprite_rectangle(x, y, width, height, &col, persistent);
+    lua_pushinteger(L, r);
     return 1;
 }
 
@@ -373,7 +327,8 @@ static int l_set_sprite_draw_flags(lua_State* L) {
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->draw = draw;
+        // OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->draw = draw;
+        ((SPRITE_NODE*) luaL_checkinteger(L, -1))->v->draw = draw;
     }
     return 0;
 }
@@ -386,7 +341,8 @@ static int l_move_sprite_x(lua_State* L) {
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posX = newx;
+        // OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posX = newx;
+        ((SPRITE_NODE*) luaL_checkinteger(L, -1))->v->posX = newx;
     }
     return 0;
 }
@@ -399,7 +355,8 @@ static int l_move_sprite_y(lua_State* L) {
     for(int i=1;i<=k;++i) {
         lua_pushinteger(L, i);
         lua_gettable(L, 1);
-        OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posY = newy;
+        // OAM_SPRITE_TABLE[luaL_checkinteger(L, -1)]->posY = newy;
+        ((SPRITE_NODE*) luaL_checkinteger(L, -1))->v->posY = newy;
     }
     return 0;
 }
@@ -509,7 +466,8 @@ static int l_flush_text_cache(lua_State* L) {
 }
 
 static int l_delete_all_sprites(lua_State* L) {
-    delete_all_sprites();
+    // delete_all_sprites();
+    delete_persistent_sprites();
     return 0;
 }
 

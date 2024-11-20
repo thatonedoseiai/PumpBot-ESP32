@@ -8,12 +8,14 @@
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include <rom/ets_sys.h>
+#include <freertos/semphr.h>
 
 #include "ILIDriver.h"
 #include "fontfile.h"
 // #include "pretty_effect.h"
 
 uint24_RGB* framebuf = NULL;
+SemaphoreHandle_t spiSemaphore;
 
 void lcd_cmd(spi_device_handle_t spi, const uint8_t cmd, bool keep_cs_active) {
 	esp_err_t ret;
@@ -102,21 +104,24 @@ void lcd_init(spi_device_handle_t spi) {
 		}
 		cmd++;
 	}
+
+	spiSemaphore = xSemaphoreCreateMutex();
 }
 
+extern uint24_RGB* bgbuf;
 void gen_bg(spi_device_handle_t spi) {
-	uint24_RGB* buf = malloc(240*320*sizeof(uint24_RGB));
+	// uint24_RGB* buf = malloc(240*320*sizeof(uint24_RGB));
 	// for(int i=0;i<240*320;++i) {
 	// 	buf[i].pixelR = ((i / 320) == 0) * 0xff;
 	// 	buf[i].pixelB = 0;
 	// 	buf[i].pixelG = 0;
 	// }
-	int k = load_bgimg(buf, "/mainfs/pb_bg.cbi");
-	if(k) {
-		ets_printf("err: %d\n", k);
-	}
-	draw_bg(spi, buf);
-	free(buf);
+	// int k = load_bgimg(bgbuf, "/mainfs/pb_bg.cbi");
+	// if(k) {
+	// 	ets_printf("err: %d\n", k);
+	// }
+	draw_bg(spi, bgbuf);
+	// free(buf);
 }
 
 // 320x240 bg img
@@ -155,10 +160,14 @@ void draw_bg(spi_device_handle_t spi, uint24_RGB* bgbuf) {
 		trans[5].length=(PARALLEL_LINES * 240 * 3) << 3;		  //Data length, in bits
 		trans[5].flags=0; //undo SPI_TRANS_USE_TXDATA flag
 		//Queue all transactions.
+		while(!xSemaphoreTake(spiSemaphore, 1000 / portTICK_PERIOD_MS)) {
+			ets_printf("SEMAPHORE TAKE FAILING! draw_bg\n");
+		}
 		for (x=0; x<6; x++) {
 			ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
 			assert(ret==ESP_OK);
 		}
+		xSemaphoreGive(spiSemaphore);
 		send_line_finish(spi);
 	}
 }
@@ -279,6 +288,9 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
 	trans[5].flags=0;										//undo SPI_TRANS_USE_TXDATA flag
 
 	//Queue all transactions.
+	while(!xSemaphoreTake(spiSemaphore, 1000 / portTICK_PERIOD_MS)) {
+		ets_printf("TAKING SEMAPHORE FAILING! draw_sprite\n");
+	}
 	for (x=0; x<6; x++) {
 		ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
 		if(ret!=ESP_OK) {
@@ -287,6 +299,7 @@ void draw_sprite(spi_device_handle_t spi, uint16_t sx, uint16_t y, uint16_t widt
         }
 		// assert(ret==ESP_OK);
 	}
+	xSemaphoreGive(spiSemaphore);
 }
 
 void scroll_screen(spi_device_handle_t spi, uint16_t value) {
@@ -341,10 +354,14 @@ void send_color(spi_device_handle_t spi, uint24_RGB* color) {
 		trans[5].length=bytelength << 3;		  //Data length, in bits
 		trans[5].flags=0; //undo SPI_TRANS_USE_TXDATA flag
 		//Queue all transactions.
+		while(!xSemaphoreTake(spiSemaphore, 1000 / portTICK_PERIOD_MS)) {
+			ets_printf("TAKE SEMAPHORE FAILING! send_color\n");
+		}
 		for (x=0; x<6; x++) {
 			ret=spi_device_queue_trans(spi, &trans[x], portMAX_DELAY);
 			assert(ret==ESP_OK);
 		}
+		xSemaphoreGive(spiSemaphore);
 		send_line_finish(spi);
 	}
 	free(colorbuf);
@@ -386,9 +403,13 @@ void send_line_finish(spi_device_handle_t spi) {
 	spi_transaction_t *rtrans;
 	esp_err_t ret;
 	//Wait for all 6 transactions to be done and get back the results.
+	while(!xSemaphoreTake(spiSemaphore, 1000 / portTICK_PERIOD_MS)) {
+		ets_printf("SEMAPHORE TAKE FAILED: send_line_finish\n");
+	}
 	for (int x=0; x<6; x++) {
 		ret=spi_device_get_trans_result(spi, &rtrans, portMAX_DELAY);
 		assert(ret==ESP_OK);
 		//We could inspect rtrans now if we received any info back. The LCD is treated as write-only, though.
 	}
+	xSemaphoreGive(spiSemaphore);
 }

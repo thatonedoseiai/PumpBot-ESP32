@@ -36,8 +36,8 @@ int draw_menu_elements(const MENU_ELEMENT* elems, int numElements);
 
 /* int draw_text(int startX, int startY, char* string, FT_Face typeFace, int* sprites, uint24_RGB* color, uint24_RGB* bgcol); */
 
-int draw_hline(int y, int thickness, uint24_RGB* colour);
+SPRITE_NODE* draw_hline(int y, int thickness, uint24_RGB* colour, bool persistent);
 
-int draw_vline(int x, int thickness, uint24_RGB* colour);
+SPRITE_NODE* draw_vline(int x, int thickness, uint24_RGB* colour, bool persistent);
 
 #endif

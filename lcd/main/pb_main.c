@@ -25,6 +25,7 @@
 #include "system_status.h"
 #include "socket.h"
 #include <pthread.h>
+#include "fontfile.h"
 
 #include "lua_exports.h"
 
@@ -41,6 +42,7 @@ extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 extern const uint24_RGB WHITE;
+extern uint24_RGB* bgbuf;
 //
 
 uint8_t system_flags = 0;
@@ -133,6 +135,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 
     (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
+	(void) load_bgimg(bgbuf, "/mainfs/pb_bg.cbi");
 
     int error;
 	// FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
@@ -284,12 +287,14 @@ void app_main(void) {
         send_color(spi, background_color);
         error = draw_menu_elements(&menuhome[0], 14); 
         draw_all_sprites(spi);
-        delete_all_sprites();
+        delete_persistent_sprites();
+        delete_temporary_sprites();
         if (error)
             ets_printf("draw menu element\n");
         (void) luaL_dofile(L, "/mainfs/test.lua");
-        ets_printf("%s\n", lua_tostring(L,-1));
-        delete_all_sprites();
+        ets_printf("LUA: %s\n", lua_tostring(L,-1));
+        delete_persistent_sprites();
+        delete_temporary_sprites();
         (void) start_menu_tree(11, true);
         flush_text_cache();
     }

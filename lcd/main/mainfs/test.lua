@@ -7,11 +7,11 @@ selecting_channels = false
 l.set_char_size(12)
 wifi_symbol_status = l.wifi_is_connected()
 server_symbol_status = l.server_is_connected()
-w = l.draw_text(306, 226, "", fgcol, bgcol) -- 󰖩
-n = l.draw_text(306, 226, "", fgcol, bgcol) -- 󰖪
-sc = l.draw_text(294, 226, "+", fgcol, bgcol)
-snc = l.draw_text(294, 226, "-", fgcol, bgcol)
-snc = {l.draw_rectangle(294, 226, 12, 12, bgcol)}
+w = l.draw_text(306, 226, "", fgcol, bgcol, true) -- 󰖩
+n = l.draw_text(306, 226, "", fgcol, bgcol, true) -- 󰖪
+sc = l.draw_text(294, 226, "+", fgcol, bgcol, true)
+snc = l.draw_text(294, 226, "-", fgcol, bgcol, true)
+snc = {l.draw_rectangle(294, 226, 12, 12, bgcol, true)}
 if(wifi_symbol_status) then
     l.draw_sprites(w)
 else
@@ -22,17 +22,17 @@ if(server_symbol_status) then
 else
     l.draw_sprites(snc)
 end
-on_text = l.draw_text(85, 16, "n", fgcol, bgcol)
-off_text = l.draw_text(85, 16, "ff", fgcol, bgcol)
+on_text = l.draw_text(85, 16, "n", fgcol, bgcol, true)
+off_text = l.draw_text(85, 16, "ff", fgcol, bgcol, true)
 l.set_char_size(18)
-on_btn_text = l.draw_text(19, 2, "N", fgcol, bgcol)
-off_btn_text = l.draw_text(19, 2, "FF", fgcol, bgcol)
+on_btn_text = l.draw_text(19, 2, "N", fgcol, bgcol, true)
+off_btn_text = l.draw_text(19, 2, "FF", fgcol, bgcol, true)
 channels_text = {{},{},{},{}}
 channels_text_bg = {}
 
 for ck=1,4 do
-    channels_text[ck] = l.draw_text(0,36,"CH"..(ck-1).."⤓",fgcol,bgcol)
-    channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol)
+    channels_text[ck] = l.draw_text(0,36,"CH"..(ck-1).."⤓",fgcol,bgcol, true)
+    channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol, true)
     l.center_sprites_x(channels_text[ck])
 end
 f=0
@@ -40,10 +40,10 @@ k=1
 l.set_char_size(42)
 spr = {}
 collectgarbage("stop")
-back = l.draw_rectangle(71,240-62-46,177,46,bgcol)
-back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol)
-back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol)
-back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol)
+back = l.draw_rectangle(71,240-62-46,177,46,bgcol, true)
+back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol, true)
+back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol, true)
+back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol, true)
 l.draw_sprites({back,back_btn_text})
 -- channel = {0, 0, 0, 0}
 xs = {58,111,164,217}
@@ -124,10 +124,11 @@ function update_screen_text(x, y, bg, k, center)
         l.delete_sprite(spr[s])
     end
     l.draw_sprites(bg)
-    spr = l.draw_text(x, y, string.format("%.0f%%", l.get_output_value(k)//163), fgcol, bgcol);
+    spr = l.draw_text(x, y, string.format("%.0f%%", l.get_output_value(k)//163), fgcol, bgcol, false);
     if(center) then
         l.center_sprites_x(spr)
     end
+    print("drawing at"..x.." "..y)
     l.draw_sprites(spr)
 end
 
