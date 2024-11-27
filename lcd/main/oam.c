@@ -358,12 +358,15 @@ int wait_for_draw_finish() {
 void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
 	wait_for_draw_finish();
 	SPRITE_24_H* spr;
+	uint24_RGB* composite;
 	for(int i=0;i<numspr;++i) {
 		// spr = OAM_SPRITE_TABLE[array[i]];
 		spr = array[i]->v;
 		ets_printf("drawing @ %x %x by request\n", array[i], array[i]->v);
 		if(spr != NULL && spr->draw) {
-			draw_sprite(spi, spr->posX, spr->posY, spr->bitmap->w, spr->bitmap->h, spr->bitmap->c);
+			composite = composite_alpha(spr);
+			draw_sprite(spi, spr->posX, spr->posY, spr->bitmap->w, spr->bitmap->h, composite);
+			free(composite);
 			send_line_finish(spi);
 		}
 	}
@@ -445,22 +448,22 @@ void delete_temporary_sprites() {
 
 const uint24_RGB white = {0xff,0xff,0xff};
 const uint24_RGB black = {0,0,0};
-SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col, bool persistent) {
+SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col, bool persistent, uint8_t alpha) {
 	uint24_RGB* spritebuf = (uint24_RGB*) malloc(sizeX * sizeY * 3);
 	SPRITE_BITMAP* bitmap = malloc(sizeof(SPRITE_BITMAP));
 	for(int i=0;i<sizeY*sizeX;++i) {
 		// spritebuf[i].pixelR = col->pixelR;
 		// spritebuf[i].pixelG = col->pixelG;
 		// spritebuf[i].pixelB = col->pixelB;
-		spritebuf[i].pixelR = 0;
-		spritebuf[i].pixelG = 0;
-		spritebuf[i].pixelB = 0;
+		spritebuf[i].pixelR = alpha;
+		spritebuf[i].pixelG = alpha;
+		spritebuf[i].pixelB = alpha;
 	}
 	bitmap->c = spritebuf;
 	bitmap->refcount = 0;
 	bitmap->w = sizeX;
 	bitmap->h = sizeY;
-	return init_sprite(bitmap, posX, 240-posY-sizeY, white, black, false, false, false, true, persistent);
+	return init_sprite(bitmap, posX, 240-posY-sizeY, *col, black, false, false, false, true, persistent);
 }
 
 // SPRITE MANIPULATION

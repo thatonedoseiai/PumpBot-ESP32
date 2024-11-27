@@ -84,7 +84,7 @@ DRAM_ATTR static const lcd_init_cmd_t ili_init_cmds[]={
 	{0xC5, {0x35, 0x3E}, 2},
 	/* VCOM control 2, VCOMH=VMH-2, VCOML=VML-2 */
 	{0xC7, {0xBE}, 1},
-	/* Memory access contorl, MX=MY=0, MV=0, ML=0, BGR=1, MH=0 */
+	/* Memory access control, MX=MY=0, MV=0, ML=0, BGR=1, MH=0 */
 	{0x36, {0x18}, 1},
 	/* Pixel format, 18bits/pixel for RGB/MCU interface */
 	{0x3A, {0x66}, 1},
@@ -201,6 +201,8 @@ void send_scroll_finish(spi_device_handle_t spi);
 void gen_bg(spi_device_handle_t spi);
 
 void draw_bg(spi_device_handle_t spi, uint24_RGB* x);
+
+void vertical_scroll(spi_device_handle_t spi);
 
 #ifdef __cplusplus
 }

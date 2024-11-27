@@ -11,7 +11,7 @@ w = l.draw_text(306, 226, "", fgcol, bgcol, true) -- 󰖩
 n = l.draw_text(306, 226, "", fgcol, bgcol, true) -- 󰖪
 sc = l.draw_text(294, 226, "+", fgcol, bgcol, true)
 snc = l.draw_text(294, 226, "-", fgcol, bgcol, true)
-snc = {l.draw_rectangle(294, 226, 12, 12, bgcol, true)}
+snc = {l.draw_rectangle(294, 226, 12, 12, bgcol, true, 0)}
 if(wifi_symbol_status) then
     l.draw_sprites(w)
 else
@@ -32,7 +32,7 @@ channels_text_bg = {}
 
 for ck=1,4 do
     channels_text[ck] = l.draw_text(0,36,"CH"..(ck-1).."⤓",fgcol,bgcol, true)
-    channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol, true)
+    channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol, true, 0)
     l.center_sprites_x(channels_text[ck])
 end
 f=0
@@ -40,10 +40,10 @@ k=1
 l.set_char_size(42)
 spr = {}
 collectgarbage("stop")
-back = l.draw_rectangle(71,240-62-46,177,46,bgcol, true)
-back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol, true)
-back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol, true)
-back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol, true)
+back = l.draw_rectangle(71,240-62-46,177,46,bgcol, true, 0)
+back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol, true, 0)
+back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol, true, 0)
+back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol, true, 0)
 l.draw_sprites({back,back_btn_text})
 -- channel = {0, 0, 0, 0}
 xs = {58,111,164,217}

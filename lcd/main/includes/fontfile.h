@@ -24,6 +24,6 @@ int set_font_size(int sz);
 int verify_font_file(FILE* font);
 void read_header(FILE* font, FONT_METADATA* fm);
 int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar);
-int load_bgimg(uint24_RGB* buf, char* name);
+int load_bgimg(uint24_RGB* buf, char* name, char forceload);
 
 #endif

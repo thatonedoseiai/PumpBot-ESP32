@@ -42,12 +42,12 @@ static char ibuf_mode;
 static uint24_RGB* colorbuf;
 extern unsigned char wifi_restart_counter;
 extern lua_State* L;
-
+extern uint24_RGB* bgbuf;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
 void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
-    *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true);
+    *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true, 0);
     draw_text(10, y, ">", cursor, NULL, *foreground_color, *background_color, 0, false, true);
 }
 
@@ -57,7 +57,7 @@ static int menufunc_setup(void) {
     rotary_encoder_event_t rotencev;
     int currlang = 0;
     // FT_ERR_HANDLE(FT_Set_Char_Size(14 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    sprite_rectangle(220, 240-73-22, 100, 22, background_color, true);
+    sprite_rectangle(220, 240-73-22, 100, 22, background_color, true, 0);
     set_font_size(14);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
@@ -85,7 +85,7 @@ static void draw_options(const char** options, SPRITE_NODE* bgrect) {
     SPRITE_NODE* sprs[32];
 
     int name_length = 0;
-    bgrect->v->draw = true;
+    // bgrect->v->draw = true;
     for(int i=0;i<5;++i) {
         if(options[i] != NULL) {
             draw_text(0, ys[i], options[i], &sprs[0], &name_length, *foreground_color, *background_color, 0, false, false);
@@ -93,13 +93,14 @@ static void draw_options(const char** options, SPRITE_NODE* bgrect) {
             center_sprite_group_x(sprs, name_length);
         }
         bgrect->v->posY = 224-ys[i];
-        draw_all_sprites(spi);
+        init_sprite(bgrect->v->bitmap, bgrect->v->posX, 224-ys[i], bgrect->v->fg, bgrect->v->bg, bgrect->v->bgcol, bgrect->v->flipX, bgrect->v->flipY, true, false);
         // if(options[i] != NULL)
             // for(int j=0;j<name_length;++j)
             //     delete_sprite(sprs[j]);
     }
+    draw_all_sprites(spi);
     bgrect->v->posY = 184;
-    bgrect->v->draw = false;
+    // bgrect->v->draw = false;
 }
 
 static int menufunc_wifi_scan() {
@@ -125,9 +126,9 @@ static int menufunc_wifi_scan() {
     draw_all_sprites(spi);
     // delete_all_sprites();
 
-    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, true);
+    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, true, 0);
     ets_printf("textbg init'd @ %x\n", textbg);
-    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
+    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     SPRITE_NODE* cursor;
     button_event_t event;
     rotary_encoder_event_t rotencev;
@@ -228,7 +229,7 @@ static void draw_textreel(unsigned int curtable, unsigned int selection, unsigne
         sprs[i]->v->posX = xs[i];
     }
     for(int i=0;i<9;++i)
-        sprite_rectangle(xs[i], 26, 26, 27, background_color, false);
+        sprite_rectangle(xs[i], 26, 26, 27, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
 }
@@ -262,7 +263,7 @@ static int menufunc_text_write(void) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 curtable = (curtable + 1) % 3;
                 draw_text(300, 5, tablename[curtable], NULL, NULL, *foreground_color, *background_color, 0, false, false);
-                sprite_rectangle(300, 0, 20, 22, background_color, false);
+                sprite_rectangle(300, 0, 20, 22, background_color, false, 0);
                 draw_textreel(curtable, selection, &loc);
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
@@ -292,7 +293,7 @@ static int menufunc_text_write(void) {
                     // ets_printf("input: %s\n", ibuf);
                     numtyped++;
                 }
-                SPRITE_NODE* r = sprite_rectangle(0, 191, 320, 16, background_color, true);
+                SPRITE_NODE* r = sprite_rectangle(0, 191, 320, 16, background_color, true, 0);
                 init_sprite(r->v->bitmap, 0, 240-191, r->v->fg, r->v->bg, false, false, false, true, false);
                 init_sprite(r->v->bitmap, 0, 240-191+16, r->v->fg, r->v->bg, false, false, false, true, false);
                 init_sprite(r->v->bitmap, 0, 240-191+32, r->v->fg, r->v->bg, false, false, false, true, false);
@@ -336,11 +337,11 @@ static int menufunc_welcome(void) {
     int numsprs1, numsprs2, numsprs3;
     // FT_Set_Char_Size(24 << 6, 0, 100, 0);
     set_font_size(24);
-    sprite_rectangle(10, 168, 300, 22, background_color, true);
-    sprite_rectangle(10, 146, 300, 22, background_color, true);
-    sprite_rectangle(10, 210, 300, 20, background_color, true);
-    sprite_rectangle(10, 190, 300, 20, background_color, true);
-    sprite_rectangle(10, 5, 300, 20, background_color, true);
+    sprite_rectangle(10, 168, 300, 22, background_color, true, 0);
+    sprite_rectangle(10, 146, 300, 22, background_color, true, 0);
+    sprite_rectangle(10, 210, 300, 20, background_color, true, 0);
+    sprite_rectangle(10, 190, 300, 20, background_color, true, 0);
+    sprite_rectangle(10, 5, 300, 20, background_color, true, 0);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
             // delete_all_sprites();
@@ -480,7 +481,7 @@ static int menufunc_network_preview(void) {
     }
     draw_all_sprites(spi);
     // delete_all_sprites();
-    // SPRITE_NODE* cursorbg = sprite_rectangle(2, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(2, 184, 20, 16, background_color, 0);
     SPRITE_NODE* cursorbg;
     SPRITE_NODE* cursor;
     int selection = 0;
@@ -569,14 +570,14 @@ static int menufunc_pb_setup_method (void) {
         tooltip_2[i]->v->draw = false;
     }
     lentt2 = lentt+lenttline2;
-    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 120, 20, 16, background_color);
+    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 120, 20, 16, background_color, 0);
     SPRITE_NODE* cursor;
     // draw_text(10, 120, ">", &cursor, NULL, foreground_color, background_color, 0);
     setup_cursor(&cursorbg, &cursor, 120);
     draw_text(10, 120, ">", NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(0, 25, 320, 16, background_color, true);
-    sprite_rectangle(0, 41, 320, 16, background_color, true);
-    sprite_rectangle(0, 57, 320, 16, background_color, true);
+    sprite_rectangle(0, 25, 320, 16, background_color, true, 0);
+    sprite_rectangle(0, 41, 320, 16, background_color, true, 0);
+    sprite_rectangle(0, 57, 320, 16, background_color, true, 0);
     draw_all_sprites(spi);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -621,6 +622,7 @@ static int menufunc_display_settings(void) {
         assign_theme_from_settings();
         // delete_all_sprites();
         delete_persistent_sprites();
+        load_bgimg(bgbuf, "/mainfs/pb_abc.cbi", true);
         return MENU_REDRAW_FLAG;
     }
     int numsprs;
@@ -637,13 +639,13 @@ static int menufunc_display_settings(void) {
     draw_text(150, 184, bright, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(150, 152, theme_names[settings.disp_theme][settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(32, 152, text_theme[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(20, 211, 280, 21, background_color, false);
+    sprite_rectangle(20, 211, 280, 21, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
-    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
+    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     SPRITE_NODE* cursor;
-    volatile SPRITE_NODE* bright_rec = sprite_rectangle(150, 184, 150, 16, background_color, true);
-    volatile SPRITE_NODE* theme_rec = sprite_rectangle(150, 147, 100, 25, background_color, true);
+    volatile SPRITE_NODE* bright_rec = sprite_rectangle(150, 184, 150, 16, background_color, true, 0);
+    volatile SPRITE_NODE* theme_rec = sprite_rectangle(150, 147, 100, 25, background_color, true, 0);
     bright_rec->v->draw = false;
     theme_rec->v->draw = false;
     setup_cursor(&cursorbg, &cursor, 184);
@@ -704,6 +706,8 @@ static int menufunc_display_settings(void) {
                     assign_theme_from_settings();
                     // delete_all_sprites();
                     delete_persistent_sprites();
+
+                    load_bgimg(bgbuf, "/mainfs/pb_abc.cbi", true);
                     return MENU_REDRAW_FLAG;
                 }
                 mode = mode == 0 ? selection + 1 : 0;
@@ -758,7 +762,7 @@ static int menufunc_color_picker(void) {
         return MENU_POP_FLAG;
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     int numsprs;
     SPRITE_NODE* sprs[20];
     int selection = 0;
@@ -779,13 +783,13 @@ static int menufunc_color_picker(void) {
     draw_text(10, 184, ">", NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_all_sprites(spi);
     // delete_all_sprites();
-    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
+    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     SPRITE_NODE* cursor;
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
     setup_cursor(&cursorbg, &cursor, 184);
-    SPRITE_NODE* red_rec = sprite_rectangle(150, 184, 100, 16, background_color, true);
-    SPRITE_NODE* green_rec = sprite_rectangle(150, 152, 100, 16, background_color, true);
-    SPRITE_NODE* blue_rec = sprite_rectangle(150, 120, 100, 16, background_color, true);
+    SPRITE_NODE* red_rec = sprite_rectangle(150, 184, 100, 16, background_color, true, 0);
+    SPRITE_NODE* green_rec = sprite_rectangle(150, 152, 100, 16, background_color, true, 0);
+    SPRITE_NODE* blue_rec = sprite_rectangle(150, 120, 100, 16, background_color, true, 0);
     red_rec->v->draw = false;
     green_rec->v->draw = false;
     blue_rec->v->draw = false;
@@ -797,18 +801,20 @@ static int menufunc_color_picker(void) {
                 cursorbg->v->posY = 240-ys[selection]-14;
                 selection = (selection + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
                 cursor->v->posY = 240-ys[selection]-14;
-                draw_all_sprites(spi);
+                // draw_all_sprites(spi);
                 break;
             default:
                 buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? rotencev.state.multiplier : 256 - rotencev.state.multiplier) % 256;
                 (void) itoa(buffer[selection], numbuf, 10);
                 draw_text(150, ys[selection], numbuf, sprs, &numsprs, RED, *background_color, 0, false, false);
-                draw_all_sprites(spi);
+                // draw_all_sprites(spi);
                 // for(int i=0;i<numsprs;++i)
                 //     delete_sprite(sprs[i]);
             }
-            colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer, false);
-            draw_sprites(spi, &colorrec, 1);
+            // ets_printf("%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
+            colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer, false, 255);
+            draw_all_sprites(spi);
+            // draw_sprites(spi, &colorrec, 1);
             // delete_sprite(colorrec);
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -868,10 +874,10 @@ static int menufunc_add_on_settings(void) {
     draw_text(32, 184, text_mprls[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(190, 184, pressure_names[settings.pressure_units], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
-    (void) sprite_rectangle(190, 178, 100, 28, background_color, true);
+    (void) sprite_rectangle(190, 178, 100, 28, background_color, true, 0);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             settings.pressure_units = (settings.pressure_units + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1)) % 4;
@@ -927,15 +933,15 @@ static int menufunc_all_settings(void) {
     SPRITE_NODE* cursor;
     int selection = 0;
     int page_start = 0;
-    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
     setup_cursor(&cursorbg, &cursor, 184);
     draw_text(0, 216, text_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
-    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false);
-    SPRITE_NODE* textbg = sprite_rectangle(30, 184, 260, 21, background_color, true);
+    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
+    SPRITE_NODE* textbg = sprite_rectangle(30, 184, 260, 21, background_color, true, 0);
     draw_options((const char**)settings_options_list, textbg);
     draw_sprites(spi, &cursor, 1);
     // for(int i=0;i<numsprs;++i)
@@ -988,7 +994,7 @@ static int menufunc_pwm_output_settings(void) {
     char outputWordBuf[15];
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_output_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     strncpy(outputWordBuf, text_settings_output[settings.language], 15);
@@ -1004,7 +1010,7 @@ static int menufunc_pwm_output_settings(void) {
     draw_all_sprites(spi);
     // delete_all_sprites();
     setup_cursor(&cursorbg, &cursor, 184);
-    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
@@ -1053,7 +1059,7 @@ static int menufunc_pwm_output_set(void) {
     draw_text(200, 184, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
     draw_text(200, 152, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_output_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_lowest_value[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
@@ -1064,9 +1070,9 @@ static int menufunc_pwm_output_set(void) {
     draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, false);
     draw_all_sprites(spi);
     // delete_all_sprites();
-    SPRITE_NODE* textbg = sprite_rectangle(200, 184, 120, 21, background_color, true);
+    SPRITE_NODE* textbg = sprite_rectangle(200, 184, 120, 21, background_color, true, 0);
     setup_cursor(&cursorbg, &cursor, 184);
-    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
     textbg->v->draw = false;
     while(true) {
@@ -1206,7 +1212,7 @@ static int menufunc_rgb_lighting(void) {
     draw_text(200, 184, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(200, 120, speed_val, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode][settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_rgb_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_brightness[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
@@ -1215,13 +1221,13 @@ static int menufunc_rgb_lighting(void) {
     draw_text(32, 88, text_color_1[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(32, 56, text_color_2[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour, false);
-    sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2, false);
+    sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour, false, 0);
+    sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
-    SPRITE_NODE* textbg = sprite_rectangle(200, 184, 120, 21, background_color, true);
+    SPRITE_NODE* textbg = sprite_rectangle(200, 184, 120, 21, background_color, true, 0);
     setup_cursor(&cursorbg, &cursor, 184);
-    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
     textbg->v->draw = false;
     while(true) {
@@ -1370,13 +1376,13 @@ static int menufunc_applications(void) {
     }
     if(i < 63)
         names[i+1] = NULL;
-    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, true);
-    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color);
+    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, true, 0);
+    SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
     setup_cursor(&cursorbg, &cursor, 184);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
-    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false);
+    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_applications[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(2, 2, text_app_download[settings.language], downloadsprs, &numdownloadsprs, *foreground_color, *background_color, 0, false, false);
@@ -1449,7 +1455,7 @@ int menufunc_file_run_delete() {
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
     setup_cursor(&cursorbg, &cursor, 120);
-    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color);
+    // SPRITE_NODE* cursorbg = sprite_rectangle(10, 184, 20, 16, background_color, 0);
     // draw_text(10, 120, ">", &cursor, NULL, foreground_color, background_color, 0);
     draw_all_sprites(spi);
     while(true) {
@@ -1728,7 +1734,7 @@ static int menufunc_server_settings(void) {
                             }
                             system_flags |= FLAG_SERVER_CONNECTED;
                         }
-                        rect1 = sprite_rectangle(32, 88, 176, 20, background_color, false);
+                        rect1 = sprite_rectangle(32, 88, 176, 20, background_color, false, 0);
                         draw_text(150, 88, (system_flags & FLAG_SERVER_CONNECTED) ? text_disconnect[settings.language] : text_connect[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
                         center_sprite_group_x(sprs, numsprs);
                         draw_all_sprites(spi);
@@ -1783,7 +1789,7 @@ static int menufunc_developer(void) {
     button_event_t event;
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_settings_developer[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(0, 184, text_reset[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);

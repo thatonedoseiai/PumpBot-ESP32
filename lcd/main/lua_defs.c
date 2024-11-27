@@ -300,6 +300,7 @@ static int l_create_rectangle(lua_State* L) {
     int width = luaL_checkinteger(L, 3);
     int height = luaL_checkinteger(L, 4);
     char persistent = lua_toboolean(L, 6);
+    uint8_t alpha = luaL_checkinteger(L, 7) & 0xff;
     luaL_checktype(L, 5, LUA_TTABLE);
     lua_pushinteger(L, 1);
     lua_gettable(L, 5);
@@ -314,7 +315,7 @@ static int l_create_rectangle(lua_State* L) {
     col.pixelB = luaL_checkinteger(L, -1);
     lua_pop(L, 3);
 
-    int r = (int) sprite_rectangle(x, y, width, height, &col, persistent);
+    int r = (int) sprite_rectangle(x, y, width, height, &col, persistent, alpha);
     lua_pushinteger(L, r);
     return 1;
 }
@@ -541,6 +542,18 @@ static int l_set_pwm_enable(lua_State* L) {
     return 0;
 }
 
+extern uint24_RGB* bgbuf;
+static int l_load_bgimg(lua_State* L) {
+    const char* filename = luaL_checklstring(L, 1, NULL);
+    load_bgimg(bgbuf, (char*) filename, false);
+    return 0;
+}
+
+static int l_draw_bgimg(lua_State* L) {
+    draw_bg(spi, bgbuf);
+    return 0;
+}
+
 static const struct luaL_Reg lpb_funcs[] = {
     { "draw_text", l_draw_text },
     { "set_char_size", l_setsize },
@@ -566,6 +579,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "get_output_value", l_get_output_value },
     { "foreground_color", l_get_foreground },
     { "background_color", l_get_background },
+    { "load_background", l_load_bgimg },
+    { "draw_background_image", l_draw_bgimg },
     { "flush_text_cache", l_flush_text_cache },
     { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
     { "delete_all_sprites", l_delete_all_sprites },

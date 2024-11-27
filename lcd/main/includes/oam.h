@@ -75,7 +75,7 @@ void delete_persistent_sprites();
 void delete_temporary_sprites();
 /* void delete_all_sprites(); */
 /* void delete_sprite(int sprite); */
-SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col, bool persistent);
+SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col, bool persistent, uint8_t alpha);
 void center_sprite_group_x(SPRITE_NODE** sprites, int numsprites);
 void right_justify_sprite_group_x(SPRITE_NODE** sprites, int numsprites, int pad);
 void assign_theme_from_settings(void);

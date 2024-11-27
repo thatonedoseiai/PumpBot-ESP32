@@ -135,7 +135,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 
     (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
-	(void) load_bgimg(bgbuf, "/mainfs/pb_bg.cbi");
+	(void) load_bgimg(bgbuf, "/mainfs/pb_abc.cbi", false);
 
     int error;
 	// FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
@@ -284,7 +284,8 @@ void app_main(void) {
     assign_theme_from_settings();
 
     while(true) {
-        send_color(spi, background_color);
+        // send_color(spi, background_color);
+        gen_bg(spi);
         error = draw_menu_elements(&menuhome[0], 14); 
         draw_all_sprites(spi);
         delete_persistent_sprites();

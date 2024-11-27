@@ -108,6 +108,34 @@ void lcd_init(spi_device_handle_t spi) {
 	spiSemaphore = xSemaphoreCreateMutex();
 }
 
+int lens[] = {8, 48, 8, 32, 8, 32, 8, 16, 8, 16};
+void vertical_scroll(spi_device_handle_t spi) {
+	xSemaphoreTake(spiSemaphore, 1000/portTICK_PERIOD_MS);
+
+	int value = 16;
+
+    const static uint8_t data_33[6] = {0,0,1,0x40,0,0};
+    static uint8_t data_37[2];
+    data_37[0]=value>>8;
+    data_37[1]=value&0xff;
+	const static uint8_t mad = 0b00101000;
+	const static uint8_t old_mad = 0b00011000;
+
+    lcd_cmd(spi, 0x33, false);
+    lcd_data(spi, data_33, 6);
+
+	lcd_cmd(spi, 0x36, false);
+	lcd_data(spi, &mad, 1);
+
+    lcd_cmd(spi, 0x37, false);
+    lcd_data(spi, data_37, 2);
+
+	lcd_cmd(spi, 0x36, false);
+	lcd_data(spi, &old_mad, 1);
+
+	xSemaphoreGive(spiSemaphore);
+}
+
 extern uint24_RGB* bgbuf;
 void gen_bg(spi_device_handle_t spi) {
 	// uint24_RGB* buf = malloc(240*320*sizeof(uint24_RGB));

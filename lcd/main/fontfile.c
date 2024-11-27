@@ -8,6 +8,9 @@ FILE* FONT_FILE;
 char font_file_open = false;
 FONT_METADATA fm;
 CHAR_METADATA cm;
+char* bgimg_filename = NULL;
+extern uint24_RGB* foreground_color;
+extern uint24_RGB* background_color;
 
 int set_font_size(int sz) {
     char* font_name;
@@ -156,13 +159,21 @@ int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar) {
     return 0;
 }
 
-int load_bgimg(uint24_RGB* buf, char* name) {
+int load_bgimg(uint24_RGB* buf, char* name, char force_load) {
+    if(bgimg_filename && !force_load && !strcmp(name, bgimg_filename))
+        return 0;
+
     FILE* f = fopen(name, "rb");
     char header[3];
     fread(header, 3, 1, f);
     if(strncmp(header, "cbi", 3)) {
         fclose(f);
         return -1;
+    }
+    fread(header, 2, 1, f);
+    if(header[0] != 1) {
+        fclose(f);
+        return -3;
     }
     uint16_t width, height;
     fread(&width, 2, 1, f);
@@ -172,9 +183,30 @@ int load_bgimg(uint24_RGB* buf, char* name) {
         ets_printf("width: %d, height: %d\n", width, height);
         return -2;
     }
-    uint8_t* compressed = malloc(320*240*3);
-    fread(compressed, 320*240, 3, f);
+    char BITDEPTH = 3;
+    if(header[1] & 0x1)
+        BITDEPTH = 1;
+    uint8_t* compressed = malloc(320*240*BITDEPTH);
+    fread(compressed, 320*240, BITDEPTH, f);
     fclose(f);
-    decode(compressed, (uint8_t*) buf);
+    if(header[1] & 0x1) {
+        uint8_t* decompressed = malloc(320*240);
+        decode(compressed, decompressed);
+        free(compressed);
+        for(int i=0;i<320*240;++i) {
+            buf[i].pixelR = (decompressed[i] * (foreground_color->pixelR) + (255-decompressed[i]) * (background_color->pixelR)) / 255;
+            buf[i].pixelG = (decompressed[i] * (foreground_color->pixelG) + (255-decompressed[i]) * (background_color->pixelG)) / 255;
+            buf[i].pixelB = (decompressed[i] * (foreground_color->pixelB) + (255-decompressed[i]) * (background_color->pixelB)) / 255;
+        }
+        free(decompressed);
+    } else {
+        decode(compressed, (uint8_t*) buf);
+        free(compressed);
+    }
+    
+    if(bgimg_filename)
+        free(bgimg_filename);
+    bgimg_filename = malloc(strlen(name)+2);
+    strcpy(bgimg_filename, name);
     return 0;
 }
