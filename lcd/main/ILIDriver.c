@@ -12,6 +12,7 @@
 
 #include "ILIDriver.h"
 #include "fontfile.h"
+#include "pthread.h"
 // #include "pretty_effect.h"
 
 uint24_RGB* framebuf = NULL;
@@ -153,7 +154,14 @@ void gen_bg(spi_device_handle_t spi) {
 }
 
 // 320x240 bg img
-void draw_bg(spi_device_handle_t spi, uint24_RGB* bgbuf) {
+typedef struct {
+	spi_device_handle_t spi;
+	uint24_RGB* bgbuf;
+} BG_DRAW_ARGS;
+void* draw_bg_thread(void* arg) {
+	spi_device_handle_t spi = ((BG_DRAW_ARGS*) arg)->spi;
+	uint24_RGB* bgbuf = ((BG_DRAW_ARGS*) arg)->bgbuf;
+
 	for(int ypos=0;ypos<320;ypos+=PARALLEL_LINES) {
 		esp_err_t ret;
 		int x;
@@ -198,6 +206,18 @@ void draw_bg(spi_device_handle_t spi, uint24_RGB* bgbuf) {
 		xSemaphoreGive(spiSemaphore);
 		send_line_finish(spi);
 	}
+	free(arg);
+	pthread_exit(NULL);
+}
+
+void draw_bg(spi_device_handle_t spi, uint24_RGB* bgbuf) {
+	static pthread_t ptid = 0;
+	if(ptid != 0)
+		pthread_join(ptid, NULL);
+	BG_DRAW_ARGS* thread_args = malloc(sizeof(BG_DRAW_ARGS));
+	thread_args->spi = spi;
+	thread_args->bgbuf = bgbuf;
+	pthread_create(&ptid, NULL, &draw_bg_thread, thread_args);
 }
 
 void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num_cols) {

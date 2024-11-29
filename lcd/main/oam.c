@@ -330,8 +330,10 @@ void* draw_all_sprites_thread(void* arg) {
 }
 
 void draw_all_sprites(spi_device_handle_t spi) {
+	ets_printf("WAITING...\n");
 	if(ptid != 0)
 		pthread_join(ptid, NULL);
+	ets_printf("GREEN LIGHT...\n");
 	while(vram != NULL); // run multiple draws simultaneously?
 	vram = temporary_sprites;
 	temporary_sprites = NULL;

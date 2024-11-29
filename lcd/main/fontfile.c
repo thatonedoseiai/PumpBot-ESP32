@@ -5,6 +5,7 @@
 #include <string.h>
 
 FILE* FONT_FILE;
+FILE* IMAGE_COLLECTION_FILE;
 char font_file_open = false;
 FONT_METADATA fm;
 CHAR_METADATA cm;
@@ -159,37 +160,50 @@ int load_char(uint24_RGB** buf, CHAR_METADATA* cm, int curchar) {
     return 0;
 }
 
-int load_bgimg(uint24_RGB* buf, char* name, char force_load) {
-    if(bgimg_filename && !force_load && !strcmp(name, bgimg_filename))
-        return 0;
-
-    FILE* f = fopen(name, "rb");
+int load_bgimg(uint24_RGB* buf, char* name, char force_load, int index) {
+    int err = 0;
     char header[3];
-    fread(header, 3, 1, f);
-    if(strncmp(header, "cbi", 3)) {
-        fclose(f);
-        return -1;
+    if(!bgimg_filename || force_load || strcmp(name, bgimg_filename)) {
+        IMAGE_COLLECTION_FILE = fopen(name, "rb");
+        fread(header, 3, 1, IMAGE_COLLECTION_FILE);
+        if(strncmp(header, "cbi", 3)) {
+            err = -1;
+            goto ret_err;
+        }
+        fread(header, 1, 1, IMAGE_COLLECTION_FILE);
+        if(header[0] != 2) {
+            err = -3;
+            goto ret_err;
+        }
     }
-    fread(header, 2, 1, f);
-    if(header[0] != 1) {
-        fclose(f);
-        return -3;
-    }
+
+    fread(header, 1, 1, IMAGE_COLLECTION_FILE);
+    if(index >= header[0]) {
+        err = -4;
+        goto ret_err;
+    } // index oob
+
+    fseek(IMAGE_COLLECTION_FILE, 5+4*index, SEEK_SET);
+    uint32_t imagedata_offset;
+    fread(&imagedata_offset, 4, 1, IMAGE_COLLECTION_FILE);
+    fseek(IMAGE_COLLECTION_FILE, imagedata_offset, SEEK_SET);
+
+    uint8_t flags;
     uint16_t width, height;
-    fread(&width, 2, 1, f);
-    fread(&height, 2, 1, f);
+    fread(&flags, 1, 1, IMAGE_COLLECTION_FILE);
+    fread(&width, 2, 1, IMAGE_COLLECTION_FILE);
+    fread(&height, 2, 1, IMAGE_COLLECTION_FILE);
     if(width != 240 || height != 320) {
-        fclose(f);
         ets_printf("width: %d, height: %d\n", width, height);
-        return -2;
+        err = -2;
+        goto ret_err;
     }
     char BITDEPTH = 3;
-    if(header[1] & 0x1)
+    if(flags & 0x1)
         BITDEPTH = 1;
     uint8_t* compressed = malloc(320*240*BITDEPTH);
-    fread(compressed, 320*240, BITDEPTH, f);
-    fclose(f);
-    if(header[1] & 0x1) {
+    fread(compressed, 320*240, BITDEPTH, IMAGE_COLLECTION_FILE);
+    if(flags & 0x1) {
         uint8_t* decompressed = malloc(320*240);
         decode(compressed, decompressed);
         free(compressed);
@@ -209,4 +223,12 @@ int load_bgimg(uint24_RGB* buf, char* name, char force_load) {
     bgimg_filename = malloc(strlen(name)+2);
     strcpy(bgimg_filename, name);
     return 0;
+
+ret_err:
+    if(bgimg_filename)
+        free(bgimg_filename);
+    bgimg_filename = NULL;
+    fclose(IMAGE_COLLECTION_FILE);
+    IMAGE_COLLECTION_FILE = NULL;
+    return err;
 }

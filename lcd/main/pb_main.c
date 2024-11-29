@@ -135,7 +135,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
 
     (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
-	(void) load_bgimg(bgbuf, "/mainfs/pb_abc.cbi", false);
+	(void) load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", false, 0);
 
     int error;
 	// FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
@@ -294,8 +294,10 @@ void app_main(void) {
             ets_printf("draw menu element\n");
         (void) luaL_dofile(L, "/mainfs/test.lua");
         ets_printf("LUA: %s\n", lua_tostring(L,-1));
+        ets_printf("DELETING TEMPS\n");
         delete_persistent_sprites();
         delete_temporary_sprites();
+        ets_printf("DELETED TEMPS\n");
         (void) start_menu_tree(11, true);
         flush_text_cache();
     }

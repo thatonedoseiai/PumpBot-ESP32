@@ -124,7 +124,7 @@ int draw_text(int startX, int startY, const char* string, SPRITE_NODE** sprites,
 
 skip_bitmap_assignment:
         SPRITE_NODE* inx = init_sprite(bmp, offset_x + origin_x_off, 240 - offset_y - origin_y_off, fg, bg, bg_iscolor, false, false, true, persistent);
-        ets_printf("draw char %x @ %x\n", curchar, inx);
+        // ets_printf("draw char %x @ %x\n", curchar, inx);
 
         if (sprites && curchar != ' ') {
             sprites[i++] = inx;
@@ -545,7 +545,8 @@ static int l_set_pwm_enable(lua_State* L) {
 extern uint24_RGB* bgbuf;
 static int l_load_bgimg(lua_State* L) {
     const char* filename = luaL_checklstring(L, 1, NULL);
-    load_bgimg(bgbuf, (char*) filename, false);
+    int inx = luaL_checkinteger(L, 2);
+    load_bgimg(bgbuf, (char*) filename, false, inx);
     return 0;
 }
 
