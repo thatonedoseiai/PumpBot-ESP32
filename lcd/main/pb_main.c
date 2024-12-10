@@ -285,8 +285,9 @@ void app_main(void) {
 
     while(true) {
         // send_color(spi, background_color);
+        load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 1);
         gen_bg(spi);
-        error = draw_menu_elements(&menuhome[0], 14); 
+        error = draw_menu_elements(&menuhome[0], 12); 
         draw_all_sprites(spi);
         delete_persistent_sprites();
         delete_temporary_sprites();
@@ -298,6 +299,8 @@ void app_main(void) {
         delete_persistent_sprites();
         delete_temporary_sprites();
         ets_printf("DELETED TEMPS\n");
+        load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+        gen_bg(spi);
         (void) start_menu_tree(11, true);
         flush_text_cache();
     }

@@ -57,7 +57,7 @@ static int menufunc_setup(void) {
     rotary_encoder_event_t rotencev;
     int currlang = 0;
     // FT_ERR_HANDLE(FT_Set_Char_Size(14 << 6, 0, 100, 0), "FT_Set_Char_Size");
-    sprite_rectangle(220, 240-73-22, 100, 22, background_color, true, 0);
+    sprite_rectangle(220, 240-73-13, 100, 22, background_color, true, 0);
     set_font_size(14);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.event == BUTTON_DOWN) {
@@ -74,7 +74,7 @@ static int menufunc_setup(void) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             currlang = ((unsigned) rotencev.state.position) % 9;
             SPRITE_NODE* sprs[15];
-            draw_text(220, 152, text_language_name[currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
+            draw_text(220, 161, text_language_name[currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
             draw_all_sprites(spi);
         }
     }
@@ -210,6 +210,7 @@ refresh:
             if(event.pin == 0) {
                 set_text_cache_auto_delete(true);
                 flush_text_cache();
+                delete_persistent_sprites();
                 return MENU_POP_FLAG;
             }
         }
@@ -346,11 +347,11 @@ static int menufunc_welcome(void) {
     int numsprs1, numsprs2, numsprs3;
     // FT_Set_Char_Size(24 << 6, 0, 100, 0);
     set_font_size(24);
-    sprite_rectangle(10, 168, 300, 22, background_color, true, 0);
-    sprite_rectangle(10, 146, 300, 22, background_color, true, 0);
-    sprite_rectangle(10, 210, 300, 20, background_color, true, 0);
-    sprite_rectangle(10, 190, 300, 20, background_color, true, 0);
-    sprite_rectangle(10, 5, 300, 20, background_color, true, 0);
+    sprite_rectangle(10, 168, 300, 22, background_color, true, 255);
+    sprite_rectangle(10, 146, 300, 22, background_color, true, 255);
+    sprite_rectangle(10, 210, 300, 20, background_color, true, 255);
+    sprite_rectangle(10, 190, 300, 20, background_color, true, 255);
+    sprite_rectangle(10, 5, 300, 20, background_color, true, 255);
     while(true) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18) {
             // delete_all_sprites();
@@ -364,14 +365,14 @@ static int menufunc_welcome(void) {
 // #include "driver/ledc.h"
 // ledc_set_duty(LEDC_LOW_SPEED_MODE, 6, 0x8ff);
 // ledc_update_duty(LEDC_LOW_SPEED_MODE, 6);
-            draw_text(60, 195, text_welcome[currlang], sprs1, &numsprs1, *foreground_color, *background_color, 0, false, false);
+            draw_text(60, 195, text_welcome[currlang], sprs1, &numsprs1, *foreground_color, *background_color, 0, true, false);
 // ledc_set_duty(LEDC_LOW_SPEED_MODE, 6, 0);
 // ledc_update_duty(LEDC_LOW_SPEED_MODE, 6);
 
-            draw_text(60, 154, text_welcome_a[currlang], sprs2, &numsprs2, *foreground_color, *background_color, 0, false, false);
+            draw_text(60, 154, text_welcome_a[currlang], sprs2, &numsprs2, *foreground_color, *background_color, 0, true, false);
             set_font_size(14);
             // FT_Set_Char_Size(14 << 6, 0, 100, 0);
-            draw_text(60, 10, text_pressenc[currlang], sprs3, &numsprs3, *foreground_color, *background_color, 0, false, false);
+            draw_text(60, 10, text_pressenc[currlang], sprs3, &numsprs3, *foreground_color, *background_color, 0, true, false);
             set_font_size(24);
             // FT_Set_Char_Size(24 << 6, 0, 100, 0);
             center_sprite_group_x(sprs1, numsprs1);
@@ -510,6 +511,7 @@ static int menufunc_network_preview(void) {
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             if(event.pin == 3 && event.event == BUTTON_DOWN) {
                 // draw_text(0, 88, , 0);
+                delete_persistent_sprites();
                 return MENU_SETUP_ONLY_TRANSITION_FLAG | 22;
             }
             if(event.pin == 18 && event.event == BUTTON_DOWN) {
@@ -582,8 +584,9 @@ static int menufunc_pb_setup_method (void) {
     SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 120, 20, 16, background_color, 0);
     SPRITE_NODE* cursor;
     // draw_text(10, 120, ">", &cursor, NULL, foreground_color, background_color, 0);
-    setup_cursor(&cursorbg, &cursor, 120);
-    draw_text(10, 120, ">", NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    set_font_size(14);
+    setup_cursor(&cursorbg, &cursor, 137);
+    draw_text(10, 137, ">", NULL, NULL, *foreground_color, *background_color, 0, false, false);
     sprite_rectangle(0, 25, 320, 16, background_color, true, 0);
     sprite_rectangle(0, 41, 320, 16, background_color, true, 0);
     sprite_rectangle(0, 57, 320, 16, background_color, true, 0);
@@ -591,9 +594,9 @@ static int menufunc_pb_setup_method (void) {
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             // wait_for_draw_finish();
-            cursorbg->v->posY = selection ? 240-88-14 : 240-120-14;
+            cursorbg->v->posY = selection ? 240-105-14 : 240-137-14;
             selection = !selection;
-            cursor->v->posY = selection ? 240-88-14 : 240-120-14;
+            cursor->v->posY = selection ? 240-105-14 : 240-137-14;
             for(int i=0;i<lentt2;++i) {
                 tooltip_2[i]->v->draw = selection;
             }
@@ -771,7 +774,6 @@ static int menufunc_color_picker(void) {
         return MENU_POP_FLAG;
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     int numsprs;
     SPRITE_NODE* sprs[20];
     int selection = 0;
@@ -790,6 +792,7 @@ static int menufunc_color_picker(void) {
     (void) itoa(buffer[2], numbuf, 10);
     draw_text(150, 120, numbuf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(10, 184, ">", NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
     SPRITE_NODE* cursorbg; // = sprite_rectangle(10, 184, 20, 16, background_color, 0);
@@ -1011,7 +1014,6 @@ static int menufunc_pwm_output_settings(void) {
     char outputWordBuf[15];
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_output_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     strncpy(outputWordBuf, text_settings_output[settings.language], 15);
@@ -1024,6 +1026,7 @@ static int menufunc_pwm_output_settings(void) {
     sprintf(outputWordBuf, "%s %d", text_settings_output[settings.language], 3);
     draw_text(32, 88, outputWordBuf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
     setup_cursor(&cursorbg, &cursor, 184);
@@ -1076,7 +1079,6 @@ static int menufunc_pwm_output_set(void) {
     draw_text(200, 184, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     sprintf(percentage, "%d%%", settings.pwm_max_limit[selected_pwm] / 163);
     draw_text(200, 152, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_output_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_lowest_value[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
@@ -1085,6 +1087,7 @@ static int menufunc_pwm_output_set(void) {
     draw_text(32, 88, text_output_mode[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(200, 88, settings.output_set_on_off_only[selected_pwm] ? text_digital[settings.language] : text_analog[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_all_sprites(spi);
     // delete_all_sprites();
     SPRITE_NODE* textbg = sprite_rectangle(200, 184, 120, 21, background_color, true, 0);
@@ -1229,7 +1232,6 @@ static int menufunc_rgb_lighting(void) {
     draw_text(200, 184, percentage, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(200, 120, speed_val, NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode][settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
-    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_rgb_settings[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(32, 184, text_brightness[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
@@ -1238,6 +1240,7 @@ static int menufunc_rgb_lighting(void) {
     draw_text(32, 88, text_color_1[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(32, 56, text_color_2[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
     draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     sprite_rectangle(200, 80, 30, 30, &settings.RGB_colour, false, 0);
     sprite_rectangle(200, 48, 30, 30, &settings.RGB_colour_2, false, 0);
     draw_all_sprites(spi);
@@ -1399,11 +1402,11 @@ static int menufunc_applications(void) {
     set_font_size(14);
     setup_cursor(&cursorbg, &cursor, 184);
     // draw_text(10, 184, ">", &cursor, NULL, foreground_color, background_color, 0);
-    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_applications[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     draw_text(2, 2, text_app_download[settings.language], downloadsprs, &numdownloadsprs, *foreground_color, *background_color, 0, false, false);
     right_justify_sprite_group_x(downloadsprs, numdownloadsprs, 2);
+    SPRITE_NODE* titlebg = sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_options((const char**)names, textbg);
     // for(int i=0;i<numsprs;++i)
     //     delete_sprite(sprs[i]);
@@ -1806,9 +1809,9 @@ static int menufunc_developer(void) {
     button_event_t event;
     // FT_Set_Char_Size(14 << 6, 0, 100, 0);
     set_font_size(14);
-    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 216, text_settings_developer[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
+    sprite_rectangle(85, 211, 150, 21, background_color, false, 0);
     draw_text(0, 184, text_reset[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     center_sprite_group_x(sprs, numsprs);
     setup_cursor(&cursorbg, &cursor, 184);
@@ -1835,30 +1838,30 @@ static int menufunc_developer(void) {
 }
 
 MENU_INFO_t allmenus[] = {
-    {&welcome_menu[0], 3, menufunc_welcome},
-    {&menusetup0[0], 8, menufunc_setup},
-    {&menusetup3[0], 9, menufunc_wifi_scan},
-    {&menutextenter[0], 4, menufunc_text_write},
-    {&menuwifistarting[0], 3, menufunc_connect_wifi},
-    {&menusetup2a[0], 12, menufunc_http_setup},
-    {&menusetup3[0], 10, menufunc_network_preview},
-    {&menusetup1[0], 10, menufunc_pb_setup_method},
-    {&menusetup3[0], 10, menufunc_display_settings},
-    {&menusetup3[0], 10, menufunc_color_picker},
-    {&menusetup3[0], 10, menufunc_add_on_settings},
-    {&menusetup3[0], 9, menufunc_all_settings},
-    {&menusetup3[0], 9, menufunc_pwm_output_settings},
-    {&menusetup3[0], 9, menufunc_pwm_output_set},
-    {&menusetup3[0], 9, menufunc_rgb_lighting},
-    {&menusetup3[0], 9, menufunc_applications},
-    {&menuapprundelete[0], 10, menufunc_file_run_delete},
-    {NULL, 0, menufunc_execute_ibuf_file},
-    {&menudownloadapp[0], 7, menufunc_download_file},
-    {&menunetworksettings[0], 9, menufunc_network_settings},
-    {&menuserversettings[0], 11, menufunc_server_settings},
-    {&menusetupdone[0], 2, menufunc_setup_done},
-    {&menuskipwifi[0], 4, menufunc_skip_wifi},
-    {&menusetup3[0], 9, menufunc_developer},
+    {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL},
+    {&menusetup0[0], 5, menufunc_setup, 4},
+    {&menusetup3[0], 7, menufunc_wifi_scan, 2},
+    {&menutextenter[0], 2, menufunc_text_write, 2},
+    {&menuwifistarting[0], 2, menufunc_connect_wifi, 0},
+    {&menusetup2a[0], 7, menufunc_http_setup, 3},
+    {&menusetup3[0], 8, menufunc_network_preview, 2},
+    {&menusetup1[0], 6, menufunc_pb_setup_method, 5},
+    {&menusetup3[0], 8, menufunc_display_settings, 2},
+    {&menusetup3[0], 8, menufunc_color_picker, 2},
+    {&menusetup3[0], 8, menufunc_add_on_settings, 2},
+    {&menusetup3[0], 7, menufunc_all_settings, 2},
+    {&menusetup3[0], 7, menufunc_pwm_output_settings, 2},
+    {&menusetup3[0], 7, menufunc_pwm_output_set, 2},
+    {&menusetup3[0], 7, menufunc_rgb_lighting, 2},
+    {&menusetup3[0], 7, menufunc_applications, 2},
+    {&menuapprundelete[0], 10, menufunc_file_run_delete, 0},
+    {NULL, 0, menufunc_execute_ibuf_file, 0},
+    {&menudownloadapp[0], 6, menufunc_download_file, 0},
+    {&menunetworksettings[0], 7, menufunc_network_settings, 0},
+    {&menuserversettings[0], 9, menufunc_server_settings, 2},
+    {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL},
+    {&menuskipwifi[0], 4, menufunc_skip_wifi, 0},
+    {&menusetup3[0], 7, menufunc_developer, 2},
 };
 
 extern SPRITE_NODE* persistent_sprites;
@@ -1866,12 +1869,20 @@ int start_menu_tree(int startmenu, char settings_mode) {
     int menu_stack[32];
     int menu_stackp = 0;
     int nextmenu;
+    char currmenu_background = 0xff;
     MENU_INFO_t* currmenu;
     menu_stack[menu_stackp] = startmenu;
     do {
-        // send_color(spi, background_color);
-        gen_bg(spi);
         currmenu = &allmenus[menu_stack[menu_stackp]];
+        if(currmenu->bg == MENU_BG_SOLID_COL)
+            send_color(spi, background_color);
+        else {
+            if(currmenu_background != currmenu->bg) {
+                load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, currmenu->bg);
+                currmenu_background = currmenu->bg;
+            }
+            gen_bg(spi);
+        }
         if(currmenu->background != NULL) {
             draw_menu_elements(currmenu->background, currmenu->num_elements);
             draw_all_sprites(spi);

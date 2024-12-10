@@ -37,7 +37,7 @@ const char zeroper[] = "0%";
 const char rotateenc[] = "o";
 const char ch0[] = "CH0⤓";
 const char off[] = "OFF";
-const char set[] = "│ ⚙";
+const char set[] = "  ⚙";
 const char aon[] = "0-On";
 const char bon[] = "1-On";
 const char con[] = "2-On";
@@ -61,14 +61,14 @@ const MENU_ELEMENT menuhome[] = {
         .textsize = 42, // size H, "Heccin Chonker"
         .col = &foreground_color
     },
-    {
-        .text = rotateencp, //static symbol
-        .x = 0,
-        .y = 114,
-        .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .textsize = 18,
-        .col = &foreground_color
-    },
+    // {
+    //     .text = rotateencp, //static symbol
+    //     .x = 0,
+    //     .y = 114,
+    //     .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .textsize = 18,
+    //     .col = &foreground_color
+    // },
     {
         .text = ch0p, //X = current channel
         .x = 0,
@@ -157,13 +157,13 @@ const MENU_ELEMENT menuhome[] = {
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
     },
-    { //Horizontal Line
-        .y = 32,
-        .textsize = 2,
-        .col = &foreground_color,
-        // .hline = true
-        .flags = MENU_FLAG_IS_HLINE
-    }
+    // { //Horizontal Line
+    //     .y = 32,
+    //     .textsize = 2,
+    //     .col = &foreground_color,
+    //     // .hline = true
+    //     .flags = MENU_FLAG_IS_HLINE
+    // }
 };
 
 const MENU_ELEMENT menusetup0[] = {
@@ -175,41 +175,41 @@ const MENU_ELEMENT menusetup0[] = {
         .textsize = 18,
         .col = &foreground_color
     },
-    {
-        .y = 176,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {
+    //     .y = 176,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     {
         .text = text_language, 
         .x = 32,
-        .y = 152,
+        .y = 161,
         .textsize = 14,
         .col = &foreground_color
     },
     {
         .text = text_language_name,
         .x = 220,
-        .y = 152,
+        .y = 161,
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 144,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 144,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -248,7 +248,7 @@ const MENU_ELEMENT menusetup1[] = {
     {
         .text = text_wifi_setup, 
         .x = 0,
-        .y = 120,
+        .y = 137,
         .flags = MENU_FLAG_CENTER,
         .textsize = 14,
         .col = &foreground_color
@@ -256,39 +256,39 @@ const MENU_ELEMENT menusetup1[] = {
     {
         .text = text_standalone_setup,
         .x = 0,
-        .y = 88,
+        .y = 105,
         .flags = MENU_FLAG_CENTER,
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 144,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 112,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 80,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    { //Bottom menu
-        .y = 24, //24
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 144,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 112,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 80,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // { //Bottom menu
+    //     .y = 24, //24
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -316,13 +316,13 @@ const MENU_ELEMENT menuwifistarting[] = { //Setup Menu 2
         .textsize = 14,
         .col = &foreground_color
     },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        // .hline = true,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     // .hline = true,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_cancel,
         .x = 0,
@@ -354,7 +354,7 @@ const MENU_ELEMENT menusetup2a[] = {
     {
         .text = &wifi_name,
         .x = 0,
-        .y = 152,
+        .y = 151,
         .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
         .textsize = 14,
         .col = &foreground_color
@@ -362,7 +362,7 @@ const MENU_ELEMENT menusetup2a[] = {
     {
         .text = text_go_to_url, 
         .x = 0,
-        .y = 120,
+        .y = 119,
         .flags = MENU_FLAG_CENTER,
         .textsize = 14,
         .col = &foreground_color
@@ -370,7 +370,7 @@ const MENU_ELEMENT menusetup2a[] = {
     {
         .text = text_go_to_url_a, 
         .x = 0,
-        .y = 88,
+        .y = 99,
         .flags = MENU_FLAG_CENTER,
         .textsize = 14,
         .col = &foreground_color
@@ -378,41 +378,41 @@ const MENU_ELEMENT menusetup2a[] = {
     {
         .text = &url_name,
         .x = 0,
-        .y = 56,
+        .y = 67,
         .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 176,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {      
-        .y = 144,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 112,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 80,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 176,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {      
+    //     .y = 144,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 112,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 80,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -440,12 +440,12 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 208,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 208,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     {
         .y = 176,
         .textsize = 2,
@@ -476,12 +476,12 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .flags = MENU_FLAG_IS_HLINE,
         .col = &foreground_color
     },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -509,18 +509,18 @@ const MENU_ELEMENT menutextenter[] = {
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 208,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 24,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 208,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 24,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -655,12 +655,12 @@ const MENU_ELEMENT menudownloadapp[] = {
         .flags = MENU_FLAG_IS_HLINE,
         .col = &foreground_color
     },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -708,12 +708,12 @@ const MENU_ELEMENT menuserversettings[] = {
         .textsize = 14,
         .col = &foreground_color
     },
-    {      
-        .y = 208,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {      
+    //     .y = 208,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     {
         .y = 176,
         .textsize = 2,
@@ -738,12 +738,12 @@ const MENU_ELEMENT menuserversettings[] = {
         .flags = MENU_FLAG_IS_HLINE,
         .col = &foreground_color
     },
-    { //Bottom menu
-        .y = 24,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // { //Bottom menu
+    //     .y = 24,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,
@@ -804,18 +804,18 @@ const MENU_ELEMENT menunetworksettings[] = {
         .flags = MENU_FLAG_IS_HLINE,
         .col = &foreground_color
     },
-    {
-        .y = 48,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    { //Bottom menu
-        .y = 24, //24
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {
+    //     .y = 48,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // { //Bottom menu
+    //     .y = 24, //24
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     { 
         .text = text_back,
         .x = 2,

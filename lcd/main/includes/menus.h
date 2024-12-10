@@ -12,6 +12,8 @@
 #define MENU_FLAG_RIGHT_JUSTIFY 0x8
 #define MENU_FLAG_LANGUAGE_AGNOSTIC 0x10
 
+#define MENU_BG_SOLID_COL 0xff
+
 typedef struct {
     const char* const* text;
     uint16_t x;
@@ -25,6 +27,7 @@ typedef struct {
     const MENU_ELEMENT* background;
     int num_elements;
     int(*menu_functionality)(void);
+    char bg;
 } MENU_INFO_t;
 
 /*
