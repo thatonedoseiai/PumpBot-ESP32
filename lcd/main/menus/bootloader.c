@@ -806,6 +806,7 @@ static int menufunc_color_picker(void) {
     green_rec->v->draw = false;
     blue_rec->v->draw = false;
     SPRITE_NODE* colorrec;
+    colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer, true, 255);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             switch(mode) {
@@ -816,7 +817,7 @@ static int menufunc_color_picker(void) {
                 // draw_all_sprites(spi);
                 break;
             default:
-                buffer[selection] = buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? rotencev.state.multiplier : 256 - rotencev.state.multiplier) % 256;
+                buffer[selection] = (buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? rotencev.state.multiplier : 256 - rotencev.state.multiplier)) & 0xff;
                 (void) itoa(buffer[selection], numbuf, 10);
                 draw_text(150, ys[selection], numbuf, sprs, &numsprs, RED, *background_color, 0, false, false);
                 // draw_all_sprites(spi);
@@ -824,7 +825,7 @@ static int menufunc_color_picker(void) {
                 //     delete_sprite(sprs[i]);
             }
             // ets_printf("%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
-            colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer, false, 255);
+            colorrec->v->fg = *(uint24_RGB*) buffer;
             draw_all_sprites(spi);
             // draw_sprites(spi, &colorrec, 1);
             // delete_sprite(colorrec);
@@ -1840,28 +1841,28 @@ static int menufunc_developer(void) {
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL},
     {&menusetup0[0], 5, menufunc_setup, 4},
-    {&menusetup3[0], 7, menufunc_wifi_scan, 2},
+    {&menusetup3[0], 2, menufunc_wifi_scan, 6},
     {&menutextenter[0], 2, menufunc_text_write, 2},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0},
     {&menusetup2a[0], 7, menufunc_http_setup, 3},
-    {&menusetup3[0], 8, menufunc_network_preview, 2},
+    {&menusetup3[0], 3, menufunc_network_preview, 2},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5},
-    {&menusetup3[0], 8, menufunc_display_settings, 2},
-    {&menusetup3[0], 8, menufunc_color_picker, 2},
-    {&menusetup3[0], 8, menufunc_add_on_settings, 2},
-    {&menusetup3[0], 7, menufunc_all_settings, 2},
-    {&menusetup3[0], 7, menufunc_pwm_output_settings, 2},
-    {&menusetup3[0], 7, menufunc_pwm_output_set, 2},
-    {&menusetup3[0], 7, menufunc_rgb_lighting, 2},
-    {&menusetup3[0], 7, menufunc_applications, 2},
+    {&menusetup3[0], 3, menufunc_display_settings, 2},
+    {&menusetup3[0], 3, menufunc_color_picker, 2},
+    {&menusetup3[0], 3, menufunc_add_on_settings, 2},
+    {&menusetup3[0], 2, menufunc_all_settings, 6},
+    {&menusetup3[0], 2, menufunc_pwm_output_settings, 6},
+    {&menusetup3[0], 2, menufunc_pwm_output_set, 6},
+    {&menusetup3[0], 2, menufunc_rgb_lighting, 2},
+    {&menusetup3[0], 2, menufunc_applications, 6},
     {&menuapprundelete[0], 10, menufunc_file_run_delete, 0},
     {NULL, 0, menufunc_execute_ibuf_file, 0},
     {&menudownloadapp[0], 6, menufunc_download_file, 0},
     {&menunetworksettings[0], 7, menufunc_network_settings, 0},
-    {&menuserversettings[0], 9, menufunc_server_settings, 2},
+    {&menuserversettings[0], 9, menufunc_server_settings, 6},
     {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL},
     {&menuskipwifi[0], 4, menufunc_skip_wifi, 0},
-    {&menusetup3[0], 7, menufunc_developer, 2},
+    {&menusetup3[0], 2, menufunc_developer, 2},
 };
 
 extern SPRITE_NODE* persistent_sprites;

@@ -35,13 +35,13 @@ const MENU_ELEMENT welcome_menu[] = {
 const char zeroper[] = "0%";
 // const char rotateenc[] = "⟳";
 const char rotateenc[] = "o";
-const char ch0[] = "CH0⤓";
+const char ch0[] = "CH1⤓";
 const char off[] = "OFF";
 const char set[] = "  ⚙";
-const char aon[] = "0-On";
-const char bon[] = "1-On";
-const char con[] = "2-On";
-const char don[] = "3-On";
+const char aon[] = "1-On";
+const char bon[] = "2-On";
+const char con[] = "3-On";
+const char don[] = "4-On";
 
 const char* const zeroperp[] = {zeroper};
 const char* const rotateencp[] = {rotateenc};
@@ -80,7 +80,7 @@ const MENU_ELEMENT menuhome[] = {
     {
         .text = offp, //OFF or ON for current channel
         .x = 2,
-        .y = 4,
+        .y = 6,
         .textsize = 18,
         .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
@@ -446,36 +446,36 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
     //     .flags = MENU_FLAG_IS_HLINE,
     //     .col = &foreground_color
     // },
-    {
-        .y = 176,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {      
-        .y = 144,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 112,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 80,
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
-    {
-        .y = 48, //last line on the screen, would get overwritten if there was a tooltip
-        .textsize = 2,
-        .flags = MENU_FLAG_IS_HLINE,
-        .col = &foreground_color
-    },
+    // {
+    //     .y = 176,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {      
+    //     .y = 144,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 112,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 80,
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .y = 48, //last line on the screen, would get overwritten if there was a tooltip
+    //     .textsize = 2,
+    //     .flags = MENU_FLAG_IS_HLINE,
+    //     .col = &foreground_color
+    // },
     // { //Bottom menu
     //     .y = 24,
     //     .textsize = 2,

@@ -22,16 +22,16 @@ if(server_symbol_status) then
 else
     l.draw_sprites(snc)
 end
-on_text = l.draw_text(85, 16, "n", fgcol, bgcol, true)
-off_text = l.draw_text(85, 16, "ff", fgcol, bgcol, true)
+on_text = l.draw_text(58+13, 16, "On", fgcol, bgcol, true)
+off_text = l.draw_text(58+13, 16, "Off", fgcol, bgcol, true)
 l.set_char_size(18)
-on_btn_text = l.draw_text(19, 2, "N", fgcol, bgcol, true)
-off_btn_text = l.draw_text(19, 2, "FF", fgcol, bgcol, true)
+on_btn_text = l.draw_text(2, 6, "ON", fgcol, bgcol, true)
+off_btn_text = l.draw_text(2, 6, "OFF", fgcol, bgcol, true)
 channels_text = {{},{},{},{}}
 channels_text_bg = {}
 
 for ck=1,4 do
-    channels_text[ck] = l.draw_text(0,36,"CH"..(ck-1).."⤓",fgcol,bgcol, true)
+    channels_text[ck] = l.draw_text(0,36,"CH"..(ck).."⤓",fgcol,bgcol, true)
     channels_text_bg[ck] = l.draw_rectangle(129, 240-187-21, 62, 21, bgcol, true, 0)
     l.center_sprites_x(channels_text[ck])
 end
@@ -42,7 +42,7 @@ spr = {}
 collectgarbage("stop")
 back = l.draw_rectangle(71,240-62-46,177,46,bgcol, true, 0)
 back_small = l.draw_rectangle(58,240-224-14,51,14,bgcol, true, 0)
-back_on_off = l.draw_rectangle(89,240-208-16,12,14,bgcol, true, 0)
+back_on_off = l.draw_rectangle(58+13,240-208-16,25,14,bgcol, true, 0)
 back_btn_text = l.draw_rectangle(21,240-217-21,28,21,bgcol, true, 0)
 l.draw_sprites({back,back_btn_text})
 -- channel = {0, 0, 0, 0}
@@ -145,11 +145,11 @@ while(true) do
             l.toggle_output(k)
             if(l.output_off(k)) then
                 l.draw_sprites({back_on_off, back_btn_text})
-                l.draw_sprites({off_text[1], off_text[2], on_btn_text[1]})
-                l.draw_sprites({off_text[2]})
+                l.draw_sprites({off_text[1], off_text[2], off_text[3], on_btn_text[1], on_btn_text[2]})
+                -- l.draw_sprites({off_text[2]})
             else
                 l.draw_sprites({back_on_off, back_btn_text})
-                l.draw_sprites({on_text[1], off_btn_text[1], off_btn_text[2]})
+                l.draw_sprites({on_text[1], on_text[2], off_btn_text[1], off_btn_text[2], off_btn_text[3]})
             end
         elseif (buttons[1] == 18 and buttons[2] == 1) then
             selecting_channels = not selecting_channels
@@ -173,11 +173,13 @@ while(true) do
             end
             l.draw_sprites({channels_text_bg[k]})
             l.draw_sprites(channels_text[k])
-            l.sprite_move_x({back_small}, xs[k])
-            l.sprite_move_x({back_on_off}, xs[k]+27)
-            l.sprite_move_x(on_text, xs[k]+27)
-            l.sprite_move_x({off_text[1]}, xs[k]+27)
-            l.sprite_move_x({off_text[2]}, xs[k]+33)
+            l.sprite_move_x({back_small}, xs[k]+13)
+            l.sprite_move_x({back_on_off}, xs[k]+13)
+            l.sprite_move_x({on_text[1]}, xs[k]+13)
+            l.sprite_move_x({on_text[2]}, xs[k]+23)
+            l.sprite_move_x({off_text[1]}, xs[k]+13)
+            l.sprite_move_x({off_text[2]}, xs[k]+23)
+            l.sprite_move_x({off_text[3]}, xs[k]+28)
             update_screen_text(40, 134, {back}, k, true)
         end
     end
