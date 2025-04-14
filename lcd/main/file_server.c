@@ -692,6 +692,7 @@ esp_err_t example_start_file_server(const char *base_path) {
 
 esp_err_t stop_file_server() {
     free(server_data);
+    server_data = NULL;
     httpd_stop(server);
     return ESP_OK;
 }

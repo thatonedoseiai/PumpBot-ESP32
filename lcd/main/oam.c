@@ -11,16 +11,16 @@
 
 extern SETTINGS_t settings;
 
-SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
-int text_cache[OAM_SIZE];
-int text_size_cache[OAM_SIZE];
-uint8_t text_cache_size;
-uint64_t advance_x_cache[OAM_SIZE];
-uint16_t y_loc_cache[OAM_SIZE];
-uint16_t width_cache[OAM_SIZE];
-uint16_t height_cache[OAM_SIZE];
-uint16_t offset_y_cache[OAM_SIZE];
-uint16_t offset_x_cache[OAM_SIZE];
+// SPRITE_BITMAP* bitmap_cache[OAM_SIZE];
+// int text_cache[OAM_SIZE];
+// int text_size_cache[OAM_SIZE];
+// uint8_t text_cache_size;
+// uint64_t advance_x_cache[OAM_SIZE];
+// uint16_t y_loc_cache[OAM_SIZE];
+// uint16_t width_cache[OAM_SIZE];
+// uint16_t height_cache[OAM_SIZE];
+// uint16_t offset_y_cache[OAM_SIZE];
+// uint16_t offset_x_cache[OAM_SIZE];
 // uint24_RGB fg_cache[OAM_SIZE];
 // uint24_RGB bg_cache[OAM_SIZE];
 const uint24_RGB* background_color;
@@ -54,7 +54,15 @@ const uint24_RGB fillcolor = {
 uint24_RGB* composite_alpha(SPRITE_24_H* sprite) {
 	SPRITE_BITMAP* alpha = sprite->bitmap;
 	uint24_RGB fgcol = sprite->fg;
-	uint24_RGB* colors = malloc(alpha->w * alpha->h * sizeof(uint24_RGB));
+	size_t colsz = alpha->w * alpha->h * sizeof(uint24_RGB);
+	uint24_RGB* colors;
+	colors = malloc(colsz);
+	while (colors == NULL) {
+		ets_printf("colors is %x, size is %d %d\n", colors, alpha->w, alpha->h);
+		return NULL;
+		// vTaskDelay(50);
+		// colors = malloc(colsz);
+	}
 	int bgoffsetx = sprite->posX;
 	int bgoffsety = sprite->posY;
 	uint24_RGB alphasample, bgsample, composited;
@@ -63,6 +71,9 @@ uint24_RGB* composite_alpha(SPRITE_24_H* sprite) {
 		for(int i=0;i<alpha->w;++i) {
 			alphasample = alpha->c[i*alpha->h+j];
 			bgsample = bgiscolor ? sprite->bg : (bgbuf[(bgoffsetx+i) * 240 + (bgoffsety+j)]);
+			// if(i*alpha->h+j > colsz) {
+			// 	ets_printf("OH NO - OOB CRASH!\n");
+			// }
 			colors[i*alpha->h+j].pixelR = (alphasample.pixelR * fgcol.pixelR + (255-alphasample.pixelR) * bgsample.pixelR) / 255;
 			colors[i*alpha->h+j].pixelG = (alphasample.pixelG * fgcol.pixelG + (255-alphasample.pixelG) * bgsample.pixelG) / 255;
 			colors[i*alpha->h+j].pixelB = (alphasample.pixelB * fgcol.pixelB + (255-alphasample.pixelB) * bgsample.pixelB) / 255;
@@ -75,24 +86,25 @@ void delete_bitmap(SPRITE_BITMAP* bt) {
     bt->refcount--;
 	int i;
     if(bt->refcount == 0) {
-        for(i=0;i<text_cache_size;++i) {
-            if(bitmap_cache[i] == bt) {
-				if(text_cache_auto_delete) {
-					bitmap_cache[i] = bitmap_cache[text_cache_size-1];
-					text_cache[i] = text_cache[text_cache_size-1];
-					text_size_cache[i] = text_size_cache[text_cache_size-1];
-					// fg_cache[i] = fg_cache[text_cache_size-1];
-					// bg_cache[i] = bg_cache[text_cache_size-1];
-					text_cache_size--;
-				}
-                break;
-            }
-        }
-		if(i == text_cache_size || text_cache_auto_delete) {
+        // for(i=0;i<text_cache_size;++i) {
+            // if(bitmap_cache[i] == bt) {
+				// if(text_cache_auto_delete) {
+				// 	bitmap_cache[i] = bitmap_cache[text_cache_size-1];
+				// 	text_cache[i] = text_cache[text_cache_size-1];
+				// 	text_size_cache[i] = text_size_cache[text_cache_size-1];
+				// 	// fg_cache[i] = fg_cache[text_cache_size-1];
+				// 	// bg_cache[i] = bg_cache[text_cache_size-1];
+				// 	text_cache_size--;
+				// 	ets_printf("SIZE: %d\n", text_cache_size);
+				// }
+                // break;
+            // }
+        // }
+		// if(i == text_cache_size || text_cache_auto_delete) {
 			// ets_printf("DELETING NODE @ %x, %x, %x, %x\n", del, del->v, del->v->bitmap, del->v->bitmap->c);
 			free(bt->c);
 			free(bt);
-		}
+		// }
     }
 }
 
@@ -103,11 +115,11 @@ void flush_text_cache() {
 	// memset(y_loc_cache, 0, text_cache_size);
 	// memset(width_cache, 0, text_cache_size);
 	// memset(height_cache, 0, text_cache_size);
-	for(int i=0;i<text_cache_size;++i) {
-		free(bitmap_cache[i]->c);
-		free(bitmap_cache[i]);
-	}
-	text_cache_size = 0;
+	// for(int i=0;i<text_cache_size;++i) {
+	// 	free(bitmap_cache[i]->c);
+	// 	free(bitmap_cache[i]);
+	// }
+	// text_cache_size = 0;
 }
 
 void set_text_cache_auto_delete(char x) {
@@ -204,7 +216,7 @@ void delete_node(SPRITE_NODE* del) {
 void init_oam() {
 	// indices = (uint8_t*) malloc(sizeof(uint8_t) * (OAM_SIZE + 1));
 	// indices[0] = OAM_SIZE;
-    text_cache_size = 0;
+    // text_cache_size = 0;
 	// OAM_SPRITE_TABLE = (SPRITE_24_H**) malloc(sizeof(SPRITE_24_H**) * OAM_SIZE);
 	// for(int i=0;i<OAM_SIZE;++i) {
 	// 	OAM_SPRITE_TABLE[i] = NULL;
@@ -235,6 +247,8 @@ SPRITE_NODE* init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, ui
 	SPRITE_24_H* sprite = (SPRITE_24_H*) malloc(sizeof(SPRITE_24_H));
     bitmap->refcount++;
 	sprite->bitmap = bitmap;
+	if(bitmap->w > 10000 || bitmap->h > 10000)
+		ets_printf("SPRITE %x AT %d %d IS SUS\n", sprite, posX, posY);
 	sprite->posX = posX;
 	sprite->posY = posY;
 	// sprite->sizeX = sizeX;
@@ -286,14 +300,22 @@ void* draw_all_sprites_thread(void* arg) {
 	ets_printf("locked!\n");
 	uint24_RGB* composite;
 	while(curr) {
+		if(curr->v->bitmap->w > 320 || curr->v->bitmap->h > 240) {
+			ets_printf("ERROR: bad bitmap width at address %x; REFRESH SCREEN.\n", curr->v->bitmap);
+			goto skip_next;
+		}
 		spr = curr->v;
 		if(spr != NULL && spr->draw) {
 			// ets_printf("drawing sprite:%d\n", i);
 			composite = composite_alpha(spr);
+			if(composite == NULL)
+				goto skip_next;
 			draw_sprite(spi, spr->posX, spr->posY, spr->bitmap->w, spr->bitmap->h, composite);
+			// ets_printf("draw sprite w %d %d\n", spr->bitmap->w, bitmap_cache[1]->w);
 			send_line_finish(spi);
 			free(composite);
 		}
+skip_next:
 
 		curr = curr->n;
 		// if(curr)
@@ -305,23 +327,35 @@ void* draw_all_sprites_thread(void* arg) {
 		// spr = OAM_SPRITE_TABLE[i];
 	curr = vram;
 
+
+	// char old_text_cache_auto_delete = text_cache_auto_delete;
+	// set_text_cache_auto_delete(false);
 	while(curr) {
 		spr = curr->v;
+		if(curr->v->bitmap->w > 320 || curr->v->bitmap->h > 240) {
+			ets_printf("ERROR: bad bitmap width at address %x; REFRESH SCREEN.\n", curr->v->bitmap);
+			goto skip_next_un;
+		}
 		if(spr != NULL && spr->draw) {
 			// ets_printf("drawing sprite:%d\n", i);
 			composite = composite_alpha(spr);
+				if(composite == NULL)
+					goto skip_next_un;
 			draw_sprite(spi, spr->posX, spr->posY, spr->bitmap->w, spr->bitmap->h, composite);
 			send_line_finish(spi);
 			free(composite);
 		}
+skip_next_un:
 
 		next = curr->n;
 		delete_node(curr);
+		// ets_printf("draw sprite w %d %d %d\n", spr->bitmap->w, bitmap_cache[1]->w, spr->bitmap->refcount);
 		curr = next;
 		// curr = curr->n;
 		// if(curr)
 		// 	delete_node(curr->p);
 	}
+	// set_text_cache_auto_delete(true);
 
 	vram = NULL;
 	ets_printf("unlocked!\n");

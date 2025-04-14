@@ -13,17 +13,17 @@
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
 
 // extern SPRITE_24_H** OAM_SPRITE_TABLE;
-extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
-extern int text_cache[SPRITE_LIMIT];
-extern int text_size_cache[SPRITE_LIMIT];
-extern uint8_t text_cache_size;
+// extern SPRITE_BITMAP* bitmap_cache[SPRITE_LIMIT];
+// extern int text_cache[SPRITE_LIMIT];
+// extern int text_size_cache[SPRITE_LIMIT];
+// extern uint8_t text_cache_size;
 extern uint24_RGB* background_color;
-extern uint64_t advance_x_cache[SPRITE_LIMIT];
-extern uint16_t y_loc_cache[SPRITE_LIMIT];
-extern uint16_t width_cache[SPRITE_LIMIT];
-extern uint16_t height_cache[SPRITE_LIMIT];
-extern uint16_t offset_y_cache[SPRITE_LIMIT];
-extern uint16_t offset_x_cache[SPRITE_LIMIT];
+// extern uint64_t advance_x_cache[SPRITE_LIMIT];
+// extern uint16_t y_loc_cache[SPRITE_LIMIT];
+// extern uint16_t width_cache[SPRITE_LIMIT];
+// extern uint16_t height_cache[SPRITE_LIMIT];
+// extern uint16_t offset_y_cache[SPRITE_LIMIT];
+// extern uint16_t offset_x_cache[SPRITE_LIMIT];
 // extern uint24_RGB fg_cache[SPRITE_LIMIT];
 // extern uint24_RGB bg_cache[SPRITE_LIMIT];
 extern uint24_RGB* foreground_color;
@@ -62,24 +62,26 @@ int draw_text(int startX, int startY, const char* string, SPRITE_NODE** sprites,
     while (*reader_head != 0) {
         curchar = decode_code_point(&reader_head);
 
-        for(int x=0;x<text_cache_size;++x) {
-            // if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
-            if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size) {
-                bmp = bitmap_cache[x];
-                advance_x = advance_x_cache[x];
-                width = width_cache[x];
-                height = height_cache[x];
-                origin_x_off = offset_x_cache[x];
-                origin_y_off = offset_y_cache[x];
+        // for(int x=0;x<text_cache_size;++x) {
+        //     // if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size && coloreq(&fg_cache[x], color) && coloreq(&bg_cache[x], bg)) {
+        //     if(text_cache[x] == curchar && text_size_cache[x] == fm.font_size) {
+        //         bmp = bitmap_cache[x];
+        //         advance_x = advance_x_cache[x];
+        //         width = width_cache[x];
+        //         height = height_cache[x];
+        //         origin_x_off = offset_x_cache[x];
+        //         origin_y_off = offset_y_cache[x];
 
-                if(offset_x + width > 320 && newline_offset > 0) {
-                    yloc -= newline_offset;
-                    offset_y = yloc;
-                    offset_x = startX;
-                }
-                goto skip_bitmap_assignment;
-            }
-        }
+        //         if(offset_x + width > 320 && newline_offset > 0) {
+        //             yloc -= newline_offset;
+        //             offset_y = yloc;
+        //             offset_x = startX;
+        //         }
+        //         if(bmp->h > 10000 || bmp->w > 10000)
+        //             ets_printf("bad character: %x %x %x\n", text_cache[x], x, text_cache_size);
+        //         goto skip_bitmap_assignment;
+        //     }
+        // }
 
         uint24_RGB* spriteBuf;
         load_char(&spriteBuf, &cm, curchar);
@@ -108,21 +110,22 @@ int draw_text(int startX, int startY, const char* string, SPRITE_NODE** sprites,
             offset_y = yloc;
             offset_x = startX;
         }
-        if(text_cache_size < SPRITE_LIMIT) {
-            text_cache[text_cache_size] = curchar;
-            // memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
-            // memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
-            bitmap_cache[text_cache_size] = bmp;
-            text_size_cache[text_cache_size] = fm.font_size;
-            advance_x_cache[text_cache_size] = cm.advance;
-            offset_x_cache[text_cache_size] = origin_x_off;
-            offset_y_cache[text_cache_size] = origin_y_off;
-            width_cache[text_cache_size] = width;
-            height_cache[text_cache_size] = height;
-            text_cache_size++;
-        }
+        // if(text_cache_size < SPRITE_LIMIT) {
+        //     text_cache[text_cache_size] = curchar;
+        //     ets_printf("writing char %x, bmp width %d, width %d, rc %d\n", curchar, bmp->w, width, bmp->refcount);
+        //     // memcpy(&fg_cache[text_cache_size], color, sizeof(uint24_RGB));
+        //     // memcpy(&bg_cache[text_cache_size], bg, sizeof(uint24_RGB));
+        //     bitmap_cache[text_cache_size] = bmp;
+        //     text_size_cache[text_cache_size] = fm.font_size;
+        //     advance_x_cache[text_cache_size] = cm.advance;
+        //     offset_x_cache[text_cache_size] = origin_x_off;
+        //     offset_y_cache[text_cache_size] = origin_y_off;
+        //     width_cache[text_cache_size] = width;
+        //     height_cache[text_cache_size] = height;
+        //     text_cache_size++;
+        // }
 
-skip_bitmap_assignment:
+// skip_bitmap_assignment:
         SPRITE_NODE* inx = init_sprite(bmp, offset_x + origin_x_off, 240 - offset_y - origin_y_off, fg, bg, bg_iscolor, false, false, true, persistent);
         // ets_printf("draw char %x @ %x\n", curchar, inx);
 

@@ -44,6 +44,8 @@ extern unsigned char wifi_restart_counter;
 extern lua_State* L;
 extern uint24_RGB* bgbuf;
 
+// extern SPRITE_BITMAP* bitmap_cache[256];
+
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
 void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
@@ -807,8 +809,11 @@ static int menufunc_color_picker(void) {
     blue_rec->v->draw = false;
     SPRITE_NODE* colorrec;
     colorrec = sprite_rectangle(128, 48, 64, 64, (uint24_RGB*) buffer, true, 255);
+    set_text_cache_auto_delete(true);
     while(true) {
         if(xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            // ets_printf("free: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+            ets_printf("c:%d r:%d b:%d g:%d\n", colorrec->v->bitmap->w, red_rec->v->bitmap->w, blue_rec->v->bitmap->w, green_rec->v->bitmap->w);
             switch(mode) {
             case 0:
                 cursorbg->v->posY = 240-ys[selection]-14;
@@ -818,8 +823,11 @@ static int menufunc_color_picker(void) {
                 break;
             default:
                 buffer[selection] = (buffer[selection] + ((rotencev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? rotencev.state.multiplier : 256 - rotencev.state.multiplier)) & 0xff;
+                // ets_printf("I: %d\n", bitmap_cache[1]->w);
                 (void) itoa(buffer[selection], numbuf, 10);
+                // ets_printf("I: %d\n", bitmap_cache[1]->w);
                 draw_text(150, ys[selection], numbuf, sprs, &numsprs, RED, *background_color, 0, false, false);
+                // ets_printf("I: %d\n", bitmap_cache[1]->w);
                 // draw_all_sprites(spi);
                 // for(int i=0;i<numsprs;++i)
                 //     delete_sprite(sprs[i]);
@@ -827,6 +835,7 @@ static int menufunc_color_picker(void) {
             // ets_printf("%d, %d, %d\n", buffer[0], buffer[1], buffer[2]);
             colorrec->v->fg = *(uint24_RGB*) buffer;
             draw_all_sprites(spi);
+            flush_text_cache();
             // draw_sprites(spi, &colorrec, 1);
             // delete_sprite(colorrec);
         }
@@ -860,11 +869,13 @@ static int menufunc_color_picker(void) {
                 colorbuf->pixelR = buffer[0];
                 colorbuf->pixelG = buffer[1];
                 colorbuf->pixelB = buffer[2];
+                set_text_cache_auto_delete(true);
                 return MENU_POP_FLAG;
             }
             if(event.pin == 0 && event.event == BUTTON_DOWN) {
                 // delete_all_sprites();
                 delete_persistent_sprites();
+                set_text_cache_auto_delete(true);
                 return MENU_POP_FLAG;
             }
         }
