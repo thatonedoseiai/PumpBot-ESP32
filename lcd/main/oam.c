@@ -25,7 +25,6 @@ extern SETTINGS_t settings;
 // uint24_RGB bg_cache[OAM_SIZE];
 const uint24_RGB* background_color;
 const uint24_RGB* foreground_color;
-char text_cache_auto_delete;
 
 SPRITE_NODE* persistent_sprites;
 SPRITE_NODE* temporary_sprites;
@@ -58,7 +57,7 @@ uint24_RGB* composite_alpha(SPRITE_24_H* sprite) {
 	uint24_RGB* colors;
 	colors = malloc(colsz);
 	while (colors == NULL) {
-		ets_printf("colors is %x, size is %d %d\n", colors, alpha->w, alpha->h);
+		// ets_printf("colors is %x, size is %d %d\n", colors, alpha->w, alpha->h);
 		return NULL;
 		// vTaskDelay(50);
 		// colors = malloc(colsz);
@@ -84,60 +83,11 @@ uint24_RGB* composite_alpha(SPRITE_24_H* sprite) {
 
 void delete_bitmap(SPRITE_BITMAP* bt) {
     bt->refcount--;
-	int i;
     if(bt->refcount == 0) {
-        // for(i=0;i<text_cache_size;++i) {
-            // if(bitmap_cache[i] == bt) {
-				// if(text_cache_auto_delete) {
-				// 	bitmap_cache[i] = bitmap_cache[text_cache_size-1];
-				// 	text_cache[i] = text_cache[text_cache_size-1];
-				// 	text_size_cache[i] = text_size_cache[text_cache_size-1];
-				// 	// fg_cache[i] = fg_cache[text_cache_size-1];
-				// 	// bg_cache[i] = bg_cache[text_cache_size-1];
-				// 	text_cache_size--;
-				// 	ets_printf("SIZE: %d\n", text_cache_size);
-				// }
-                // break;
-            // }
-        // }
-		// if(i == text_cache_size || text_cache_auto_delete) {
-			// ets_printf("DELETING NODE @ %x, %x, %x, %x\n", del, del->v, del->v->bitmap, del->v->bitmap->c);
-			free(bt->c);
-			free(bt);
-		// }
+		free(bt->c);
+		free(bt);
     }
 }
-
-void flush_text_cache() {
-	// memset(text_cache, 0, text_cache_size);
-	// memset(text_size_cache, 0, text_cache_size);
-	// memset(advance_x_cache, 0, text_cache_size);
-	// memset(y_loc_cache, 0, text_cache_size);
-	// memset(width_cache, 0, text_cache_size);
-	// memset(height_cache, 0, text_cache_size);
-	// for(int i=0;i<text_cache_size;++i) {
-	// 	free(bitmap_cache[i]->c);
-	// 	free(bitmap_cache[i]);
-	// }
-	// text_cache_size = 0;
-}
-
-void set_text_cache_auto_delete(char x) {
-	text_cache_auto_delete = x;
-}
-
-// int find_empty_index(uint8_t* inds) {
-//     (void) inds;
-//     static int last_index = 0;
-// 	int i = last_index;
-//     do {
-//         if(OAM_SPRITE_TABLE[i]==NULL)
-//             return i;
-// 		i=(i+1)%OAM_SIZE;
-//     } while(i!=last_index);
-// 	ets_printf("no free sprite indices!\n");
-//     return -1;
-// }
 
 void push_head(SPRITE_NODE** list, SPRITE_24_H* insert) {
 	SPRITE_NODE* ins = malloc(sizeof(SPRITE_NODE));
@@ -148,25 +98,21 @@ void push_head(SPRITE_NODE** list, SPRITE_24_H* insert) {
 		int k;
 		while((k = pthread_mutex_trylock(&persistent_lock))) {
 			vTaskDelay(10 / portTICK_PERIOD_MS);
-			ets_printf("trying to lock @ push_head: %d %x\n", k, persistent_lock);
+			// ets_printf("trying to lock @ push_head: %d %x\n", k, persistent_lock);
 		}
-		ets_printf("LOCKED!\n");
 	}
-		// pthread_mutex_lock(&persistent_lock);
 
 	ins->n = *list;
 	int old_w = ins->v->bitmap->w;
 	if(*list != NULL)
 		(*list)->p = ins;
 	if(ins->v->bitmap->w != old_w) {
-		ets_printf("list_prev: %x, ins->v->bitmap->w: %x", &((*list)->p), &(ins->v->bitmap->w));
 		assert(false);
 	}
 	(*list) = ins;
 
 	if(list == &persistent_sprites) {
 		pthread_mutex_unlock(&persistent_lock);
-		ets_printf("UNLOCKED\n");
 	}
 }
 
@@ -177,39 +123,15 @@ void delete_node(SPRITE_NODE* del) {
 		temporary_sprites = del->n;
 	if(persistent_sprites == del)
 		persistent_sprites = del->n;
+	if(vram == del)
+		vram = del->n;
 	if(del->n)
 		del->n->p = del->p;
 	if(del->p)
 		del->p->n = del->n;
 
-    // SPRITE_BITMAP* bt = del->v->bitmap;
-    // bt->refcount--;
-	// int i;
-    // if(bt->refcount == 0) {
-    //     for(i=0;i<text_cache_size;++i) {
-    //         if(bitmap_cache[i] == bt) {
-				// if(text_cache_auto_delete) {
-					// bitmap_cache[i] = bitmap_cache[text_cache_size-1];
-					// text_cache[i] = text_cache[text_cache_size-1];
-					// text_size_cache[i] = text_size_cache[text_cache_size-1];
-					// fg_cache[i] = fg_cache[text_cache_size-1];
-					// bg_cache[i] = bg_cache[text_cache_size-1];
-					// text_cache_size--;
-				// }
-    //             break;
-    //         }
-    //     }
-		// if(i == text_cache_size || text_cache_auto_delete) {
-			// ets_printf("DELETING NODE @ %x, %x, %x, %x\n", del, del->v, del->v->bitmap, del->v->bitmap->c);
-			// free(bt->c);
-			// free(bt);
-		// }
-    // }
 	delete_bitmap(del->v->bitmap);
-	// if(!del->v->fgcol)
-	// 	delete_bitmap(del->v->fg);
-	// if(!del->v->bgcol)
-	// 	delete_bitmap(del->v->bg);
+	free(del->v); // THIS MIGHT RESULT IN A DOUBLE FREE
 	free(del);
 }
 
@@ -222,7 +144,7 @@ void init_oam() {
 	// 	OAM_SPRITE_TABLE[i] = NULL;
 	// 	indices[1+i] = i;
 	// }
-	text_cache_auto_delete = true;
+	// text_cache_auto_delete = true;
 
 	persistent_sprites = NULL;
 	bgbuf = malloc(320*240*sizeof(uint24_RGB));
@@ -234,7 +156,7 @@ void init_oam() {
 		ets_printf("pthread_mutexattr_settype: %d\n", ret);
 
 	persistent_lock = PTHREAD_MUTEX_INITIALIZER;
-	ets_printf("lock: %x\n", persistent_lock);
+	// ets_printf("lock: %x\n", persistent_lock);
 	temporary_sprites = NULL;
 	vram = NULL;
 }
@@ -297,7 +219,7 @@ void* draw_all_sprites_thread(void* arg) {
 		vTaskDelay(10/portTICK_PERIOD_MS);
 		ets_printf("trying to lock @ thread: %d %x\n", k, persistent_lock);
 	}
-	ets_printf("locked!\n");
+	// ets_printf("locked!\n");
 	uint24_RGB* composite;
 	while(curr) {
 		if(curr->v->bitmap->w > 320 || curr->v->bitmap->h > 240) {
@@ -358,16 +280,16 @@ skip_next_un:
 	// set_text_cache_auto_delete(true);
 
 	vram = NULL;
-	ets_printf("unlocked!\n");
+	// ets_printf("unlocked!\n");
 	// acquire the persistent lock and then draw all the persistent sprites
 	pthread_exit(NULL);
 }
 
 void draw_all_sprites(spi_device_handle_t spi) {
-	ets_printf("WAITING...\n");
+	// ets_printf("WAITING...\n");
 	if(ptid != 0)
 		pthread_join(ptid, NULL);
-	ets_printf("GREEN LIGHT...\n");
+	// ets_printf("GREEN LIGHT...\n");
 	while(vram != NULL); // run multiple draws simultaneously?
 	vram = temporary_sprites;
 	temporary_sprites = NULL;
@@ -398,12 +320,12 @@ void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
 	for(int i=0;i<numspr;++i) {
 		// spr = OAM_SPRITE_TABLE[array[i]];
 		spr = array[i]->v;
-		ets_printf("drawing @ %x %x by request\n", array[i], array[i]->v);
+		// ets_printf("drawing @ %x %x by request\n", array[i], array[i]->v);
 		if(spr != NULL && spr->draw) {
 			composite = composite_alpha(spr);
 			draw_sprite(spi, spr->posX, spr->posY, spr->bitmap->w, spr->bitmap->h, composite);
-			free(composite);
 			send_line_finish(spi);
+			free(composite);
 		}
 	}
 }
@@ -423,7 +345,7 @@ void delete_persistent_sprites() {
 		return;
 	SPRITE_NODE* curr = persistent_sprites;
 	pthread_mutex_lock(&persistent_lock); // LPL wuz here
-	ets_printf("locked - delete persistent\n");
+	// ets_printf("locked - delete persistent\n");
 	while(curr->n) {
 		curr = curr->n;
 		delete_node(curr->p);
@@ -431,7 +353,7 @@ void delete_persistent_sprites() {
 	delete_node(curr);
 	persistent_sprites = NULL;
 	pthread_mutex_unlock(&persistent_lock); // ereh zuw LPL
-	ets_printf("unlocked - delete persistent\n");
+	// ets_printf("unlocked - delete persistent\n");
 }
 
 void delete_temporary_sprites() {

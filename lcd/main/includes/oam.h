@@ -58,8 +58,6 @@ typedef struct {
 } bounds;
 
 uint24_RGB* composite_alpha(SPRITE_24_H* sprite);
-void flush_text_cache(void);
-void set_text_cache_auto_delete(char x);
 /* int find_empty_index(uint8_t* inds); */
 void init_oam();
 SPRITE_NODE* init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint24_RGB fg, uint24_RGB bg, bool bgcol, bool flipX, bool flipY, bool draw, bool persistent);

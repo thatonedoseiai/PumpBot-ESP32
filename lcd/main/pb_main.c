@@ -26,6 +26,7 @@
 #include "socket.h"
 #include <pthread.h>
 #include "fontfile.h"
+#include "esp_heap_trace.h"
 
 #include "lua_exports.h"
 
@@ -36,6 +37,9 @@ const uint24_RGB fillColor = {
 	.pixelG = 0,
 	.pixelB = 0x30,
 };
+
+// #define NUM_RECORDS 100
+// static heap_trace_record_t trace_record[NUM_RECORDS];
 
 // OAM STUFF
 extern uint8_t text_cache_size;
@@ -277,9 +281,11 @@ void app_main(void) {
         while(!(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE && event.pin == 18 && event.event == BUTTON_UP));
     }
 
+    // goto lua_start;
     if(setup_flag) {
         (void) start_menu_tree(0, false);
     }
+// lua_start:
     rgb_update();
     assign_theme_from_settings();
 
@@ -287,22 +293,30 @@ void app_main(void) {
         // send_color(spi, background_color);
         load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 1);
         gen_bg(spi);
+        // ESP_ERROR_CHECK( heap_trace_init_standalone(trace_record, NUM_RECORDS) );
+        // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
         error = draw_menu_elements(&menuhome[0], 12); 
         draw_all_sprites(spi);
         delete_persistent_sprites();
         delete_temporary_sprites();
+        ets_printf("DELETED TEMPS -> L: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         if (error)
             ets_printf("draw menu element\n");
+        // vTaskDelay(5000 / portTICK_PERIOD_MS);
+        // ESP_ERROR_CHECK( heap_trace_stop() );
+        // heap_trace_dump();
+        heap_caps_check_integrity_all(true);
         (void) luaL_dofile(L, "/mainfs/test.lua");
         ets_printf("LUA: %s\n", lua_tostring(L,-1));
         ets_printf("DELETING TEMPS\n");
         delete_persistent_sprites();
         delete_temporary_sprites();
-        ets_printf("DELETED TEMPS\n");
+        ets_printf("DELETED TEMPS <- L: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
         gen_bg(spi);
+        // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
         (void) start_menu_tree(11, true);
-        flush_text_cache();
+        heap_caps_check_integrity_all(true);
     }
 
     done_pb_output_info();

@@ -48,7 +48,7 @@ l.draw_sprites({back,back_btn_text})
 -- channel = {0, 0, 0, 0}
 xs = {58,111,164,217}
 l.draw_sprites(off_btn_text)
-l.enable_text_cache_auto_delete(false)
+-- l.enable_text_cache_auto_delete(false)
 
 function update_off_text(k)
     if(l.output_off(k)) then
@@ -128,7 +128,7 @@ function update_screen_text(x, y, bg, k, center)
     if(center) then
         l.center_sprites_x(spr)
     end
-    print("drawing at"..x.." "..y)
+    -- print("drawing at"..x.." "..y)
     l.draw_sprites(spr)
 end
 
@@ -213,6 +213,6 @@ while(true) do
     end
 end
 
-l.enable_text_cache_auto_delete(true);
+-- l.enable_text_cache_auto_delete(true);
 collectgarbage("collect")
 l.delete_all_sprites()

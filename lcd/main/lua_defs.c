@@ -458,16 +458,16 @@ static int l_get_background(lua_State* L) {
     return 1;
 }
 
-static int l_set_text_cache_auto_delete(lua_State* L) {
-    char x = lua_toboolean(L, 1);
-    set_text_cache_auto_delete(x);
-    return 0;
-}
+// static int l_set_text_cache_auto_delete(lua_State* L) {
+//     char x = lua_toboolean(L, 1);
+//     set_text_cache_auto_delete(x);
+//     return 0;
+// }
 
-static int l_flush_text_cache(lua_State* L) {
-    flush_text_cache();
-    return 0;
-}
+// static int l_flush_text_cache(lua_State* L) {
+//     flush_text_cache();
+//     return 0;
+// }
 
 static int l_delete_all_sprites(lua_State* L) {
     // delete_all_sprites();
@@ -585,8 +585,8 @@ static const struct luaL_Reg lpb_funcs[] = {
     { "background_color", l_get_background },
     { "load_background", l_load_bgimg },
     { "draw_background_image", l_draw_bgimg },
-    { "flush_text_cache", l_flush_text_cache },
-    { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
+    // { "flush_text_cache", l_flush_text_cache },
+    // { "enable_text_cache_auto_delete", l_set_text_cache_auto_delete },
     { "delete_all_sprites", l_delete_all_sprites },
     { "wifi_is_connected", l_wifi_is_connected },
     { "server_is_connected", l_server_is_connected },

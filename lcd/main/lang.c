@@ -1076,6 +1076,72 @@ const char text_settings_developer_ru[] = "Разработчик";
 const char text_settings_developer_de[] = "Entwickler";
 const char *const text_settings_developer[] = {text_settings_developer_en, text_settings_developer_jp, text_settings_developer_fr, text_settings_developer_es, text_settings_developer_pt, text_settings_developer_zh, text_settings_developer_cn, text_settings_developer_ru, text_settings_developer_de};
 
+const char text_settings_extras_en[] = "Extras";
+const char text_settings_extras_jp[] = "余分";
+const char text_settings_extras_fr[] = "Suppléments";
+const char text_settings_extras_es[] = "Extras";
+const char text_settings_extras_pt[] = "Adicional";
+const char text_settings_extras_zh[] = "附加东西";
+const char text_settings_extras_cn[] = "附加";
+const char text_settings_extras_ru[] = "дополнительные";
+const char text_settings_extras_de[] = "Extras";
+const char *const text_settings_extras[] = {text_settings_extras_en, text_settings_extras_jp, text_settings_extras_fr, text_settings_extras_es, text_settings_extras_pt, text_settings_extras_zh, text_settings_extras_cn, text_settings_extras_ru, text_settings_extras_de};
+
+const char text_settings_credits_en[] = "Credits";
+const char text_settings_credits_jp[] = "作成者";
+const char text_settings_credits_fr[] = "Crédits";
+const char text_settings_credits_es[] = "Créditos";
+const char text_settings_credits_pt[] = "créditos";
+const char text_settings_credits_zh[] = "创造者";
+const char text_settings_credits_cn[] = "製造者";
+const char text_settings_credits_ru[] = "кредиты";
+const char text_settings_credits_de[] = "Credits";
+const char *const text_settings_credits[] = {text_settings_credits_en, text_settings_credits_jp, text_settings_credits_fr, text_settings_credits_es, text_settings_credits_pt, text_settings_credits_zh, text_settings_credits_cn, text_settings_credits_ru, text_settings_credits_de};
+
+const char text_settings_software_en[] = "Software";
+const char text_settings_software_jp[] = "ソフト";
+const char text_settings_software_fr[] = "Software";
+const char text_settings_software_es[] = "Software";
+const char text_settings_software_pt[] = "Programas";
+const char text_settings_software_zh[] = "软件";
+const char text_settings_software_cn[] = "軟體";
+const char text_settings_software_ru[] = "программное";
+const char text_settings_software_de[] = "Software";
+const char *const text_settings_software[] = {text_settings_software_en, text_settings_software_jp, text_settings_software_fr, text_settings_software_es, text_settings_software_pt, text_settings_software_zh, text_settings_software_cn, text_settings_software_ru, text_settings_software_de};
+
+const char text_settings_hardware_en[] = "Hardware";
+const char text_settings_hardware_jp[] = "ハードウェア";
+const char text_settings_hardware_fr[] = "Carte";
+const char text_settings_hardware_es[] = "Hardware";
+const char text_settings_hardware_pt[] = "Hardware";
+const char text_settings_hardware_zh[] = "电路板";
+const char text_settings_hardware_cn[] = "電路板";
+const char text_settings_hardware_ru[] = "аппаратное";
+const char text_settings_hardware_de[] = "Hardware";
+const char *const text_settings_hardware[] = {text_settings_hardware_en, text_settings_hardware_jp, text_settings_hardware_fr, text_settings_hardware_es, text_settings_hardware_pt, text_settings_hardware_zh, text_settings_hardware_cn, text_settings_hardware_ru, text_settings_hardware_de};
+
+const char text_settings_translations_en[] = "Translations";
+const char text_settings_translations_jp[] = "翻訳者";
+const char text_settings_translations_fr[] = "Traduction";
+const char text_settings_translations_es[] = "Traducción";
+const char text_settings_translations_pt[] = "Tradução";
+const char text_settings_translations_zh[] = "翻译";
+const char text_settings_translations_cn[] = "翻譯";
+const char text_settings_translations_ru[] = "перевод";
+const char text_settings_translations_de[] = "Übersetzung";
+const char *const text_settings_translations[] = {text_settings_translations_en, text_settings_translations_jp, text_settings_translations_fr, text_settings_translations_es, text_settings_translations_pt, text_settings_translations_zh, text_settings_translations_cn, text_settings_translations_ru, text_settings_translations_de};
+
+const char text_settings_concept_en[] = "Concept";
+const char text_settings_concept_jp[] = "アイディア";
+const char text_settings_concept_fr[] = "Idée";
+const char text_settings_concept_es[] = "Concepto";
+const char text_settings_concept_pt[] = "Conceito";
+const char text_settings_concept_zh[] = "概念";
+const char text_settings_concept_cn[] = "概念";
+const char text_settings_concept_ru[] = "концепция";
+const char text_settings_concept_de[] = "Konzept";
+const char *const text_settings_concept[] = {text_settings_concept_en, text_settings_concept_jp, text_settings_concept_fr, text_settings_concept_es, text_settings_concept_pt, text_settings_concept_zh, text_settings_concept_cn, text_settings_concept_ru, text_settings_concept_de};
+
 const char text_applications_en[] = "Applications";
 const char text_applications_jp[] = "アプリ";
 const char text_applications_fr[] = "Applications";
