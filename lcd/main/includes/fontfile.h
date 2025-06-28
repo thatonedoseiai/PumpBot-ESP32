@@ -1,6 +1,13 @@
 #ifndef FONTFILE_H
 #define FONTFILE_H
+
+#ifdef ESP_COMPILATION
 #include "ILIDriver.h"
+#else
+#include <stdint.h>
+#include <stdio.h>
+#include "common_types.h"
+#endif
 
 typedef struct {
     uint16_t font_size;

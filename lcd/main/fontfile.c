@@ -1,8 +1,15 @@
 #include "fontfile.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include <rom/ets_sys.h>
 #include <string.h>
+
+#ifdef ESP_COMPILATION
+#include <rom/ets_sys.h>
+#include "font_file_names.h"
+#else
+#include <stdio.h>
+#include "testing_font_file_names.h"
+#endif
 
 FILE* FONT_FILE;
 FILE* IMAGE_COLLECTION_FILE;
@@ -16,11 +23,11 @@ extern uint24_RGB* background_color;
 int set_font_size(int sz) {
     char* font_name;
     switch(sz){
-        case 12: font_name = "/mainfs/NC_12.cbf"; break;
-        case 14: font_name = "/mainfs/NC_14.cbf"; break;
-        case 18: font_name = "/mainfs/NC_18.cbf"; break;
-        case 24: font_name = "/mainfs/NC_24.cbf"; break;
-        case 42: font_name = "/mainfs/NC_42.cbf"; break;
+        case 12: font_name = FONT_NAME_SIZE_12; break;
+        case 14: font_name = FONT_NAME_SIZE_14; break;
+        case 18: font_name = FONT_NAME_SIZE_18; break;
+        case 24: font_name = FONT_NAME_SIZE_24; break;
+        case 42: font_name = FONT_NAME_SIZE_42; break;
         default: return -1;
     }
     if(font_file_open) {
