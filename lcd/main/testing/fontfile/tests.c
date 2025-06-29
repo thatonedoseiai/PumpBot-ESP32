@@ -1,11 +1,19 @@
 #include "fontfile.h"
-#define FAIL(f, g) printf("ERROR IN %s: code: %d.\n", f, g);
-#define SUCCESS(f) printf("%s SUCCESS\n", f);
+#include "stdlib.h"
+#define EVALSUCCESS(code, f) if(code) printf("ERROR IN %s: code: %d.\n", f, code); else printf("%s SUCCESS\n", f);
+
 
 uint24_RGB background_color;
 uint24_RGB foreground_color;
 extern FILE* FONT_FILE;
 extern char font_file_open;
+
+void cleanup(void) {
+	if(FONT_FILE)
+		fclose(FONT_FILE);
+	if(font_file_open)
+		font_file_open = false;
+}
 
 int TEST_SIZE_CHANGE(void) {
 	if(font_file_open) return -3;
@@ -29,6 +37,17 @@ int TEST_SIZE_CHANGE(void) {
 	if(x) return x;
 	if(FONT_FILE == NULL) return -2;
 	if(!font_file_open) return -3;
+	cleanup();
+	return 0;
+}
+
+int TEST_DECODE(void) {
+	set_font_size(12);
+	uint24_RGB* buf;
+	CHAR_METADATA cm;
+	load_char(&buf, &cm, 0x65);
+	cleanup();
+	free(buf);
 	return 0;
 }
 
@@ -41,9 +60,8 @@ int main(void) {
 	foreground_color.pixelB = 0xff;
 
 	int k = TEST_SIZE_CHANGE();
-	if(k) {
-		FAIL("TEST_SIZE_CHANGE", k);
-	} else {
-		SUCCESS("TEST_SIZE_CHANGE");
-	}
+	EVALSUCCESS(k, "TEST_SIZE_CHANGE");
+
+	k = TEST_DECODE();
+	EVALSUCCESS(k, "TEST_DECODE");
 }
