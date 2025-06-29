@@ -14,6 +14,12 @@
 
 #define MENU_BG_SOLID_COL 0xff
 
+enum buttons {
+    ENCSW = 18,
+    RIGHTBUTTON = 3,
+    LEFTBUTTON = 0
+};
+
 typedef struct {
     const char* const* text;
     uint16_t x;
@@ -28,7 +34,25 @@ typedef struct {
     int num_elements;
     int(*menu_functionality)(void);
     char bg;
+    RUNMENU_DATA* rmd;
 } MENU_INFO_t;
+
+typedef struct {
+    enum buttons button_id;
+    int button_event_type;
+    int(*ACTION)(void** context, void* args); // can also modify the context
+    void* args;
+} BUTTON_ACTIONS;
+
+typedef struct {
+    void(*SETUP)(void** context); // in charge of allocating the context
+    void(*CLEANUP)(void** context); // in charge of deallocating the context
+    int(*ROTENC_ACTION)(void** context, rotary_encoder_event_t rotencev, void* args); // can modify the context
+    void* rotenc_args;
+    int(*POST_LOOP)(void** context, void* args);
+    unsigned char NUM_BUTTON_ACTIONS;
+    const BUTTON_ACTIONS[];
+} RUNMENU_DATA;
 
 /*
  * draw a collection of menu elements to the screen

@@ -1644,6 +1644,31 @@ static int menufunc_credits(void) {
     }
 }
 
+static int runMenu(RUNMENU_DATA* r) {
+    void** context;
+    int k;
+    rotary_encoder_event_t rotencev;
+    r.SETUP(context);
+    while(true) {
+        if(r->ROTENC_ACTION != NULL && xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            k = r->ROTENC_ACTION(context, rotencev, r->rotenc_args);
+            if(k) goto done;
+        }
+        if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
+            for(int i=0;i<r->NUM_BUTTON_ACTIONS;++i) {
+                if(event.pin == r->BUTTON_ACTIONS[i].button_id && event.event == r->BUTTON_ACTIONS[i].button_event_type) {
+                    k = r->BUTTON_ACTIONS[i].ACTION(context, r->BUTTON_ACTIONS[i].args);
+                    if(k) goto done;
+                }
+            }
+        }
+    }
+done:
+    r.CLEANUP(context);
+    free(context);
+    return k;
+}
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL},
     {&menusetup0[0], 5, menufunc_setup, 4},
@@ -1697,7 +1722,10 @@ int start_menu_tree(int startmenu, char settings_mode) {
             if(persistent_sprites != NULL)
                 delete_persistent_sprites();
         }
-        nextmenu = currmenu->menu_functionality();
+        if(currmenu->menu_functionality)
+            nextmenu = currmenu->menu_functionality();
+        else
+            nextmenu = runMenu(currmenu->rmd);
         if(nextmenu & MENU_SELF_POP_FLAG) {
             if((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
                 menu_stackp--;
