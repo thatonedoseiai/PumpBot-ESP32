@@ -4,6 +4,7 @@
 #pragma once
 
 #include "oam.h"
+#include "rotenc.h"
 /* #include <freetype/freetype.h> */
 
 #define MENU_FLAG_IS_HLINE 0x1
@@ -30,14 +31,6 @@ typedef struct {
 } MENU_ELEMENT;
 
 typedef struct {
-    const MENU_ELEMENT* background;
-    int num_elements;
-    int(*menu_functionality)(void);
-    char bg;
-    RUNMENU_DATA* rmd;
-} MENU_INFO_t;
-
-typedef struct {
     enum buttons button_id;
     int button_event_type;
     int(*ACTION)(void** context, void* args); // can also modify the context
@@ -51,8 +44,16 @@ typedef struct {
     void* rotenc_args;
     int(*POST_LOOP)(void** context, void* args);
     unsigned char NUM_BUTTON_ACTIONS;
-    const BUTTON_ACTIONS[];
+    const BUTTON_ACTIONS BUTTONS[];
 } RUNMENU_DATA;
+
+typedef struct {
+    const MENU_ELEMENT* background;
+    int num_elements;
+    int(*menu_functionality)(void);
+    char bg;
+    RUNMENU_DATA* rmd;
+} MENU_INFO_t;
 
 /*
  * draw a collection of menu elements to the screen

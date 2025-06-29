@@ -1645,10 +1645,11 @@ static int menufunc_credits(void) {
 }
 
 static int runMenu(RUNMENU_DATA* r) {
-    void** context;
+    void** context = NULL;
     int k;
     rotary_encoder_event_t rotencev;
-    r.SETUP(context);
+    button_event_t event;
+    r->SETUP(context);
     while(true) {
         if(r->ROTENC_ACTION != NULL && xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             k = r->ROTENC_ACTION(context, rotencev, r->rotenc_args);
@@ -1656,45 +1657,45 @@ static int runMenu(RUNMENU_DATA* r) {
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             for(int i=0;i<r->NUM_BUTTON_ACTIONS;++i) {
-                if(event.pin == r->BUTTON_ACTIONS[i].button_id && event.event == r->BUTTON_ACTIONS[i].button_event_type) {
-                    k = r->BUTTON_ACTIONS[i].ACTION(context, r->BUTTON_ACTIONS[i].args);
+                if(event.pin == r->BUTTONS[i].button_id && event.event == r->BUTTONS[i].button_event_type) {
+                    k = r->BUTTONS[i].ACTION(context, r->BUTTONS[i].args);
                     if(k) goto done;
                 }
             }
         }
     }
 done:
-    r.CLEANUP(context);
+    r->CLEANUP(context);
     free(context);
     return k;
 }
 
 MENU_INFO_t allmenus[] = {
-    {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL},
-    {&menusetup0[0], 5, menufunc_setup, 4},
-    {&menusetup3[0], 2, menufunc_wifi_scan, 6},
-    {&menutextenter[0], 2, menufunc_text_write, 2},
-    {&menuwifistarting[0], 2, menufunc_connect_wifi, 0},
-    {&menusetup2a[0], 7, menufunc_http_setup, 3},
-    {&menusetup3[0], 3, menufunc_network_preview, 2},
-    {&menusetup1[0], 6, menufunc_pb_setup_method, 5},
-    {&menusetup3[0], 3, menufunc_display_settings, 2},
-    {&menusetup3[0], 3, menufunc_color_picker, 2},
-    {&menusetup3[0], 3, menufunc_add_on_settings, 2},
-    {&menusetup3[0], 2, menufunc_all_settings, 6},
-    {&menusetup3[0], 2, menufunc_pwm_output_settings, 6},
-    {&menusetup3[0], 2, menufunc_pwm_output_set, 6},
-    {&menusetup3[0], 2, menufunc_rgb_lighting, 2},
-    {&menusetup3[0], 2, menufunc_applications, 6},
-    {&menuapprundelete[0], 10, menufunc_file_run_delete, 0},
-    {NULL, 0, menufunc_execute_ibuf_file, 0},
-    {&menudownloadapp[0], 6, menufunc_download_file, 0},
-    {&menunetworksettings[0], 7, menufunc_network_settings, 0},
-    {&menuserversettings[0], 9, menufunc_server_settings, 6},
-    {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL},
-    {&menuskipwifi[0], 4, menufunc_skip_wifi, 0},
-    {&menusetup3[0], 2, menufunc_developer, 2},
-    {&menusetup3[0], 2, menufunc_credits, 2},
+    {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, NULL},
+    {&menusetup0[0], 5, menufunc_setup, 4, NULL},
+    {&menusetup3[0], 2, menufunc_wifi_scan, 6, NULL},
+    {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
+    {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, NULL},
+    {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
+    {&menusetup3[0], 3, menufunc_network_preview, 2, NULL},
+    {&menusetup1[0], 6, menufunc_pb_setup_method, 5, NULL},
+    {&menusetup3[0], 3, menufunc_display_settings, 2, NULL},
+    {&menusetup3[0], 3, menufunc_color_picker, 2, NULL},
+    {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},
+    {&menusetup3[0], 2, menufunc_all_settings, 6, NULL},
+    {&menusetup3[0], 2, menufunc_pwm_output_settings, 6, NULL},
+    {&menusetup3[0], 2, menufunc_pwm_output_set, 6, NULL},
+    {&menusetup3[0], 2, menufunc_rgb_lighting, 2, NULL},
+    {&menusetup3[0], 2, menufunc_applications, 6, NULL},
+    {&menuapprundelete[0], 10, menufunc_file_run_delete, 0, NULL},
+    {NULL, 0, menufunc_execute_ibuf_file, 0, NULL},
+    {&menudownloadapp[0], 6, menufunc_download_file, 0, NULL},
+    {&menunetworksettings[0], 7, menufunc_network_settings, 0, NULL},
+    {&menuserversettings[0], 9, menufunc_server_settings, 6, NULL},
+    {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL, NULL},
+    {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, NULL},
+    {&menusetup3[0], 2, menufunc_developer, 2, NULL},
+    {&menusetup3[0], 2, menufunc_credits, 2, NULL},
 };
 
 extern SPRITE_NODE* persistent_sprites;

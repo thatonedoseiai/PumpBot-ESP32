@@ -1,7 +1,7 @@
 #ifndef FONTFILE_H
 #define FONTFILE_H
 
-#ifdef ESP_COMPILATION
+#ifndef TESTING
 #include "ILIDriver.h"
 #else
 #include <stdint.h>

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef ESP_COMPILATION
+#ifndef TESTING
 #include <rom/ets_sys.h>
 #include "font_file_names.h"
 #else
