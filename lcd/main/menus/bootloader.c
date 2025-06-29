@@ -21,13 +21,14 @@
 #include "lang.h"
 #include "fontfile.h"
 #include "esp_heap_trace.h"
+#include "menu_functions.h"
 
 #define FT_ERR_HANDLE(code, loc) error = code; if(error) ets_printf("Error occured at %s! Error: %d\n", loc, (int) error);
-#define MENU_RETURN_FLAG 0x8000
-#define MENU_POP_FLAG 0x4000
-#define MENU_REDRAW_FLAG 0x2000
-#define MENU_SETUP_ONLY_TRANSITION_FLAG 0x1000
-#define MENU_SELF_POP_FLAG 0x800
+// #define MENU_RETURN_FLAG 0x8000
+// #define MENU_POP_FLAG 0x4000
+// #define MENU_REDRAW_FLAG 0x2000
+// #define MENU_SETUP_ONLY_TRANSITION_FLAG 0x1000
+// #define MENU_SELF_POP_FLAG 0x800
 #define IBUF_SIZE 256
 
 extern QueueHandle_t* button_events;
@@ -1649,7 +1650,8 @@ static int runMenu(RUNMENU_DATA* r) {
     int k;
     rotary_encoder_event_t rotencev;
     button_event_t event;
-    r->SETUP(context);
+    if(r->SETUP != NULL)
+        r->SETUP(context);
     while(true) {
         if(r->ROTENC_ACTION != NULL && xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
             k = r->ROTENC_ACTION(context, rotencev, r->rotenc_args);
@@ -1665,9 +1667,26 @@ static int runMenu(RUNMENU_DATA* r) {
         }
     }
 done:
-    r->CLEANUP(context);
+    if(r->CLEANUP != NULL)
+        r->CLEANUP(context);
     free(context);
     return k;
+}
+
+const RUNMENU_DATA _RMD_WELCOME_MENU = {
+    &_SETUP_welcome_menu,
+    &_CLEANUP_welcome_menu,
+    NULL, NULL,
+    &_POSTLOOP_welcome_menu,
+    1,
+    {
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_ED_welcome_menu,
+            NULL
+        }
+    }
 }
 
 MENU_INFO_t allmenus[] = {

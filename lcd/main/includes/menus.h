@@ -33,16 +33,16 @@ typedef struct {
 typedef struct {
     enum buttons button_id;
     int button_event_type;
-    int(*ACTION)(void** context, void* args); // can also modify the context
+    int(*ACTION)(void* context, void* args); // can also modify the context
     void* args;
 } BUTTON_ACTIONS;
 
 typedef struct {
     void(*SETUP)(void** context); // in charge of allocating the context
     void(*CLEANUP)(void** context); // in charge of deallocating the context
-    int(*ROTENC_ACTION)(void** context, rotary_encoder_event_t rotencev, void* args); // can modify the context
+    int(*ROTENC_ACTION)(void* context, rotary_encoder_event_t rotencev, void* args); // can modify the context
     void* rotenc_args;
-    int(*POST_LOOP)(void** context, void* args);
+    int(*POST_LOOP)(void* context, void* args);
     unsigned char NUM_BUTTON_ACTIONS;
     const BUTTON_ACTIONS BUTTONS[];
 } RUNMENU_DATA;
