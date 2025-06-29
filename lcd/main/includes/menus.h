@@ -52,7 +52,7 @@ typedef struct {
     int num_elements;
     int(*menu_functionality)(void);
     char bg;
-    RUNMENU_DATA* rmd;
+    const RUNMENU_DATA* const rmd;
 } MENU_INFO_t;
 
 /*

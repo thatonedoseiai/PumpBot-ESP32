@@ -17,6 +17,7 @@ set(srcs
     "pwm_output.c"
     "socket.c"
     "fontfile.c"
+    "menus/menu_functions.c"
     )
 
 idf_component_register(SRCS ${srcs}

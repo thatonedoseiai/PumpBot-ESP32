@@ -1645,7 +1645,7 @@ static int menufunc_credits(void) {
     }
 }
 
-static int runMenu(RUNMENU_DATA* r) {
+static int runMenu(const RUNMENU_DATA* const r) {
     void** context = NULL;
     int k;
     rotary_encoder_event_t rotencev;
@@ -1687,10 +1687,10 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
             NULL
         }
     }
-}
+};
 
 MENU_INFO_t allmenus[] = {
-    {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, NULL},
+    {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 5, menufunc_setup, 4, NULL},
     {&menusetup3[0], 2, menufunc_wifi_scan, 6, NULL},
     {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
