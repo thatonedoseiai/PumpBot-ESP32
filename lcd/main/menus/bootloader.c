@@ -1679,11 +1679,31 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
     NULL, NULL,
     &_POSTLOOP_welcome_menu,
     1,
-    {
-        {
+    { {
             ENCSW,
             BUTTON_DOWN,
-            &_BA_ED_welcome_menu,
+            // &_BA_ED_welcome_menu,
+            &_BA_COMMON_go_to_menu,
+            MENU_SETUP_ONLY_TRANSITION_FLAG | 1;
+    } }
+};
+
+const RUNMENU_DATA _RMD_SETUP_MENU = {
+    &_SETUP_setup_menu,
+    &_CLEANUP_welcome_menu,
+    &_BA_ENC_setup_menu,
+    NULL, NULL,
+    2, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            MENU_POP_FLAG;
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_RD_setup_menu_confirm,
             NULL
         }
     }

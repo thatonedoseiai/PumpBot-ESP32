@@ -10,10 +10,16 @@
 #define MENU_SELF_POP_FLAG 0x800
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
+int _BA_COMMON_go_to_menu(void* context, void* args);
+
 void _SETUP_welcome_menu(void** context);
 void _CLEANUP_welcome_menu(void** context);
 // "button action, encoder down"
 int _BA_ED_welcome_menu(void* context, void* args);
 int _POSTLOOP_welcome_menu(void* context, void* args);
+
+void _SETUP_setup_menu(void** context);
+int _BA_RD_setup_menu_confirm(void* context, void* args);
+int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t, void* args);
 
 #endif
