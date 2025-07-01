@@ -1675,7 +1675,7 @@ done:
 
 const RUNMENU_DATA _RMD_WELCOME_MENU = {
     &_SETUP_welcome_menu,
-    &_CLEANUP_welcome_menu,
+    &_CLEANUP_COMMON_single_layer_context,
     NULL, NULL,
     &_POSTLOOP_welcome_menu,
     1,
@@ -1690,7 +1690,7 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
 
 const RUNMENU_DATA _RMD_SETUP_MENU = {
     &_SETUP_setup_menu,
-    &_CLEANUP_welcome_menu,
+    &_CLEANUP_COMMON_single_layer_context,
     &_BA_ENC_setup_menu,
     NULL, NULL,
     2, {
@@ -1704,6 +1704,34 @@ const RUNMENU_DATA _RMD_SETUP_MENU = {
             RIGHTBUTTON,
             BUTTON_DOWN,
             &_BA_RD_setup_menu_confirm,
+            NULL
+        }
+    }
+};
+
+const RUNMENU_DATA _RMD_WIFI_MENU = {
+    &_SETUP_wifi_menu,
+    &_CLEANUP_wifi_menu,
+    &_ENC_COMMON_scroll_options,
+    &offsetof(_WIFI_MENU_CONTEXT, opt), 
+    NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG,
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_RD_wifi_menu_reload,
+            NULL
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_ED_wifi_menu_set_wifi_name,
             NULL
         }
     }

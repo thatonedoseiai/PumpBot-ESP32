@@ -11,10 +11,78 @@ extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
 
+// HELPERS {{{
+void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
+    draw_text(10, y, ">", cursor, NULL, *foreground_color, *background_color, 0, false, true);
+    *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true, 0);
+}
+// }}}
 // COMMON {{{
+struct _OPTIONS_DATA_ {
+    int currentOption;
+    int numOptions;
+    SPRITE_NODE* cursor;
+    SPRITE_NODE* cursorbg;
+    char** options;
+};
 int _BA_COMMON_go_to_menu(void* context, void* args) {
     (void) context;
     return *(int*) &args;
+}
+
+void _CLEANUP_COMMON_single_layer_context(void** context) {
+    free(*context);
+    *context = NULL;
+    delete_persistent_sprites();
+}
+
+const int OPTION_Ys[] = {184, 152, 120, 88, 56};
+void _HELP_COMMON_draw_options(struct _OPTIONS_DATA_* opt, int pageStart) {
+    SPRITE_NODE* sprs[64];
+    int numsprs;
+    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
+    for(int i=0;i<numToDraw;++i) {
+        textbg->v->posY = 224 - OPTION_Ys[i];
+        draw_sprites(spi, &textbg, 1);
+        draw_text(0, OPTIONS_Ys[i], opt->options[pageStart + i], &sprs[0], &numsprs, *foreground_color, *background_color, 0, false, false);
+        center_sprite_group_x(sprs, numsprs);
+    }
+    delete_node(textbg);
+    draw_all_sprites(spi);
+}
+
+void _HELP_COMMON_clear_options(int numOpts) {
+    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
+    for(int i=0;i<numOpts;++i) {
+        textbg->v->posY = 224 - OPTIONS_Ys[i];
+        draw_sprites(spi, &textbg, 1);
+    }
+    draw_all_sprites(spi);
+    delete_node(textbg);
+}
+
+int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* args) {
+    // context must point to options first;
+    unsigned int offset = *(unsigned int*) &args;
+    struct _OPTIONS_DATA_* opt = (struct _OPTIONS_DATA_*) (context + offset);
+    opt->currentOption = (ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (opt->currentOption + 1) % opt->numOptions : (opt->currentOption + opt->numOptions - 1) % opt->numOptions;
+    int relativeCursorLocation, pageStart;
+    if(opt->currentOption < 2 || opt->numOptions < 5) {
+        relativeCursorLocation = opt->currentOption;
+        pageStart = 0;
+    } else if(opt->currentOption > opt->numOptions-2) {
+        relativeCursorLocation = 5 + opt->currentOption - opt->numOptions;
+        pageStart = opt->numOptions - 5;
+    } else {
+        relativeCursorLocation = 2;
+        pageStart = opt->currentOption - 2;
+    }
+    int numToDraw = opt->numOptions < 5 ? opt->numOptions : 5;
+    // use relative cursor location and page start to draw options.
+    // draw_options(&opt->options[pageStart], relativeCursorLocation, opt->numOptions, opt->cursor, opt->cursorbg);
+    opt->cursorbg->v->posY = opt->cursor->v->posY;
+    opt->cursor->posY = 240 - OPTIONS_Ys[relativeCursorLocation] - 14;
+    _HELP_COMMON_draw_options(opt, pageStart);
 }
 // }}}
 
@@ -34,12 +102,6 @@ void _SETUP_welcome_menu(void** context) {
     sprite_rectangle(10, 210, 300, 20, background_color, true, 255);
     sprite_rectangle(10, 190, 300, 20, background_color, true, 255);
     sprite_rectangle(10, 5, 300, 20, background_color, true, 255);
-}
-
-void _CLEANUP_welcome_menu(void** context) {
-    free(*context);
-    *context = NULL;
-    delete_persistent_sprites();
 }
 
 int _BA_ED_welcome_menu(void* context, void* args) {
@@ -73,7 +135,7 @@ int _POSTLOOP_welcome_menu(void* context, void* args) {
     return 0;
 }
 // }}}
-// SETUP MENU {{{
+// LANGUAGE MENU {{{
 
 void _SETUP_setup_menu(void** context) {
     struct _CONTEXT_wm* cont = malloc(sizeof(struct _CONTEXT_wm));
@@ -95,6 +157,60 @@ int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t ev, void* args) {
     draw_text(220, 161, text_language_name[cont->currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
     draw_all_sprites(spi);
     return 0;
+}
+// }}}
+// WIFI MENU {{{
+const int NUM_WIFIS = 10;
+
+int load_wifi(struct _WIFI_MENU_CONTEXT* ctx) {
+    // wifi_ap_record_t ap_info[numWifi];
+    uint16_t ap_count = 0;
+    ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&NUM_WIFIS, &ctx->ap_info[0]));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
+    for(int i=0;i<ap_count;++i) {
+        ctx->opt->options[i] = ctx->ap_info[i].ssid;
+    }
+    ctx->opt->numOptions = ap_count;
+}
+
+void _SETUP_wifi_menu(void** context) {
+    SPRITE_NODE* sprs[10];
+    int numsprs, error;
+
+    _WIFI_MENU_CONTEXT* ctx = malloc(sizeof(_WIFI_MENU_CONTEXT));
+    *context = (void*) ctx;
+    ctx->opt->currentOption = 0;
+    ctx->opt->numOptions = 0;
+    memset(ctx->ap_info, 0, NUM_WIFIS * sizeof(wifi_ap_record_t));
+    ctx->opt->options = malloc(33 * NUM_WIFIS * sizeof(char));
+
+    (void) _BA_RD_wifi_menu_reload(ctx, NULL);
+}
+
+void _CLEANUP_wifi_menu(void** context) {
+    free(((struct _WIFI_MENU_CONTEXT*) context)->opt->options);
+    return _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _BA_ED_wifi_menu_set_wifi_name(void* context, void* args) {
+    strncpy(&settings.wifi_name[0], (char*)ctx->ap_info[ctx->opt->currentOption].ssid, 32);
+    return 6;
+}
+
+int _BA_RD_wifi_menu_reload(void* context, void* args) {
+    struct _WIFI_MENU_CONTEXT* ctx = (struct _WIFI_MENU_CONTEXT*) context;
+    _HELP_COMMON_clear_options(ctx->numOptions>5 ? 5 : ctx->numOptions);
+    error = draw_text(270, 2, text_search[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
+    right_justify_sprite_group_x(sprs, numsprs, 2);
+    draw_all_sprites(spi);
+
+    load_wifi(ctx);
+
+    //set up the cursor
+    setup_cursor(ctx->opt->cursorbg, ctx->opt->cursor, 240-OPTION_Ys[0]+14);
+
+    _HELP_COMMON_draw_options(ctx->opt, 0);
 }
 // }}}
 
