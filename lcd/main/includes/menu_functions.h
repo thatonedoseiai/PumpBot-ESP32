@@ -2,6 +2,8 @@
 #define MENU_FUNCTIONS_H
 
 #include "rotenc.h"
+#include "oam.h"
+#include "esp_wifi.h"
 
 #define MENU_RETURN_FLAG 0x8000
 #define MENU_POP_FLAG 0x4000
@@ -9,10 +11,18 @@
 #define MENU_SETUP_ONLY_TRANSITION_FLAG 0x1000
 #define MENU_SELF_POP_FLAG 0x800
 
+#define NUM_WIFIS 10
+struct _OPTIONS_DATA_ {
+    int currentOption;
+    int numOptions;
+    SPRITE_NODE* cursor;
+    SPRITE_NODE* cursorbg;
+    char** options;
+};
 struct _WIFI_MENU_CONTEXT {
     wifi_ap_record_t ap_info[NUM_WIFIS];
     struct _OPTIONS_DATA_ opt;
-}
+};
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
 int _BA_COMMON_go_to_menu(void* context, void* args);

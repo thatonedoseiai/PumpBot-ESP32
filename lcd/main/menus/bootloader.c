@@ -46,10 +46,10 @@ extern uint24_RGB* bgbuf;
 
 uint24_RGB RED = {0xff, 0x00, 0x00};
 
-void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
-    draw_text(10, y, ">", cursor, NULL, *foreground_color, *background_color, 0, false, true);
-    *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true, 0);
-}
+void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y);
+//     draw_text(10, y, ">", cursor, NULL, *foreground_color, *background_color, 0, false, true);
+//     *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true, 0);
+// }
 
 static int menufunc_setup(void) {
     button_event_t event;
@@ -1709,11 +1709,12 @@ const RUNMENU_DATA _RMD_SETUP_MENU = {
     }
 };
 
+const int OFFSETOPT = offsetof(struct _WIFI_MENU_CONTEXT, opt);
 const RUNMENU_DATA _RMD_WIFI_MENU = {
     &_SETUP_wifi_menu,
     &_CLEANUP_wifi_menu,
     &_ENC_COMMON_scroll_options,
-    &offsetof(_WIFI_MENU_CONTEXT, opt), 
+    &OFFSETOPT, 
     NULL,
     3, {
         {
@@ -1739,8 +1740,8 @@ const RUNMENU_DATA _RMD_WIFI_MENU = {
 
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
-    {&menusetup0[0], 5, menufunc_setup, 4, NULL},
-    {&menusetup3[0], 2, menufunc_wifi_scan, 6, NULL},
+    {&menusetup0[0], 5, menufunc_setup, 4, &_RMD_SETUP_MENU},
+    {&menusetup3[0], 2, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
     {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, NULL},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
