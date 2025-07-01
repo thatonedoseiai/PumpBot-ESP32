@@ -4,10 +4,12 @@
 #include "oam.h"
 #include "lua_exports.h"
 #include "lang.h"
+#include "settings.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
+extern SETTINGS_t settings;
 
 // COMMON {{{
 int _BA_COMMON_go_to_menu(void* context, void* args) {
@@ -82,15 +84,17 @@ void _SETUP_setup_menu(void** context) {
 }
 
 int _BA_RD_setup_menu_confirm(void* context, void* args) {
-    settings.language = ((_CONTEXT_wm*) context)->currlang;
+    settings.language = ((struct _CONTEXT_wm*) context)->currlang;
     return MENU_SETUP_ONLY_TRANSITION_FLAG | 7;
 }
 
-int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t, void* args) {
-    struct _CONTEXT_wm* cont = (_CONTEXT_wm*) context;
-    cont->currlang = ((unsigned) rotencev.state.position) % 9;
-    draw_text(220, 161, text_language_name[currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
+int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t ev, void* args) {
+    struct _CONTEXT_wm* cont = (struct _CONTEXT_wm*) context;
+    cont->currlang = ((unsigned) ev.state.position) % 9;
+    SPRITE_NODE* sprs[15];
+    draw_text(220, 161, text_language_name[cont->currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
     draw_all_sprites(spi);
+    return 0;
 }
 // }}}
 

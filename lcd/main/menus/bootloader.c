@@ -1684,7 +1684,7 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
             BUTTON_DOWN,
             // &_BA_ED_welcome_menu,
             &_BA_COMMON_go_to_menu,
-            MENU_SETUP_ONLY_TRANSITION_FLAG | 1;
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 1),
     } }
 };
 
@@ -1698,7 +1698,7 @@ const RUNMENU_DATA _RMD_SETUP_MENU = {
             LEFTBUTTON,
             BUTTON_DOWN,
             &_BA_COMMON_go_to_menu,
-            MENU_POP_FLAG;
+            (void*) MENU_POP_FLAG,
         },
         {
             RIGHTBUTTON,
