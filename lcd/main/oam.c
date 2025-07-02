@@ -368,42 +368,6 @@ void delete_temporary_sprites() {
 	temporary_sprites = NULL;
 }
 
-// void delete_all_sprites() {
-// 	for(int i=0;i<OAM_SIZE;++i) {
-// 		if(OAM_SPRITE_TABLE[i] != NULL) {
-// 			delete_sprite(i);
-// 		}
-// 	}
-// }
-
-// void delete_sprite(int sprite) {
-//     SPRITE_BITMAP* bt = OAM_SPRITE_TABLE[sprite]->bitmap;
-//     bt->refcount--;
-// 	int i;
-//     if(bt->refcount == 0) {
-//         for(i=0;i<text_cache_size;++i) {
-//             if(bitmap_cache[i] == bt) {
-// 				if(text_cache_auto_delete) {
-// 					bitmap_cache[i] = bitmap_cache[text_cache_size-1];
-// 					text_cache[i] = text_cache[text_cache_size-1];
-// 					text_size_cache[i] = text_size_cache[text_cache_size-1];
-// 					fg_cache[i] = fg_cache[text_cache_size-1];
-// 					bg_cache[i] = bg_cache[text_cache_size-1];
-// 					text_cache_size--;
-// 				}
-//                 break;
-//             }
-//         }
-// 		if(i == text_cache_size || text_cache_auto_delete) {
-// 			free(bt->c);
-// 			free(bt);
-// 		}
-// 		// free(bt);
-//     }
-// 	free(OAM_SPRITE_TABLE[sprite]);
-// 	OAM_SPRITE_TABLE[sprite] = NULL;
-// }
-
 const uint24_RGB white = {0xff,0xff,0xff};
 const uint24_RGB black = {0,0,0};
 SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint16_t sizeY, uint24_RGB* col, bool persistent, uint8_t alpha) {
