@@ -1766,7 +1766,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 2, menufunc_credits, 2, NULL},
 };
 
-extern SPRITE_NODE* persistent_sprites;
+// extern SPRITE_NODE* persistent_sprites;
 int start_menu_tree(int startmenu, char settings_mode) {
     int menu_stack[32];
     int menu_stackp = 0;
@@ -1788,8 +1788,8 @@ int start_menu_tree(int startmenu, char settings_mode) {
         if(currmenu->background != NULL) {
             draw_menu_elements(currmenu->background, currmenu->num_elements);
             draw_all_sprites(spi);
-            if(persistent_sprites != NULL)
-                delete_persistent_sprites();
+            // if(persistent_sprites != NULL)
+            //     delete_persistent_sprites();
         }
         if(currmenu->menu_functionality)
             nextmenu = currmenu->menu_functionality();
@@ -1862,7 +1862,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, int numElements) {
 // #pragma GCC pop_options
 
 
-extern const uint24_RGB white;
+extern const uint24_RGB WHITE;
 SPRITE_NODE* draw_hline(int y, int thickness, uint24_RGB* colour, bool persistent) {
     uint24_RGB* spriteBuf = (uint24_RGB*) malloc(320*thickness*sizeof(uint24_RGB));
     SPRITE_BITMAP* bmp = (SPRITE_BITMAP*) malloc(sizeof(SPRITE_BITMAP));
@@ -1875,7 +1875,7 @@ SPRITE_NODE* draw_hline(int y, int thickness, uint24_RGB* colour, bool persisten
         spriteBuf[p].pixelG = colour->pixelG;
         spriteBuf[p].pixelR = colour->pixelR;
     }
-    return init_sprite(bmp, 0, 240-y, white, *background_color, true, false, false, true, persistent);
+    return init_sprite(bmp, 0, 240-y, WHITE, *background_color, true, false, false, true, persistent);
 }
 
 SPRITE_NODE* draw_vline(int x, int thickness, uint24_RGB* colour, bool persistent) {
@@ -1890,6 +1890,6 @@ SPRITE_NODE* draw_vline(int x, int thickness, uint24_RGB* colour, bool persisten
         spriteBuf[p].pixelG = colour->pixelG;
         spriteBuf[p].pixelR = colour->pixelR;
     }
-    return init_sprite(bmp, x, 0, white, *background_color, true, false, false, true, persistent);
+    return init_sprite(bmp, x, 0, WHITE, *background_color, true, false, false, true, persistent);
 }
 

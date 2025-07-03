@@ -1,5 +1,7 @@
 #include "oam.h"
 #include <pthread.h>
+#include <rom/ets_sys.h>
+#include "settings.h"
 
 #define ALPHA_COMP(a, f, b) (((a*f) + (255-a)*b) / 255)
 
@@ -9,38 +11,62 @@ pthread_cond_t enable_draw;
 pthread_t blitting_spi_id;
 unsigned char KILL_BLIT_SPI_THREAD;
 
+const uint24_RGB* background_color;
+const uint24_RGB* foreground_color;
+
+extern SETTINGS_t settings;
 extern spi_device_handle_t spi;
+uint24_RGB* bgbuf;
+
+const uint24_RGB WHITE = {
+    .pixelR = 0xff,
+    .pixelG = 0xff,
+    .pixelB = 0xff,
+};
+const uint24_RGB BLACK = {
+	.pixelR = 0x00,
+	.pixelG = 0x00,
+	.pixelB = 0x00
+};
+const uint24_RGB FILLCOLOR = {
+	.pixelR = 0x10,
+	.pixelG = 0x00,
+	.pixelB = 0x30
+};
+
 
 int coordToBufIndex(int x, int y) {
-    return 320 * y + x;
+    return x * 240 + y;
 }
 
 void* blit_and_send_spi(void* arg) {
     uint24_RGB* INTERNAL_BACK_BUFFER = malloc(320*240*sizeof(uint24_RGB));
+    bgbuf = INTERNAL_BACK_BUFFER;
     spi_device_handle_t s = *(spi_device_handle_t*) arg;
     pthread_mutex_lock(&sprite_lock);
     while(KILL_BLIT_SPI_THREAD) {
         pthread_cond_wait(&enable_draw, &sprite_lock);
 
         //blit.
-        int minY = 240;
-        int maxY = 0;
+        int minX = 240;
+        int maxX = 0;
         for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp=sp->n) {
             if(!sp->v->draw)
                 continue;
-            if(sp->v->posY < minY) minY = sp->v->posY;
-            if(sp->v->posY > maxY) maxY = sp->v->posY;
-            int alphaR, alphaG, alphaB;
+            if(sp->v->posX < minX) minX = sp->v->posX;
+            if(sp->v->posX > maxX) maxX = sp->v->posX;
+            int alphaR, alphaG, alphaB, pixelCoord;
             uint24_RGB bg;
-            for(int i=0;i<sp->v->bitmap->h;++i) {
-                for(int j=0;j<sp->v->bitmap->w;++i) {
-                    int alphaR = sp->v->bitmap->c[j*sp->v->bitmap->w+i].pixelR;
-                    int alphaG = sp->v->bitmap->c[j*sp->v->bitmap->w+i].pixelG;
-                    int alphaB = sp->v->bitmap->c[j*sp->v->bitmap->w+i].pixelB;
-                    bg = sp->v->bgiscolor ? sp->v->bg : INTERNAL_BACK_BUFFER[coordToBufIndex(j, i)]
-                    INTERNAL_BACK_BUFFER[coordToBufIndex(j, i)].pixelR = ALPHA_COMP(alphaR, sp->v->fg, bg.pixelR);
-                    INTERNAL_BACK_BUFFER[coordToBufIndex(j, i)].pixelG = ALPHA_COMP(alphaG, sp->v->fg, bg.pixelG);
-                    INTERNAL_BACK_BUFFER[coordToBufIndex(j, i)].pixelB = ALPHA_COMP(alphaB, sp->v->fg, bg.pixelB);
+            for(int j=0;j<sp->v->bitmap->h;++j) {
+                for(int i=0;i<sp->v->bitmap->w;++i) {
+                    alphaR = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelR;
+                    alphaG = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelG;
+                    alphaB = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelB;
+                    pixelCoord = coordToBufIndex(i+sp->v->posX, j+sp->v->posY);
+                    bg = sp->v->bgcol ? sp->v->bg : INTERNAL_BACK_BUFFER[pixelCoord];
+                    INTERNAL_BACK_BUFFER[pixelCoord].pixelR = ALPHA_COMP(alphaR, sp->v->fg.pixelR, bg.pixelR);
+                    INTERNAL_BACK_BUFFER[pixelCoord].pixelG = ALPHA_COMP(alphaG, sp->v->fg.pixelG, bg.pixelG);
+                    INTERNAL_BACK_BUFFER[pixelCoord].pixelB = ALPHA_COMP(alphaB, sp->v->fg.pixelB, bg.pixelB);
                 }
             }
         }
@@ -48,9 +74,10 @@ void* blit_and_send_spi(void* arg) {
         //blit done! send SPI
         const int BLOCKHEIGHT = 16;
         int numLines;
-        for(int currY=minY;currY<maxY;currY+=BLOCKHEIGHT) {
-            numLines = maxY - currY > BLOCKHEIGHT ? BLOCKHEIGHT : maxY - currY;
-            send_lines(s, currY, INTERNAL_BACK_BUFFER+(320*currY), numLines);
+        for(int currX=minX;currX<maxX;currX+=BLOCKHEIGHT) {
+            numLines = maxX - currX > BLOCKHEIGHT ? BLOCKHEIGHT : maxX - currX;
+            send_lines(s, currX, INTERNAL_BACK_BUFFER+(240*currX), numLines);
+            ets_printf("line: %d %d\n", currX, numLines);
             send_line_finish(s);
         }
     }
@@ -73,12 +100,13 @@ void init_oam() {
     pthread_create(&blitting_spi_id, NULL, &blit_and_send_spi, &spi);
 }
 
-void push(SPRITE_24_H* sprite) {
+SPRITE_NODE* push(SPRITE_24_H* sprite) {
     SPRITE_NODE* ins = malloc(sizeof(SPRITE_NODE));
     ins->v = sprite;
     ins->p = NULL;
-    ins->n = *sprite_list;
-    if(sprite_list != NULL)
+    ins->n = sprite_list;
+    sprite_list = ins;
+    return ins;
 }
 
 SPRITE_NODE* init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint24_RGB fg, uint24_RGB bg, bool bgcol, bool flipX, bool flipY, bool draw, bool persistent) {
@@ -141,7 +169,7 @@ void delete_node(SPRITE_NODE* del) {
 
 void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
     for(int i=0;i<numspr;++i) {
-	array[i]->draw = true;
+        array[i]->v->draw = true;
     }
     draw_all_sprites(spi);
 }
@@ -167,7 +195,7 @@ SPRITE_NODE* sprite_rectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, ui
     bitmap->refcount = 0;
     bitmap->w = w;
     bitmap->h = h;
-    return init_sprite(bitmap, x, 240-y-h, *col, black, false, false, false, true, persistent);
+    return init_sprite(bitmap, x, 240-y-h, *col, BLACK, false, false, false, true, persistent);
 }
 
 void center_sprite_group_x(SPRITE_NODE** sprites, int numsprites) {
@@ -214,7 +242,7 @@ void assign_theme_from_settings() {
 	switch(settings.disp_theme) {
 	case 0:
 		foreground_color = &WHITE;
-		background_color = &fillcolor;
+		background_color = &FILLCOLOR;
 		break;
 	case 1:
 		foreground_color = &BLACK;
