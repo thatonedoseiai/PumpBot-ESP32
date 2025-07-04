@@ -126,6 +126,7 @@ int _POSTLOOP_welcome_menu(void* context, void* args) {
 
         set_font_size(24);
         draw_all_sprites(spi);
+        delete_persistent_sprites();
         ct->counter = 200;
     }
     return 0;

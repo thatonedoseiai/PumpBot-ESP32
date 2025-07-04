@@ -257,7 +257,7 @@ void send_lines(spi_device_handle_t spi, int ypos, uint24_RGB *linedata, int num
 	trans[3].tx_data[3]=(ypos+num_cols)&0xff;	//end page low
 	trans[4].tx_data[0]=0x2C;						//memory write
 	trans[5].tx_buffer=linedata;					//finally send the line data
-	trans[5].length=320*3*8*num_cols;			//Data length, in bits
+	trans[5].length=240*3*8*num_cols;			//Data length, in bits
 	trans[5].flags=0;								//undo SPI_TRANS_USE_TXDATA flag
 
 	//Queue all transactions.

@@ -38,6 +38,7 @@ typedef struct s_n {
 	SPRITE_24_H* v;
 	struct s_n* p;
 	struct s_n* n;
+	char toBeDeleted;
 } SPRITE_NODE;
 
 typedef struct {

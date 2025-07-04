@@ -39,6 +39,7 @@ int coordToBufIndex(int x, int y) {
     return x * 240 + y;
 }
 
+void delete_marked_node(SPRITE_NODE* del);
 void* blit_and_send_spi(void* arg) {
     uint24_RGB* INTERNAL_BACK_BUFFER = malloc(320*240*sizeof(uint24_RGB));
     bgbuf = INTERNAL_BACK_BUFFER;
@@ -48,9 +49,10 @@ void* blit_and_send_spi(void* arg) {
         pthread_cond_wait(&enable_draw, &sprite_lock);
 
         //blit.
-        int minX = 240;
+        int minX = 320;
         int maxX = 0;
-        for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp=sp->n) {
+        SPRITE_NODE* sp = sprite_list;
+        while(sp != NULL) {
             if(!sp->v->draw)
                 continue;
             if(sp->v->posX < minX) minX = sp->v->posX;
@@ -69,7 +71,14 @@ void* blit_and_send_spi(void* arg) {
                     INTERNAL_BACK_BUFFER[pixelCoord].pixelB = ALPHA_COMP(alphaB, sp->v->fg.pixelB, bg.pixelB);
                 }
             }
+            SPRITE_NODE* oldsp = sp;
+            sp = sp->n;
+            if(oldsp->toBeDeleted)
+                delete_marked_node(oldsp);
         }
+
+        minX = 0;
+        maxX = 320;
 
         //blit done! send SPI
         const int BLOCKHEIGHT = 16;
@@ -77,7 +86,8 @@ void* blit_and_send_spi(void* arg) {
         for(int currX=minX;currX<maxX;currX+=BLOCKHEIGHT) {
             numLines = maxX - currX > BLOCKHEIGHT ? BLOCKHEIGHT : maxX - currX;
             send_lines(s, currX, INTERNAL_BACK_BUFFER+(240*currX), numLines);
-            ets_printf("line: %d %d\n", currX, numLines);
+            ets_printf("line: %d %d\n", 240*currX, numLines);
+            // vTaskDelay(100 / portTICK_PERIOD_MS);
             send_line_finish(s);
         }
     }
@@ -105,6 +115,7 @@ SPRITE_NODE* push(SPRITE_24_H* sprite) {
     ins->v = sprite;
     ins->p = NULL;
     ins->n = sprite_list;
+    ins->toBeDeleted = 0;
     sprite_list = ins;
     return ins;
 }
@@ -141,12 +152,22 @@ void draw_all_sprites(spi_device_handle_t spi) {
 
 void delete_node(SPRITE_NODE* del) {
     int k;
-    while((k = pthread_mutex_trylock(&sprite_lock))) {
-	vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-
-    if(del == NULL)
+    if((k = pthread_mutex_trylock(&sprite_lock))) {
+        del->toBeDeleted = 1;
         return;
+        // vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+    
+    delete_marked_node(del);
+
+    pthread_mutex_unlock(&sprite_lock);
+}
+
+void delete_marked_node(SPRITE_NODE* del) {
+    ets_printf("DELETION: %d\n", del->toBeDeleted);
+    if(del == NULL || !del->toBeDeleted)
+        return;
+
     if(sprite_list == del)
         sprite_list = del->n;
     if(del->n)
@@ -154,17 +175,14 @@ void delete_node(SPRITE_NODE* del) {
     if(del->p)
         del->p->n = del->n;
 
-    pthread_mutex_unlock(&sprite_lock);
-
     //del is unlinked.
     del->v->bitmap->refcount--;
     if(del->v->bitmap->refcount == 0) {
         free(del->v->bitmap->c);
-	free(del->v->bitmap);
+        free(del->v->bitmap);
     }
     free(del->v);
     free(del);
-
 }
 
 void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
@@ -175,8 +193,8 @@ void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
 }
 
 void delete_persistent_sprites() {
-    while(sprite_list)
-	delete_node(sprite_list);
+    for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
+        delete_node(sp);
 }
 
 void delete_temporary_sprites() {
