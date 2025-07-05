@@ -43,6 +43,7 @@ typedef struct {
     int(*ROTENC_ACTION)(void* context, rotary_encoder_event_t rotencev, void* args); // can modify the context
     void* rotenc_args;
     int(*POST_LOOP)(void* context, void* args);
+    void* POST_LOOP_args;
     unsigned char NUM_BUTTON_ACTIONS;
     const BUTTON_ACTIONS BUTTONS[];
 } RUNMENU_DATA;

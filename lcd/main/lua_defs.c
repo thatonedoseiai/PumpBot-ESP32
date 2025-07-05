@@ -550,6 +550,7 @@ static int l_load_bgimg(lua_State* L) {
     const char* filename = luaL_checklstring(L, 1, NULL);
     int inx = luaL_checkinteger(L, 2);
     load_bgimg(bgbuf, (char*) filename, false, inx);
+    blit_bg();
     return 0;
 }
 

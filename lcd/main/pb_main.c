@@ -140,6 +140,7 @@ int inits(spi_device_handle_t* spi, rotary_encoder_info_t* info, QueueHandle_t* 
     (*btn_events) = button_init(PIN_BIT(PIN_NUM_SW0) | PIN_BIT(PIN_NUM_SW1) | PIN_BIT(PIN_NUM_ENC_BTN));
     button_events = btn_events;
 	(void) load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", false, 0);
+    blit_bg();
 
     int error;
 	// FT_ERR_HANDLE(FT_Init_FreeType(lib), "FT_Init_Freetype");
@@ -292,6 +293,7 @@ void app_main(void) {
     while(true) {
         // send_color(spi, background_color);
         load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 1);
+        blit_bg();
         gen_bg(spi);
         // ESP_ERROR_CHECK( heap_trace_init_standalone(trace_record, NUM_RECORDS) );
         // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
@@ -313,6 +315,7 @@ void app_main(void) {
         delete_temporary_sprites();
         ets_printf("DELETED TEMPS <- L: %d\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
         load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+        blit_bg();
         gen_bg(spi);
         // ESP_ERROR_CHECK( heap_trace_start(HEAP_TRACE_LEAKS) );
         (void) start_menu_tree(11, true);

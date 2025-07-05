@@ -557,6 +557,7 @@ static int menufunc_display_settings(void) {
         assign_theme_from_settings();
         delete_persistent_sprites();
         load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+        blit_bg();
         return MENU_REDRAW_FLAG;
     }
     int numsprs;
@@ -633,6 +634,7 @@ static int menufunc_display_settings(void) {
                     delete_persistent_sprites();
 
                     load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+                    blit_bg();
                     return MENU_REDRAW_FLAG;
                 }
                 mode = mode == 0 ? selection + 1 : 0;
@@ -1646,29 +1648,33 @@ static int menufunc_credits(void) {
 }
 
 static int runMenu(const RUNMENU_DATA* const r) {
-    void** context = NULL;
+    void* context = NULL;
     int k;
     rotary_encoder_event_t rotencev;
     button_event_t event;
     if(r->SETUP != NULL)
-        r->SETUP(context);
+        r->SETUP(&context);
     while(true) {
         if(r->ROTENC_ACTION != NULL && xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            k = r->ROTENC_ACTION(context, rotencev, r->rotenc_args);
+            k = r->ROTENC_ACTION(&context, rotencev, r->rotenc_args);
             if(k) goto done;
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             for(int i=0;i<r->NUM_BUTTON_ACTIONS;++i) {
                 if(event.pin == r->BUTTONS[i].button_id && event.event == r->BUTTONS[i].button_event_type) {
-                    k = r->BUTTONS[i].ACTION(context, r->BUTTONS[i].args);
+                    k = r->BUTTONS[i].ACTION(&context, r->BUTTONS[i].args);
                     if(k) goto done;
                 }
             }
         }
+        if(r->POST_LOOP) {
+            k = r->POST_LOOP(context, r->POST_LOOP_args);
+            if(k) goto done;
+        }
     }
 done:
     if(r->CLEANUP != NULL)
-        r->CLEANUP(context);
+        r->CLEANUP(&context);
     free(context);
     return k;
 }
@@ -1677,7 +1683,7 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
     &_SETUP_welcome_menu,
     &_CLEANUP_COMMON_single_layer_context,
     NULL, NULL,
-    &_POSTLOOP_welcome_menu,
+    &_POSTLOOP_welcome_menu, NULL,
     1,
     { {
             ENCSW,
@@ -1691,7 +1697,7 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
 const RUNMENU_DATA _RMD_SETUP_MENU = {
     &_SETUP_setup_menu,
     &_CLEANUP_COMMON_single_layer_context,
-    &_BA_ENC_setup_menu,
+    &_BA_ENC_setup_menu, NULL, 
     NULL, NULL,
     2, {
         {
@@ -1713,9 +1719,8 @@ const int OFFSETOPT = offsetof(struct _WIFI_MENU_CONTEXT, opt);
 const RUNMENU_DATA _RMD_WIFI_MENU = {
     &_SETUP_wifi_menu,
     &_CLEANUP_wifi_menu,
-    &_ENC_COMMON_scroll_options,
-    &OFFSETOPT, 
-    NULL,
+    &_ENC_COMMON_scroll_options, &OFFSETOPT, 
+    NULL, NULL, 
     3, {
         {
             LEFTBUTTON,
@@ -1781,6 +1786,7 @@ int start_menu_tree(int startmenu, char settings_mode) {
         else {
             if(currmenu_background != currmenu->bg) {
                 load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, currmenu->bg);
+                blit_bg();
                 currmenu_background = currmenu->bg;
             }
             gen_bg(spi);
@@ -1791,10 +1797,10 @@ int start_menu_tree(int startmenu, char settings_mode) {
             // if(persistent_sprites != NULL)
             //     delete_persistent_sprites();
         }
-        if(currmenu->menu_functionality)
-            nextmenu = currmenu->menu_functionality();
-        else
+        if(currmenu->rmd)
             nextmenu = runMenu(currmenu->rmd);
+        else
+            nextmenu = currmenu->menu_functionality();
         if(nextmenu & MENU_SELF_POP_FLAG) {
             if((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
                 menu_stackp--;

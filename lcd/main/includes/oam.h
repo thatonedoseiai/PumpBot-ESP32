@@ -38,7 +38,7 @@ typedef struct s_n {
 	SPRITE_24_H* v;
 	struct s_n* p;
 	struct s_n* n;
-	char toBeDeleted;
+	unsigned int lifetime;
 } SPRITE_NODE;
 
 typedef struct {
@@ -61,6 +61,10 @@ SPRITE_NODE* sprite_rectangle(uint16_t posX, uint16_t posY, uint16_t sizeX, uint
 void center_sprite_group_x(SPRITE_NODE** sprites, int numsprites);
 void right_justify_sprite_group_x(SPRITE_NODE** sprites, int numsprites, int pad);
 void assign_theme_from_settings(void);
+void blit_bg(void);
+void delete_all_sprites_immediate(void);
+void wait_for_end_of_frame(void);
+void set_sprites_lifetime(int lifetime, SPRITE_NODE** list, int num);
 
 #ifdef __cplusplus
 }

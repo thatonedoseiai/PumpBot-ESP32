@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <rom/ets_sys.h>
 #include "settings.h"
+#include <string.h>
 
 #define ALPHA_COMP(a, f, b) (((a*f) + (255-a)*b) / 255)
 
@@ -10,6 +11,7 @@ pthread_mutex_t sprite_lock;
 pthread_cond_t enable_draw;
 pthread_t blitting_spi_id;
 unsigned char KILL_BLIT_SPI_THREAD;
+unsigned char COPY_BG;
 
 const uint24_RGB* background_color;
 const uint24_RGB* foreground_color;
@@ -39,42 +41,80 @@ int coordToBufIndex(int x, int y) {
     return x * 240 + y;
 }
 
+void blit(uint24_RGB* TARGET, SPRITE_NODE* sp, int* max, int* min) {
+    if(sp == NULL || !sp->v->draw)
+        return;
+    int maxX = 0;
+    int minX = 0;
+    if(sp->v->posX < minX) minX = sp->v->posX;
+    if(sp->v->posX > maxX) maxX = sp->v->posX;
+    int alphaR, alphaG, alphaB, pixelCoord;
+    uint24_RGB bg;
+    for(int j=0;j<sp->v->bitmap->h;++j) {
+        for(int i=0;i<sp->v->bitmap->w;++i) {
+            alphaR = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelR;
+            alphaG = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelG;
+            alphaB = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelB;
+            pixelCoord = coordToBufIndex(i+sp->v->posX, j+sp->v->posY);
+            bg = sp->v->bgcol ? sp->v->bg : TARGET[pixelCoord];
+            TARGET[pixelCoord].pixelR = ALPHA_COMP(alphaR, sp->v->fg.pixelR, bg.pixelR);
+            TARGET[pixelCoord].pixelG = ALPHA_COMP(alphaG, sp->v->fg.pixelG, bg.pixelG);
+            TARGET[pixelCoord].pixelB = ALPHA_COMP(alphaB, sp->v->fg.pixelB, bg.pixelB);
+        }
+    }
+    *max = maxX;
+    *min = minX;
+}
+
+void undraw(uint24_RGB* TARGET, SPRITE_NODE* sp, int* min, int* max) {
+    if(sp == NULL || !sp->v->draw)
+        return;
+    int maxX = 0;
+    int minX = 0;
+    if(sp->v->posX < minX) minX = sp->v->posX;
+    if(sp->v->posX > maxX) maxX = sp->v->posX;
+    int pixelCoord;
+    uint24_RGB bg;
+    for(int j=0;j<sp->v->bitmap->h;++j) {
+        for(int i=0;i<sp->v->bitmap->w;++i) {
+            pixelCoord = coordToBufIndex(i+sp->v->posX, j+sp->v->posY);
+            TARGET[pixelCoord].pixelR = bgbuf[pixelCoord].pixelR;
+            TARGET[pixelCoord].pixelG = bgbuf[pixelCoord].pixelG;
+            TARGET[pixelCoord].pixelB = bgbuf[pixelCoord].pixelB;
+        }
+    }
+    *max = maxX;
+    *min = minX;
+}
+
 void delete_marked_node(SPRITE_NODE* del);
 void* blit_and_send_spi(void* arg) {
     uint24_RGB* INTERNAL_BACK_BUFFER = malloc(320*240*sizeof(uint24_RGB));
-    bgbuf = INTERNAL_BACK_BUFFER;
     spi_device_handle_t s = *(spi_device_handle_t*) arg;
     pthread_mutex_lock(&sprite_lock);
     while(KILL_BLIT_SPI_THREAD) {
         pthread_cond_wait(&enable_draw, &sprite_lock);
+        if(COPY_BG)
+            memcpy(INTERNAL_BACK_BUFFER, bgbuf, 320*240*sizeof(uint24_RGB));
 
         //blit.
         int minX = 320;
         int maxX = 0;
         SPRITE_NODE* sp = sprite_list;
+        SPRITE_NODE* nextsp;
         while(sp != NULL) {
-            if(!sp->v->draw)
-                continue;
-            if(sp->v->posX < minX) minX = sp->v->posX;
-            if(sp->v->posX > maxX) maxX = sp->v->posX;
-            int alphaR, alphaG, alphaB, pixelCoord;
-            uint24_RGB bg;
-            for(int j=0;j<sp->v->bitmap->h;++j) {
-                for(int i=0;i<sp->v->bitmap->w;++i) {
-                    alphaR = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelR;
-                    alphaG = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelG;
-                    alphaB = sp->v->bitmap->c[i*sp->v->bitmap->h+j].pixelB;
-                    pixelCoord = coordToBufIndex(i+sp->v->posX, j+sp->v->posY);
-                    bg = sp->v->bgcol ? sp->v->bg : INTERNAL_BACK_BUFFER[pixelCoord];
-                    INTERNAL_BACK_BUFFER[pixelCoord].pixelR = ALPHA_COMP(alphaR, sp->v->fg.pixelR, bg.pixelR);
-                    INTERNAL_BACK_BUFFER[pixelCoord].pixelG = ALPHA_COMP(alphaG, sp->v->fg.pixelG, bg.pixelG);
-                    INTERNAL_BACK_BUFFER[pixelCoord].pixelB = ALPHA_COMP(alphaB, sp->v->fg.pixelB, bg.pixelB);
-                }
+            nextsp = sp->n;
+            if(!sp->lifetime) {
+                undraw(INTERNAL_BACK_BUFFER, sp, &maxX, &minX);
+                delete_marked_node(sp);
             }
-            SPRITE_NODE* oldsp = sp;
+            sp = nextsp;
+        }
+        sp = sprite_list;
+        while(sp != NULL) {
+            blit(INTERNAL_BACK_BUFFER, sp, &maxX, &minX);
+            sp->lifetime--;
             sp = sp->n;
-            if(oldsp->toBeDeleted)
-                delete_marked_node(oldsp);
         }
 
         minX = 0;
@@ -96,6 +136,10 @@ void* blit_and_send_spi(void* arg) {
     return NULL;
 }
 
+void blit_bg() {
+    COPY_BG = 1;
+}
+
 void init_oam() {
     sprite_list = NULL;
     pthread_mutexattr_t mutex_attr;
@@ -106,6 +150,8 @@ void init_oam() {
     sprite_lock = PTHREAD_MUTEX_INITIALIZER;
     enable_draw = PTHREAD_COND_INITIALIZER;
     KILL_BLIT_SPI_THREAD = 1;
+    COPY_BG = 0;
+    bgbuf = malloc(320*240*sizeof(uint24_RGB));
 
     pthread_create(&blitting_spi_id, NULL, &blit_and_send_spi, &spi);
 }
@@ -115,9 +161,16 @@ SPRITE_NODE* push(SPRITE_24_H* sprite) {
     ins->v = sprite;
     ins->p = NULL;
     ins->n = sprite_list;
-    ins->toBeDeleted = 0;
+    if(sprite_list)
+        sprite_list->p = ins;
+    ins->lifetime = 0xffffffff;
     sprite_list = ins;
     return ins;
+}
+
+void wait_for_end_of_frame() {
+    pthread_mutex_lock(&sprite_lock);
+    pthread_mutex_unlock(&sprite_lock);
 }
 
 SPRITE_NODE* init_sprite(SPRITE_BITMAP* bitmap, uint16_t posX, uint16_t posY, uint24_RGB fg, uint24_RGB bg, bool bgcol, bool flipX, bool flipY, bool draw, bool persistent) {
@@ -151,22 +204,30 @@ void draw_all_sprites(spi_device_handle_t spi) {
 }
 
 void delete_node(SPRITE_NODE* del) {
-    int k;
-    if((k = pthread_mutex_trylock(&sprite_lock))) {
-        del->toBeDeleted = 1;
-        return;
-        // vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
+    // del->toBeDeleted = 1;
+    del->lifetime = 0;
+    return;
+    // int k;
+    // if((k = pthread_mutex_trylock(&sprite_lock))) {
+    //     del->toBeDeleted = 1;
+    //     return;
+    //     // vTaskDelay(10 / portTICK_PERIOD_MS);
+    // }
     
-    delete_marked_node(del);
+    // delete_marked_node(del);
 
-    pthread_mutex_unlock(&sprite_lock);
+    // pthread_mutex_unlock(&sprite_lock);
+}
+
+void set_sprites_lifetime(int lifetime, SPRITE_NODE** list, int num) {
+    for(int i=0;i<num;++i)
+        list[i]->lifetime = lifetime;
 }
 
 void delete_marked_node(SPRITE_NODE* del) {
-    ets_printf("DELETION: %d\n", del->toBeDeleted);
-    if(del == NULL || !del->toBeDeleted)
+    if(del == NULL || del->lifetime)
         return;
+    // ets_printf("DELETION: %d\n", del->toBeDeleted);
 
     if(sprite_list == del)
         sprite_list = del->n;
@@ -195,6 +256,14 @@ void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
 void delete_persistent_sprites() {
     for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
         delete_node(sp);
+}
+
+void delete_all_sprites_immediate() {
+    pthread_mutex_lock(&sprite_lock);
+    // for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
+    while(sprite_list)
+        delete_marked_node(sprite_list);
+    pthread_mutex_unlock(&sprite_lock);
 }
 
 void delete_temporary_sprites() {

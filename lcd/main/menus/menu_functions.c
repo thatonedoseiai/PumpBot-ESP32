@@ -7,6 +7,7 @@
 #include "settings.h"
 #include <string.h>
 #include "board_config.h"
+#include "rom/ets_sys.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -26,9 +27,8 @@ int _BA_COMMON_go_to_menu(void* context, void* args) {
 }
 
 void _CLEANUP_COMMON_single_layer_context(void** context) {
-    free(*context);
-    *context = NULL;
-    delete_persistent_sprites();
+    // delete_persistent_sprites();
+    delete_all_sprites_immediate();
 }
 
 const int OPTION_Ys[] = {184, 152, 120, 88, 56};
@@ -126,6 +126,7 @@ int _POSTLOOP_welcome_menu(void* context, void* args) {
 
         set_font_size(24);
         draw_all_sprites(spi);
+        wait_for_end_of_frame();
         delete_persistent_sprites();
         ct->counter = 200;
     }
@@ -151,7 +152,10 @@ int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t ev, void* args) {
     struct _CONTEXT_wm* cont = (struct _CONTEXT_wm*) context;
     cont->currlang = ((unsigned) ev.state.position) % 9;
     SPRITE_NODE* sprs[15];
-    draw_text(220, 161, text_language_name[cont->currlang], &sprs[0], NULL, *foreground_color, *background_color, 0, false, false);
+    int numsprs;
+    draw_text(220, 161, text_language_name[cont->currlang], &sprs[0], &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, sprs, numsprs);
+
     draw_all_sprites(spi);
     return 0;
 }
@@ -187,7 +191,8 @@ void _SETUP_wifi_menu(void** context) {
 
 void _CLEANUP_wifi_menu(void** context) {
     free(((struct _WIFI_MENU_CONTEXT*) context)->opt.options);
-    return _CLEANUP_COMMON_single_layer_context(context);
+    _CLEANUP_COMMON_single_layer_context(context);
+    return;
 }
 
 int _BA_ED_wifi_menu_set_wifi_name(void* context, void* args) {
