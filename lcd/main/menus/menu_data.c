@@ -189,13 +189,13 @@ const MENU_ELEMENT menusetup0[] = {
         .textsize = 14,
         .col = &foreground_color
     },
-    {
-        .text = text_language_name,
-        .x = 220,
-        .y = 161,
-        .textsize = 14,
-        .col = &foreground_color
-    },
+    // {
+    //     .text = text_language_name,
+    //     .x = 220,
+    //     .y = 161,
+    //     .textsize = 14,
+    //     .col = &foreground_color
+    // },
     // {      
     //     .y = 144,
     //     .textsize = 2,

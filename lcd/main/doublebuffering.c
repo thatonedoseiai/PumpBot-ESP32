@@ -44,10 +44,8 @@ int coordToBufIndex(int x, int y) {
 void blit(uint24_RGB* TARGET, SPRITE_NODE* sp, int* max, int* min) {
     if(sp == NULL || !sp->v->draw)
         return;
-    int maxX = 0;
-    int minX = 0;
-    if(sp->v->posX < minX) minX = sp->v->posX;
-    if(sp->v->posX > maxX) maxX = sp->v->posX;
+    if(sp->v->posX < *min) *min = sp->v->posX;
+    if(sp->v->posX + sp->v->bitmap->w > *max) *max = sp->v->bitmap->w + sp->v->posX;
     int alphaR, alphaG, alphaB, pixelCoord;
     uint24_RGB bg;
     for(int j=0;j<sp->v->bitmap->h;++j) {
@@ -62,17 +60,13 @@ void blit(uint24_RGB* TARGET, SPRITE_NODE* sp, int* max, int* min) {
             TARGET[pixelCoord].pixelB = ALPHA_COMP(alphaB, sp->v->fg.pixelB, bg.pixelB);
         }
     }
-    *max = maxX;
-    *min = minX;
 }
 
-void undraw(uint24_RGB* TARGET, SPRITE_NODE* sp, int* min, int* max) {
-    if(sp == NULL || !sp->v->draw)
+void undraw(uint24_RGB* TARGET, SPRITE_NODE* sp, int* max, int* min) {
+    if(sp == NULL)
         return;
-    int maxX = 0;
-    int minX = 0;
-    if(sp->v->posX < minX) minX = sp->v->posX;
-    if(sp->v->posX > maxX) maxX = sp->v->posX;
+    if(sp->v->posX < *min) *min = sp->v->posX;
+    if(sp->v->posX + sp->v->bitmap->w > *max) *max = sp->v->bitmap->w + sp->v->posX;
     int pixelCoord;
     uint24_RGB bg;
     for(int j=0;j<sp->v->bitmap->h;++j) {
@@ -83,8 +77,6 @@ void undraw(uint24_RGB* TARGET, SPRITE_NODE* sp, int* min, int* max) {
             TARGET[pixelCoord].pixelB = bgbuf[pixelCoord].pixelB;
         }
     }
-    *max = maxX;
-    *min = minX;
 }
 
 void delete_marked_node(SPRITE_NODE* del);
@@ -104,7 +96,7 @@ void* blit_and_send_spi(void* arg) {
         SPRITE_NODE* nextsp;
         while(sp != NULL) {
             nextsp = sp->n;
-            if(!sp->lifetime) {
+            if(!sp->lifetime || sp->clear) {
                 undraw(INTERNAL_BACK_BUFFER, sp, &maxX, &minX);
                 delete_marked_node(sp);
             }
@@ -117,8 +109,8 @@ void* blit_and_send_spi(void* arg) {
             sp = sp->n;
         }
 
-        minX = 0;
-        maxX = 320;
+        // minX = 0;
+        // maxX = 320;
 
         //blit done! send SPI
         const int BLOCKHEIGHT = 16;
@@ -126,7 +118,7 @@ void* blit_and_send_spi(void* arg) {
         for(int currX=minX;currX<maxX;currX+=BLOCKHEIGHT) {
             numLines = maxX - currX > BLOCKHEIGHT ? BLOCKHEIGHT : maxX - currX;
             send_lines(s, currX, INTERNAL_BACK_BUFFER+(240*currX), numLines);
-            ets_printf("line: %d %d\n", 240*currX, numLines);
+            // ets_printf("line: %d %d\n", currX, numLines);
             // vTaskDelay(100 / portTICK_PERIOD_MS);
             send_line_finish(s);
         }
@@ -203,6 +195,11 @@ void draw_all_sprites(spi_device_handle_t spi) {
     pthread_cond_signal(&enable_draw);
 }
 
+void undraw_node(SPRITE_NODE* n) {
+    n->clear = 1;
+    return;
+}
+
 void delete_node(SPRITE_NODE* del) {
     // del->toBeDeleted = 1;
     del->lifetime = 0;
@@ -261,8 +258,10 @@ void delete_persistent_sprites() {
 void delete_all_sprites_immediate() {
     pthread_mutex_lock(&sprite_lock);
     // for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
-    while(sprite_list)
+    while(sprite_list) {
+        sprite_list->lifetime = 0;
         delete_marked_node(sprite_list);
+    }
     pthread_mutex_unlock(&sprite_lock);
 }
 

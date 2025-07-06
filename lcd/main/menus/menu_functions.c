@@ -23,6 +23,7 @@ void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
 // COMMON {{{
 int _BA_COMMON_go_to_menu(void* context, void* args) {
     (void) context;
+    ets_printf("GO TO MENU: %d\n", *(int*) &args);
     return *(int*) &args;
 }
 
@@ -139,6 +140,12 @@ void _SETUP_setup_menu(void** context) {
     struct _CONTEXT_wm* cont = malloc(sizeof(struct _CONTEXT_wm));
     cont->currlang = 0;
     *context = (void*) cont;
+    SPRITE_NODE* sprs[15];
+    int numsprs;
+    draw_text(220, 161, text_language_name[0], &sprs[0], &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, sprs, numsprs);
+
+    draw_all_sprites(spi);
     sprite_rectangle(220, 240-73-13, 100, 22, background_color, true, 0);
     set_font_size(14);
 }
@@ -185,6 +192,7 @@ void _SETUP_wifi_menu(void** context) {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+    ets_printf("SETTING UP WIFI MENU\n");
 
     (void) _BA_RD_wifi_menu_reload(ctx, NULL);
 }
@@ -217,6 +225,64 @@ int _BA_RD_wifi_menu_reload(void* context, void* args) {
 
     _HELP_COMMON_draw_options(&ctx->opt, 0);
     return 0;
+}
+// }}}
+// SETUP METHOD MENU {{{
+struct PB_SETUP_METHOD_CONTEXT {
+    unsigned char selection;
+    SPRITE_NODE* tooltip_1[60];
+    SPRITE_NODE* tooltip_2[60];
+    int lentt1;
+    int lentt2;
+};
+void _SETUP_pb_setup_method(void** context) {
+    const char* options_1 = text_tooltip_wifi_setup[settings.language];
+    const char* options_2 = text_tooltip_wifi_setup_a[settings.language];
+    const char* options_3 = text_tooltip_standalone_setup[settings.language];
+    const char* options_4 = text_tooltip_standalone_setup_a[settings.language];
+    struct PB_SETUP_METHOD_CONTEXT* cont = malloc(sizeof(struct PB_SETUP_METHOD_CONTEXT));
+    *context = cont;
+
+    int lentt;
+    int lenttline2;
+    set_font_size(12);
+    draw_text(0, 52, options_1, cont->tooltip_1, &lentt, *foreground_color, *background_color, 0, false, true);
+    center_sprite_group_x(cont->tooltip_1, lentt);
+    draw_text(0, 34, options_2, cont->tooltip_1 + lentt, &lenttline2, *foreground_color, *background_color, 0, false, true);
+    center_sprite_group_x(cont->tooltip_1+lentt, lenttline2);
+    cont->lentt1 = lentt+lenttline2;
+    draw_text(0, 52, options_3, cont->tooltip_2, &lentt, *foreground_color, *background_color, 0, false, true);
+    center_sprite_group_x(cont->tooltip_2, lentt);
+    draw_text(0, 34, options_4, cont->tooltip_2+lentt, &lenttline2, *foreground_color, *background_color, 0, false, true);
+    center_sprite_group_x(cont->tooltip_2+lentt, lenttline2);
+    for(int i=0;i<lentt+lenttline2;++i) {
+        cont->tooltip_2[i]->v->draw = false;
+    }
+    cont->lentt2 = lentt+lenttline2;
+    SPRITE_NODE* CURSOR;
+    draw_text(10, 137, ">", &CURSOR, NULL, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &CURSOR, 1);
+    sprite_rectangle(0, 25, 320, 16, background_color, true, 0);
+    sprite_rectangle(0, 41, 320, 16, background_color, true, 0);
+    sprite_rectangle(0, 57, 320, 16, background_color, true, 0);
+    draw_all_sprites(spi);
+}
+
+int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args) {
+    struct PB_SETUP_METHOD_CONTEXT* cont = (struct PB_SETUP_METHOD_CONTEXT*) context;
+    // int cursorBgPos = cont->selection ? 240-105-14 : 240-137-14;
+    cont->selection = !cont->selection;
+    int cursorPos = cont->selection ? 105: 137;
+    SPRITE_NODE* CURSOR;
+    draw_text(10, cursorPos, ">", &CURSOR, NULL, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &CURSOR, 1);
+    return 0;
+}
+
+int _BA_pb_setup_method_confirm(void* context, void* args) {
+    delete_persistent_sprites();
+    struct PB_SETUP_METHOD_CONTEXT* cont = (struct PB_SETUP_METHOD_CONTEXT*) context;
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | (cont->selection ? 2 : 5);
 }
 // }}}
 

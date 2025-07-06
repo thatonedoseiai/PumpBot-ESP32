@@ -1743,15 +1743,42 @@ const RUNMENU_DATA _RMD_WIFI_MENU = {
     }
 };
 
+const RUNMENU_DATA _RMD_PB_SETUP_METHOD = {
+    &_SETUP_pb_setup_method,
+    &_CLEANUP_COMMON_single_layer_context, 
+    &_ENC_pb_setup_method, NULL,
+    NULL, NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG,
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_pb_setup_method_confirm,
+            NULL
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_pb_setup_method_confirm,
+            NULL
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
-    {&menusetup0[0], 5, menufunc_setup, 4, &_RMD_SETUP_MENU},
+    {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
     {&menusetup3[0], 2, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
     {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, NULL},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
     {&menusetup3[0], 3, menufunc_network_preview, 2, NULL},
-    {&menusetup1[0], 6, menufunc_pb_setup_method, 5, NULL},
+    {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},
     {&menusetup3[0], 3, menufunc_display_settings, 2, NULL},
     {&menusetup3[0], 3, menufunc_color_picker, 2, NULL},
     {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},

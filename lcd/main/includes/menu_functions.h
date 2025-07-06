@@ -43,4 +43,8 @@ void _CLEANUP_wifi_menu(void** context);
 int _BA_ED_wifi_menu_set_wifi_name(void* context, void* args);
 int _BA_RD_wifi_menu_reload(void* context, void* args);
 
+void _SETUP_pb_setup_method(void** context);
+int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_pb_setup_method_confirm(void* context, void* args);
+
 #endif

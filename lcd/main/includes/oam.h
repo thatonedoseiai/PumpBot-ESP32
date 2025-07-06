@@ -39,6 +39,7 @@ typedef struct s_n {
 	struct s_n* p;
 	struct s_n* n;
 	unsigned int lifetime;
+	unsigned char clear;
 } SPRITE_NODE;
 
 typedef struct {
@@ -65,6 +66,7 @@ void blit_bg(void);
 void delete_all_sprites_immediate(void);
 void wait_for_end_of_frame(void);
 void set_sprites_lifetime(int lifetime, SPRITE_NODE** list, int num);
+void undraw_node(SPRITE_NODE* n);
 
 #ifdef __cplusplus
 }
