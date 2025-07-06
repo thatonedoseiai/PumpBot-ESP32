@@ -23,7 +23,6 @@ void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
 // COMMON {{{
 int _BA_COMMON_go_to_menu(void* context, void* args) {
     (void) context;
-    ets_printf("GO TO MENU: %d\n", *(int*) &args);
     return *(int*) &args;
 }
 
@@ -151,7 +150,8 @@ void _SETUP_setup_menu(void** context) {
 }
 
 int _BA_RD_setup_menu_confirm(void* context, void* args) {
-    settings.language = ((struct _CONTEXT_wm*) context)->currlang;
+    struct _CONTEXT_wm* cont = (struct _CONTEXT_wm*) context;
+    settings.language = cont->currlang;
     return MENU_SETUP_ONLY_TRANSITION_FLAG | 7;
 }
 
@@ -241,6 +241,7 @@ void _SETUP_pb_setup_method(void** context) {
     const char* options_3 = text_tooltip_standalone_setup[settings.language];
     const char* options_4 = text_tooltip_standalone_setup_a[settings.language];
     struct PB_SETUP_METHOD_CONTEXT* cont = malloc(sizeof(struct PB_SETUP_METHOD_CONTEXT));
+    cont->selection = 0;
     *context = cont;
 
     int lentt;
@@ -276,6 +277,19 @@ int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args) {
     SPRITE_NODE* CURSOR;
     draw_text(10, cursorPos, ">", &CURSOR, NULL, *foreground_color, *background_color, 0, false, false);
     set_sprites_lifetime(1, &CURSOR, 1);
+    for(int i=0;i<cont->lentt1;++i) {
+        if(cont->selection)
+            undraw_node(cont->tooltip_1[i]);
+        else
+            cont->tooltip_1[i]->v->draw = 1;
+    }
+    for(int i=0;i<cont->lentt2;++i) {
+        if(!cont->selection)
+            undraw_node(cont->tooltip_2[i]);
+        else
+            cont->tooltip_2[i]->v->draw = 1;
+    }
+    draw_all_sprites(spi);
     return 0;
 }
 

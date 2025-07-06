@@ -1656,13 +1656,13 @@ static int runMenu(const RUNMENU_DATA* const r) {
         r->SETUP(&context);
     while(true) {
         if(r->ROTENC_ACTION != NULL && xQueueReceive(infop->queue, &rotencev, 10/portTICK_PERIOD_MS) == pdTRUE) {
-            k = r->ROTENC_ACTION(&context, rotencev, r->rotenc_args);
+            k = r->ROTENC_ACTION(context, rotencev, r->rotenc_args);
             if(k) goto done;
         }
         if(xQueueReceive(*button_events, &event, 10/portTICK_PERIOD_MS) == pdTRUE) {
             for(int i=0;i<r->NUM_BUTTON_ACTIONS;++i) {
                 if(event.pin == r->BUTTONS[i].button_id && event.event == r->BUTTONS[i].button_event_type) {
-                    k = r->BUTTONS[i].ACTION(&context, r->BUTTONS[i].args);
+                    k = r->BUTTONS[i].ACTION(context, r->BUTTONS[i].args);
                     if(k) goto done;
                 }
             }

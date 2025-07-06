@@ -98,7 +98,10 @@ void* blit_and_send_spi(void* arg) {
             nextsp = sp->n;
             if(!sp->lifetime || sp->clear) {
                 undraw(INTERNAL_BACK_BUFFER, sp, &maxX, &minX);
-                delete_marked_node(sp);
+                if(sp->clear)
+                    sp->clear = 0;
+                else
+                    delete_marked_node(sp);
             }
             sp = nextsp;
         }
@@ -197,6 +200,7 @@ void draw_all_sprites(spi_device_handle_t spi) {
 
 void undraw_node(SPRITE_NODE* n) {
     n->clear = 1;
+    n->v->draw = 0;
     return;
 }
 
