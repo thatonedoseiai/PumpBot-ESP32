@@ -16,8 +16,21 @@ extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
 extern unsigned char wifi_restart_counter;
+char* TEXT_ENTRY_BUFFER;
 
 // HELPERS {{{
+void ellipsized_name(char* dest, char* src, int max) {
+    strncpy(dest, src, max);
+    if(strlen(dest) > max) {
+        dest[max+1] = '.';
+        dest[max+2] = '.';
+        dest[max+3] = '.';
+        dest[max+4] = 0;
+    } else {
+        dest[max+1] = 0;
+    }
+}
+
 void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
     draw_text(10, y, ">", cursor, NULL, *foreground_color, *background_color, 0, false, true);
     *cursorbg = sprite_rectangle(10, y, 20, 16, background_color, true, 0);
@@ -317,6 +330,7 @@ void _SETUP_wifi_connect(void** context) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
     ESP_ERROR_CHECK(esp_wifi_connect());
     set_font_size(14);
+    TEXT_ENTRY_BUFFER = NULL;
 }
 
 int _BA_LD_wifi_connect(void* context, void* args) {
@@ -340,6 +354,77 @@ int _POSTLOOP_wifi_connect(void* context, void* args) {
     draw_all_sprites(spi);
     vTaskDelay(3000 / portTICK_PERIOD_MS);
     return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_SELF_POP_FLAG | 8;
+}
+// }}}
+// WIFI PREVIEW MENU {{{
+struct _WIFI_PREVIEW_CONTEXT {
+    unsigned char selection;
+};
+
+void _SETUP_wifi_preview(void** context) {
+    SPRITE_NODE* sprs[15];
+    int numsprs;
+    char namebuf[14];
+    struct _WIFI_PREVIEW_CONTEXT* cont = malloc(sizeof(struct _WIFI_PREVIEW_CONTEXT));
+    SPRITE_NODE* cursor;
+    *context = (void*) cont;
+
+    if(TEXT_ENTRY_BUFFER != NULL) {
+        strncpy(settings.wifi_pass, TEXT_ENTRY_BUFFER, 64);
+        free(TEXT_ENTRY_BUFFER);
+        TEXT_ENTRY_BUFFER = NULL;
+    }
+    set_font_size(14);
+    draw_text(32, 184, text_settings_network[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 152, text_password[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 120, (system_flags & FLAG_WIFI_CONNECTED) ? text_disconnect[settings.language] : text_connect[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(sprs, numsprs);
+    ellipsized_name(namebuf, settings.wifi_name, 10);
+    draw_text(150, 184, namebuf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    ellipsized_name(namebuf, settings.wifi_pass, 10);
+    draw_text(150, 152, namebuf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(10, 184, ">", &cursor, NULL, *foreground_color, *background_color, 0, false, true);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+}
+
+int _BA_LD_wifi_preview(void* context, void* args) {
+    memset(&settings.wifi_pass[0], 0, 64);
+    return MENU_POP_FLAG;
+}
+
+int _BA_ED_wifi_preview(void* context, void* args) {
+    struct _WIFI_PREVIEW_CONTEXT* cont = (struct _WIFI_PREVIEW_CONTEXT*) context;
+    switch(cont->selection) {
+    case 0:
+        return _BA_LD_wifi_preview(context, args);
+    case 1:
+        TEXT_ENTRY_BUFFER = calloc(65, sizeof(char));
+        strncpy(TEXT_ENTRY_BUFFER, &settings.wifi_pass[0], 64);
+        return 3;
+    case 2:
+        if(system_flags & FLAG_WIFI_CONNECTED) {
+            memset(&settings.wifi_name, 0, 32);
+            memset(&settings.wifi_pass, 0, 64);
+            wifi_restart_counter = 20;
+            esp_wifi_disconnect();
+            system_flags &= ~(FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT);
+            return MENU_POP_FLAG;
+        }
+        return 4;
+    }
+    return 0;
+}
+
+int _ENC_wifi_preview(void* context, rotary_encoder_event_t ev, void* args) {
+    int ys[] = {184, 152, 120};
+    SPRITE_NODE* cursor;
+    struct _WIFI_PREVIEW_CONTEXT* cont = (struct _WIFI_PREVIEW_CONTEXT*) context;
+    cont->selection = (ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (cont->selection + 1) % 3 : (cont->selection + 2) % 3;
+    draw_text(10, ys[cont->selection], ">", &cursor, NULL, *foreground_color, *background_color, 0, false, true);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    return 0;
 }
 // }}}
 

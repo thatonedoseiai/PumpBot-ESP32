@@ -51,4 +51,9 @@ void _SETUP_wifi_connect(void** context);
 int _BA_LD_wifi_connect(void* context, void* args);
 int _POSTLOOP_wifi_connect(void* context, void* args);
 
+void _SETUP_wifi_preview(void** context);
+int _BA_LD_wifi_preview(void* context, void* args);
+int _BA_ED_wifi_preview(void* context, void* args);
+int _ENC_wifi_preview(void* context, rotary_encoder_event_t ev, void* args);
+
 #endif
