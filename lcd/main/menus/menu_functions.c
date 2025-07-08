@@ -174,6 +174,12 @@ int load_wifi(struct _WIFI_MENU_CONTEXT* ctx) {
     // wifi_ap_record_t ap_info[numWifi];
     uint16_t ap_count = 0;
     uint16_t max_wifis = NUM_WIFIS;
+    SPRITE_NODE* sprs[64];
+    int numsprs;
+    draw_text(0, 120, text_searching[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, true);
+    set_sprites_lifetime(1, sprs, numsprs);
+    center_sprite_group_x(sprs, numsprs);
+    draw_all_sprites(spi);
     ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&max_wifis, &ctx->ap_info[0]));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
@@ -181,7 +187,6 @@ int load_wifi(struct _WIFI_MENU_CONTEXT* ctx) {
         ctx->opt.options[i] = (char*) ctx->ap_info[i].ssid;
     }
     ctx->opt.numOptions = ap_count;
-    ets_printf("%d networks found\n", ctx->opt.numOptions);
     return 0;
 }
 
