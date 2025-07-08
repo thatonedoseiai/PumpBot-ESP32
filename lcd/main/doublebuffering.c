@@ -3,6 +3,7 @@
 #include <rom/ets_sys.h>
 #include "settings.h"
 #include <string.h>
+#include <driver/gpio.h>
 
 #define ALPHA_COMP(a, f, b) (((a*f) + (255-a)*b) / 255)
 

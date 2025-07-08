@@ -8,6 +8,7 @@
 #include <string.h>
 #include "board_config.h"
 #include "rom/ets_sys.h"
+#include <driver/gpio.h>
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -35,26 +36,27 @@ const int OPTION_Ys[] = {184, 152, 120, 88, 56};
 void _HELP_COMMON_draw_options(struct _OPTIONS_DATA_* opt, int pageStart) {
     SPRITE_NODE* sprs[64];
     int numsprs;
-    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
+    // SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
     int numToDraw = opt->numOptions > 5 ? 5 : opt->numOptions;
     for(int i=0;i<numToDraw;++i) {
-        textbg->v->posY = 224 - OPTION_Ys[i];
-        draw_sprites(spi, &textbg, 1);
+        // textbg->v->posY = 224 - OPTION_Ys[i];
+        // draw_sprites(spi, &textbg, 1);
         draw_text(0, OPTION_Ys[i], opt->options[pageStart + i], &sprs[0], &numsprs, *foreground_color, *background_color, 0, false, false);
+        set_sprites_lifetime(1, sprs, numsprs);
         center_sprite_group_x(sprs, numsprs);
     }
-    delete_node(textbg);
+    // delete_node(textbg);
     draw_all_sprites(spi);
 }
 
 void _HELP_COMMON_clear_options(int numOpts) {
-    SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
-    for(int i=0;i<numOpts;++i) {
-        textbg->v->posY = 224 - OPTION_Ys[i];
-        draw_sprites(spi, &textbg, 1);
-    }
-    draw_all_sprites(spi);
-    delete_node(textbg);
+    // SPRITE_NODE* textbg = sprite_rectangle(50, 184, 220, 21, background_color, false, 0);
+    // for(int i=0;i<numOpts;++i) {
+    //     textbg->v->posY = 224 - OPTION_Ys[i];
+    //     draw_sprites(spi, &textbg, 1);
+    // }
+    // draw_all_sprites(spi);
+    // delete_node(textbg);
 }
 
 int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* args) {
@@ -179,6 +181,7 @@ int load_wifi(struct _WIFI_MENU_CONTEXT* ctx) {
         ctx->opt.options[i] = (char*) ctx->ap_info[i].ssid;
     }
     ctx->opt.numOptions = ap_count;
+    ets_printf("%d networks found\n", ctx->opt.numOptions);
     return 0;
 }
 
@@ -192,7 +195,6 @@ void _SETUP_wifi_menu(void** context) {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
-    ets_printf("SETTING UP WIFI MENU\n");
 
     (void) _BA_RD_wifi_menu_reload(ctx, NULL);
 }
@@ -213,15 +215,17 @@ int _BA_RD_wifi_menu_reload(void* context, void* args) {
     struct _WIFI_MENU_CONTEXT* ctx = (struct _WIFI_MENU_CONTEXT*) context;
     SPRITE_NODE* sprs[10];
     int numsprs;
+    ctx->opt.currentOption = 0;
     _HELP_COMMON_clear_options(ctx->opt.numOptions>5 ? 5 : ctx->opt.numOptions);
     draw_text(270, 2, text_search[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     right_justify_sprite_group_x(sprs, numsprs, 2);
+
     draw_all_sprites(spi);
 
     load_wifi(ctx);
 
     //set up the cursor
-    setup_cursor(&ctx->opt.cursorbg, &ctx->opt.cursor, 240-OPTION_Ys[0]+14);
+    setup_cursor(&ctx->opt.cursorbg, &ctx->opt.cursor, OPTION_Ys[0]);
 
     _HELP_COMMON_draw_options(&ctx->opt, 0);
     return 0;

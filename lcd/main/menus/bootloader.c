@@ -1684,14 +1684,29 @@ const RUNMENU_DATA _RMD_WELCOME_MENU = {
     &_CLEANUP_COMMON_single_layer_context,
     NULL, NULL,
     &_POSTLOOP_welcome_menu, NULL,
-    1,
-    { {
+    3, {
+        {
             ENCSW,
             BUTTON_DOWN,
             // &_BA_ED_welcome_menu,
             &_BA_COMMON_go_to_menu,
             (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 1),
-    } }
+        },
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            // &_BA_ED_welcome_menu,
+            &_BA_COMMON_go_to_menu,
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 1),
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            // &_BA_ED_welcome_menu,
+            &_BA_COMMON_go_to_menu,
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 1),
+        },
+    }
 };
 
 const RUNMENU_DATA _RMD_SETUP_MENU = {
@@ -1715,11 +1730,11 @@ const RUNMENU_DATA _RMD_SETUP_MENU = {
     }
 };
 
-const int OFFSETOPT = offsetof(struct _WIFI_MENU_CONTEXT, opt);
+// const int OFFSETOPT = offsetof(struct _WIFI_MENU_CONTEXT, opt);
 const RUNMENU_DATA _RMD_WIFI_MENU = {
     &_SETUP_wifi_menu,
     &_CLEANUP_wifi_menu,
-    &_ENC_COMMON_scroll_options, &OFFSETOPT, 
+    &_ENC_COMMON_scroll_options, (void*) offsetof(struct _WIFI_MENU_CONTEXT, opt), 
     NULL, NULL, 
     3, {
         {
