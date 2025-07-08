@@ -1675,7 +1675,8 @@ static int runMenu(const RUNMENU_DATA* const r) {
 done:
     if(r->CLEANUP != NULL)
         r->CLEANUP(&context);
-    free(context);
+    if(context != NULL)
+        free(context);
     return k;
 }
 
@@ -1785,12 +1786,27 @@ const RUNMENU_DATA _RMD_PB_SETUP_METHOD = {
     }
 };
 
+const RUNMENU_DATA _RMD_PB_WIFI_CONNECT = {
+    &_SETUP_wifi_connect,
+    &_CLEANUP_COMMON_single_layer_context,
+    NULL, NULL,
+    &_POSTLOOP_wifi_connect, NULL,
+    1, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_LD_wifi_connect,
+            NULL
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
     {&menusetup3[0], 2, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
     {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
-    {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, NULL},
+    {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, &_RMD_PB_WIFI_CONNECT},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
     {&menusetup3[0], 3, menufunc_network_preview, 2, NULL},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},

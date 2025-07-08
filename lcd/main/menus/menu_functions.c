@@ -9,11 +9,13 @@
 #include "board_config.h"
 #include "rom/ets_sys.h"
 #include <driver/gpio.h>
+#include "system_status.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
+extern unsigned char wifi_restart_counter;
 
 // HELPERS {{{
 void setup_cursor(SPRITE_NODE** cursorbg, SPRITE_NODE** cursor, int y) {
@@ -306,6 +308,38 @@ int _BA_pb_setup_method_confirm(void* context, void* args) {
     delete_persistent_sprites();
     struct PB_SETUP_METHOD_CONTEXT* cont = (struct PB_SETUP_METHOD_CONTEXT*) context;
     return MENU_SETUP_ONLY_TRANSITION_FLAG | (cont->selection ? 2 : 5);
+}
+// }}}
+// WIFI CONNECTING MENU {{{
+void _SETUP_wifi_connect(void** context) {
+    strncpy((char*)sta_wifi_config.sta.ssid, (char*)&settings.wifi_name[0], 32);
+    strncpy((char*)sta_wifi_config.sta.password, (char*)&settings.wifi_pass[0], 64);
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, (wifi_config_t*) &sta_wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_connect());
+    set_font_size(14);
+}
+
+int _BA_LD_wifi_connect(void* context, void* args) {
+    if((system_flags & (FLAG_WIFI_CONNECTED | FLAG_WIFI_TIMED_OUT)))
+        return 0;
+    wifi_restart_counter = 10;
+    return MENU_POP_FLAG;
+}
+
+int _POSTLOOP_wifi_connect(void* context, void* args) {
+    if(system_flags & FLAG_WIFI_TIMED_OUT) {
+        ets_printf("FAILED!\n");
+        draw_text(32, 60, text_connection_fail[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+        draw_all_sprites(spi);
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
+        system_flags &= ~FLAG_WIFI_TIMED_OUT;
+        return MENU_POP_FLAG;
+    }
+    ets_printf("success!\n");
+    draw_text(32, 60, text_connected[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_SELF_POP_FLAG | 8;
 }
 // }}}
 

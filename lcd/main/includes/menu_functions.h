@@ -47,4 +47,8 @@ void _SETUP_pb_setup_method(void** context);
 int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args);
 int _BA_pb_setup_method_confirm(void* context, void* args);
 
+void _SETUP_wifi_connect(void** context);
+int _BA_LD_wifi_connect(void* context, void* args);
+int _POSTLOOP_wifi_connect(void* context, void* args);
+
 #endif
