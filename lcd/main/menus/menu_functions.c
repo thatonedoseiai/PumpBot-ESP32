@@ -374,6 +374,7 @@ void _SETUP_wifi_preview(void** context) {
         strncpy(settings.wifi_pass, TEXT_ENTRY_BUFFER, 64);
         free(TEXT_ENTRY_BUFFER);
         TEXT_ENTRY_BUFFER = NULL;
+        TEXT_ENTRY_BUFFER_LENGTH = 0;
     }
     set_font_size(14);
     draw_text(32, 184, text_settings_network[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
@@ -402,6 +403,7 @@ int _BA_ED_wifi_preview(void* context, void* args) {
     case 1:
         TEXT_ENTRY_BUFFER = calloc(65, sizeof(char));
         strncpy(TEXT_ENTRY_BUFFER, &settings.wifi_pass[0], 64);
+        TEXT_ENTRY_BUFFER_LENGTH = 65;
         return 3;
     case 2:
         if(system_flags & FLAG_WIFI_CONNECTED) {
