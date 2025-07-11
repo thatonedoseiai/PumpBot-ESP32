@@ -160,6 +160,7 @@ SPRITE_NODE* push(SPRITE_24_H* sprite) {
     if(sprite_list)
         sprite_list->p = ins;
     ins->lifetime = 0xffffffff;
+    ins->clear = 0;
     sprite_list = ins;
     return ins;
 }

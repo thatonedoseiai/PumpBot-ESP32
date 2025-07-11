@@ -17,6 +17,7 @@ extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
 extern unsigned char wifi_restart_counter;
 char* TEXT_ENTRY_BUFFER;
+unsigned char TEXT_ENTRY_BUFFER_LENGTH;
 
 // HELPERS {{{
 void ellipsized_name(char* dest, char* src, int max) {
@@ -423,6 +424,182 @@ int _ENC_wifi_preview(void* context, rotary_encoder_event_t ev, void* args) {
     cont->selection = (ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? (cont->selection + 1) % 3 : (cont->selection + 2) % 3;
     draw_text(10, ys[cont->selection], ">", &cursor, NULL, *foreground_color, *background_color, 0, false, true);
     set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    return 0;
+}
+// }}}
+// TEXT INPUT MENU {{{
+const char TEXT_table1[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ␣⌫✓";
+const char TEXT_table2[] = "abcdefghijklmnopqrstuvwxyz␣⌫✓";
+const char TEXT_table3[] = "\"#$%&'()*+,-./0123456789:;<=>!?@␣⌫✓";
+const char* TEXT_metatable[] = {TEXT_table1, TEXT_table2, TEXT_table3};
+const unsigned char TEXT_string_lengths[] = {29, 29, 36};
+const char TEXT_tablename[][2] = {"a", "@", "A"};
+const int TEXT_xs[] = {40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 240, 260};
+const int TEXT_ys[] = {90, 58, 26};
+const char* TEXT_CURSOR_1 = "▵";
+const char* TEXT_CURSOR_2 = "v";
+#define TEXT_MENU_PREVIEW_X 2
+#define TEXT_MENU_PREVIEW_Y 184
+#define TEXT_MENU_PREVIEW_LINE_HEIGHT 24
+#define NUM_TEXT_ROWS 12
+const unsigned char TEXT_ROW_TABLE[] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
+enum TEXT_CHARREGISTER {
+    UPPERCASE = 0,
+    LOWERCASE,
+    SYMBOLS
+};
+struct _TEXT_INPUT_CONTEXT {
+    enum TEXT_CHARREGISTER charReg; 
+    SPRITE_NODE* grid_chars[36];
+    int num_grid_chars;
+    unsigned int selection;
+    SPRITE_NODE* cursor[2];
+    SPRITE_NODE* reg_tag;
+    SPRITE_NODE** text_buffer_chars;
+    int num_text_buffer_chars;
+    unsigned int next_x;
+    unsigned int next_y;
+};
+
+void _HELP_draw_grid(SPRITE_NODE** sprs, int* numsprs, int reg) {
+    for(int i=0;i<*numsprs;++i) // IF numsprs == 0 then we don't delete
+        delete_node(sprs[i]);
+    draw_text(0, 10, TEXT_metatable[reg], sprs, numsprs, *foreground_color, *background_color, 0, false, false);
+    for(int i=0;i<*numsprs;++i) {
+        sprs[i]->v->posX = TEXT_xs[i%NUM_TEXT_ROWS];
+        sprs[i]->v->posY = sprs[i]->v->posY - TEXT_ys[TEXT_ROW_TABLE[i]];
+    }
+}
+
+#define CURSOR_NUM_SPRS 2
+#define CURSOR_SPACING 14
+void _HELP_draw_cursor(struct _TEXT_INPUT_CONTEXT* cont) {
+    if(cont->cursor[0] != NULL) {
+        delete_node(cont->cursor[0]);
+        delete_node(cont->cursor[1]);
+    }
+    int x = cont->grid_chars[cont->selection]->v->posX;
+    int y = TEXT_ys[TEXT_ROW_TABLE[cont->selection]];
+    int num;
+    draw_text(x, y-CURSOR_SPACING+10, TEXT_CURSOR_1, &cont->cursor[0], &num, *foreground_color, *background_color, 0, false, false);
+    draw_text(x, y+CURSOR_SPACING+10, TEXT_CURSOR_2, &cont->cursor[1], &num, *foreground_color, *background_color, 0, false, false);
+}
+
+void _HELP_draw_register_tag(enum TEXT_CHARREGISTER cr, SPRITE_NODE** tag) {
+    if(*tag != NULL)
+        delete_node(*tag);
+
+    int num = 0;
+    draw_text(300, 5, TEXT_tablename[cr], tag, &num, *foreground_color, *background_color, 0, false, false);
+}
+
+void _HELP_draw_text_preview(struct _TEXT_INPUT_CONTEXT* cont) {
+    for(int i=0;i<cont->num_text_buffer_chars;++i)
+        delete_node(cont->text_buffer_chars[i]);
+    int adv_x = draw_text(TEXT_MENU_PREVIEW_X, TEXT_MENU_PREVIEW_Y, TEXT_ENTRY_BUFFER, cont->text_buffer_chars, &cont->num_text_buffer_chars, *foreground_color, *background_color, TEXT_MENU_PREVIEW_LINE_HEIGHT, false, false);
+    if(cont->num_text_buffer_chars == 0) {
+        cont->next_x = TEXT_MENU_PREVIEW_X;
+        cont->next_y = TEXT_MENU_PREVIEW_Y;
+    } else {
+        SPRITE_NODE* finalChar = cont->text_buffer_chars[cont->num_text_buffer_chars-1];
+        cont->next_x = adv_x + finalChar->v->posX;
+        cont->next_y = 240-finalChar->v->posY-14;
+        if(cont->next_x > 320) {
+            cont->next_x = TEXT_MENU_PREVIEW_X;
+            cont->next_y += TEXT_MENU_PREVIEW_LINE_HEIGHT;
+        }
+    }
+}
+
+void _SETUP_text_input(void** context) {
+    if(TEXT_ENTRY_BUFFER == NULL) return;
+
+    struct _TEXT_INPUT_CONTEXT* cont = malloc(sizeof(struct _TEXT_INPUT_CONTEXT));
+    *context = cont;
+    cont->cursor[0] = NULL;
+    cont->grid_chars[0] = NULL;
+    cont->num_grid_chars = 0;
+    cont->selection = 0;
+    cont->charReg = UPPERCASE;
+    cont->reg_tag = NULL;
+    cont->text_buffer_chars = malloc(TEXT_ENTRY_BUFFER_LENGTH * sizeof(intptr_t));
+    cont->num_text_buffer_chars = 0;
+
+    set_font_size(14);
+    _HELP_draw_grid(&cont->grid_chars[0], &cont->num_grid_chars, 0);
+    _HELP_draw_cursor(cont);
+    _HELP_draw_register_tag(cont->charReg, &cont->reg_tag);
+    _HELP_draw_text_preview(cont);
+
+    draw_all_sprites(spi);
+}
+
+void _CLEANUP_text_input(void** context) {
+    if(TEXT_ENTRY_BUFFER == NULL) return;
+    struct _TEXT_INPUT_CONTEXT* cont = *context;
+    free(cont->text_buffer_chars);
+    _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _ENC_text_input(void* context, rotary_encoder_event_t ev, void* args) {
+    if(TEXT_ENTRY_BUFFER == NULL)
+        return MENU_POP_FLAG;
+
+    struct _TEXT_INPUT_CONTEXT* cont = context;
+    int direction = 1;
+    if(ev.state.direction != ROTARY_ENCODER_DIRECTION_CLOCKWISE)
+        direction = TEXT_string_lengths[cont->charReg]-1;
+    cont->selection = (cont->selection+direction) % (TEXT_string_lengths[cont->charReg]);
+    _HELP_draw_cursor(cont);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_RD_switch_register(void* context, void* args) {
+    if(TEXT_ENTRY_BUFFER == NULL)
+        return MENU_POP_FLAG;
+    struct _TEXT_INPUT_CONTEXT* cont = context;
+    cont->charReg = (cont->charReg+1)%3;
+    _HELP_draw_grid(&cont->grid_chars[0], &cont->num_grid_chars, cont->charReg);
+    _HELP_draw_register_tag(cont->charReg, &cont->reg_tag);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_accept_char(void* context, void* args) {
+    if(TEXT_ENTRY_BUFFER == NULL)
+        return MENU_POP_FLAG;
+
+    struct _TEXT_INPUT_CONTEXT* cont = context;
+    int numFromEnd = TEXT_string_lengths[cont->charReg] - cont->selection;
+    int lenBuffer = strlen(TEXT_ENTRY_BUFFER);
+    switch(numFromEnd) {
+        case 1:
+            return MENU_POP_FLAG;
+            break;
+        case 2:
+            if(lenBuffer == 0)
+                return 0;
+            TEXT_ENTRY_BUFFER[lenBuffer-1] = 0;
+            break;
+        case 3:
+            if(lenBuffer == TEXT_ENTRY_BUFFER_LENGTH-1)
+                return 0;
+            TEXT_ENTRY_BUFFER[lenBuffer] = ' ';
+            TEXT_ENTRY_BUFFER[lenBuffer+1] = 0;
+            break;
+        default:
+            if(lenBuffer == TEXT_ENTRY_BUFFER_LENGTH-1)
+                return 0;
+            char selected = TEXT_metatable[cont->charReg][cont->selection];
+            TEXT_ENTRY_BUFFER[lenBuffer] = selected;
+            TEXT_ENTRY_BUFFER[lenBuffer+1] = 0;
+    }
+    _HELP_draw_text_preview(cont);
     draw_all_sprites(spi);
     return 0;
 }

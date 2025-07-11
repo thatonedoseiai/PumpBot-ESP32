@@ -56,4 +56,10 @@ int _BA_LD_wifi_preview(void* context, void* args);
 int _BA_ED_wifi_preview(void* context, void* args);
 int _ENC_wifi_preview(void* context, rotary_encoder_event_t ev, void* args);
 
+void _SETUP_text_input(void** context);
+void _CLEANUP_text_input(void** context);
+int _ENC_text_input(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_RD_switch_register(void* context, void* args);
+int _BA_ED_accept_char(void* context, void* args);
+
 #endif

@@ -46,7 +46,7 @@ int draw_text(int startX, int startY, const char* string, SPRITE_NODE** sprites,
     int curchar;
     // uint8_t alphaR, alphaG, alphaB;
     // uint24_RGB* bg;
-    uint64_t advance_x;
+    uint16_t advance_x = 0;
     int yloc = startY;
     uint16_t width;
     uint16_t height;
@@ -138,7 +138,7 @@ make_no_sprite:
         offset_x += advance_x;
 	}
 
-    return 0;
+    return advance_x;
 }
 
 static int l_draw_text(lua_State* L) {

@@ -109,7 +109,7 @@ static int menufunc_wifi_scan() {
     memset(ap_info, 0, sizeof(ap_info));
     set_font_size(14);
 
-    error = draw_text(270, 2, text_search[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
+    draw_text(270, 2, text_search[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
     right_justify_sprite_group_x(sprs, numsprs, 2);
     draw_all_sprites(spi);
 
@@ -1828,11 +1828,38 @@ const RUNMENU_DATA _RMD_PB_WIFI_PREVIEW = {
     }
 };
 
+const RUNMENU_DATA _RMD_TEXT_INPUT = {
+    &_SETUP_text_input,
+    &_CLEANUP_text_input,
+    &_ENC_text_input, NULL,
+    NULL, NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_RD_switch_register,
+            NULL
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_ED_accept_char,
+            NULL
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
     {&menusetup3[0], 2, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
-    {&menutextenter[0], 2, menufunc_text_write, 2, NULL},
+    {&menutextenter[0], 2, menufunc_text_write, 2, &_RMD_TEXT_INPUT},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, &_RMD_PB_WIFI_CONNECT},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
@@ -1937,9 +1964,7 @@ int draw_menu_elements(const MENU_ELEMENT* elems, int numElements) {
         int numsprs;
         SPRITE_NODE* spriteArray[64];
 
-        err = draw_text(elems[i].x, elems[i].y, (elems[i].flags & MENU_FLAG_LANGUAGE_AGNOSTIC) ? elems[i].text[0] : elems[i].text[settings.language], &spriteArray[0], &numsprs, **(elems[i].col), *background_color, 0, false, false);
-        if (err)
-            return err;
+        draw_text(elems[i].x, elems[i].y, (elems[i].flags & MENU_FLAG_LANGUAGE_AGNOSTIC) ? elems[i].text[0] : elems[i].text[settings.language], &spriteArray[0], &numsprs, **(elems[i].col), *background_color, 0, false, false);
         if (elems[i].flags & MENU_FLAG_CENTER) {
             center_sprite_group_x(spriteArray, numsprs);
             continue;
