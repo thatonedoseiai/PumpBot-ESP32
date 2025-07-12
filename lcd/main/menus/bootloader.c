@@ -1855,6 +1855,27 @@ const RUNMENU_DATA _RMD_TEXT_INPUT = {
     }
 };
 
+const RUNMENU_DATA _RMD_SKIP_WIFI_CONNECTION = {
+    &_SETUP_COMMON_no_context,
+    &_CLEANUP_COMMON_single_layer_context,
+    NULL, NULL,
+    NULL, NULL,
+    2, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | MENU_SELF_POP_FLAG | 8)
+        },
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
@@ -1878,7 +1899,7 @@ MENU_INFO_t allmenus[] = {
     {&menunetworksettings[0], 7, menufunc_network_settings, 0, NULL},
     {&menuserversettings[0], 9, menufunc_server_settings, 6, NULL},
     {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL, NULL},
-    {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, NULL},
+    {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, &_RMD_SKIP_WIFI_CONNECTION},
     {&menusetup3[0], 2, menufunc_developer, 2, NULL},
     {&menusetup3[0], 2, menufunc_credits, 2, NULL},
 };

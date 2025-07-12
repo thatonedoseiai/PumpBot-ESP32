@@ -43,6 +43,10 @@ int _BA_COMMON_go_to_menu(void* context, void* args) {
     return *(int*) &args;
 }
 
+void _SETUP_COMMON_no_context(void** context) {
+    (void) context;
+}
+
 void _CLEANUP_COMMON_single_layer_context(void** context) {
     // delete_persistent_sprites();
     delete_all_sprites_immediate();
@@ -185,7 +189,7 @@ int _BA_ENC_setup_menu(void* context, rotary_encoder_event_t ev, void* args) {
     return 0;
 }
 // }}}
-// WIFI MENU {{{
+// WIFI LIST MENU {{{
 int load_wifi(struct _WIFI_MENU_CONTEXT* ctx) {
     // wifi_ap_record_t ap_info[numWifi];
     uint16_t ap_count = 0;
@@ -605,6 +609,9 @@ int _BA_ED_accept_char(void* context, void* args) {
     draw_all_sprites(spi);
     return 0;
 }
+// }}}
+// SKIP WIFI CONNECTION CONFIRMATION {{{
+// nothing here. Just transitioning to a few menus.
 // }}}
 
 // vim:fdm=marker

@@ -26,6 +26,7 @@ struct _WIFI_MENU_CONTEXT {
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
 int _BA_COMMON_go_to_menu(void* context, void* args);
+void _SETUP_COMMON_no_context(void** context);
 void _CLEANUP_COMMON_single_layer_context(void** context);
 int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* args);
 
