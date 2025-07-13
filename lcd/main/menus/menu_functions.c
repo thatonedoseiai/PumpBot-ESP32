@@ -16,6 +16,7 @@ extern uint24_RGB* background_color;
 extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
 extern unsigned char wifi_restart_counter;
+extern uint24_RGB* bgbuf;
 char* TEXT_ENTRY_BUFFER;
 unsigned char TEXT_ENTRY_BUFFER_LENGTH;
 uint24_RGB COLOR_SELECTION_BUFFER;
@@ -703,7 +704,7 @@ void _SETUP_display_menu(void** context) {
 }
 
 void _CLEANUP_display_menu(void** context) {
-    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) _HELP_COMMON_unwrap_modal_context(context);
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) _HELP_COMMON_unwrap_modal_context(*context);
     free(ctx);
     _CLEANUP_COMMON_single_layer_context(context);
 }
@@ -802,14 +803,18 @@ int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode) {
         ctx->theming_sprites[i]->v->fg = *foreground_color;
     delete_node(ctx->aux_cursors[0]);
     delete_node(ctx->aux_cursors[1]);
-    SPRITE_NODE* cursor;
-    int numsprs;
-    draw_text(10, 152, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
-    set_sprites_lifetime(1, &cursor, 1);
-    draw_all_sprites(spi);
+    // SPRITE_NODE* cursor;
+    // int numsprs;
+    // draw_text(10, 152, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
+    // set_sprites_lifetime(1, &cursor, 1);
+    // draw_all_sprites(spi);
     ctx->selection = 1;
     *mode = MAIN;
-    return 0;
+    assign_theme_from_settings();
+    //reload manually because the background did not change and thus did not trigger the manual reload
+    load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+    blit_bg();
+    return MENU_REDRAW_FLAG;
 }
 // }}}
 

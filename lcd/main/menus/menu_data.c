@@ -432,14 +432,6 @@ const MENU_ELEMENT menusetup2a[] = {
 };
 
 const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Setting menu and the likes
-    {
-        .text = text_wifi_settings,
-        .x = 0,
-        .y = 216,
-        .flags = MENU_FLAG_CENTER,
-        .textsize = 14,
-        .col = &foreground_color
-    },
     // {      
     //     .y = 208,
     //     .textsize = 2,
@@ -497,7 +489,15 @@ const MENU_ELEMENT menusetup3[] = { //Setup Menu 3, basically a template for Set
         .textsize = 14,
         .flags = MENU_FLAG_RIGHT_JUSTIFY,
         .col = &foreground_color
-    }
+    },
+    {
+        .text = text_wifi_settings,
+        .x = 0,
+        .y = 216,
+        .flags = MENU_FLAG_CENTER,
+        .textsize = 14,
+        .col = &foreground_color
+    },
 };
 
 const MENU_ELEMENT menutextenter[] = {
