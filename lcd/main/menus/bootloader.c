@@ -543,7 +543,8 @@ static int menufunc_pb_setup_method (void) {
     }
 }
 
-const char* const* theme_names[] = {text_dark_mode, text_light_mode, text_custom};
+// const char* const* theme_names[] = {text_dark_mode, text_light_mode, text_custom};
+extern const char* const* theme_names[3];
 static int menufunc_display_settings(void) {
     button_event_t event;
     rotary_encoder_event_t rotencev;
@@ -1876,6 +1877,51 @@ const RUNMENU_DATA _RMD_SKIP_WIFI_CONNECTION = {
     }
 };
 
+const struct _MODAL_MENU_ARGS_ROTENC DISPLAY_SETTINGS_MM_ARGS_ROTENC = {
+    3, NULL,
+    {
+        &_ENC_display_menu_main_mode,
+        &_ENC_display_menu_bright_mode,
+        &_ENC_display_menu_theme_mode,
+    }
+};
+
+const struct _MODAL_MENU_ARGS_BUTTON DISPLAY_SETTINGS_MM_ARGS_BUTTON = {
+    3, NULL,
+    {
+        &_BA_ED_select_value_main_mode,
+        &_BA_ED_select_value_brightness_mode,
+        &_BA_ED_select_value_theme_mode,
+    }
+};
+
+const RUNMENU_DATA _RMD_DISPLAY_SETTINGS = {
+    &_SETUP_display_menu,
+    &_CLEANUP_display_menu,
+    &_ENC_COMMON_modal_menu, (void*) &DISPLAY_SETTINGS_MM_ARGS_ROTENC,
+    NULL, NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 10)
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_COMMON_modal_menu,
+            (void*) &DISPLAY_SETTINGS_MM_ARGS_BUTTON
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
@@ -1885,7 +1931,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},
-    {&menusetup3[0], 3, menufunc_display_settings, 2, NULL},
+    {&menusetup3[0], 3, menufunc_display_settings, 2, &_RMD_DISPLAY_SETTINGS},
     {&menusetup3[0], 3, menufunc_color_picker, 2, NULL},
     {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},
     {&menusetup3[0], 2, menufunc_all_settings, 6, NULL},

@@ -23,11 +23,25 @@ struct _WIFI_MENU_CONTEXT {
     wifi_ap_record_t ap_info[NUM_WIFIS];
     struct _OPTIONS_DATA_ opt;
 };
+struct _MODAL_MENU_ARGS_ROTENC {
+    unsigned char num_modes;
+    void* args;
+    int(*modes[])(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+};
+struct _MODAL_MENU_ARGS_BUTTON {
+    unsigned char num_modes;
+    void* args;
+    int(*modes[])(void* context, void* args, int* mode);
+};
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
+void* _HELP_COMMON_create_and_wrap_modal_context(void* context);
+void* _HELP_COMMON_unwrap_modal_context(void* context);
 int _BA_COMMON_go_to_menu(void* context, void* args);
 void _SETUP_COMMON_no_context(void** context);
 void _CLEANUP_COMMON_single_layer_context(void** context);
+int _ENC_COMMON_modal_menu(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_COMMON_modal_menu(void* context, void* args);
 int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* args);
 
 void _SETUP_welcome_menu(void** context);
@@ -62,5 +76,14 @@ void _CLEANUP_text_input(void** context);
 int _ENC_text_input(void* context, rotary_encoder_event_t ev, void* args);
 int _BA_RD_switch_register(void* context, void* args);
 int _BA_ED_accept_char(void* context, void* args);
+
+void _SETUP_display_menu(void** context);
+void _CLEANUP_display_menu(void** context);
+int _ENC_display_menu_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_display_menu_bright_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_display_menu_theme_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _BA_ED_select_value_main_mode(void* context, void* args, int* mode);
+int _BA_ED_select_value_brightness_mode(void* context, void* args, int* mode);
+int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode);
 
 #endif

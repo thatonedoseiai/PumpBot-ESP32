@@ -18,6 +18,9 @@ extern SETTINGS_t settings;
 extern unsigned char wifi_restart_counter;
 char* TEXT_ENTRY_BUFFER;
 unsigned char TEXT_ENTRY_BUFFER_LENGTH;
+uint24_RGB COLOR_SELECTION_BUFFER;
+unsigned char COLOR_SELECTION_BUFFER_VALID;
+const uint24_RGB HIGHLIGHT_COLOR = {0xff, 0x00, 0x00};
 
 // HELPERS {{{
 void ellipsized_name(char* dest, char* src, int max) {
@@ -50,6 +53,43 @@ void _SETUP_COMMON_no_context(void** context) {
 void _CLEANUP_COMMON_single_layer_context(void** context) {
     // delete_persistent_sprites();
     delete_all_sprites_immediate();
+}
+
+struct _MODAL_MENU_CONTEXT_WRAPPER {
+    int mode;
+    void* context;
+};
+void* _HELP_COMMON_create_and_wrap_modal_context(void* context) {
+    struct _MODAL_MENU_CONTEXT_WRAPPER* x = malloc(sizeof(struct _MODAL_MENU_CONTEXT_WRAPPER));
+    x->mode = 0;
+    x->context = context;
+    return x;
+}
+
+// no need to free, as usually this context will be the outer context, and the menu runner function will take care of it
+void* _HELP_COMMON_unwrap_modal_context(void* context) {
+    struct _MODAL_MENU_CONTEXT_WRAPPER* x = (struct _MODAL_MENU_CONTEXT_WRAPPER*) context;
+    return x->context;
+}
+
+int _ENC_COMMON_modal_menu(void* context, rotary_encoder_event_t ev, void* args) {
+    struct _MODAL_MENU_CONTEXT_WRAPPER* x = (struct _MODAL_MENU_CONTEXT_WRAPPER*) context;
+    struct _MODAL_MENU_ARGS_ROTENC* a = (struct _MODAL_MENU_ARGS_ROTENC*) args;
+    if(x->mode > a->num_modes || x->mode < 0) {
+        ets_printf("INVALID MODE REACHED! %d\n", x->mode);
+        return MENU_POP_FLAG;
+    }
+    return a->modes[x->mode](x->context, ev, a->args, &x->mode);
+}
+
+int _BA_COMMON_modal_menu(void* context, void* args) {
+    struct _MODAL_MENU_CONTEXT_WRAPPER* x = (struct _MODAL_MENU_CONTEXT_WRAPPER*) context;
+    struct _MODAL_MENU_ARGS_BUTTON* a = (struct _MODAL_MENU_ARGS_BUTTON*) args;
+    if(x->mode > a->num_modes || x->mode < 0) {
+        ets_printf("INVALID MODE REACHED! %d\n", x->mode);
+        return MENU_POP_FLAG;
+    }
+    return a->modes[x->mode](x->context, a->args, &x->mode);
 }
 
 const int OPTION_Ys[] = {184, 152, 120, 88, 56};
@@ -336,6 +376,7 @@ void _SETUP_wifi_connect(void** context) {
     ESP_ERROR_CHECK(esp_wifi_connect());
     set_font_size(14);
     TEXT_ENTRY_BUFFER = NULL;
+    COLOR_SELECTION_BUFFER_VALID = 0;
 }
 
 int _BA_LD_wifi_connect(void* context, void* args) {
@@ -612,6 +653,164 @@ int _BA_ED_accept_char(void* context, void* args) {
 // }}}
 // SKIP WIFI CONNECTION CONFIRMATION {{{
 // nothing here. Just transitioning to a few menus.
+// }}}
+// DISPLAY THEMING {{{
+enum _DISPLAY_MENU_MODES {
+    MAIN = 0,
+    BRIGHTNESS,
+    THEME
+};
+struct _CONTEXT_DISPLAY_MENU {
+    unsigned char selection;
+    SPRITE_NODE* brightness_sprites[4];
+    int num_brightness_sprites;
+    SPRITE_NODE* theming_sprites[40];
+    int num_theming_sprites;
+    SPRITE_NODE* aux_cursors[2];
+};
+const char* const* theme_names[] = {text_dark_mode, text_light_mode, text_custom};
+
+void _SETUP_display_menu(void** context) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = malloc(sizeof(struct _CONTEXT_DISPLAY_MENU));
+    *context = _HELP_COMMON_create_and_wrap_modal_context(ctx);
+    
+    if(COLOR_SELECTION_BUFFER_VALID) {
+        settings.custom_theme_color.pixelR = COLOR_SELECTION_BUFFER.pixelR;
+        settings.custom_theme_color.pixelG = COLOR_SELECTION_BUFFER.pixelG;
+        settings.custom_theme_color.pixelB = COLOR_SELECTION_BUFFER.pixelB;
+        COLOR_SELECTION_BUFFER_VALID = 0;
+        assign_theme_from_settings();
+        ctx->selection = 10; // trigger redraw
+        return;
+    }
+    ctx->selection = 0;
+
+    int numsprs;
+    SPRITE_NODE* sprs[32];
+    char brightness[4];
+    SPRITE_NODE* cursor;
+    (void) itoa(settings.disp_brightness, brightness, 10);
+    set_font_size(14);
+    draw_text(0, 216, text_display_setting[settings.language], sprs, &numsprs, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(sprs, numsprs);
+    draw_text(32, 184, text_brightness[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(150, 184, brightness, &ctx->brightness_sprites[0], &ctx->num_brightness_sprites, *foreground_color, *background_color, 0, false, false);
+    draw_text(150, 152, theme_names[settings.disp_theme][settings.language], &ctx->theming_sprites[0], &ctx->num_theming_sprites, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 152, text_theme[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(10, 184, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+}
+
+void _CLEANUP_display_menu(void** context) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) _HELP_COMMON_unwrap_modal_context(context);
+    free(ctx);
+    _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _ENC_display_menu_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    SPRITE_NODE* cursor;
+    int numsprs = 0;
+    ctx->selection ^= 1;
+    draw_text(10, ctx->selection ? 152 : 184, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _ENC_display_menu_bright_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    char bright[4];
+    for(int i=0;i<ctx->num_brightness_sprites;++i)
+        delete_node(ctx->brightness_sprites[i]);
+    settings.disp_brightness += ev.state.multiplier * ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : -1);
+    if(settings.disp_brightness > 255)
+        settings.disp_brightness = 255;
+    else if(settings.disp_brightness < 0)
+        settings.disp_brightness = 0;
+    (void) itoa(settings.disp_brightness, bright, 10);
+    draw_text(150, 184, bright, &ctx->brightness_sprites[0], &ctx->num_brightness_sprites, HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, 7, settings.disp_brightness << 6);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
+    return 0;
+}
+
+int _ENC_display_menu_theme_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    for(int i=0;i<ctx->num_theming_sprites;++i)
+        delete_node(ctx->theming_sprites[i]);
+    settings.disp_theme = (settings.disp_theme + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
+    draw_text(150, 152, theme_names[settings.disp_theme][settings.language], &ctx->theming_sprites[0], &ctx->num_theming_sprites, HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_select_value_main_mode(void* context, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    *mode = ctx->selection + 1;
+    switch(*mode) {
+        case 1:
+            for(int i=0;i<ctx->num_brightness_sprites;++i)
+                ctx->brightness_sprites[i]->v->fg = HIGHLIGHT_COLOR;
+            break;
+        case 2:
+            for(int i=0;i<ctx->num_theming_sprites;++i)
+                ctx->theming_sprites[i]->v->fg = HIGHLIGHT_COLOR;
+            break;
+    }
+    int height = ctx->selection ? 152 : 184;
+    int num;
+    draw_text(140, height, "<", &ctx->aux_cursors[0], &num, *foreground_color, *background_color, 0, false, false);
+    draw_text(280, height, ">", &ctx->aux_cursors[1], &num, *foreground_color, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_select_value_brightness_mode(void* context, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    for(int i=0;i<ctx->num_brightness_sprites;++i)
+        ctx->brightness_sprites[i]->v->fg = *foreground_color;
+    delete_node(ctx->aux_cursors[0]);
+    delete_node(ctx->aux_cursors[1]);
+    SPRITE_NODE* cursor;
+    int numsprs;
+    draw_text(10, 184, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    ctx->selection = 0;
+    *mode = MAIN;
+    return 0;
+}
+
+int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) context;
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    for(int i=0;i<ctx->num_theming_sprites;++i)
+        ctx->theming_sprites[i]->v->fg = *foreground_color;
+    delete_node(ctx->aux_cursors[0]);
+    delete_node(ctx->aux_cursors[1]);
+    SPRITE_NODE* cursor;
+    int numsprs;
+    draw_text(10, 152, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    ctx->selection = 1;
+    *mode = MAIN;
+    return 0;
+}
 // }}}
 
 // vim:fdm=marker

@@ -284,7 +284,7 @@ void app_main(void) {
 
     // goto lua_start;
     if(setup_flag) {
-        (void) start_menu_tree(0, false);
+        (void) start_menu_tree(8, false);
     }
 // lua_start:
     rgb_update();
