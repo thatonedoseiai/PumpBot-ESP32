@@ -1911,7 +1911,7 @@ const RUNMENU_DATA _RMD_DISPLAY_SETTINGS = {
             RIGHTBUTTON,
             BUTTON_DOWN,
             &_BA_COMMON_go_to_menu,
-            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 10)
+            (void*) (MENU_SETUP_ONLY_TRANSITION_FLAG | 21)
         },
         {
             ENCSW,
@@ -1969,13 +1969,43 @@ const RUNMENU_DATA _RMD_COLOR_PICKER = {
     }
 };
 
+const RUNMENU_DATA _RMD_SETUP_FINISHED = {
+    &_SETUP_COMMON_no_context,
+    &_CLEANUP_COMMON_single_layer_context,
+    NULL, NULL,
+    NULL, NULL,
+    1, {
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_RETURN_FLAG
+        }
+    }
+};
+
+const RUNMENU_DATA _RMD_HTTP_SERVER_CONFIG = {
+    &_SETUP_http_server_config,
+    &_CLEANUP_http_server_config,
+    NULL, NULL,
+    &_POSTLOOP_http_server_config, NULL,
+    1, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
     {&menusetup3[0], 3, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
     {&menutextenter[0], 2, menufunc_text_write, 2, &_RMD_TEXT_INPUT},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, &_RMD_PB_WIFI_CONNECT},
-    {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
+    {&menusetup2a[0], 7, menufunc_http_setup, 3, &_RMD_HTTP_SERVER_CONFIG},
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},
     {&menusetup3[0], 2, menufunc_display_settings, 2, &_RMD_DISPLAY_SETTINGS},
@@ -1991,7 +2021,7 @@ MENU_INFO_t allmenus[] = {
     {&menudownloadapp[0], 6, menufunc_download_file, 0, NULL},
     {&menunetworksettings[0], 7, menufunc_network_settings, 0, NULL},
     {&menuserversettings[0], 9, menufunc_server_settings, 6, NULL},
-    {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL, NULL},
+    {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL, &_RMD_SETUP_FINISHED},
     {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, &_RMD_SKIP_WIFI_CONNECTION},
     {&menusetup3[0], 1, menufunc_developer, 2, NULL},
     {&menusetup3[0], 1, menufunc_credits, 2, NULL},

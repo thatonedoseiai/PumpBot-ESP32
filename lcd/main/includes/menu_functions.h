@@ -94,4 +94,8 @@ int _BA_ED_color_picker_select_focused_channel(void* context, void* args, int* m
 int _BA_ED_color_picker_return_to_main_mode(void* context, void* args, int* channel);
 int _BA_RD_color_picker_confirm(void* context, void* args);
 
+void _SETUP_http_server_config(void** context);
+void _CLEANUP_http_server_config(void** context);
+int _POSTLOOP_http_server_config(void* context, void* args);
+
 #endif

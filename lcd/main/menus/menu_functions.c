@@ -10,6 +10,7 @@
 #include "rom/ets_sys.h"
 #include <driver/gpio.h>
 #include "system_status.h"
+#include "file_server.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -895,7 +896,6 @@ int _ENC_color_picker_channel_mode(void* context, rotary_encoder_event_t ev, voi
 }
 
 int _BA_ED_color_picker_select_focused_channel(void* context, void* args, int* mode) {
-    char numbuf[4];
     struct _COLOR_PICKER_CONTEXT* c = (struct _COLOR_PICKER_CONTEXT*) context;
     for(int i=0;i<c->num_channel_chars[c->selection];++i)
         c->channel_chars[c->selection][i]->v->fg = HIGHLIGHT_COLOR;
@@ -916,6 +916,27 @@ int _BA_ED_color_picker_return_to_main_mode(void* context, void* args, int* chan
 int _BA_RD_color_picker_confirm(void* context, void* args) {
     COLOR_SELECTION_BUFFER_VALID = 1;
     return MENU_POP_FLAG;
+}
+// }}}
+// HTTP SERVER CONFIGURATION MENU {{{
+void _SETUP_http_server_config(void** context) {
+    system_flags &= ~FLAG_HTTP_SERVER_DONE;
+    ESP_ERROR_CHECK(example_start_file_server("/mainfs"));
+}
+
+void _CLEANUP_http_server_config(void** context) {
+    stop_file_server();
+    _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _POSTLOOP_http_server_config(void* context, void* args) {
+    if((system_flags & FLAG_HTTP_SERVER_DONE) != 0) {
+        system_flags &= ~FLAG_HTTP_SERVER_DONE;
+        ledc_set_duty(LEDC_LOW_SPEED_MODE, 7, settings.disp_brightness << 6);
+        ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
+        return MENU_SETUP_ONLY_TRANSITION_FLAG | 21;
+    }
+    return 0;
 }
 // }}}
 
