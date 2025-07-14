@@ -79,6 +79,7 @@ int _BA_ED_accept_char(void* context, void* args);
 
 void _SETUP_display_menu(void** context);
 void _CLEANUP_display_menu(void** context);
+int _POSTLOOP_display_menu(void* context, void* args);
 int _ENC_display_menu_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
 int _ENC_display_menu_bright_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
 int _ENC_display_menu_theme_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);

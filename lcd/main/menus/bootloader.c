@@ -1899,7 +1899,7 @@ const RUNMENU_DATA _RMD_DISPLAY_SETTINGS = {
     &_SETUP_display_menu,
     &_CLEANUP_display_menu,
     &_ENC_COMMON_modal_menu, (void*) &DISPLAY_SETTINGS_MM_ARGS_ROTENC,
-    NULL, NULL,
+    &_POSTLOOP_display_menu, NULL,
     3, {
         {
             LEFTBUTTON,
@@ -1972,14 +1972,14 @@ const RUNMENU_DATA _RMD_COLOR_PICKER = {
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
-    {&menusetup3[0], 2, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
+    {&menusetup3[0], 3, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
     {&menutextenter[0], 2, menufunc_text_write, 2, &_RMD_TEXT_INPUT},
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, &_RMD_PB_WIFI_CONNECT},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, NULL},
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},
     {&menusetup3[0], 2, menufunc_display_settings, 2, &_RMD_DISPLAY_SETTINGS},
-    {&menusetup3[0], 3, menufunc_color_picker, 2, &_RMD_COLOR_PICKER},
+    {&menusetup3[0], 2, menufunc_color_picker, 2, &_RMD_COLOR_PICKER},
     {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},
     {&menusetup3[0], 1, menufunc_all_settings, 6, NULL},
     {&menusetup3[0], 1, menufunc_pwm_output_settings, 6, NULL},

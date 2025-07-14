@@ -179,7 +179,7 @@ void app_main(void) {
 	static rotary_encoder_info_t info = { 0 };
 	static QueueHandle_t btn_events;
     background_color = (uint24_RGB*) &fillColor;
-    foreground_color = (uint24_RGB*) &WHITE;
+   foreground_color = (uint24_RGB*) &WHITE;
 
 	// initializations
 	esp_err_t ret = inits(&spi, &info, &btn_events);
@@ -284,14 +284,14 @@ void app_main(void) {
 
     // goto lua_start;
     if(setup_flag) {
-        extern uint24_RGB COLOR_SELECTION_BUFFER;
-        extern unsigned char COLOR_SELECTION_BUFFER_VALID;
-        COLOR_SELECTION_BUFFER.pixelR = 0;
-        COLOR_SELECTION_BUFFER.pixelG = 0;
-        COLOR_SELECTION_BUFFER.pixelB = 0;
-        COLOR_SELECTION_BUFFER_VALID = 0;
-        (void) start_menu_tree(9, false);
-        ets_printf("selected color: %d %d %d, valid: %d\n");
+        // extern uint24_RGB COLOR_SELECTION_BUFFER;
+        // extern unsigned char COLOR_SELECTION_BUFFER_VALID;
+        // COLOR_SELECTION_BUFFER.pixelR = 0;
+        // COLOR_SELECTION_BUFFER.pixelG = 0;
+        // COLOR_SELECTION_BUFFER.pixelB = 0;
+        // COLOR_SELECTION_BUFFER_VALID = 0;
+        (void) start_menu_tree(0, false);
+        // ets_printf("selected color: %d %d %d, valid: %d\n");
     }
 // lua_start:
     rgb_update();

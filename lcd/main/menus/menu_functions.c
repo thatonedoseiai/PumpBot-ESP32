@@ -674,7 +674,8 @@ const char* const* theme_names[] = {text_dark_mode, text_light_mode, text_custom
 void _SETUP_display_menu(void** context) {
     struct _CONTEXT_DISPLAY_MENU* ctx = malloc(sizeof(struct _CONTEXT_DISPLAY_MENU));
     *context = _HELP_COMMON_create_and_wrap_modal_context(ctx);
-    
+    ctx->selection = 0;
+
     if(COLOR_SELECTION_BUFFER_VALID) {
         settings.custom_theme_color.pixelR = COLOR_SELECTION_BUFFER.pixelR;
         settings.custom_theme_color.pixelG = COLOR_SELECTION_BUFFER.pixelG;
@@ -682,9 +683,11 @@ void _SETUP_display_menu(void** context) {
         COLOR_SELECTION_BUFFER_VALID = 0;
         assign_theme_from_settings();
         ctx->selection = 10; // trigger redraw
+        //reload manually because the background did not change and thus did not trigger the manual reload
+        load_bgimg(bgbuf, "/mainfs/pb_bg.cbi", true, 0);
+        blit_bg();
         return;
     }
-    ctx->selection = 0;
 
     int numsprs;
     SPRITE_NODE* sprs[32];
@@ -707,6 +710,13 @@ void _CLEANUP_display_menu(void** context) {
     struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) _HELP_COMMON_unwrap_modal_context(*context);
     free(ctx);
     _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _POSTLOOP_display_menu(void* context, void* args) {
+    struct _CONTEXT_DISPLAY_MENU* ctx = (struct _CONTEXT_DISPLAY_MENU*) _HELP_COMMON_unwrap_modal_context(context);
+    if(ctx->selection == 10)
+        return MENU_REDRAW_FLAG;
+    return 0;
 }
 
 int _ENC_display_menu_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
@@ -803,11 +813,13 @@ int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode) {
         ctx->theming_sprites[i]->v->fg = *foreground_color;
     delete_node(ctx->aux_cursors[0]);
     delete_node(ctx->aux_cursors[1]);
-    // SPRITE_NODE* cursor;
-    // int numsprs;
-    // draw_text(10, 152, ">", &cursor, &numsprs, *foreground_color, *background_color, 0, false, false);
-    // set_sprites_lifetime(1, &cursor, 1);
-    // draw_all_sprites(spi);
+    if(settings.disp_theme == 2) {
+        COLOR_SELECTION_BUFFER_VALID = 0;
+        COLOR_SELECTION_BUFFER.pixelR = settings.custom_theme_color.pixelR;
+        COLOR_SELECTION_BUFFER.pixelG = settings.custom_theme_color.pixelG;
+        COLOR_SELECTION_BUFFER.pixelB = settings.custom_theme_color.pixelB;
+        return 9;
+    }
     ctx->selection = 1;
     *mode = MAIN;
     assign_theme_from_settings();
