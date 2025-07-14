@@ -284,7 +284,14 @@ void app_main(void) {
 
     // goto lua_start;
     if(setup_flag) {
-        (void) start_menu_tree(8, false);
+        extern uint24_RGB COLOR_SELECTION_BUFFER;
+        extern unsigned char COLOR_SELECTION_BUFFER_VALID;
+        COLOR_SELECTION_BUFFER.pixelR = 0;
+        COLOR_SELECTION_BUFFER.pixelG = 0;
+        COLOR_SELECTION_BUFFER.pixelB = 0;
+        COLOR_SELECTION_BUFFER_VALID = 0;
+        (void) start_menu_tree(9, false);
+        ets_printf("selected color: %d %d %d, valid: %d\n");
     }
 // lua_start:
     rgb_update();

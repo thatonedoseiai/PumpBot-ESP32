@@ -817,5 +817,94 @@ int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode) {
     return MENU_REDRAW_FLAG;
 }
 // }}}
+// COLOR PICKER MENU {{{
+struct _COLOR_PICKER_CONTEXT {
+    SPRITE_NODE* cursor;
+    unsigned int selection;
+    SPRITE_NODE* preview_rect;
+    SPRITE_NODE* channel_chars[4][3];
+    int num_channel_chars[3];
+};
+
+void _SETUP_color_picker_menu(void** context) {
+    struct _COLOR_PICKER_CONTEXT* cont = malloc(sizeof(struct _COLOR_PICKER_CONTEXT));
+    *context = _HELP_COMMON_create_and_wrap_modal_context(cont);
+    cont->selection = 0;
+
+    SPRITE_NODE* sprs[20];
+    int numsprs;
+    char numbuf[4];
+
+    set_font_size(14);
+    draw_text(0, 216, text_color_picker[settings.language], sprs, &numsprs,*foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(sprs, numsprs);
+
+    draw_text(32, 184, text_red[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 152, text_green[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 120, text_blue[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+
+    (void) itoa(COLOR_SELECTION_BUFFER.pixelR, numbuf, 10);
+    draw_text(150, 184, numbuf, &cont->channel_chars[0][0], &cont->num_channel_chars[0], *foreground_color, *background_color, 0, false, false);
+    (void) itoa(COLOR_SELECTION_BUFFER.pixelG, numbuf, 10);
+    draw_text(150, 152, numbuf, &cont->channel_chars[1][0], &cont->num_channel_chars[1], *foreground_color, *background_color, 0, false, false);
+    (void) itoa(COLOR_SELECTION_BUFFER.pixelB, numbuf, 10);
+    draw_text(150, 120, numbuf, &cont->channel_chars[2][0], &cont->num_channel_chars[2], *foreground_color, *background_color, 0, false, false);
+
+    draw_text(10, 184, ">", &cont->cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    cont->preview_rect = sprite_rectangle(128, 48, 64, 64, &COLOR_SELECTION_BUFFER, true, 255);
+    draw_all_sprites(spi);
+}
+
+const int COLOR_ys[] = {184, 152, 120};
+int _ENC_color_picker_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _COLOR_PICKER_CONTEXT* c = (struct _COLOR_PICKER_CONTEXT*) context;
+    if(c->cursor != NULL)
+        delete_node(c->cursor);
+    c->selection = (c->selection + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 2)) % 3;
+    draw_text(10, COLOR_ys[c->selection], ">", &c->cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _ENC_color_picker_channel_mode(void* context, rotary_encoder_event_t ev, void* args, int* channel) {
+    char numbuf[4];
+    struct _COLOR_PICKER_CONTEXT* c = (struct _COLOR_PICKER_CONTEXT*) context;
+    for(int i=0;i<c->num_channel_chars[*channel-1];++i)
+        delete_node(c->channel_chars[*channel-1][i]);
+
+    unsigned char channel_val = ((unsigned char*) &COLOR_SELECTION_BUFFER)[*channel-1];
+    channel_val = (channel_val + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? ev.state.multiplier : 256 - ev.state.multiplier)) & 0xff;
+    ((unsigned char*) &COLOR_SELECTION_BUFFER)[*channel-1] = channel_val;
+    c->preview_rect->v->fg = COLOR_SELECTION_BUFFER;
+    (void) itoa(channel_val, numbuf, 10);
+    draw_text(150, COLOR_ys[*channel-1], numbuf, &c->channel_chars[*channel-1][0], &c->num_channel_chars[*channel-1], HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_color_picker_select_focused_channel(void* context, void* args, int* mode) {
+    char numbuf[4];
+    struct _COLOR_PICKER_CONTEXT* c = (struct _COLOR_PICKER_CONTEXT*) context;
+    for(int i=0;i<c->num_channel_chars[c->selection];++i)
+        c->channel_chars[c->selection][i]->v->fg = HIGHLIGHT_COLOR;
+    *mode = c->selection + 1;
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_color_picker_return_to_main_mode(void* context, void* args, int* channel) {
+    struct _COLOR_PICKER_CONTEXT* c = (struct _COLOR_PICKER_CONTEXT*) context;
+    for(int i=0;i<c->num_channel_chars[*channel-1];++i)
+        c->channel_chars[*channel-1][i]->v->fg = *foreground_color;
+    *channel = 0;
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_RD_color_picker_confirm(void* context, void* args) {
+    COLOR_SELECTION_BUFFER_VALID = 1;
+    return MENU_POP_FLAG;
+}
+// }}}
 
 // vim:fdm=marker

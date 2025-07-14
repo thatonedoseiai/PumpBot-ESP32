@@ -1922,6 +1922,53 @@ const RUNMENU_DATA _RMD_DISPLAY_SETTINGS = {
     }
 };
 
+const struct _MODAL_MENU_ARGS_ROTENC COLOR_PICKER_MM_ARGS_ROTENC = {
+    4, NULL,
+    {
+        &_ENC_color_picker_main_mode,
+        &_ENC_color_picker_channel_mode,
+        &_ENC_color_picker_channel_mode,
+        &_ENC_color_picker_channel_mode
+    }
+};
+
+const struct _MODAL_MENU_ARGS_BUTTON COLOR_PICKER_MM_ARGS_BUTTON = {
+    4, NULL,
+    {
+        &_BA_ED_color_picker_select_focused_channel,
+        &_BA_ED_color_picker_return_to_main_mode,
+        &_BA_ED_color_picker_return_to_main_mode,
+        &_BA_ED_color_picker_return_to_main_mode,
+    }
+};
+
+const RUNMENU_DATA _RMD_COLOR_PICKER = {
+    &_SETUP_color_picker_menu,
+    &_CLEANUP_COMMON_single_layer_context,
+    &_ENC_COMMON_modal_menu, (void*) &COLOR_PICKER_MM_ARGS_ROTENC,
+    NULL, NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_COMMON_modal_menu,
+            (void*) &COLOR_PICKER_MM_ARGS_BUTTON
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            &_BA_RD_color_picker_confirm,
+            NULL
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
@@ -1932,7 +1979,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
     {&menusetup1[0], 6, menufunc_pb_setup_method, 5, &_RMD_PB_SETUP_METHOD},
     {&menusetup3[0], 2, menufunc_display_settings, 2, &_RMD_DISPLAY_SETTINGS},
-    {&menusetup3[0], 3, menufunc_color_picker, 2, NULL},
+    {&menusetup3[0], 3, menufunc_color_picker, 2, &_RMD_COLOR_PICKER},
     {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},
     {&menusetup3[0], 1, menufunc_all_settings, 6, NULL},
     {&menusetup3[0], 1, menufunc_pwm_output_settings, 6, NULL},

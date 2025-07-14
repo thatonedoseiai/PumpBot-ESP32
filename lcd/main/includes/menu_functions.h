@@ -86,4 +86,11 @@ int _BA_ED_select_value_main_mode(void* context, void* args, int* mode);
 int _BA_ED_select_value_brightness_mode(void* context, void* args, int* mode);
 int _BA_ED_select_value_theme_mode(void* context, void* args, int* mode);
 
+void _SETUP_color_picker_menu(void** context);
+int _ENC_color_picker_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_color_picker_channel_mode(void* context, rotary_encoder_event_t ev, void* args, int* channel);
+int _BA_ED_color_picker_select_focused_channel(void* context, void* args, int* mode);
+int _BA_ED_color_picker_return_to_main_mode(void* context, void* args, int* channel);
+int _BA_RD_color_picker_confirm(void* context, void* args);
+
 #endif
