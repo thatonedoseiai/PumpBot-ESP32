@@ -283,6 +283,7 @@ void app_main(void) {
     }
 
     // goto lua_start;
+    setup_flag = 0;
     if(setup_flag) {
         // extern uint24_RGB COLOR_SELECTION_BUFFER;
         // extern unsigned char COLOR_SELECTION_BUFFER_VALID;
@@ -296,6 +297,7 @@ void app_main(void) {
 // lua_start:
     rgb_update();
     assign_theme_from_settings();
+    (void) start_menu_tree(25, false);
 
     while(true) {
         // send_color(spi, background_color);

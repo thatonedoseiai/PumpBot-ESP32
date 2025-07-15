@@ -1944,7 +1944,7 @@ const struct _MODAL_MENU_ARGS_BUTTON COLOR_PICKER_MM_ARGS_BUTTON = {
 
 const RUNMENU_DATA _RMD_COLOR_PICKER = {
     &_SETUP_color_picker_menu,
-    &_CLEANUP_COMMON_single_layer_context,
+    &_CLEANUP_display_menu,
     &_ENC_COMMON_modal_menu, (void*) &COLOR_PICKER_MM_ARGS_ROTENC,
     NULL, NULL,
     3, {
@@ -1999,6 +1999,49 @@ const RUNMENU_DATA _RMD_HTTP_SERVER_CONFIG = {
     }
 };
 
+const struct _MODAL_MENU_ARGS_ROTENC HOME_MENU_MM_ARGS_ROTENC = {
+    2, NULL,
+    {
+        &_ENC_home_menu_change_channel_value,
+        &_ENC_home_menu_change_channel,
+    }
+};
+
+const struct _MODAL_MENU_ARGS_BUTTON HOME_MENU_MM_ARGS_BUTTON = {
+    2, NULL, 
+    {
+        &_BA_ED_home_menu_switch_rotation_mode,
+        &_BA_ED_home_menu_switch_rotation_mode
+    }
+};
+
+const RUNMENU_DATA _RMD_PB_HOME_MENU = {
+    &_SETUP_home_menu,
+    &_CLEANUP_home_menu,
+    &_ENC_COMMON_modal_menu, (void*) &HOME_MENU_MM_ARGS_ROTENC,
+    &_POSTLOOP_home_menu, NULL,
+    3, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            _BA_LD_home_menu_toggle_channel,
+            NULL
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            _BA_COMMON_modal_menu,
+            (void*) &HOME_MENU_MM_ARGS_BUTTON,
+        },
+        {
+            RIGHTBUTTON,
+            BUTTON_DOWN,
+            _BA_COMMON_go_to_menu,
+            (void*) 11
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
@@ -2025,6 +2068,7 @@ MENU_INFO_t allmenus[] = {
     {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, &_RMD_SKIP_WIFI_CONNECTION},
     {&menusetup3[0], 1, menufunc_developer, 2, NULL},
     {&menusetup3[0], 1, menufunc_credits, 2, NULL},
+    {&menuhome[0], 1, NULL, 1, &_RMD_PB_HOME_MENU}
 };
 
 // extern SPRITE_NODE* persistent_sprites;

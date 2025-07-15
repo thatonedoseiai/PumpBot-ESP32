@@ -98,4 +98,12 @@ void _SETUP_http_server_config(void** context);
 void _CLEANUP_http_server_config(void** context);
 int _POSTLOOP_http_server_config(void* context, void* args);
 
+void _SETUP_home_menu(void** context);
+void _CLEANUP_home_menu(void** context);
+int _ENC_home_menu_change_channel_value(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_home_menu_change_channel(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _BA_LD_home_menu_toggle_channel(void* context, void* args);
+int _BA_ED_home_menu_switch_rotation_mode(void* context, void* args, int* mode);
+int _POSTLOOP_home_menu(void* context, void* args);
+
 #endif

@@ -53,14 +53,14 @@ const char* const bonp[] = {bon};
 const char* const conp[] = {con};
 const char* const donp[] = {don};
 const MENU_ELEMENT menuhome[] = {
-    {
-        .text = zeroperp, //Percentage of current channel
-        .x = 0,
-        .y = 134,
-        .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .textsize = 42, // size H, "Heccin Chonker"
-        .col = &foreground_color
-    },
+    // {
+    //     .text = zeroperp, //Percentage of current channel
+    //     .x = 0,
+    //     .y = 134,
+    //     .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .textsize = 42, // size H, "Heccin Chonker"
+    //     .col = &foreground_color
+    // },
     // {
     //     .text = rotateencp, //static symbol
     //     .x = 0,
@@ -69,22 +69,22 @@ const MENU_ELEMENT menuhome[] = {
     //     .textsize = 18,
     //     .col = &foreground_color
     // },
-    {
-        .text = ch0p, //X = current channel
-        .x = 0,
-        .y = 36,
-        .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .textsize = 18,
-        .col = &foreground_color
-    },
-    {
-        .text = offp, //OFF or ON for current channel
-        .x = 2,
-        .y = 6,
-        .textsize = 18,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
+    // {
+    //     .text = ch0p, //X = current channel
+    //     .x = 0,
+    //     .y = 36,
+    //     .flags = MENU_FLAG_CENTER | MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .textsize = 18,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .text = offp, //OFF or ON for current channel
+    //     .x = 2,
+    //     .y = 6,
+    //     .textsize = 18,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
     {
         .text = setp, //Settings menu, will be custom icon later
         .x = 2,
@@ -93,70 +93,70 @@ const MENU_ELEMENT menuhome[] = {
         .flags = MENU_FLAG_RIGHT_JUSTIFY | MENU_FLAG_LANGUAGE_AGNOSTIC,
         .col = &foreground_color
     },
-    {
-        .text = aonp,
-        .x = 58,
-        .y = 16,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    { 
-        .text = zeroperp,
-        .x = 58,
-        .y = 4,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    {
-        .text = bonp,
-        .x = 111,
-        .y = 16,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    { 
-        .text = zeroperp,
-        .x = 111,
-        .y = 4,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-        {
-        .text = conp,
-        .x = 164,
-        .y = 16,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    { 
-        .text = zeroperp,
-        .x = 164,
-        .y = 4,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    {
-        .text = donp,
-        .x = 217,
-        .y = 16,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
-    { 
-        .text = zeroperp,
-        .x = 217,
-        .y = 4,
-        .textsize = 12,
-        .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
-        .col = &foreground_color
-    },
+    // {
+    //     .text = aonp,
+    //     .x = 58,
+    //     .y = 16,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // { 
+    //     .text = zeroperp,
+    //     .x = 58,
+    //     .y = 4,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .text = bonp,
+    //     .x = 111,
+    //     .y = 16,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // { 
+    //     .text = zeroperp,
+    //     .x = 111,
+    //     .y = 4,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .text = conp,
+    //     .x = 164,
+    //     .y = 16,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // { 
+    //     .text = zeroperp,
+    //     .x = 164,
+    //     .y = 4,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // {
+    //     .text = donp,
+    //     .x = 217,
+    //     .y = 16,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
+    // { 
+    //     .text = zeroperp,
+    //     .x = 217,
+    //     .y = 4,
+    //     .textsize = 12,
+    //     .flags = MENU_FLAG_LANGUAGE_AGNOSTIC,
+    //     .col = &foreground_color
+    // },
     // { //Horizontal Line
     //     .y = 32,
     //     .textsize = 2,

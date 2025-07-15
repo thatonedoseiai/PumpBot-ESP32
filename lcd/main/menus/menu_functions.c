@@ -11,6 +11,7 @@
 #include <driver/gpio.h>
 #include "system_status.h"
 #include "file_server.h"
+#include "pwm_output.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -936,6 +937,135 @@ int _POSTLOOP_http_server_config(void* context, void* args) {
         ledc_update_duty(LEDC_LOW_SPEED_MODE, 7);
         return MENU_SETUP_ONLY_TRANSITION_FLAG | 21;
     }
+    return 0;
+}
+// }}}
+// HOME MENU {{{
+struct _CONTEXT_HOME_MENU {
+    int selected_channel;
+    int num_on_off_button_sprites;
+    SPRITE_NODE* on_off_button_sprites[3];
+    SPRITE_NODE* channel_label[4];
+    int num_channel_on_off_label[4];
+    SPRITE_NODE* channel_on_off_label[6][4];
+    int num_output_percentage_main_sprites;
+    SPRITE_NODE* output_percentage_main[4];
+    int num_output_percentages_per_channel_sprites[4];
+    SPRITE_NODE* output_percentages_per_channel[4][4];
+    char channel_chars[7];
+};
+const char WIFI_CONNECTED_SYMBOL[] = "";
+const char WIFI_DISCONNECTED_SYMBOL[] = "";
+const char SERVER_CONNECTED_SYMBOL[] = "+";
+const char SERVER_DISCONNECTED_SYMBOL[] = "-";
+const int HOME_MENU_xs[] = {58, 111, 164, 217};
+const int HOME_MENU_on_off_y = 16;
+const int HOME_MENU_percentage_y = 4;
+const int NUM_CHANNELS = 4;
+void _SETUP_home_menu(void** context) {
+    struct _CONTEXT_HOME_MENU* cont = malloc(sizeof(struct _CONTEXT_HOME_MENU));
+    *context = _HELP_COMMON_create_and_wrap_modal_context(cont);
+    set_font_size(12);
+    cont->selected_channel = 0;
+
+    const char* wifi_flag = (system_flags & FLAG_WIFI_CONNECTED) ? WIFI_CONNECTED_SYMBOL : WIFI_DISCONNECTED_SYMBOL;
+    const char* server_flag = (system_flags & FLAG_SERVER_CONNECTED) ? SERVER_CONNECTED_SYMBOL : SERVER_DISCONNECTED_SYMBOL;
+    int num;
+    SPRITE_NODE* wifi_symbol;
+    SPRITE_NODE* server_symbol;
+    draw_text(306, 226, wifi_flag, &wifi_symbol, &num, *foreground_color, *background_color, 0, false, false);
+    draw_text(294, 220, server_flag, &server_symbol, &num, *foreground_color, *background_color, 0, false, false);
+
+    set_font_size(42);
+    draw_text(0, 134, "0%", &cont->output_percentage_main[0], &cont->num_output_percentage_main_sprites, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(cont->output_percentage_main, cont->num_output_percentage_main_sprites);
+    set_font_size(18);
+    draw_text(2, 6, "OFF", &cont->on_off_button_sprites[0], &cont->num_on_off_button_sprites, *foreground_color, *background_color, 0, false, false);
+    strncpy(cont->channel_chars, "CH1⤓", 7);
+    draw_text(0, 36, &cont->channel_chars[0], &cont->channel_label[0], &num, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(cont->channel_label, 4);
+    set_font_size(12);
+    char on_off_text[6];
+    for(int i=0;i<NUM_CHANNELS;++i) {
+        draw_text(HOME_MENU_xs[i], HOME_MENU_percentage_y, "0%", &cont->output_percentages_per_channel[i][0], &cont->num_output_percentages_per_channel_sprites[i], *foreground_color, *background_color, 0, false, false);
+        sprintf(on_off_text, "%d-On", i+1);
+        draw_text(HOME_MENU_xs[i], HOME_MENU_on_off_y, on_off_text, &cont->channel_on_off_label[i][0], &cont->num_channel_on_off_label[i], *foreground_color, *background_color, 0, false, false);
+    }
+    wait_for_end_of_frame();
+    draw_all_sprites(spi);
+}
+
+void _CLEANUP_home_menu(void** context) {
+    free(_HELP_COMMON_unwrap_modal_context(*context));
+    _CLEANUP_COMMON_single_layer_context(context);
+}
+
+void _HELP_HOME_MENU_update_percentages(struct _CONTEXT_HOME_MENU* cont) {
+    for(int i=0;i<cont->num_output_percentage_main_sprites;++i)
+        delete_node(cont->output_percentage_main[i]);
+    for(int i=0;i<cont->num_output_percentages_per_channel_sprites[cont->selected_channel];++i)
+        delete_node(cont->output_percentages_per_channel[cont->selected_channel][i]);
+    set_font_size(42);
+    int val = output_get_value(cont->selected_channel);
+    char percentage[7];
+    int k = sprintf(percentage, "%d%%", (uint16_t) val / 163);
+    if(k > 4)
+        assert(false);
+    draw_text(0, 134, percentage, &cont->output_percentage_main[0], &cont->num_output_percentage_main_sprites, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(cont->output_percentage_main, cont->num_output_percentage_main_sprites);
+    set_font_size(12);
+    draw_text(HOME_MENU_xs[cont->selected_channel], HOME_MENU_percentage_y, percentage, &cont->output_percentages_per_channel[cont->selected_channel][0], &cont->num_output_percentages_per_channel_sprites[cont->selected_channel], *foreground_color, *background_color, 0, false, false);
+}
+
+void _HELP_HOME_MENU_update_on_off_button(struct _CONTEXT_HOME_MENU* cont) {
+    for(int i=0;i<cont->num_on_off_button_sprites;++i)
+        delete_node(cont->on_off_button_sprites[i]);
+    for(int i=0;i<cont->num_channel_on_off_label[cont->selected_channel];++i)
+        delete_node(cont->channel_on_off_label[cont->selected_channel][i]);
+    set_font_size(18);
+    draw_text(2, 6, is_off(cont->selected_channel) ? "ON" : "OFF", &cont->on_off_button_sprites[0], &cont->num_on_off_button_sprites, *foreground_color, *background_color, 0, false, false);
+    set_font_size(12);
+    char label[6];
+    sprintf(label, "%d-%s", (cont->selected_channel+1) & 8, is_off(cont->selected_channel) ? "Off" : "On");
+    draw_text(HOME_MENU_xs[cont->selected_channel], HOME_MENU_on_off_y, label, &cont->channel_on_off_label[cont->selected_channel][0], &cont->num_channel_on_off_label[0], *foreground_color, *background_color, 0, false, false);
+}
+
+int _ENC_home_menu_change_channel_value(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_HOME_MENU* cont = (struct _CONTEXT_HOME_MENU*) context;
+    output_add_value(cont->selected_channel, (ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 163 : -163);
+    _HELP_HOME_MENU_update_percentages(cont);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _ENC_home_menu_change_channel(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_HOME_MENU* cont = (struct _CONTEXT_HOME_MENU*) context;
+    for(int i=0;i<4;++i)
+        delete_node(cont->channel_label[i]);
+    cont->selected_channel = (cont->selected_channel + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+    set_font_size(18);
+    cont->channel_chars[2] = '1' + cont->selected_channel;
+    int num;
+    draw_text(0, 36, cont->channel_chars, &cont->channel_label[0], &num, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(cont->channel_label, 4);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_LD_home_menu_toggle_channel(void* context, void* args) {
+    struct _CONTEXT_HOME_MENU* cont = (struct _CONTEXT_HOME_MENU*) _HELP_COMMON_unwrap_modal_context(context);
+    output_toggle(cont->selected_channel);
+    _HELP_HOME_MENU_update_on_off_button(cont);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_home_menu_switch_rotation_mode(void* context, void* args, int* mode) {
+    *mode ^= 1;
+    return 0;
+}
+
+int _POSTLOOP_home_menu(void* context, void* args) {
     return 0;
 }
 // }}}
