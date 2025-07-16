@@ -2015,28 +2015,38 @@ const struct _MODAL_MENU_ARGS_BUTTON HOME_MENU_MM_ARGS_BUTTON = {
     }
 };
 
+const struct _BLOCK_HID_ARGS_ROTENC HOME_MENU_BH_ARGS_ROTENC = {
+    &_ENC_COMMON_modal_menu, 
+    (void*) &HOME_MENU_MM_ARGS_ROTENC,
+};
+
+const struct _BLOCK_HID_ARGS_BUTTON HOME_MENU_BH_ARGS_LB = {
+    &_BA_LD_home_menu_toggle_channel,
+    NULL,
+};
+
 const RUNMENU_DATA _RMD_PB_HOME_MENU = {
     &_SETUP_home_menu,
     &_CLEANUP_home_menu,
-    &_ENC_COMMON_modal_menu, (void*) &HOME_MENU_MM_ARGS_ROTENC,
+    &_ENC_WRAP_BLOCK_HID, (void*) &HOME_MENU_BH_ARGS_ROTENC,
     &_POSTLOOP_home_menu, NULL,
     3, {
         {
             LEFTBUTTON,
             BUTTON_DOWN,
-            _BA_LD_home_menu_toggle_channel,
-            NULL
+            &_BA_WRAP_BLOCK_HID,
+            (void*) &HOME_MENU_BH_ARGS_LB
         },
         {
             ENCSW,
             BUTTON_DOWN,
-            _BA_COMMON_modal_menu,
+            &_BA_COMMON_modal_menu,
             (void*) &HOME_MENU_MM_ARGS_BUTTON,
         },
         {
             RIGHTBUTTON,
             BUTTON_DOWN,
-            _BA_COMMON_go_to_menu,
+            &_BA_COMMON_go_to_menu,
             (void*) 11
         }
     }

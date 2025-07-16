@@ -12,6 +12,7 @@
 #include "system_status.h"
 #include "file_server.h"
 #include "pwm_output.h"
+#include "socket.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -19,6 +20,7 @@ extern uint24_RGB* foreground_color;
 extern SETTINGS_t settings;
 extern unsigned char wifi_restart_counter;
 extern uint24_RGB* bgbuf;
+extern uint16_t button_disable_counter;
 char* TEXT_ENTRY_BUFFER;
 unsigned char TEXT_ENTRY_BUFFER_LENGTH;
 uint24_RGB COLOR_SELECTION_BUFFER;
@@ -56,6 +58,20 @@ void _SETUP_COMMON_no_context(void** context) {
 void _CLEANUP_COMMON_single_layer_context(void** context) {
     // delete_persistent_sprites();
     delete_all_sprites_immediate();
+}
+
+int _ENC_WRAP_BLOCK_HID(void* context, rotary_encoder_event_t ev, void* args) {
+    struct _BLOCK_HID_ARGS_ROTENC* a = (struct _BLOCK_HID_ARGS_ROTENC*) args;
+    if(button_disable_counter <= 0)
+        return a->callback(context, ev, a->args);
+    return 0;
+}
+
+int _BA_WRAP_BLOCK_HID(void* context, void* args) {
+    struct _BLOCK_HID_ARGS_BUTTON* a = (struct _BLOCK_HID_ARGS_BUTTON*) args;
+    if(button_disable_counter <= 0)
+        return a->callback(context, a->args);
+    return 0;
 }
 
 struct _MODAL_MENU_CONTEXT_WRAPPER {
@@ -1065,7 +1081,76 @@ int _BA_ED_home_menu_switch_rotation_mode(void* context, void* args, int* mode) 
     return 0;
 }
 
+void _HELP_HOME_MENU_parse_message_and_act(char* msg, int numbytes, struct _CONTEXT_HOME_MENU* cont) {
+    char opcode = msg[0];
+    int channel;
+    uint16_t value;
+    uint16_t time;
+    switch(opcode) {
+        case 1:
+            if(numbytes != 6)
+                return;
+            value = ((msg[1] & 0x3f) << 8) | msg[2];
+            channel = msg[3] & 0x3;
+            time = ((msg[4] & 0x3f) << 8) | msg[5];
+            if(time == 0)
+                output_set_value(channel, value);
+            else
+                output_set_value_timeout(channel, value, time);
+            _HELP_HOME_MENU_update_percentages(cont);
+            break;
+        case 3:
+            int16_t ivalue = (msg[1] << 8) | msg[2];
+            channel = msg[3] & 0x3;
+            output_add_value(channel, ivalue);
+            _HELP_HOME_MENU_update_percentages(cont);
+            break;
+        case 4:
+            char flags = msg[1];
+            channel = msg[2] & 0x3;
+            if(flags & 0x80)
+                output_toggle(channel);
+            if(flags & 0x40)
+                output_set_power(channel, 1);
+            if(flags & 0x20)
+                output_set_power(channel, 0);
+            if(flags & 0x10) {
+                char retmessg[3];
+                int outval = output_get_value(channel);
+                retmessg[0] = (outval << 8) & 0xff;
+                retmessg[1] = outval & 0xff;
+                retmessg[2] = is_off(channel) & 0x1;
+                send_message(retmessg, 3);
+            }
+            _HELP_HOME_MENU_update_on_off_button(cont);
+            break;
+        case 8:
+            time = (msg[1] << 8) | msg[2];
+            button_disable_counter = 5*time;
+            break;
+        case 10:
+            time = (msg[1] << 8) | msg[2];
+            if(0xffff - button_disable_counter < 5*time) {
+                button_disable_counter = 0xffff;
+            } else if(button_disable_counter < -5*time) {
+                button_disable_counter = 0;
+            } else {
+                button_disable_counter += time;
+            }
+            break;
+        default:
+            ets_printf("unknown opcode %x\n", opcode);
+            break;
+    }
+}
+
 int _POSTLOOP_home_menu(void* context, void* args) {
+    struct _CONTEXT_HOME_MENU* cont = (struct _CONTEXT_HOME_MENU*) _HELP_COMMON_unwrap_modal_context(context);
+    char buf[256];
+    memset(buf, 0, 256);
+    int len = get_message(buf, 255);
+    if(len > 0)
+        _HELP_HOME_MENU_parse_message_and_act(buf, len, cont);
     return 0;
 }
 // }}}

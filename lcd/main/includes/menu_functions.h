@@ -33,6 +33,14 @@ struct _MODAL_MENU_ARGS_BUTTON {
     void* args;
     int(*modes[])(void* context, void* args, int* mode);
 };
+struct _BLOCK_HID_ARGS_ROTENC {
+    int(*callback)(void* context, rotary_encoder_event_t ev, void* args);
+    void* args;
+};
+struct _BLOCK_HID_ARGS_BUTTON {
+    int(*callback)(void* context, void* args);
+    void* args;
+};
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
 void* _HELP_COMMON_create_and_wrap_modal_context(void* context);
@@ -40,6 +48,8 @@ void* _HELP_COMMON_unwrap_modal_context(void* context);
 int _BA_COMMON_go_to_menu(void* context, void* args);
 void _SETUP_COMMON_no_context(void** context);
 void _CLEANUP_COMMON_single_layer_context(void** context);
+int _ENC_WRAP_BLOCK_HID(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_WRAP_BLOCK_HID(void* context, void* args);
 int _ENC_COMMON_modal_menu(void* context, rotary_encoder_event_t ev, void* args);
 int _BA_COMMON_modal_menu(void* context, void* args);
 int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* args);
