@@ -23,6 +23,10 @@ struct _WIFI_MENU_CONTEXT {
     wifi_ap_record_t ap_info[NUM_WIFIS];
     struct _OPTIONS_DATA_ opt;
 };
+struct _CONTEXT_settings_menu {
+    char* options_strings[8];
+    struct _OPTIONS_DATA_ opt;
+};
 struct _MODAL_MENU_ARGS_ROTENC {
     unsigned char num_modes;
     void* args;
@@ -115,5 +119,8 @@ int _ENC_home_menu_change_channel(void* context, rotary_encoder_event_t ev, void
 int _BA_LD_home_menu_toggle_channel(void* context, void* args);
 int _BA_ED_home_menu_switch_rotation_mode(void* context, void* args, int* mode);
 int _POSTLOOP_home_menu(void* context, void* args);
+
+void _SETUP_settings_options(void** context);
+int _BA_ED_settings_options_select_menu(void* context, void* args);
 
 #endif

@@ -147,7 +147,7 @@ int _ENC_COMMON_scroll_options(void* context, rotary_encoder_event_t ev, void* a
     if(opt->currentOption < 2 || opt->numOptions < 5) {
         relativeCursorLocation = opt->currentOption;
         pageStart = 0;
-    } else if(opt->currentOption > opt->numOptions-2) {
+    } else if(opt->currentOption > opt->numOptions-3) {
         relativeCursorLocation = 5 + opt->currentOption - opt->numOptions;
         pageStart = opt->numOptions - 5;
     } else {
@@ -1153,6 +1153,43 @@ int _POSTLOOP_home_menu(void* context, void* args) {
         _HELP_HOME_MENU_parse_message_and_act(buf, len, cont);
     return 0;
 }
+// }}}
+// SERVER SETTINGS {{{
+void _SETUP_server_settings(void** context) {
+    set_font_size(14);
+}
+
+void _CLEANUP_server_settings(void** context) {
+    
+}
+// }}}
+// SETTINGS OPTIONS {{{
+void _SETUP_settings_options(void** context) {
+    struct _CONTEXT_settings_menu* ctx = malloc(sizeof(struct _CONTEXT_settings_menu));
+    ctx->options_strings[0] = text_settings_display[settings.language],
+    ctx->options_strings[1] = text_settings_network[settings.language],
+    ctx->options_strings[2] = text_settings_output[settings.language],
+    ctx->options_strings[3] = text_settings_rgb[settings.language],
+    ctx->options_strings[4] = text_settings_add_ons[settings.language],
+    ctx->options_strings[5] = text_settings_apps[settings.language],
+    ctx->options_strings[6] = text_language[settings.language],
+    ctx->options_strings[7] = text_settings_developer[settings.language],
+    ctx->opt.currentOption = 0;
+    ctx->opt.numOptions = 8;
+    ctx->opt.options = ctx->options_strings;
+    setup_cursor(&ctx->opt.cursorbg, &ctx->opt.cursor, OPTION_Ys[0]);
+    _HELP_COMMON_draw_options(&ctx->opt, 0);
+    *context = ctx;
+}
+
+const int menu_table[] = {
+    8, 19, 12, 14, 10, 15, 1, 23
+};
+int _BA_ED_settings_options_select_menu(void* context, void* args) {
+    struct _CONTEXT_settings_menu* ctx = (struct _CONTEXT_settings_menu*) context;
+    return menu_table[ctx->opt.currentOption];
+}
+
 // }}}
 
 // vim:fdm=marker

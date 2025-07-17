@@ -297,7 +297,7 @@ void app_main(void) {
 // lua_start:
     rgb_update();
     assign_theme_from_settings();
-    (void) start_menu_tree(25, false);
+    (void) start_menu_tree(25, true);
 
     while(true) {
         // send_color(spi, background_color);

@@ -2052,6 +2052,27 @@ const RUNMENU_DATA _RMD_PB_HOME_MENU = {
     }
 };
 
+const RUNMENU_DATA _RMD_SETTINGS_MENU = {
+    &_SETUP_settings_options,
+    &_CLEANUP_COMMON_single_layer_context,
+    &_ENC_COMMON_scroll_options, (void*) offsetof(struct _CONTEXT_settings_menu, opt),
+    NULL, NULL,
+    2, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG,
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_ED_settings_options_select_menu,
+            NULL
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
@@ -2064,7 +2085,7 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 2, menufunc_display_settings, 2, &_RMD_DISPLAY_SETTINGS},
     {&menusetup3[0], 2, menufunc_color_picker, 2, &_RMD_COLOR_PICKER},
     {&menusetup3[0], 3, menufunc_add_on_settings, 2, NULL},
-    {&menusetup3[0], 1, menufunc_all_settings, 6, NULL},
+    {&menusetup3[0], 1, menufunc_all_settings, 6, &_RMD_SETTINGS_MENU},
     {&menusetup3[0], 1, menufunc_pwm_output_settings, 6, NULL},
     {&menusetup3[0], 1, menufunc_pwm_output_set, 6, NULL},
     {&menusetup3[0], 1, menufunc_rgb_lighting, 2, NULL},
