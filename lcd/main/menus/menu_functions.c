@@ -384,8 +384,7 @@ int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args) {
 int _BA_pb_setup_method_confirm(void* context, void* args) {
     delete_persistent_sprites();
     struct PB_SETUP_METHOD_CONTEXT* cont = (struct PB_SETUP_METHOD_CONTEXT*) context;
-    struct _PB_SETUP_METHOD_ARGS* a = (struct _PB_SETUP_METHOD_ARGS*) args;
-    return cont->selection ? a->WIFI_MENU_INDEX : a->HTTP_MENU_INDEX;
+    return MENU_SETUP_ONLY_TRANSITION_FLAG | (cont->selection ? 2 : 5);
 }
 // }}}
 // WIFI CONNECTING MENU {{{

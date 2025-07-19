@@ -1760,10 +1760,6 @@ const RUNMENU_DATA _RMD_WIFI_MENU = {
     }
 };
 
-struct _PB_SETUP_METHOD_ARGS pb_setup_method_args = {
-    MENU_SETUP_ONLY_TRANSITION_FLAG | 2,
-    MENU_SETUP_ONLY_TRANSITION_FLAG | 5
-};
 const RUNMENU_DATA _RMD_PB_SETUP_METHOD = {
     &_SETUP_pb_setup_method,
     &_CLEANUP_COMMON_single_layer_context, 
@@ -1780,13 +1776,13 @@ const RUNMENU_DATA _RMD_PB_SETUP_METHOD = {
             RIGHTBUTTON,
             BUTTON_DOWN,
             &_BA_pb_setup_method_confirm,
-            &pb_setup_method_args,
+            NULL,
         },
         {
             ENCSW,
             BUTTON_DOWN,
             &_BA_pb_setup_method_confirm,
-            &pb_setup_method_args,
+            NULL,
         }
     }
 };
@@ -2166,9 +2162,10 @@ int start_menu_tree(int startmenu, char settings_mode) {
             nextmenu = currmenu->menu_functionality();
         if(nextmenu & MENU_SELF_POP_FLAG) {
             if((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
-                menu_stackp--;
-                if(menu_stackp < 0)
-                    menu_stackp = 0;
+                menu_stackp = 1;
+                // menu_stackp--;
+                // if(menu_stackp < 0)
+                //     menu_stackp = 0;
             } else
                 menu_stack[menu_stackp] = nextmenu & 0xff;
         } else if(nextmenu & MENU_POP_FLAG) {
@@ -2177,7 +2174,7 @@ int start_menu_tree(int startmenu, char settings_mode) {
                 menu_stackp = 0;
             }
         } else if ((nextmenu & MENU_SETUP_ONLY_TRANSITION_FLAG) && settings_mode) {
-            menu_stackp = 0;
+            menu_stackp = 1;
             nextmenu = 0;
         } else if (!(nextmenu & MENU_REDRAW_FLAG)) {
             menu_stackp++;
