@@ -384,7 +384,8 @@ int _ENC_pb_setup_method(void* context, rotary_encoder_event_t ev, void* args) {
 int _BA_pb_setup_method_confirm(void* context, void* args) {
     delete_persistent_sprites();
     struct PB_SETUP_METHOD_CONTEXT* cont = (struct PB_SETUP_METHOD_CONTEXT*) context;
-    return MENU_SETUP_ONLY_TRANSITION_FLAG | (cont->selection ? 2 : 5);
+    struct _PB_SETUP_METHOD_ARGS* a = (struct _PB_SETUP_METHOD_ARGS*) args;
+    return cont->selection ? a->WIFI_MENU_INDEX : a->HTTP_MENU_INDEX;
 }
 // }}}
 // WIFI CONNECTING MENU {{{
@@ -1154,15 +1155,6 @@ int _POSTLOOP_home_menu(void* context, void* args) {
     return 0;
 }
 // }}}
-// SERVER SETTINGS {{{
-void _SETUP_server_settings(void** context) {
-    set_font_size(14);
-}
-
-void _CLEANUP_server_settings(void** context) {
-    
-}
-// }}}
 // SETTINGS OPTIONS {{{
 void _SETUP_settings_options(void** context) {
     struct _CONTEXT_settings_menu* ctx = malloc(sizeof(struct _CONTEXT_settings_menu));
@@ -1190,6 +1182,46 @@ int _BA_ED_settings_options_select_menu(void* context, void* args) {
     return menu_table[ctx->opt.currentOption];
 }
 
+// }}}
+// NETWORK SETTINGS {{{
+struct _NETWORK_SETTINGS_CONTEXT {
+    char selection;
+};
+void _SETUP_network_settings(void** context) {
+    char namebuf[15];
+    set_font_size(14);
+    if(system_flags & FLAG_WIFI_CONNECTED) {
+        ellipsized_name(namebuf, settings.wifi_name, 10);
+        draw_text(190, 120, namebuf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    } else {
+        draw_text(190, 120, text_disconnected[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    }
+    SPRITE_NODE* cursor;
+    int num;
+    draw_text(10, 120, ">", &cursor, &num, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+
+    struct _NETWORK_SETTINGS_CONTEXT* cont = malloc(sizeof(struct _NETWORK_SETTINGS_CONTEXT));
+    cont->selection = 0;
+    *context = cont;
+}
+
+int _ENC_network_settings(void* context, rotary_encoder_event_t ev, void* args) {
+    struct _NETWORK_SETTINGS_CONTEXT* cont = (struct _NETWORK_SETTINGS_CONTEXT*) context;
+    cont->selection ^= 1;
+    SPRITE_NODE* cursor;
+    int num;
+    draw_text(10, cont->selection ? 88 : 120, ">", &cursor, &num, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_RD_network_settings_select(void* context, void* args) {
+    struct _NETWORK_SETTINGS_CONTEXT* cont = (struct _NETWORK_SETTINGS_CONTEXT*) context;
+    return cont->selection ? 20 : ((system_flags & FLAG_WIFI_CONNECTED) ? 6 : 2);
+}
 // }}}
 
 // vim:fdm=marker

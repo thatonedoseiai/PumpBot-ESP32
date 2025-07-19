@@ -24,7 +24,7 @@ struct _WIFI_MENU_CONTEXT {
     struct _OPTIONS_DATA_ opt;
 };
 struct _CONTEXT_settings_menu {
-    char* options_strings[8];
+    const char* options_strings[8];
     struct _OPTIONS_DATA_ opt;
 };
 struct _MODAL_MENU_ARGS_ROTENC {
@@ -44,6 +44,10 @@ struct _BLOCK_HID_ARGS_ROTENC {
 struct _BLOCK_HID_ARGS_BUTTON {
     int(*callback)(void* context, void* args);
     void* args;
+};
+struct _PB_SETUP_METHOD_ARGS {
+    int WIFI_MENU_INDEX;
+    int HTTP_MENU_INDEX;
 };
 
 // int _RA_welcome_menu(void** context, rotary_encoder_event_t, void* args);
@@ -122,5 +126,9 @@ int _POSTLOOP_home_menu(void* context, void* args);
 
 void _SETUP_settings_options(void** context);
 int _BA_ED_settings_options_select_menu(void* context, void* args);
+
+void _SETUP_network_settings(void** context);
+int _ENC_network_settings(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_RD_network_settings_select(void* context, void* args);
 
 #endif
