@@ -13,6 +13,7 @@ pthread_cond_t enable_draw;
 pthread_t blitting_spi_id;
 unsigned char KILL_BLIT_SPI_THREAD;
 unsigned char COPY_BG;
+unsigned int GLOBAL_INDEX;
 
 const uint24_RGB* background_color;
 const uint24_RGB* foreground_color;
@@ -137,6 +138,8 @@ void blit_bg() {
 }
 
 void init_oam() {
+    GLOBAL_INDEX = 0;
+
     sprite_list = NULL;
     pthread_mutexattr_t mutex_attr;
     pthread_mutexattr_init(&mutex_attr);
@@ -161,6 +164,7 @@ SPRITE_NODE* push(SPRITE_24_H* sprite) {
         sprite_list->p = ins;
     ins->lifetime = 0xffffffff;
     ins->clear = 0;
+    ins->INDEX = GLOBAL_INDEX++;
     sprite_list = ins;
     return ins;
 }
@@ -257,11 +261,13 @@ void draw_sprites(spi_device_handle_t spi, SPRITE_NODE** array, int numspr) {
 }
 
 void delete_persistent_sprites() {
+    GLOBAL_INDEX = 0;
     for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
         delete_node(sp);
 }
 
 void delete_all_sprites_immediate() {
+    GLOBAL_INDEX = 0;
     pthread_mutex_lock(&sprite_lock);
     // for(SPRITE_NODE* sp = sprite_list; sp != NULL; sp = sp->n)
     while(sprite_list) {

@@ -1035,7 +1035,8 @@ static int menufunc_pwm_output_set(void) {
     }
 }
 
-const char* const* RGB_Mode_Names[] = {text_rgb_off, text_solid, text_fade, text_rainbow};
+// const char* const* RGB_Mode_Names[] = {text_rgb_off, text_solid, text_fade, text_rainbow};
+extern const char* const* RGB_Mode_Names[];
 static int menufunc_rgb_lighting(void) {
     rgb_update();
     uint24_RGB* hicolor = &RED;
@@ -2100,11 +2101,72 @@ const RUNMENU_DATA _RMD_NETWORK_SETTINGS_MENU = {
     }
 };
 
+const RUNMENU_DATA _RMD_SERVER_SETTINGS_MENU = {
+    &_SETUP_server_settings,
+    &_CLEANUP_COMMON_single_layer_context,
+    &_ENC_server_settings, NULL,
+    NULL, NULL,
+    2, {
+        {
+            LEFTBUTTON,
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG,
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN, 
+            &_BA_ED_server_settings_connect_server,
+            NULL
+        }
+    }
+};
+
+struct _MODAL_MENU_ARGS_BUTTON _RGB_LIGHTING_MM_ARGS_BUTTON = {
+    4, NULL, 
+    {
+        &_BA_ED_rgb_main_mode,
+        &_BA_ED_rgb_return_to_main_mode,
+        &_BA_ED_rgb_return_to_main_mode,
+        &_BA_ED_rgb_return_to_main_mode,
+    }
+};
+struct _MODAL_MENU_ARGS_ROTENC _RGB_LIGHTING_MM_ARGS_ROTENC = {
+    4, NULL,
+    {
+        &_ENC_rgb_main_mode,
+        &_ENC_rgb_brightness_mode,
+        &_ENC_rgb_light_pattern_mode,
+        &_ENC_rgb_speed_mode,
+    }
+};
+// TODO: DEBUG
+const RUNMENU_DATA _RMD_RGB_LIGHTING_MENU = {
+    &_SETUP_rgb_lighting,
+    &_CLEANUP_rgb_lighting,
+    &_ENC_COMMON_modal_menu, (void*) &_RGB_LIGHTING_MM_ARGS_ROTENC,
+    NULL, NULL,
+    2, {
+        {
+            LEFTBUTTON, 
+            BUTTON_DOWN,
+            &_BA_COMMON_go_to_menu,
+            (void*) MENU_POP_FLAG
+        },
+        {
+            ENCSW,
+            BUTTON_DOWN,
+            &_BA_COMMON_modal_menu,
+            (void*) &_RGB_LIGHTING_MM_ARGS_BUTTON
+        }
+    }
+};
+
 MENU_INFO_t allmenus[] = {
     {&welcome_menu[0], 3, menufunc_welcome, MENU_BG_SOLID_COL, &_RMD_WELCOME_MENU},
     {&menusetup0[0], 4, menufunc_setup, 4, &_RMD_SETUP_MENU},
     {&menusetup3[0], 3, menufunc_wifi_scan, 6, &_RMD_WIFI_MENU},
-    {&menutextenter[0], 2, menufunc_text_write, 2, &_RMD_TEXT_INPUT},
+    {&menutextenter[0], 2, menufunc_text_write, 2, &_RMD_TEXT_INPUT}, // TODO: backspace is not working???
     {&menuwifistarting[0], 2, menufunc_connect_wifi, 0, &_RMD_PB_WIFI_CONNECT},
     {&menusetup2a[0], 7, menufunc_http_setup, 3, &_RMD_HTTP_SERVER_CONFIG},
     {&menusetup3[0], 3, menufunc_network_preview, 2, &_RMD_PB_WIFI_PREVIEW},
@@ -2115,13 +2177,13 @@ MENU_INFO_t allmenus[] = {
     {&menusetup3[0], 1, menufunc_all_settings, 6, &_RMD_SETTINGS_MENU},
     {&menusetup3[0], 1, menufunc_pwm_output_settings, 6, NULL},
     {&menusetup3[0], 1, menufunc_pwm_output_set, 6, NULL},
-    {&menusetup3[0], 1, menufunc_rgb_lighting, 2, NULL},
+    {&menusetup3[0], 1, menufunc_rgb_lighting, 2, &_RMD_RGB_LIGHTING_MENU},
     {&menusetup3[0], 1, menufunc_applications, 6, NULL},
     {&menuapprundelete[0], 10, menufunc_file_run_delete, 0, NULL},
     {NULL, 0, menufunc_execute_ibuf_file, 0, NULL},
     {&menudownloadapp[0], 6, menufunc_download_file, 0, NULL},
     {&menunetworksettings[0], 7, menufunc_network_settings, 0, &_RMD_NETWORK_SETTINGS_MENU},
-    {&menuserversettings[0], 9, menufunc_server_settings, 6, NULL},
+    {&menuserversettings[0], 9, menufunc_server_settings, 6, &_RMD_SERVER_SETTINGS_MENU},
     {&menusetupdone[0], 2, menufunc_setup_done, MENU_BG_SOLID_COL, &_RMD_SETUP_FINISHED},
     {&menuskipwifi[0], 4, menufunc_skip_wifi, 0, &_RMD_SKIP_WIFI_CONNECTION},
     {&menusetup3[0], 1, menufunc_developer, 2, NULL},

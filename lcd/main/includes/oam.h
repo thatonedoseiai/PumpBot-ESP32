@@ -40,6 +40,7 @@ typedef struct s_n {
 	struct s_n* n;
 	unsigned int lifetime;
 	unsigned char clear;
+	unsigned int INDEX;
 } SPRITE_NODE;
 
 typedef struct {

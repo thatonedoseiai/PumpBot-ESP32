@@ -13,6 +13,7 @@
 #include "file_server.h"
 #include "pwm_output.h"
 #include "socket.h"
+#include "rgb_fade.h"
 
 extern spi_device_handle_t spi;
 extern uint24_RGB* background_color;
@@ -22,9 +23,16 @@ extern unsigned char wifi_restart_counter;
 extern uint24_RGB* bgbuf;
 extern uint16_t button_disable_counter;
 char* TEXT_ENTRY_BUFFER;
+enum {
+    NONE = 0,
+    IP_MODE = 1,
+    PASS_MODE = 2,
+    PORT_MODE = 3,
+} TEXT_ENTRY_BUFFER_MODE;
 unsigned char TEXT_ENTRY_BUFFER_LENGTH;
 uint24_RGB COLOR_SELECTION_BUFFER;
 unsigned char COLOR_SELECTION_BUFFER_VALID;
+unsigned char COLOR_SELECTION_MODE;
 const uint24_RGB HIGHLIGHT_COLOR = {0xff, 0x00, 0x00};
 
 // HELPERS {{{
@@ -1220,6 +1228,297 @@ int _ENC_network_settings(void* context, rotary_encoder_event_t ev, void* args) 
 int _BA_RD_network_settings_select(void* context, void* args) {
     struct _NETWORK_SETTINGS_CONTEXT* cont = (struct _NETWORK_SETTINGS_CONTEXT*) context;
     return cont->selection ? 20 : ((system_flags & FLAG_WIFI_CONNECTED) ? 6 : 2);
+}
+// }}}
+// SERVER SETTINGS {{{
+void _HELPER_server_settings_parse_text_entry_buffer() {
+    if(TEXT_ENTRY_BUFFER != NULL) {
+        switch(TEXT_ENTRY_BUFFER_MODE) {
+            case IP_MODE:
+                uint8_t temp[4];
+                int numvars = sscanf(TEXT_ENTRY_BUFFER, "%hhu.%hhu.%hhu.%hhu", &temp[0], &temp[1], &temp[2], &temp[3]);
+                if(numvars == 4)
+                    for(int i=0;i<4;++i)
+                        settings.server_ip[i] = temp[i];
+                break;
+            case PASS_MODE:
+                strncpy(settings.server_password, TEXT_ENTRY_BUFFER, 64);
+                break;
+            case PORT_MODE:
+                unsigned int m;
+                sscanf(TEXT_ENTRY_BUFFER, "%u", &m);
+                if(m <= 0xffff)
+                    settings.server_port = m;
+                break;
+            default:
+        }
+        TEXT_ENTRY_BUFFER_MODE = NONE;
+        free(TEXT_ENTRY_BUFFER);
+        TEXT_ENTRY_BUFFER = NULL;
+        TEXT_ENTRY_BUFFER_LENGTH = 0;
+    }
+}
+struct SERVER_SETTINGS_CONTEXT {
+    unsigned char selection;
+    SPRITE_NODE* connected_text_sprites[32];
+    int num_connected_text_sprites;
+};
+
+void _SETUP_server_settings(void** context) {
+    set_font_size(14);
+
+    struct SERVER_SETTINGS_CONTEXT* cont = malloc(sizeof(struct SERVER_SETTINGS_CONTEXT));
+    cont->selection = 0;
+    *context = cont;
+
+    _HELPER_server_settings_parse_text_entry_buffer();
+    char ip_buf[16];
+    char pass_buf[16];
+    char port_buf[6];
+    sprintf(ip_buf, "%d.%d.%d.%d", settings.server_ip[0], settings.server_ip[1], settings.server_ip[2], settings.server_ip[3]);
+    draw_text(150, 184, ip_buf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    ellipsized_name(pass_buf, settings.server_password, 12);
+    draw_text(150, 152, pass_buf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    itoa(settings.server_port, port_buf, 10);
+    port_buf[5] = 0;
+    draw_text(150, 120, port_buf, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(150, 88, 
+            ((system_flags & FLAG_WIFI_CONNECTED) ? 
+                ((system_flags & FLAG_SERVER_CONNECTED) ? 
+                    text_disconnect 
+                    : text_connect) 
+                : text_cant_connect)[settings.language],
+            cont->connected_text_sprites, &cont->num_connected_text_sprites, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(cont->connected_text_sprites, cont->num_connected_text_sprites);
+    SPRITE_NODE* cursor;
+    int num;
+    draw_text(10, 184, ">", &cursor, &num, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+}
+
+int _ENC_server_settings(void* context, rotary_encoder_event_t ev, void* args) {
+    struct SERVER_SETTINGS_CONTEXT* cont = (struct SERVER_SETTINGS_CONTEXT*) context;
+    cont->selection = ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? cont->selection+1 : cont->selection+3) % 4;
+
+    SPRITE_NODE* cursor;
+    int num;
+    draw_text(10, OPTION_Ys[cont->selection], ">", &cursor, &num, *foreground_color, *background_color, 0, false, false);
+    set_sprites_lifetime(1, &cursor, 1);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_server_settings_connect_server(void* context, void* args) {
+    struct SERVER_SETTINGS_CONTEXT* cont = (struct SERVER_SETTINGS_CONTEXT*) context;
+    switch(cont->selection) {
+        case 3:
+            break;
+        default:
+            TEXT_ENTRY_BUFFER_MODE = cont->selection+1;
+            TEXT_ENTRY_BUFFER = calloc(256, sizeof(char));
+            TEXT_ENTRY_BUFFER_LENGTH = 255;
+            return 3;
+    }
+
+    if(system_flags & FLAG_WIFI_CONNECTED) {
+        if(system_flags & FLAG_SERVER_CONNECTED) {
+            disconnect_from_server();
+            system_flags &= ~FLAG_SERVER_CONNECTED;
+        } else {
+            int r = connect_to_server(*(uint32_t*) &settings.server_ip, settings.server_port);
+            if(r) {
+                draw_text(32, 56, text_connection_fail[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+                draw_all_sprites(spi);
+                return 0;
+            }
+            system_flags |= FLAG_SERVER_CONNECTED;
+            for(int i=0;i<cont->num_connected_text_sprites;++i)
+                delete_node(cont->connected_text_sprites[i]);
+            draw_text(150, 88, (system_flags & FLAG_SERVER_CONNECTED) ? text_disconnect[settings.language] : text_connect[settings.language], &cont->connected_text_sprites[0], &cont->num_connected_text_sprites, *foreground_color, *background_color, 0, false, false);
+            draw_all_sprites(spi);
+        }
+    }
+    return 0;
+}
+// }}}
+// RGB LIGHTING MENU {{{
+struct _CONTEXT_RGB_MODE {
+    int selection;
+    SPRITE_NODE* cursor;
+    SPRITE_NODE* rgb_brightness_sprites[5];
+    int num_rgb_brightness_sprites;
+    SPRITE_NODE* mode_name_sprites[32];
+    int num_mode_name_sprites;
+    SPRITE_NODE* speed_sprites[5];
+    int num_speed_sprites;
+};
+void _HELP_rgb_lighting_parse_color_selection_buffer() {
+    if(COLOR_SELECTION_BUFFER_VALID) {
+        switch(COLOR_SELECTION_MODE) {
+            case 1:
+                settings.RGB_colour = COLOR_SELECTION_BUFFER;
+                break;
+            case 2:
+                settings.RGB_colour_2 = COLOR_SELECTION_BUFFER;
+                break;
+            default:
+        }
+    }
+    COLOR_SELECTION_BUFFER_VALID = 0;
+}
+
+const char* const* RGB_Mode_Names[] = {text_rgb_off, text_solid, text_fade, text_rainbow};
+void _SETUP_rgb_lighting(void** context) {
+    struct _CONTEXT_RGB_MODE* cont = malloc(sizeof(struct _CONTEXT_RGB_MODE));
+    cont->selection = 0;
+    *context = cont;
+
+    _HELP_rgb_lighting_parse_color_selection_buffer();
+
+    SPRITE_NODE* title[32];
+    int numtitle;
+    char rgb_brightness[5];
+    char rgb_speed[5];
+    rgb_update();
+    set_font_size(14);
+    sprintf(rgb_brightness, "%d%%", settings.RGB_brightness / 163);
+    sprintf(rgb_speed, "%d", settings.RGB_speed);
+    draw_text(200, 184, rgb_brightness, cont->rgb_brightness_sprites, &cont->num_rgb_brightness_sprites, *foreground_color, *background_color, 0, false, false);
+    draw_text(200, 120, rgb_speed, NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode][settings.language], cont->mode_name_sprites, &cont->num_mode_name_sprites, *foreground_color, *background_color, 0, false, false);
+    draw_text(0, 216, text_rgb_settings[settings.language], title, &numtitle, *foreground_color, *background_color, 0, false, false);
+    center_sprite_group_x(title, numtitle);
+
+    draw_text(32, 152, text_rgb_mode[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 120, text_rgb_speed[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 88, text_color_1[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(32, 56, text_color_2[settings.language], NULL, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_text(10, 184, ">", &cont->cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+}
+
+int _ENC_rgb_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    delete_node(cont->cursor);
+    cont->selection = (cont->selection + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 4)) % 5;
+    draw_text(10, OPTION_Ys[cont->selection], ">", &cont->cursor, NULL, *foreground_color, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    return 0;
+}
+
+void _CLEANUP_rgb_lighting(void** context) {
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) _HELP_COMMON_unwrap_modal_context(*context);
+    free(cont);
+    _CLEANUP_COMMON_single_layer_context(context);
+}
+
+int _ENC_rgb_brightness_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    char rgb_brightness[5];
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    for(int i=0;i<cont->num_rgb_brightness_sprites;++i)
+        delete_node(cont->rgb_brightness_sprites[i]);
+
+    if(ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+        if(settings.RGB_brightness + (163 * ev.state.multiplier) < 0x3fff)
+            settings.RGB_brightness += (163 * ev.state.multiplier);
+        else
+            settings.RGB_brightness = 0x3fff;
+    } else {
+        if(settings.RGB_brightness > (163 * ev.state.multiplier))
+            settings.RGB_brightness -= (163 * ev.state.multiplier);
+        else
+            settings.RGB_brightness = 0;
+    }
+    sprintf(rgb_brightness, "%d%%", settings.RGB_brightness / 163);
+    draw_text(200, 184, rgb_brightness, cont->rgb_brightness_sprites, &cont->num_rgb_brightness_sprites, HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    rgb_update();
+    return 0;
+}
+
+int _ENC_rgb_light_pattern_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    for(int i=0;i<cont->num_mode_name_sprites;++i)
+        delete_node(cont->mode_name_sprites[i]);
+    settings.RGB_mode = (settings.RGB_mode + ((ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) ? 1 : 3)) % 4;
+    draw_text(200, 152, RGB_Mode_Names[settings.RGB_mode][settings.language], cont->mode_name_sprites, &cont->num_mode_name_sprites, HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    rgb_update();
+    return 0;
+}
+
+int _ENC_rgb_speed_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode) {
+    char speed_val[6];
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    if(ev.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE) {
+        if(settings.RGB_speed + (ev.state.multiplier) < 0xff)
+            settings.RGB_speed += ev.state.multiplier;
+        else
+            settings.RGB_speed = 0xff;
+    } else {
+        if(settings.RGB_speed > ev.state.multiplier)
+            settings.RGB_speed -= ev.state.multiplier;
+        else
+            settings.RGB_speed = 1;
+    }
+    sprintf(speed_val, "%d", settings.RGB_speed);
+    draw_text(200, 120, speed_val, cont->speed_sprites, &cont->num_speed_sprites, HIGHLIGHT_COLOR, *background_color, 0, false, false);
+    draw_all_sprites(spi);
+    rgb_update();
+    return 0;
+}
+
+int _BA_ED_rgb_main_mode(void* context, void* args, int* mode) {
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    *mode = cont->selection + 1;
+    switch(cont->selection) {
+        case 0:
+            for(int i=0;i<cont->num_rgb_brightness_sprites;++i)
+                cont->rgb_brightness_sprites[i]->v->fg = HIGHLIGHT_COLOR;
+            break;
+        case 1:
+            for(int i=0;i<cont->num_mode_name_sprites;++i)
+                cont->mode_name_sprites[i]->v->fg = HIGHLIGHT_COLOR;
+            break;
+        case 2:
+            for(int i=0;i<cont->num_speed_sprites;++i)
+                cont->speed_sprites[i]->v->fg = HIGHLIGHT_COLOR;
+            break;
+        case 3:
+            COLOR_SELECTION_BUFFER = settings.RGB_colour;
+            COLOR_SELECTION_BUFFER_VALID = 0;
+            COLOR_SELECTION_MODE = 1;
+            return 9;
+        case 4:
+            COLOR_SELECTION_BUFFER = settings.RGB_colour_2;
+            COLOR_SELECTION_BUFFER_VALID = 0;
+            COLOR_SELECTION_MODE = 2;
+            return 9;
+    }
+    draw_all_sprites(spi);
+    return 0;
+}
+
+int _BA_ED_rgb_return_to_main_mode(void* context, void* args, int* mode) {
+    struct _CONTEXT_RGB_MODE* cont = (struct _CONTEXT_RGB_MODE*) context;
+    switch(*mode) {
+        case 1:
+            for(int i=0;i<cont->num_rgb_brightness_sprites;++i)
+                cont->rgb_brightness_sprites[i]->v->fg = *foreground_color;
+            break;
+        case 2:
+            for(int i=0;i<cont->num_mode_name_sprites;++i)
+                cont->mode_name_sprites[i]->v->fg = *foreground_color;
+            break;
+        case 3:
+            for(int i=0;i<cont->num_speed_sprites;++i)
+                cont->speed_sprites[i]->v->fg = *foreground_color;
+        default:
+    }
+    *mode = 0;
+    draw_all_sprites(spi);
+    return 0;
 }
 // }}}
 

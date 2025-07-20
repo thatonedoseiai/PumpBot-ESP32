@@ -131,4 +131,17 @@ void _SETUP_network_settings(void** context);
 int _ENC_network_settings(void* context, rotary_encoder_event_t ev, void* args);
 int _BA_RD_network_settings_select(void* context, void* args);
 
+void _SETUP_server_settings(void** context);
+int _ENC_server_settings(void* context, rotary_encoder_event_t ev, void* args);
+int _BA_ED_server_settings_connect_server(void* context, void* args);
+
+void _SETUP_rgb_lighting(void** context);
+void _CLEANUP_rgb_lighting(void** context);
+int _ENC_rgb_main_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_rgb_brightness_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_rgb_light_pattern_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _ENC_rgb_speed_mode(void* context, rotary_encoder_event_t ev, void* args, int* mode);
+int _BA_ED_rgb_main_mode(void* context, void* args, int* mode);
+int _BA_ED_rgb_return_to_main_mode(void* context, void* args, int* mode);
+
 #endif
