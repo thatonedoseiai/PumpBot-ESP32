@@ -55,9 +55,11 @@
 
 #![allow(dead_code)]
 
-use core::ffi::c_void;
-use core::mem;
 use core::sync::atomic::{AtomicU16, Ordering};
+use esp_idf_hal::gpio::{InterruptType, PinDriver, AnyIOPin, Input};
+use esp_idf_hal::sys::EspError;
+use std::sync::Mutex;
+use esp_idf_hal::task::queue::Queue;
 
 use esp_idf_hal::sys as sys; //ERROR: no external crate `esp_idf_sys`
 
@@ -125,34 +127,32 @@ pub enum RotaryEncoderDirection {
 
 /// Current position / direction / multiplier
 #[repr(C)]
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct RotaryEncoderState {
     /// Signed position – increases on CW, decreases on CCW
     pub position: i32,
     /// Last direction seen
-    pub direction: RotaryEncoderDirection, //ERROR: RotaryEncoderDirection trait Default not implemented (traits on line 128)
+    pub direction: RotaryEncoderDirection,
     /// Multiplier derived from the time between steps (see original code)
     pub multiplier: u16,
 }
 
 /// Queue event – the same layout as the C struct
 #[repr(C)]
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct RotaryEncoderEvent {
     pub state: RotaryEncoderState,
 }
 
 /// Internal driver data – this struct is passed to the ISR via a raw pointer
-#[repr(C)]
-#[derive(Debug)]
-pub struct RotaryEncoderInfo {
+pub struct RotaryEncoderInfo<'a> {
     /// GPIO numbers for the two quadrature signals
-    pub pin_a: sys::gpio_num_t,
-    pub pin_b: sys::gpio_num_t,
+    pub pin_a: PinDriver<'a, AnyIOPin, Input>,
+    pub pin_b: PinDriver<'a, AnyIOPin, Input>,
     /// Optional button pin (not used in the current ISR)
-    pub pin_btn: sys::gpio_num_t,
+    pub pin_btn: PinDriver<'a, AnyIOPin, Input>,
     /// Optional queue – events are written here from the ISR
-    pub queue: Option<sys::xQueueHandle>,
+    pub queue: Option<Queue<RotaryEncoderEvent>>,
     /// Pointer to the active transition table (half‑ or full‑step)
     pub table: &'static [[u8; TABLE_COLS]; TABLE_ROWS],
     /// Current state machine state (4 bits are used)
@@ -161,8 +161,15 @@ pub struct RotaryEncoderInfo {
     pub state: RotaryEncoderState,
 }
 
+impl RotaryEncoderInfo<'_> {
+    const fn new() -> Self {
+        todo!();
+    }
+}
+
 /// Global atomic counter used by the ISR to compute the speed‑based multiplier
 static ROTENC_MULTIPLIER_COUNTER: AtomicU16 = AtomicU16::new(0);
+static ROTARY_ENCODER_INFO: Mutex<RotaryEncoderInfo> = Mutex::new(RotaryEncoderInfo::new());
 
 /// ---------------------------------------------------------------------------
 ///  State‑machine logic – pure Rust, no unsafe
@@ -173,8 +180,8 @@ static ROTENC_MULTIPLIER_COUNTER: AtomicU16 = AtomicU16::new(0);
 #[inline(always)]
 fn process(info: &mut RotaryEncoderInfo) -> u8 {
     // Read pin levels – this is safe in ISR context (no heap allocation)
-    let a = unsafe { sys::gpio_get_level(info.pin_a) as u8 };
-    let b = unsafe { sys::gpio_get_level(info.pin_b) as u8 };
+    let a = (info.pin_a.is_high()) as u8;
+    let b = (info.pin_b.is_high()) as u8;
     let pin_state = (b << 1) | a;
 
     // Lookup next state in the active table
@@ -190,74 +197,67 @@ fn process(info: &mut RotaryEncoderInfo) -> u8 {
 
 /// ISR called on any edge of pin A or pin B.  The `args` pointer is the
 /// `&mut RotaryEncoderInfo` passed during `gpio_isr_handler_add`.
-#[unsafe(no_mangle)]    //DONT FUCKING DO THIS YOU ai PIECE OF SHIT
-extern "C" fn _isr_rotenc(args: *mut c_void) {
-    unsafe {
-        // Cast the raw pointer back to our struct
-        let info = &mut *(args as *mut RotaryEncoderInfo);
+fn isr_rotenc() {
+    // Cast the raw pointer back to our struct
+    // let info = &mut *(args as *mut RotaryEncoderInfo);
+    let mut info = ROTARY_ENCODER_INFO.lock().unwrap(); // how to handle the poisoned error?
 
-        // Run the state machine
-        let event = process(info);
+    // Run the state machine
+    let event = process(&mut info);
 
-        let mut send_event = false;
-        let delaydelta: u16;
+    let mut send_event = false;
+    let delaydelta: u16;
 
-        match event {
-            DIR_CW => {
-                // Update the atomic counter
-                let current = ROTENC_MULTIPLIER_COUNTER.load(Ordering::SeqCst);
-                delaydelta = current;
-                let new_val = if current + 4 < ROTENC_THRESHOLD {
-                    current + 4
-                } else {
-                    ROTENC_THRESHOLD
-                };
-                ROTENC_MULTIPLIER_COUNTER.store(new_val, Ordering::SeqCst);
+    match event {
+        DIR_CW => {
+            // Update the atomic counter
+            let current = ROTENC_MULTIPLIER_COUNTER.load(Ordering::SeqCst);
+            delaydelta = current;
+            let new_val = if current + 4 < ROTENC_THRESHOLD {
+                current + 4
+            } else {
+                ROTENC_THRESHOLD
+            };
+            ROTENC_MULTIPLIER_COUNTER.store(new_val, Ordering::SeqCst);
 
-                // Update driver state
-                info.state.position = info.state.position.wrapping_add(1);
-                info.state.direction = RotaryEncoderDirection::Clockwise;
-                info.state.multiplier = (delaydelta >> 3) + 1;
-                send_event = true;
-            }
-            DIR_CCW => {
-                let current = ROTENC_MULTIPLIER_COUNTER.load(Ordering::SeqCst);
-                delaydelta = current;
-                let new_val = if current + 4 < ROTENC_THRESHOLD {
-                    current + 4
-                } else {
-                    ROTENC_THRESHOLD
-                };
-                ROTENC_MULTIPLIER_COUNTER.store(new_val, Ordering::SeqCst);
-
-                info.state.position = info.state.position.wrapping_sub(1);
-                info.state.direction = RotaryEncoderDirection::CounterClockwise;
-                info.state.multiplier = (delaydelta >> 3) + 1;
-                send_event = true;
-            }
-            _ => {}
+            // Update driver state
+            info.state.position = info.state.position.wrapping_add(1);
+            info.state.direction = RotaryEncoderDirection::Clockwise;
+            info.state.multiplier = (delaydelta >> 3) + 1;
+            send_event = true;
         }
+        DIR_CCW => {
+            let current = ROTENC_MULTIPLIER_COUNTER.load(Ordering::SeqCst);
+            delaydelta = current;
+            let new_val = if current + 4 < ROTENC_THRESHOLD {
+                current + 4
+            } else {
+                ROTENC_THRESHOLD
+            };
+            ROTENC_MULTIPLIER_COUNTER.store(new_val, Ordering::SeqCst);
 
-        // Queue the event if requested
-        if send_event {
-            if let Some(q) = info.queue {
-                let ev = RotaryEncoderEvent {
-                    state: RotaryEncoderState {
-                        position: info.state.position,
-                        direction: info.state.direction,
-                        multiplier: (delaydelta >> 3) + 1,
-                    },
-                };
-                let mut task_woken: sys::BaseType_t = 0;
-                let res = sys::xQueueOverwriteFromISR( //send_back
-                    q,
-                    &ev as *const _ as *const c_void,
-                    &mut task_woken as *mut _,
-                );
-                if res == sys::ESP_OK && task_woken != 0 {
-                    sys::portYIELD_FROM_ISR(task_woken);
-                }
-            }
+            info.state.position = info.state.position.wrapping_sub(1);
+            info.state.direction = RotaryEncoderDirection::CounterClockwise;
+            info.state.multiplier = (delaydelta >> 3) + 1;
+            send_event = true;
+        }
+        _ => {
+            let current = ROTENC_MULTIPLIER_COUNTER.load(Ordering::SeqCst);
+            delaydelta = current;
+        }
+    }
+
+    // Queue the event if requested
+    if send_event {
+        if let Some(q) = &info.queue {
+            let ev = RotaryEncoderEvent {
+                state: RotaryEncoderState {
+                    position: info.state.position,
+                    direction: info.state.direction,
+                    multiplier: (delaydelta >> 3) + 1,
+                },
+            };
+            q.send_back(ev, 10);
         }
     }
 }
@@ -267,23 +267,15 @@ extern "C" fn _isr_rotenc(args: *mut c_void) {
 /// ---------------------------------------------------------------------------
 
 /// Attach the ISR to a GPIO pin
-fn attach_isr(pin: sys::gpio_num_t, info: &mut RotaryEncoderInfo) -> Result<(), sys::esp_err_t> {
+fn attach_isr(pin: &mut PinDriver<AnyIOPin, Input>) -> Result<(), EspError> {
+    pin.set_interrupt_type(InterruptType::PosEdge)?;
     unsafe {
-        let res = sys::gpio_isr_handler_add(
-            pin,
-            Some(_isr_rotenc),
-            info as *mut _ as *mut c_void,
-        );
-        if res == sys::ESP_OK {
-            Ok(())
-        } else {
-            Err(res)
-        }
+        pin.subscribe(isr_rotenc)
     }
 }
 
 /// Remove the ISR from a GPIO pin
-fn remove_isr(pin: &mut PinDriver) -> Result <(),EspError> { 
+fn remove_isr(pin: &mut PinDriver<AnyIOPin, Input>) -> Result <(), EspError> { 
     pin.unsubscribe() 
 }
 
@@ -295,37 +287,37 @@ fn remove_isr(pin: &mut PinDriver) -> Result <(),EspError> {
 ///
 /// `info` must outlive the ISR (e.g. a static or a `Box`).  The caller can
 /// subsequently attach a queue with `rotary_encoder_set_queue`.
-pub fn rotary_encoder_init(
-    info: &mut RotaryEncoderInfo,
-    pin_a: sys::gpio_num_t,
-    pin_b: sys::gpio_num_t,
-    pin_btn: sys::gpio_num_t,
-) -> Result<(), sys::esp_err_t> {
-    unsafe {
-        // GPIO reset & configuration
-        sys::gpio_reset_pin(pin_a);
-        sys::gpio_set_pull_mode(pin_a, sys::GPIO_PULLUP_ONLY);
-        sys::gpio_set_direction(pin_a, sys::GPIO_MODE_INPUT);
-        sys::gpio_set_intr_type(pin_a, sys::GPIO_INTR_ANYEDGE);
+pub fn rotary_encoder_init<'a>(
+    info: &mut RotaryEncoderInfo<'a>,
+    pin_a: PinDriver<'a, AnyIOPin, Input>,
+    pin_b: PinDriver<'a, AnyIOPin, Input>,
+    pin_btn: PinDriver<'a, AnyIOPin, Input>,
+) -> Result<(), EspError> {
+    // unsafe {
+    //     // GPIO reset & configuration
+    //     sys::gpio_reset_pin(pin_a);
+    //     sys::gpio_set_pull_mode(pin_a, sys::GPIO_PULLUP_ONLY);
+    //     sys::gpio_set_direction(pin_a, sys::GPIO_MODE_INPUT);
+    //     sys::gpio_set_intr_type(pin_a, sys::GPIO_INTR_ANYEDGE);
 
-        sys::gpio_reset_pin(pin_b);
-        sys::gpio_set_pull_mode(pin_b, sys::GPIO_PULLUP_ONLY);
-        sys::gpio_set_direction(pin_b, sys::GPIO_MODE_INPUT);
-        sys::gpio_set_intr_type(pin_b, sys::GPIO_INTR_ANYEDGE);
+    //     sys::gpio_reset_pin(pin_b);
+    //     sys::gpio_set_pull_mode(pin_b, sys::GPIO_PULLUP_ONLY);
+    //     sys::gpio_set_direction(pin_b, sys::GPIO_MODE_INPUT);
+    //     sys::gpio_set_intr_type(pin_b, sys::GPIO_INTR_ANYEDGE);
 
-        // Optional button – currently unused in the ISR
-        if pin_btn != sys::GPIO_NUM_NC {
-            sys::gpio_reset_pin(pin_btn);
-            sys::gpio_set_pull_mode(pin_btn, sys::GPIO_PULLUP_ONLY);
-            sys::gpio_set_direction(pin_btn, sys::GPIO_MODE_INPUT);
-            sys::gpio_set_intr_type(pin_btn, sys::GPIO_INTR_ANYEDGE);
-        }
-    }
+    //     // Optional button – currently unused in the ISR
+    //     if pin_btn != sys::GPIO_NUM_NC {
+    //         sys::gpio_reset_pin(pin_btn);
+    //         sys::gpio_set_pull_mode(pin_btn, sys::GPIO_PULLUP_ONLY);
+    //         sys::gpio_set_direction(pin_btn, sys::GPIO_MODE_INPUT);
+    //         sys::gpio_set_intr_type(pin_btn, sys::GPIO_INTR_ANYEDGE);
+    //     }
+    // }
 
     // Store the pin numbers
     info.pin_a = pin_a;
     info.pin_b = pin_b;
-    info.pin_btn = pin_btn;
+    info.pin_btn = pin_btn; // can remove
 
     // Default to full‑step mode
     info.table = &TTABLE_FULL;
@@ -340,8 +332,8 @@ pub fn rotary_encoder_init(
     info.queue = None;
 
     // Install ISRs for the two quadrature pins
-    attach_isr(pin_a, info)?;
-    attach_isr(pin_b, info)?;
+    attach_isr(&mut info.pin_a)?;
+    attach_isr(&mut info.pin_b)?;
 
     // Reset the speed counter
     ROTENC_MULTIPLIER_COUNTER.store(0, Ordering::SeqCst);
@@ -359,41 +351,42 @@ pub fn rotary_encoder_enable_half_steps(
 }
 
 /// Swap the sense of A and B – useful if the mechanical direction is opposite.
-pub fn rotary_encoder_flip_direction(
-    info: &mut RotaryEncoderInfo,
-) -> Result<(), sys::esp_err_t> {
-    let tmp = info.pin_a;
-    info.pin_a = info.pin_b;
-    info.pin_b = tmp;
-    Ok(())
-}
+// pub fn rotary_encoder_flip_direction(
+//     info: &mut RotaryEncoderInfo,
+// ) -> Result<(), sys::esp_err_t> {
+//     let tmp = info.pin_a;
+//     info.pin_a = info.pin_b;
+//     info.pin_b = tmp;
+//     Ok(())
+// }
 
 /// Remove the ISRs installed by `rotary_encoder_init`.  The GPIOs stay configured.
-pub fn rotary_encoder_uninit(info: &mut RotaryEncoderInfo) -> Result<(), sys::esp_err_t> {
-    remove_isr(info.pin_a)?;
-    remove_isr(info.pin_b)?;
+pub fn rotary_encoder_uninit(info: &mut RotaryEncoderInfo) -> Result<(), EspError> {
+    remove_isr(&mut info.pin_a)?;
+    remove_isr(&mut info.pin_b)?;
     Ok(())
 }
 
-/// Create a FreeRTOS queue for the encoder events.  The caller must store the handle.
-pub fn rotary_encoder_create_queue() -> Result<sys::xQueueHandle, sys::esp_err_t> {
-    unsafe {
-        let q = sys::xQueueCreate(
-            EVENT_QUEUE_LENGTH as u32,
-            mem::size_of::<RotaryEncoderEvent>() as u32,
-        );
-        if !q.is_null() {
-            Ok(q)
-        } else {
-            Err(sys::ESP_FAIL)
-        }
-    }
-}
+// /// Create a FreeRTOS queue for the encoder events.  The caller must store the handle.
+// pub fn rotary_encoder_create_queue() -> Result<Queue, sys::esp_err_t> {
+
+//     unsafe {
+//         let q = sys::xQueueCreate(
+//             EVENT_QUEUE_LENGTH as u32,
+//             mem::size_of::<RotaryEncoderEvent>() as u32,
+//         );
+//         if !q.is_null() {
+//             Ok(q)
+//         } else {
+//             Err(sys::ESP_FAIL)
+//         }
+//     }
+// }
 
 /// Attach a queue to an encoder instance – the ISR will overwrite the single entry.
 pub fn rotary_encoder_set_queue(
     info: &mut RotaryEncoderInfo,
-    queue: sys::xQueueHandle,
+    queue: Queue<RotaryEncoderEvent>,
 ) -> Result<(), sys::esp_err_t> {
     info.queue = Some(queue);
     Ok(())
