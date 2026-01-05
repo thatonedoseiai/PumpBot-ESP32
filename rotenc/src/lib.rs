@@ -153,7 +153,7 @@ pub struct RotaryEncoderInfo<'a> {
     /// Optional button pin (not used in the current ISR)
     pub pin_btn: PinDriver<'a, AnyIOPin, Input>,
     /// Optional queue – events are written here from the ISR
-    pub queue: Option<Queue<RotaryEncoderEvent>>,
+    pub queue: Queue<RotaryEncoderEvent>,
     /// Pointer to the active transition table (half‑ or full‑step)
     pub table: &'static [[u8; TABLE_COLS]; TABLE_ROWS],
     /// Current state machine state (4 bits are used)
@@ -168,7 +168,7 @@ impl RotaryEncoderInfo<'_> {
             pin_a: PinDriver::input(anypin_a)?,
             pin_b: PinDriver::input(anypin_b)?,
             pin_btn: PinDriver::input(anypin_btn)?,
-            queue: None,
+            queue: Queue::new(32),
             table,
             table_state: R_START,
             state: RotaryEncoderState {
@@ -262,16 +262,14 @@ fn isr_rotenc() {
 
     // Queue the event if requested
     if send_event {
-        if let Some(q) = &info.queue {
-            let ev = RotaryEncoderEvent {
-                state: RotaryEncoderState {
-                    position: info.state.position,
-                    direction: info.state.direction,
-                    multiplier: (delaydelta >> 3) + 1,
-                },
-            };
-            let _ = q.send_back(ev, 10); // queue is allowed to error out if full
-        }
+        let ev = RotaryEncoderEvent {
+            state: RotaryEncoderState {
+                position: info.state.position,
+                direction: info.state.direction,
+                multiplier: (delaydelta >> 3) + 1,
+            },
+        };
+        let _ = info.queue.send_back(ev, 10); // queue is allowed to error out if full
     }
 }
 
@@ -304,61 +302,13 @@ pub fn rotary_encoder_init<'a>(
     pin_a: AnyIOPin,
     pin_b: AnyIOPin,
     pin_btn: AnyIOPin
-    // info: &mut RotaryEncoderInfo<'a>,
-    // pin_a: PinDriver<'a, AnyIOPin, Input>,
-    // pin_b: PinDriver<'a, AnyIOPin, Input>,
-    // pin_btn: PinDriver<'a, AnyIOPin, Input>,
 ) -> Result<(), EspError> {
-    // unsafe {
-    //     // GPIO reset & configuration
-    //     sys::gpio_reset_pin(pin_a);
-    //     sys::gpio_set_pull_mode(pin_a, sys::GPIO_PULLUP_ONLY);
-    //     sys::gpio_set_direction(pin_a, sys::GPIO_MODE_INPUT);
-    //     sys::gpio_set_intr_type(pin_a, sys::GPIO_INTR_ANYEDGE);
-
-    //     sys::gpio_reset_pin(pin_b);
-    //     sys::gpio_set_pull_mode(pin_b, sys::GPIO_PULLUP_ONLY);
-    //     sys::gpio_set_direction(pin_b, sys::GPIO_MODE_INPUT);
-    //     sys::gpio_set_intr_type(pin_b, sys::GPIO_INTR_ANYEDGE);
-
-    //     // Optional button – currently unused in the ISR
-    //     if pin_btn != sys::GPIO_NUM_NC {
-    //         sys::gpio_reset_pin(pin_btn);
-    //         sys::gpio_set_pull_mode(pin_btn, sys::GPIO_PULLUP_ONLY);
-    //         sys::gpio_set_direction(pin_btn, sys::GPIO_MODE_INPUT);
-    //         sys::gpio_set_intr_type(pin_btn, sys::GPIO_INTR_ANYEDGE);
-    //     }
-    // }
-
-    // Store the pin numbers
-    // info.pin_a = pin_a;
-    // info.pin_b = pin_b;
-    // info.pin_btn = pin_btn; // can remove
-
-    // // Default to full‑step mode
-    // info.table = &TTABLE_FULL;
-    // info.table_state = R_START;
-
-    // // Reset position/direction
-    // info.state = RotaryEncoderState {
-    //     position: 0,
-    //     direction: RotaryEncoderDirection::NotSet,
-    //     multiplier: 0,
-    // };
-    // info.queue = None;
-
-    // info
-
     let mut rot = RotaryEncoderInfo::new(pin_a, pin_b, pin_btn, &TTABLE_FULL)?;
 
     attach_isr(&mut rot.pin_a)?;
     attach_isr(&mut rot.pin_b)?;
 
     ROTARY_ENCODER_INFO.get_or_init(move || Mutex::new(rot));
-
-    // Install ISRs for the two quadrature pins
-
-    // Reset the speed counter
     ROTENC_MULTIPLIER_COUNTER.store(0, Ordering::SeqCst);
     Ok(())
 }
@@ -373,45 +323,10 @@ pub fn rotary_encoder_enable_half_steps(
     Ok(())
 }
 
-/// Swap the sense of A and B – useful if the mechanical direction is opposite.
-// pub fn rotary_encoder_flip_direction(
-//     info: &mut RotaryEncoderInfo,
-// ) -> Result<(), sys::esp_err_t> {
-//     let tmp = info.pin_a;
-//     info.pin_a = info.pin_b;
-//     info.pin_b = tmp;
-//     Ok(())
-// }
-
 /// Remove the ISRs installed by `rotary_encoder_init`.  The GPIOs stay configured.
 pub fn rotary_encoder_uninit(info: &mut RotaryEncoderInfo) -> Result<(), EspError> {
     remove_isr(&mut info.pin_a)?;
     remove_isr(&mut info.pin_b)?;
-    Ok(())
-}
-
-// /// Create a FreeRTOS queue for the encoder events.  The caller must store the handle.
-// pub fn rotary_encoder_create_queue() -> Result<Queue, sys::esp_err_t> {
-
-//     unsafe {
-//         let q = sys::xQueueCreate(
-//             EVENT_QUEUE_LENGTH as u32,
-//             mem::size_of::<RotaryEncoderEvent>() as u32,
-//         );
-//         if !q.is_null() {
-//             Ok(q)
-//         } else {
-//             Err(sys::ESP_FAIL)
-//         }
-//     }
-// }
-
-/// Attach a queue to an encoder instance – the ISR will overwrite the single entry.
-pub fn rotary_encoder_set_queue(
-    info: &mut RotaryEncoderInfo,
-    queue: Queue<RotaryEncoderEvent>,
-) -> Result<(), sys::esp_err_t> {
-    info.queue = Some(queue);
     Ok(())
 }
 
