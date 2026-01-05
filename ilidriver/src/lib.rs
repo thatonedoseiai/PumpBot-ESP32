@@ -1,26 +1,24 @@
-#![no_std]
 #![no_main]                // you can drop this if you use a normal `main`
 use core::mem;
-
-use esp_idf_hal::{
-    prelude::*,
-    delay::FreeRtosDelay,
-    gpio::{GpioPin, Input, Output, Floating},
+use std::slice::from_raw_parts;
+use esp_idf_hal::{ 
+    delay::FreeRtos,
+    gpio::{/*GpioPin, */Input, Output, PinDriver, AnyIOPin, /*Floating*/},
     peripherals::Peripherals,
-    spi::{
-        Spi, SpiConfig, SpiDevice, SpiDeviceConfig, Mode,
-        spi::Spi2,
+    spi::{ 
+        Spi, SPI2, SpiBusDriver, SpiDeviceDriver, SpiConfig, SpiDriverConfig
     },
+    sys::EspError,
 };
-use esp_idf_svc::println;
+//use esp_idf_hal::sys::printf; //for debug message only, doesn't compile 
 use std::{
     sync::{Arc, Mutex},
     thread,
 };
 
-/* --------------------------------------------------------------------- */
-/*  RGB colour, 24‑bit (R,G,B) – 3 bytes, no padding                     */
-/* --------------------------------------------------------------------- */
+// --------------------------------------------------------------------- 
+//  RGB colour, 24‑bit (R,G,B) – 3 bytes, no padding
+// ---------------------------------------------------------------------
 #[repr(C)]
 #[derive(Copy, Clone, Default, Debug)]
 pub struct RGB24 {
@@ -29,9 +27,9 @@ pub struct RGB24 {
     pixelB: u8,
 }
 
-/* --------------------------------------------------------------------- */
-/*  Init‑command entry – data is a slice (≤ 16 bytes)                     */
-/* --------------------------------------------------------------------- */
+// ---------------------------------------------------------------------
+//  Init‑command entry – data is a slice (≤ 16 bytes)
+// ---------------------------------------------------------------------
 #[derive(Copy, Clone, Debug)]
 pub struct LcdInitCmd<'a> {
     pub cmd: u8,
@@ -39,17 +37,17 @@ pub struct LcdInitCmd<'a> {
     pub databytes: u8,     // bit 7 = delay‑after‑cmd, 0xFF = end marker
 }
 
-/* --------------------------------------------------------------------- */
-/*  Constants – screen resolution (320×240) and data‑driven parallelism  */
-/* --------------------------------------------------------------------- */
+// ---------------------------------------------------------------------
+//  Constants – screen resolution (320×240) and data‑driven parallelism 
+// ---------------------------------------------------------------------
 const SCREEN_WIDTH: usize  = 320;   // X‑dimension (horizontal)
 const SCREEN_HEIGHT: usize = 240;   // Y‑dimension (vertical)
 const BUFFER_STRIDE: usize = SCREEN_HEIGHT;   // column‑major buffer
 const PARALLEL_LINES: usize = 16;   // how many rows are sent in one burst
 
-/* --------------------------------------------------------------------- */
-/*  Init command table – identical to the C array in ILIDriver.h         */
-/* --------------------------------------------------------------------- */
+// ---------------------------------------------------------------------
+//  Init command table – identical to the C array in ILIDriver.h        
+// ---------------------------------------------------------------------
 static ILI9341_INIT_CMDS: &[LcdInitCmd] = &[
     LcdInitCmd { cmd: 0xCF, data: &[0x00, 0x83, 0x30], databytes: 3 },
     LcdInitCmd { cmd: 0xED, data: &[0x64, 0x03, 0x12, 0x81], databytes: 4 },
@@ -79,51 +77,51 @@ static ILI9341_INIT_CMDS: &[LcdInitCmd] = &[
     LcdInitCmd { cmd: 0x00, data: &[], databytes: 0xFF },  // end marker
 ];
 
-/* --------------------------------------------------------------------- */
-/*  Core driver – owns the SPI device, DC / RST pins and a framebuffer   */
-/* --------------------------------------------------------------------- */
-type SpiBus  = Spi<'static, Spi2, GpioPin<Input>, GpioPin<Output>, GpioPin<Output>>;
-type SpiDev  = SpiDevice<'static, SpiBus, GpioPin<Output>>;
+// ---------------------------------------------------------------------
+//  Core driver – owns the SPI device, DC / RST pins and a framebuffer  
+// ---------------------------------------------------------------------
+type SpiBus  = SpiBusDriver<'static, SPI2>;
+type SpiDev  = SpiDeviceDriver<'static, SpiBus>;
 
-pub struct Lcd {
+pub struct Lcd<'a> {
     spi: SpiDev,
-    dc:  GpioPin<Output>,
-    rst: GpioPin<Output>,
+    dc:  PinDriver<'a,AnyIOPin, Output>, // pin 11
+    rst: PinDriver<'a,AnyIOPin, Output>, //pin 12
     /// The frame buffer is optional – created on demand.
     framebuf: Option<Vec<RGB24>>,
 }
 
-impl Lcd {
+impl Lcd<'_> {
     /// Create a new driver instance (returns an Arc‑wrapped Mutex so it can
     /// be shared between threads).
     pub fn new() -> Result<Arc<Mutex<Self>>, Box<dyn core::error::Error>> {
-        let peripherals = Peripherals::take()
-            .ok_or("Failed to take peripherals")?;
+        let peripherals = Peripherals::take();
+            //.ok_or("Failed to take peripherals")?; //completely hallucinated lol
 
-        /* ---------- SPI pins ------------------------------------------------- */
+        // ---------- SPI pins -------------------------------------------------
         let miso = peripherals.pins.gpio10.into_floating_input();
         let mosi = peripherals.pins.gpio46.into_push_pull_output();
         let sck  = peripherals.pins.gpio9.into_push_pull_output();
 
-        /* ---------- CS pin --------------------------------------------------- */
+        // ---------- CS pin ---------------------------------------------------
         // In the original C code CS is unused – we keep it for completeness.
         let cs = peripherals.pins.gpio38.into_push_pull_output();
 
-        /* ---------- SPI bus --------------------------------------------------- */
+        // ---------- SPI bus ---------------------------------------------------
         let spi_bus = Spi::new(
             peripherals.spi2,
             (miso, mosi, sck),
             &SpiConfig::default(),
         )?;
 
-        /* ---------- SPI device ------------------------------------------------ */
+        // ---------- SPI device ------------------------------------------------
         let spi_dev = spi_bus
             .add_device(
                 Some(cs),
-                &SpiDeviceConfig::default(),
+                &SpiDriverConfig::default(),
             )?;
 
-        /* ---------- DC / RST pins ------------------------------------------- */
+        // ---------- DC / RST pins -------------------------------------------
         let dc  = peripherals.pins.gpio11.into_push_pull_output();
         let rst = peripherals.pins.gpio12.into_push_pull_output();
 
@@ -137,59 +135,58 @@ impl Lcd {
         Ok(Arc::new(Mutex::new(lcd)))
     }
 
-    /* --------------------------------------------------------------------- */
-    /*  Low‑level write helpers – these take a mutable reference to self   */
-    /* --------------------------------------------------------------------- */
-    fn write_cmd(&mut self, cmd: u8) -> Result<(), core::convert::Infallible> {
-        self.dc.set_low()?;
+    // ---------------------------------------------------------------------
+    //  Low‑level write helpers – these take a mutable reference to self
+    // ---------------------------------------------------------------------
+    fn write_cmd(&mut self, cmd: u8) -> Result<(), EspError> {
+        self.dc.set_low()?; //PinDriver function
         self.spi.write(&[cmd])?;
         Ok(())
     }
 
-    fn write_data(&mut self, data: &[u8]) -> Result<(), core::convert::Infallible> {
+    fn write_data(&mut self, data: &[u8]) -> Result<(), EspError> {
         if data.is_empty() { return Ok(()); }
-        self.dc.set_high()?;
+        self.dc.set_high()?; //PinDriver function
         self.spi.write(data)?;
         Ok(())
     }
 
     /// Send a slice of RGB24 values as raw bytes.
-    fn write_rgb24_slice(&mut self, data: &[RGB24]) -> Result<(), core::convert::Infallible> {
+    fn write_rgb24_slice(&mut self, data: &[RGB24]) -> Result<(), EspError> {
         if data.is_empty() { return Ok(()); }
         let bytes: &[u8] = unsafe {
-            mem::from_raw_parts(data.as_ptr() as *const u8, data.len() * mem::size_of::<RGB24>())
+            from_raw_parts(data.as_ptr() as *const u8, data.len() * mem::size_of::<RGB24>())
         };
         self.write_data(bytes)
     }
 
-    /* --------------------------------------------------------------------- */
-    /*  High‑level API – called from the outer wrapper after locking        */
-    /* --------------------------------------------------------------------- */
+    // --------------------------------------------------------------------- 
+    //  High‑level API – called from the outer wrapper after locking        
+    // --------------------------------------------------------------------- 
 
     /// Send the complete initialisation sequence.
-    pub fn init(&mut self) -> Result<(), core::convert::Infallible> {
-        let delay = FreeRtosDelay;
+    pub fn init(&mut self) -> Result<(), EspError> {
 
-        /* 1. Reset the display */
+        // 1. Reset the display 
         self.rst.set_low()?;
-        delay.delay_ms(100);
+        FreeRtos::delay_ms(100);
         self.rst.set_high()?;
-        delay.delay_ms(100);
+        FreeRtos::delay_ms(100);
 
-        println!("LCD ILI9341 initialised!");
+        //printf("LCD ILI9341 initialised!");
 
-        /* 2. Send all init commands */
+        // 2. Send all init commands 
         for cmd in ILI9341_INIT_CMDS {
             if cmd.databytes == 0xFF { break; }
             self.write_cmd(cmd.cmd)?;
             if !cmd.data.is_empty() { self.write_data(cmd.data)?; }
-            if cmd.databytes & 0x80 != 0 { delay.delay_ms(100); }
+            if cmd.databytes & 0x80 != 0 { FreeRtos::delay_ms(100); }
         }
         Ok(())
     }
 
     /// Read the 24‑bit device ID (0x04 command).
-    pub fn get_id(&mut self) -> Result<u32, core::convert::Infallible> {
+    pub fn get_id(&mut self) -> Result<u32, EspError> {
         self.write_cmd(0x04)?;
         // D/C high for data
         self.dc.set_high()?;
@@ -236,11 +233,11 @@ impl Lcd {
     pub fn draw_sprite(&mut self,
                        sx: usize, y: usize,
                        width: usize, height: usize,
-                       bitmap: &[RGB24]) -> Result<(), core::convert::Infallible> {
+                       bitmap: &[RGB24]) -> Result<(), EspError> {
         if sx + width > SCREEN_WIDTH { return Ok(()); }
 
-        /* Column address set – note that X ↔ Y are swapped due to the
-           display’s MADCTL (0x36) configuration. */
+        // Column address set – note that X ↔ Y are swapped due to the
+        // display’s MADCTL (0x36) configuration.
         self.write_cmd(0x2A)?;
         let col = [
             (y >> 8) as u8,
@@ -250,7 +247,7 @@ impl Lcd {
         ];
         self.write_data(&col)?;
 
-        /* Page address set – X coordinate */
+        // Page address set – X coordinate 
         self.write_cmd(0x2B)?;
         let page = [
             (sx >> 8) as u8,
@@ -260,7 +257,7 @@ impl Lcd {
         ];
         self.write_data(&page)?;
 
-        /* Memory write */
+        // Memory write 
         self.write_cmd(0x2C)?;
         self.write_rgb24_slice(bitmap)?;
 
@@ -271,11 +268,11 @@ impl Lcd {
     pub fn send_lines(&mut self,
                       start_col: usize,
                       bgbuf: &[RGB24],
-                      num_cols: usize) -> Result<(), core::convert::Infallible> {
+                      num_cols: usize) -> Result<(), EspError> {
         let cols = num_cols.min(PARALLEL_LINES);
         if cols == 0 { return Ok(()); }
 
-        /* 1. Column address set – X dimension */
+        // 1. Column address set – X dimension 
         self.write_cmd(0x2A)?;
         let col = [
             (start_col >> 8) as u8,
@@ -285,7 +282,7 @@ impl Lcd {
         ];
         self.write_data(&col)?;
 
-        /* 2. Page address set – full height */
+        // 2. Page address set – full height 
         self.write_cmd(0x2B)?;
         let page = [
             0x00,
@@ -295,10 +292,10 @@ impl Lcd {
         ];
         self.write_data(&page)?;
 
-        /* 3. Memory write */
+        // 3. Memory write 
         self.write_cmd(0x2C)?;
 
-        /* 4. Pixel data – slice of the buffer */
+        // 4. Pixel data – slice of the buffer 
         let start = start_col * BUFFER_STRIDE;
         let end   = start + cols * SCREEN_HEIGHT;
         self.write_rgb24_slice(&bgbuf[start..end])?;
@@ -307,12 +304,12 @@ impl Lcd {
     }
 
     /// Scroll the display by a pixel offset (used by vertical scrolling).
-    pub fn scroll_screen(&mut self, value: u16) -> Result<(), core::convert::Infallible> {
-        /* 0x33 – vertical scrolling area definition */
+    pub fn scroll_screen(&mut self, value: u16) -> Result<(), EspError> {
+        // 0x33 – vertical scrolling area definition
         self.write_cmd(0x33)?;
         self.write_data(&[0x00, 0x00, 0x01, 0x40, 0x00, 0x00])?;
 
-        /* 0x37 – start address of the scroll area */
+        // 0x37 – start address of the scroll area
         self.write_cmd(0x37)?;
         self.write_data(&[(value >> 8) as u8, (value & 0xFF) as u8])?;
 
@@ -336,7 +333,7 @@ impl Lcd {
 
     /// Paint the entire screen with a single colour.
     pub fn send_color(&self, color: RGB24) {
-        /* Fill the internal frame buffer first */
+        // Fill the internal frame buffer first
         {
             let mut lcd_guard = self.lock().unwrap();
             lcd_guard.buffer_fillcolor(color);
@@ -360,7 +357,7 @@ impl Lcd {
     }
 
     /// Helper – scroll the framebuffer onto the screen.
-    pub fn scroll_buffer(&self, screenoffset: usize, reset_scroll: bool) -> Result<(), core::convert::Infallible> {
+    pub fn scroll_buffer(&self, screenoffset: usize, reset_scroll: bool) -> Result<(), EspError> {
         if reset_scroll { self.scroll_screen(0)?; }
 
         let mut pos = 0;
@@ -378,14 +375,14 @@ impl Lcd {
         Ok(())
     }
 
-    /* The following two functions are kept for API compatibility but
-       are no‑ops in this simplified implementation. */
+    // The following two functions are kept for API compatibility but
+    // are no‑ops in this simplified implementation. */
     pub fn send_line_finish(&self)  { /* no-op */ }
     pub fn send_scroll_finish(&self) { /* no-op */ }
 
-    /* --------------------------------------------------------------------- */
-    /*  Helper: clone the Arc so it can be moved into a thread                */
-    /* --------------------------------------------------------------------- */
+    // ---------------------------------------------------------------------
+    //  Helper: clone the Arc so it can be moved into a thread
+    // ---------------------------------------------------------------------
     fn clone(&self) -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
             spi: self.spi.clone(),
@@ -396,15 +393,15 @@ impl Lcd {
     }
 }
 
-/* --------------------------------------------------------------------- */
-/*  Public driver wrapper – owns the Arc<Mutex<Lcd>> and exposes a clean API
-    that automatically locks/unlocks for the caller.                         */
-/* --------------------------------------------------------------------- */
-pub struct LcdDriver {
-    inner: Arc<Mutex<Lcd>>,
+// ---------------------------------------------------------------------
+//  Public driver wrapper – owns the Arc<Mutex<Lcd>> and exposes a clean API
+//  that automatically locks/unlocks for the caller.
+// ---------------------------------------------------------------------
+pub struct LcdDriver <'a> {
+    inner: Arc<Mutex<Lcd<'a>>>,
 }
 
-impl LcdDriver {
+impl LcdDriver <'_> {
     /// Create a new driver (this will initialise the peripherals).
     pub fn new() -> Result<Self, Box<dyn core::error::Error>> {
         let lcd = Lcd::new()?;
@@ -412,13 +409,13 @@ impl LcdDriver {
     }
 
     /// Initialise the LCD (send the command table, reset, etc.).
-    pub fn init(&self) -> Result<(), core::convert::Infallible> {
+    pub fn init(&self) -> Result<(), EspError> {
         let mut lcd = self.inner.lock().unwrap();
         lcd.init()
     }
 
     /// Return the 24‑bit ID of the controller.
-    pub fn get_id(&self) -> Result<u32, core::convert::Infallible> {
+    pub fn get_id(&self) -> Result<u32, EspError> {
         let mut lcd = self.inner.lock().unwrap();
         lcd.get_id()
     }
@@ -442,7 +439,7 @@ impl LcdDriver {
     pub fn draw_sprite(&self,
                        sx: usize, y: usize,
                        width: usize, height: usize,
-                       bitmap: &[RGB24]) -> Result<(), core::convert::Infallible> {
+                       bitmap: &[RGB24]) -> Result<(), EspError> {
         let mut lcd = self.inner.lock().unwrap();
         lcd.draw_sprite(sx, y, width, height, bitmap)
     }
@@ -457,7 +454,7 @@ impl LcdDriver {
     }
 
     /// Scroll the framebuffer onto the display.
-    pub fn scroll(&self, screenoffset: usize, reset_scroll: bool) -> Result<(), core::convert::Infallible> {
+    pub fn scroll(&self, screenoffset: usize, reset_scroll: bool) -> Result<(), EspError> {
         let mut lcd = self.inner.lock().unwrap();
         lcd.scroll_buffer(screenoffset, reset_scroll)
     }
@@ -494,25 +491,15 @@ impl LcdDriver {
     }
 }
 
-/* --------------------------------------------------------------------- */
-/*  Example usage – this would normally go in `main.rs` (or an async task) */
-/* --------------------------------------------------------------------- */
-#[no_mangle]
-pub extern "C" fn app_main() {
-    // Create the driver
+// ---------------------------------------------------------------------
+//  Example usage – this would normally go in `main.rs` (or an async task)
+// ---------------------------------------------------------------------
+#[unsafe(no_mangle)] //DO NOT DO THIS!!! 
+pub extern "C" fn app_main() {  // Create the driver
     let driver = LcdDriver::new().expect("Failed to create LCD driver");
-
-    // Initialise
-    driver.init().expect("Failed to initialise LCD");
-
-    // Paint the screen a solid blue
+    driver.init().expect("Failed to initialise LCD"); // Initialise
     driver.paint_color(RGB24 { pixelR: 0, pixelG: 0, pixelB: 255 });
-
-    // Wait a bit
-    FreeRtosDelay.delay_ms(2000);
-
-    // Generate and draw a background
-    driver.generate_and_draw_bg();
-
+     FreeRtos::delay_ms(2000); // Wait a bit   
+    driver.generate_and_draw_bg();// Generate and draw a background
     // ... rest of your application
 }
