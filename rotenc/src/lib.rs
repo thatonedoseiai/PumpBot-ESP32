@@ -103,6 +103,7 @@ static TTABLE_HALF: [[u8; TABLE_COLS]; TABLE_ROWS] = [  //ERROR: Expected array 
     [H_START_M, H_CCW_BEGIN_M, H_CW_BEGIN_M, R_START],          // H_START_M (11)
     [H_START_M, H_START_M, H_CW_BEGIN_M, R_START | DIR_CW],      // H_CW_BEGIN_M
     [H_START_M, H_CCW_BEGIN_M, H_START_M, R_START | DIR_CCW],    // H_CCW_BEGIN_M
+    [0xff, 0xff, 0xff, 0xff],                                   //Padding data to match lengths
 ];
 
 /// **Full‑step state machine** – only emits on 00
