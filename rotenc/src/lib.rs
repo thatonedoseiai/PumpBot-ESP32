@@ -58,7 +58,7 @@
 use core::sync::atomic::{AtomicU16, Ordering};
 use esp_idf_hal::gpio::{InterruptType, PinDriver, AnyIOPin, Input};
 use esp_idf_hal::sys::EspError;
-use std::sync::Mutex;
+use std::sync::{OnceLock, Mutex};
 use esp_idf_hal::task::queue::Queue;
 
 use esp_idf_hal::sys as sys; //ERROR: no external crate `esp_idf_sys`
@@ -163,14 +163,26 @@ pub struct RotaryEncoderInfo<'a> {
 }
 
 impl RotaryEncoderInfo<'_> {
-    const fn new() -> Self {
-        todo!();
+    fn new(anypin_a: AnyIOPin, anypin_b: AnyIOPin, anypin_btn: AnyIOPin, table: &'static [[u8; TABLE_COLS]; TABLE_ROWS]) -> Result<Self, EspError> {
+        Ok(RotaryEncoderInfo {
+            pin_a: PinDriver::input(anypin_a)?,
+            pin_b: PinDriver::input(anypin_b)?,
+            pin_btn: PinDriver::input(anypin_btn)?,
+            queue: None,
+            table,
+            table_state: R_START,
+            state: RotaryEncoderState {
+                position: 0,
+                direction: RotaryEncoderDirection::NotSet,
+                multiplier: 0,
+            }
+        })
     }
 }
 
 /// Global atomic counter used by the ISR to compute the speed‑based multiplier
 static ROTENC_MULTIPLIER_COUNTER: AtomicU16 = AtomicU16::new(0);
-static ROTARY_ENCODER_INFO: Mutex<RotaryEncoderInfo> = Mutex::new(RotaryEncoderInfo::new());
+static ROTARY_ENCODER_INFO: OnceLock<Mutex<RotaryEncoderInfo>> = OnceLock::new();
 
 /// ---------------------------------------------------------------------------
 ///  State‑machine logic – pure Rust, no unsafe
@@ -201,7 +213,7 @@ fn process(info: &mut RotaryEncoderInfo) -> u8 {
 fn isr_rotenc() {
     // Cast the raw pointer back to our struct
     // let info = &mut *(args as *mut RotaryEncoderInfo);
-    let mut info = ROTARY_ENCODER_INFO.lock().unwrap(); // how to handle the poisoned error?
+    let mut info = ROTARY_ENCODER_INFO.get().unwrap().lock().unwrap(); // how to handle the poisoned error?
 
     // Run the state machine
     let event = process(&mut info);
@@ -258,7 +270,7 @@ fn isr_rotenc() {
                     multiplier: (delaydelta >> 3) + 1,
                 },
             };
-            q.send_back(ev, 10);
+            let _ = q.send_back(ev, 10); // queue is allowed to error out if full
         }
     }
 }
@@ -289,10 +301,13 @@ fn remove_isr(pin: &mut PinDriver<AnyIOPin, Input>) -> Result <(), EspError> {
 /// `info` must outlive the ISR (e.g. a static or a `Box`).  The caller can
 /// subsequently attach a queue with `rotary_encoder_set_queue`.
 pub fn rotary_encoder_init<'a>(
-    info: &mut RotaryEncoderInfo<'a>,
-    pin_a: PinDriver<'a, AnyIOPin, Input>,
-    pin_b: PinDriver<'a, AnyIOPin, Input>,
-    pin_btn: PinDriver<'a, AnyIOPin, Input>,
+    pin_a: AnyIOPin,
+    pin_b: AnyIOPin,
+    pin_btn: AnyIOPin
+    // info: &mut RotaryEncoderInfo<'a>,
+    // pin_a: PinDriver<'a, AnyIOPin, Input>,
+    // pin_b: PinDriver<'a, AnyIOPin, Input>,
+    // pin_btn: PinDriver<'a, AnyIOPin, Input>,
 ) -> Result<(), EspError> {
     // unsafe {
     //     // GPIO reset & configuration
@@ -316,25 +331,32 @@ pub fn rotary_encoder_init<'a>(
     // }
 
     // Store the pin numbers
-    info.pin_a = pin_a;
-    info.pin_b = pin_b;
-    info.pin_btn = pin_btn; // can remove
+    // info.pin_a = pin_a;
+    // info.pin_b = pin_b;
+    // info.pin_btn = pin_btn; // can remove
 
-    // Default to full‑step mode
-    info.table = &TTABLE_FULL;
-    info.table_state = R_START;
+    // // Default to full‑step mode
+    // info.table = &TTABLE_FULL;
+    // info.table_state = R_START;
 
-    // Reset position/direction
-    info.state = RotaryEncoderState {
-        position: 0,
-        direction: RotaryEncoderDirection::NotSet,
-        multiplier: 0,
-    };
-    info.queue = None;
+    // // Reset position/direction
+    // info.state = RotaryEncoderState {
+    //     position: 0,
+    //     direction: RotaryEncoderDirection::NotSet,
+    //     multiplier: 0,
+    // };
+    // info.queue = None;
+
+    // info
+
+    let mut rot = RotaryEncoderInfo::new(pin_a, pin_b, pin_btn, &TTABLE_FULL)?;
+
+    attach_isr(&mut rot.pin_a)?;
+    attach_isr(&mut rot.pin_b)?;
+
+    ROTARY_ENCODER_INFO.get_or_init(move || Mutex::new(rot));
 
     // Install ISRs for the two quadrature pins
-    attach_isr(&mut info.pin_a)?;
-    attach_isr(&mut info.pin_b)?;
 
     // Reset the speed counter
     ROTENC_MULTIPLIER_COUNTER.store(0, Ordering::SeqCst);
