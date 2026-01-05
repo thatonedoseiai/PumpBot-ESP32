@@ -61,8 +61,6 @@ use esp_idf_hal::sys::EspError;
 use std::sync::{OnceLock, Mutex};
 use esp_idf_hal::task::queue::Queue;
 
-use esp_idf_hal::sys as sys; //ERROR: no external crate `esp_idf_sys`
-
 /// Number of entries in the FreeRTOS queue – the original component uses a single‑item
 /// queue to always keep the latest event.
 const EVENT_QUEUE_LENGTH: usize = 1;
@@ -147,19 +145,13 @@ pub struct RotaryEncoderEvent {
 
 /// Internal driver data – this struct is passed to the ISR via a raw pointer
 pub struct RotaryEncoderInfo<'a> {
-    /// GPIO numbers for the two quadrature signals
-    pub pin_a: PinDriver<'a, AnyIOPin, Input>,
+    pub pin_a: PinDriver<'a, AnyIOPin, Input>,          // GPIO numbers for the two quadrature signals
     pub pin_b: PinDriver<'a, AnyIOPin, Input>,
-    /// Optional button pin (not used in the current ISR)
-    pub pin_btn: PinDriver<'a, AnyIOPin, Input>,
-    /// Optional queue – events are written here from the ISR
-    pub queue: Queue<RotaryEncoderEvent>,
-    /// Pointer to the active transition table (half‑ or full‑step)
-    pub table: &'static [[u8; TABLE_COLS]; TABLE_ROWS],
-    /// Current state machine state (4 bits are used)
-    pub table_state: u8,
-    /// Current position / direction / multiplier
-    pub state: RotaryEncoderState,
+    pub pin_btn: PinDriver<'a, AnyIOPin, Input>,        // Optional button pin (not used in the current ISR)
+    pub queue: Queue<RotaryEncoderEvent>,               // Optional queue – events are written here from the ISR
+    pub table: &'static [[u8; TABLE_COLS]; TABLE_ROWS], // Pointer to the active transition table (half‑ or full‑step)
+    pub table_state: u8,                                // Current state machine state (4 bits are used)
+    pub state: RotaryEncoderState,                      // Current position / direction / multiplier
 }
 
 impl RotaryEncoderInfo<'_> {
@@ -178,6 +170,26 @@ impl RotaryEncoderInfo<'_> {
             }
         })
     }
+
+    pub fn enable_half_steps(&mut self, enable: bool) {
+        self.table = if enable { &TTABLE_HALF } else { &TTABLE_FULL };
+        self.table_state = R_START;
+    }
+
+    pub fn uninit(&mut self) -> Result<(), EspError> {
+        remove_isr(&mut self.pin_a)?;
+        remove_isr(&mut self.pin_b)?;
+        Ok(())
+    }
+
+    pub fn get_state(&mut self) -> RotaryEncoderState {
+        self.state
+    }
+
+    pub fn reset(&mut self) {
+        self.state.position = 0;
+        self.state.direction = RotaryEncoderDirection::NotSet;
+    }
 }
 
 /// Global atomic counter used by the ISR to compute the speed‑based multiplier
@@ -190,7 +202,6 @@ static ROTARY_ENCODER_INFO: OnceLock<Mutex<RotaryEncoderInfo>> = OnceLock::new()
 
 /// Process the current pin levels and update the internal state machine.
 /// Returns the event flag (DIR_CW / DIR_CCW / 0).
-#[inline(always)]
 fn process(info: &mut RotaryEncoderInfo) -> u8 {
     // Read pin levels – this is safe in ISR context (no heap allocation)
     let a = (info.pin_a.is_high()) as u8;
@@ -203,10 +214,6 @@ fn process(info: &mut RotaryEncoderInfo) -> u8 {
     // Return event flag (upper two bits)
     next & 0x30
 }
-
-/// ---------------------------------------------------------------------------
-///  ISR – the only `extern "C"` function
-/// ---------------------------------------------------------------------------
 
 /// ISR called on any edge of pin A or pin B.  The `args` pointer is the
 /// `&mut RotaryEncoderInfo` passed during `gpio_isr_handler_add`.
@@ -310,37 +317,5 @@ pub fn rotary_encoder_init<'a>(
 
     ROTARY_ENCODER_INFO.get_or_init(move || Mutex::new(rot));
     ROTENC_MULTIPLIER_COUNTER.store(0, Ordering::SeqCst);
-    Ok(())
-}
-
-/// Enable or disable half‑step mode (double the number of counts per revolution).
-pub fn rotary_encoder_enable_half_steps(
-    info: &mut RotaryEncoderInfo,
-    enable: bool,
-) -> Result<(), sys::esp_err_t> {
-    info.table = if enable { &TTABLE_HALF } else { &TTABLE_FULL };
-    info.table_state = R_START; // reset state machine
-    Ok(())
-}
-
-/// Remove the ISRs installed by `rotary_encoder_init`.  The GPIOs stay configured.
-pub fn rotary_encoder_uninit(info: &mut RotaryEncoderInfo) -> Result<(), EspError> {
-    remove_isr(&mut info.pin_a)?;
-    remove_isr(&mut info.pin_b)?;
-    Ok(())
-}
-
-/// Return a snapshot of the current position / direction.  The caller can
-/// read the struct directly if needed – this helper is only for the API.
-pub fn rotary_encoder_get_state(
-    info: &RotaryEncoderInfo,
-) -> Result<RotaryEncoderState, sys::esp_err_t> {
-    Ok(info.state)
-}
-
-/// Reset the position counter and clear the direction flag.
-pub fn rotary_encoder_reset(info: &mut RotaryEncoderInfo) -> Result<(), sys::esp_err_t> {
-    info.state.position = 0;
-    info.state.direction = RotaryEncoderDirection::NotSet;
     Ok(())
 }
