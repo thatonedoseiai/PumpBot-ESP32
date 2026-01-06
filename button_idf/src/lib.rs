@@ -119,18 +119,14 @@ impl Debounce<'_> {
 // Public entry points – mirroring button_init / pulled_button_init
 // ---------------------------------------------------------------------------
 
-/// Initialise a set of buttons.  All pins default to an active‑low pull‑up.
-/// `pin_select` is a 64‑bit mask – e.g. `pin_bit(0) | pin_bit(4)`
-/// Returns a FreeRTOS queue that will receive `ButtonEvent`s.
-pub fn button_init(pin_select: Vec<AnyIOPin>, timerg: TIMER00) -> Result<Arc<Queue<ButtonEvent>>, EspError> {
-    pulled_button_init(pin_select, timerg)
-}
-
 /// Initialise a set of buttons with a user‑supplied pull‑mode.
-pub fn pulled_button_init(
+pub fn button_init<T>(
     pin_select: Vec<AnyIOPin>,
     timerg: TIMER00,
-) -> Result<Arc<Queue<ButtonEvent>>, EspError> {
+    queue: Arc<Queue<T>>,
+) -> Result<(), EspError> 
+    where T: From<ButtonEvent> + Copy + Send + Sync + 'static
+{
     // 1️⃣  Grab the peripherals
     // let peripherals = Peripherals::take()
     //     .or_else(|_| Err(EspError::from_non_zero(NonZero::new(0x103))))?;
@@ -155,7 +151,7 @@ pub fn pulled_button_init(
     }
 
     // 4️⃣  Create the event queue
-    let queue: Arc<Queue<ButtonEvent>> = Arc::new(Queue::new(QUEUE_SIZE));
+    // let queue: Arc<Queue<ButtonEvent>> = Arc::new(Queue::new(QUEUE_SIZE));
     let queue_task = queue.clone();            // clone for the task
 
     // 5️⃣  Create a timer for millis() – internally uses esp_timer
@@ -177,16 +173,16 @@ pub fn pulled_button_init(
                 if d.button_up() {
                     d.down_time = 0;
                     let ev = ButtonEvent { pin: d.pin.pin(), event: ButtonEventKind::Up };
-                    let _ = queue_task.send_back(ev, 10);
+                    let _ = queue_task.send_back(ev.into(), 10);
                 } else if d.down_time != 0 && now_ms >= d.next_long_time {
                     let ev = ButtonEvent { pin: d.pin.pin(), event: ButtonEventKind::Held };
-                    let _ = queue_task.send_back(ev, 10);
+                    let _ = queue_task.send_back(ev.into(), 10);
                     d.next_long_time += LONG_PRESS_REPEAT_MS;
                 } else if d.button_down() && d.down_time == 0 {
                     d.down_time = now_ms;
                     d.next_long_time = now_ms + LONG_PRESS_DURATION_MS;
                     let ev = ButtonEvent { pin: d.pin.pin(), event: ButtonEventKind::Down };
-                    let _ = queue_task.send_back(ev, 10);
+                    let _ = queue_task.send_back(ev.into(), 10);
                 }
             }
 
@@ -196,5 +192,5 @@ pub fn pulled_button_init(
     });   // propagate any spawn error
 
     // 7  Return the queue to the caller
-    Ok(queue)
+    Ok(())
 }

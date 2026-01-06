@@ -968,6 +968,7 @@ name = "rotenc"
 version = "0.1.0"
 dependencies = [
  "esp-idf-hal",
+ "log",
 ]
 
 [[package]]

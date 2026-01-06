@@ -26,6 +26,7 @@ experimental = ["esp-idf-svc/experimental"]
 log = "0.4"
 esp-idf-svc = "0.51"
 button_idf = { path = "./button_idf" }
+rotenc = { path = "./rotenc" }
 esp-idf-hal = "0.45.2"
 anyhow = "1.0.100"
 

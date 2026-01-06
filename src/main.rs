@@ -1,9 +1,13 @@
+mod event;
+
 use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
-use std::vec::Vec;
 use esp_idf_hal::task::queue::Queue;
 use button_idf::button_init;
+use rotenc::rotary_encoder_init;
 use log::info;
+use event::Event;
+use std::sync::Arc;
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -12,12 +16,19 @@ fn main() -> anyhow::Result<()> {
     info!("STARTING APP!");
 
     let peripherals = Peripherals::take()?;
-    let button_queue = button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00)?;
+    let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
+    button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
+    rotary_encoder_init(peripherals.pins.gpio17.downgrade(),
+        peripherals.pins.gpio8.downgrade(),
+        button_queue.clone())?;
 
     info!("INITIALIZED BUTTONS!");
     loop {
         if let Some((ev, _)) = button_queue.recv_front(10) {
-            info!("EVENT! {}", ev);
+            match ev {
+                Event::Button(x) => info!("Button Event! {}", x),
+                Event::Rotenc(x) => info!("Rotenc Event! {}", x),
+            }
         }
     }
 }

@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 esp-idf-hal = "0.45.2"
+log = "0.4.29"
