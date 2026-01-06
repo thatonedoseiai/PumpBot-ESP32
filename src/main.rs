@@ -4,7 +4,8 @@ use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::task::queue::Queue;
 use button_idf::button_init;
-use rotenc::rotary_encoder_init;
+// use rotenc::{rotary_encoder_init, grab};
+use rotenc::start_rotenc_thread;
 use log::info;
 use event::Event;
 use std::sync::Arc;
@@ -18,9 +19,10 @@ fn main() -> anyhow::Result<()> {
     let peripherals = Peripherals::take()?;
     let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
-    rotary_encoder_init(peripherals.pins.gpio17.downgrade(),
-        peripherals.pins.gpio8.downgrade(),
-        button_queue.clone())?;
+    // rotary_encoder_init(peripherals.pins.gpio17.downgrade(),
+    //     peripherals.pins.gpio8.downgrade(),
+    //     button_queue.clone())?;
+    start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
 
     info!("INITIALIZED BUTTONS!");
     loop {
@@ -30,5 +32,8 @@ fn main() -> anyhow::Result<()> {
                 Event::Rotenc(x) => info!("Rotenc Event! {}", x),
             }
         }
+        // let mut info = grab()?;
+        // info.pin_a.enable_interrupt()?;
+        // info.pin_b.enable_interrupt()?;
     }
 }

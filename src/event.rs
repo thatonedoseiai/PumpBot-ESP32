@@ -1,10 +1,10 @@
 use button_idf::ButtonEvent;
-use rotenc::RotaryEncoderEvent;
+use rotenc::EncoderEvent;
 
 #[derive(Clone, Copy)]
 pub enum Event {
     Button(ButtonEvent),
-    Rotenc(RotaryEncoderEvent)
+    Rotenc(EncoderEvent)
 }
 
 impl From<ButtonEvent> for Event {
@@ -13,8 +13,8 @@ impl From<ButtonEvent> for Event {
     }
 }
 
-impl From<RotaryEncoderEvent> for Event {
-    fn from(val: RotaryEncoderEvent) -> Self {
+impl From<EncoderEvent> for Event {
+    fn from(val: EncoderEvent) -> Self {
         Event::Rotenc(val)
     }
 }
