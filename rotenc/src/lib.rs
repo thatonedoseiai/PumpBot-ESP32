@@ -57,8 +57,9 @@
 
 use core::sync::atomic::{AtomicU16, Ordering};
 use esp_idf_hal::gpio::{InterruptType, PinDriver, AnyIOPin, Input};
-use esp_idf_hal::sys::EspError;
-use std::sync::{OnceLock, Mutex};
+use esp_idf_hal::sys::{EspError, ESP_ERR_CODING, ESP_ERR_DAMAGED_READING};
+use std::sync::{OnceLock, Mutex, MutexGuard};
+use std::num::NonZero;
 use esp_idf_hal::task::queue::Queue;
 
 /// Number of entries in the FreeRTOS queue – the original component uses a single‑item
@@ -152,6 +153,13 @@ pub struct RotaryEncoderInfo<'a> {
     pub table: &'static [[u8; TABLE_COLS]; TABLE_ROWS], // Pointer to the active transition table (half‑ or full‑step)
     pub table_state: u8,                                // Current state machine state (4 bits are used)
     pub state: RotaryEncoderState,                      // Current position / direction / multiplier
+}
+
+pub fn grab() -> Result<MutexGuard<'static, RotaryEncoderInfo<'static>>, EspError> {
+    ROTARY_ENCODER_INFO.get()
+                       .ok_or(EspError::from_non_zero(NonZero::new(ESP_ERR_CODING).unwrap()))?
+                       .lock()
+                       .map_err(|_| EspError::from_non_zero(NonZero::new(ESP_ERR_DAMAGED_READING).unwrap())) // poisoned
 }
 
 impl RotaryEncoderInfo<'_> {
