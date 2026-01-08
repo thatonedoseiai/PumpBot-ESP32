@@ -34,6 +34,7 @@ use embedded_hal::digital::OutputPin;
 use display_interface::DataFormat;
 use display_interface::WriteOnlyDataCommand;
 use std::fmt;
+use std::slice::from_raw_parts;
 
 // #[cfg(feature = "graphics")]
 // mod graphics_core;
@@ -42,32 +43,77 @@ use std::fmt;
 
 pub use display_interface::DisplayError;
 
+#[derive(Debug, Clone, Copy)]
+pub enum ColorConversionError {
+    NonHomogeneousIterator,
+    TooMuchColorData,
+}
+
 #[derive(Debug, Clone)]
-pub struct ILIError(DisplayError);
+pub enum ILIError {
+    Disp(DisplayError),
+    Conv(ColorConversionError)
+}
 
 impl std::error::Error for ILIError { }
 impl fmt::Display for ILIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let ILIError(d) = self;
-        match d {
-            DisplayError::InvalidFormatError => write!(f, "ILIERROR: Invalid Formatting Error"),
-            DisplayError::BusWriteError => write!(f, "ILIERROR: Bus Write Error"),
-            DisplayError::DCError => write!(f, "ILIERROR: DC Error"),
-            DisplayError::CSError => write!(f, "ILIERROR: CS Error"),
-            DisplayError::DataFormatNotImplemented => write!(f, "ILIERROR: Data Format not implemented!"),
-            DisplayError::RSError => write!(f, "ILIERROR: RS Error"),
-            DisplayError::OutOfBoundsError => write!(f, "ILIERROR: Out Of Bounds Error"),
-            _ => write!(f, "ILIERROR: unhandled error type!"),
+        match self {
+            ILIError::Disp(d) => match d {
+                DisplayError::InvalidFormatError => write!(f, "ILIERROR: Invalid Formatting Error"),
+                DisplayError::BusWriteError => write!(f, "ILIERROR: Bus Write Error"),
+                DisplayError::DCError => write!(f, "ILIERROR: DC Error"),
+                DisplayError::CSError => write!(f, "ILIERROR: CS Error"),
+                DisplayError::DataFormatNotImplemented => write!(f, "ILIERROR: Data Format not implemented!"),
+                DisplayError::RSError => write!(f, "ILIERROR: RS Error"),
+                DisplayError::OutOfBoundsError => write!(f, "ILIERROR: Out Of Bounds Error"),
+                _ => write!(f, "ILIERROR: unhandled error type!"),
+            },
+            ILIError::Conv(c) => match c {
+                ColorConversionError::NonHomogeneousIterator => write!(f, "ILIERROR: color iterator has mixed color formats!"),
+                ColorConversionError::TooMuchColorData => write!(f, "ILIERROR: too much color data sent to write function!"),
+            }
         }
     }
 }
+
 impl From<DisplayError> for ILIError {
     fn from(val: DisplayError) -> ILIError {
-        ILIError(val)
+        ILIError::Disp(val)
+    }
+}
+
+impl From<ColorConversionError> for ILIError {
+    fn from(val: ColorConversionError) -> ILIError {
+        ILIError::Conv(val)
     }
 }
 
 type Result<T = (), E = ILIError> = core::result::Result<T, E>;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RGB {
+    r: u8,
+    g: u8,
+    b: u8
+}
+
+impl From<RGB> for [u8;3] {
+    fn from(val: RGB) -> [u8;3] {
+        [val.r, val.g, val.b]
+    }
+}
+
+impl RGB {
+    fn to_byte_array(data: &[RGB]) -> Result<&[u8], ColorConversionError> {
+        let len = data.len().checked_mul(3).ok_or(ColorConversionError::TooMuchColorData)?;
+        let ptr = data.as_ptr().cast();
+        let new: &[u8] = unsafe {
+            from_raw_parts(ptr, len)
+        };
+        Ok(new)
+    }
+}
 
 /// Trait that defines display size information
 pub trait DisplaySize {
@@ -98,13 +144,13 @@ impl DisplaySize for DisplaySize320x480 {
 ///
 /// This trait provides the flexibility for users to define their own
 /// initialization command arguments suitable for the particular board they are using
-pub trait Mode {
+pub trait PictureMode {
     fn mode(&self) -> u8;
 
     fn is_landscape(&self) -> bool;
 }
 
-/// The default implementation of the Mode trait from above
+/// The default implementation of the PictureMode trait from above
 /// Should work for most (but not all) boards
 pub enum Orientation {
     Portrait,
@@ -113,7 +159,7 @@ pub enum Orientation {
     LandscapeFlipped,
 }
 
-impl Mode for Orientation {
+impl PictureMode for Orientation {
     fn mode(&self) -> u8 {
         match self {
             Self::Portrait => 0x40 | 0x08,
@@ -174,7 +220,7 @@ where
     ) -> Result<Self>
     where
         SIZE: DisplaySize,
-        MODE: Mode,
+        MODE: PictureMode,
     {
         let mut ili9341 = Ili9341 {
             interface,
@@ -185,13 +231,13 @@ where
         };
 
         // Do hardware reset by holding reset low for at least 10us
-        ili9341.reset.set_low().map_err(|_| ILIError(DisplayError::RSError))?;
+        ili9341.reset.set_low().map_err(|_| ILIError::Disp(DisplayError::RSError))?;
         let _ = delay.delay_ms(1);
         // Set high for normal operation
         ili9341
             .reset
             .set_high()
-            .map_err(|_| ILIError(DisplayError::RSError))?;
+            .map_err(|_| ILIError::Disp(DisplayError::RSError))?;
 
         // Wait 5ms after reset before sending commands
         // and 120ms before sending Sleep Out
@@ -207,7 +253,8 @@ where
         ili9341.set_orientation(mode)?;
 
         // Set pixel format to 16 bits per pixel
-        ili9341.command(Command::PixelFormatSet, &[0x55])?;
+        ili9341.set_colormode()?;
+        // ili9341.command(Command::PixelFormatSet, &[0x55])?;
 
         ili9341.sleep_mode(ModeState::Off)?;
 
@@ -229,15 +276,22 @@ where
         Ok(self.interface.send_data(DataFormat::U8(args))?)
     }
 
-    fn write_iter<I: IntoIterator<Item = u16>>(&mut self, data: I) -> Result {
+    fn write_iter<I: IntoIterator<Item = RGB>>(&mut self, data: I) -> Result {
         self.command(Command::MemoryWrite, &[])?;
-        use DataFormat::U16BEIter;
-        Ok(self.interface.send_data(U16BEIter(&mut data.into_iter()))?)
+        use DataFormat::U8Iter;
+        Ok(self.interface.send_data(U8Iter(&mut data.into_iter().flat_map(|x| {
+            <RGB as Into<[u8;3]>>::into(x)
+        })))?)
     }
 
-    fn write_slice(&mut self, data: &[u16]) -> Result {
+    fn write_slice(&mut self, data: &[RGB]) -> Result {
         self.command(Command::MemoryWrite, &[])?;
-        Ok(self.interface.send_data(DataFormat::U16(data))?)
+        // let len = data.len().checked_mul(3).ok_or(ILIError::Conv(ColorConversionError::TooMuchColorData))?;
+        // let ptr = data.as_ptr().cast();
+        // let new: &[u8] = unsafe {
+        //     from_raw_parts(ptr, len)
+        // };
+        Ok(self.interface.send_data(DataFormat::U8(RGB::to_byte_array(data)?))?)
     }
 
     fn set_window(&mut self, x0: u16, y0: u16, x1: u16, y1: u16) -> Result {
@@ -314,7 +368,7 @@ where
     ///
     /// The iterator is useful to avoid wasting memory by holding a buffer for
     /// the whole screen when it is not necessary.
-    pub fn draw_raw_iter<I: IntoIterator<Item = u16>>(
+    pub fn draw_raw_iter<I: IntoIterator<Item = RGB>>(
         &mut self,
         x0: u16,
         y0: u16,
@@ -335,15 +389,19 @@ where
     /// video memory.
     ///
     /// The expected format is rgb565.
-    pub fn draw_raw_slice(&mut self, x0: u16, y0: u16, x1: u16, y1: u16, data: &[u16]) -> Result {
+    pub fn draw_raw_slice(&mut self, x0: u16, y0: u16, x1: u16, y1: u16, data: &[RGB]) -> Result {
         self.set_window(x0, y0, x1, y1)?;
         self.write_slice(data)
+    }
+
+    pub fn set_colormode(&mut self) -> Result {
+        self.command(Command::PixelFormatSet, &[0x66])
     }
 
     /// Change the orientation of the screen
     pub fn set_orientation<MODE>(&mut self, mode: MODE) -> Result
     where
-        MODE: Mode,
+        MODE: PictureMode,
     {
         self.command(Command::MemoryAccessControl, &[mode.mode()])?;
 
@@ -355,7 +413,7 @@ where
     }
 
     /// Fill entire screen with specfied color u16 value
-    pub fn clear_screen(&mut self, color: u16) -> Result {
+    pub fn clear_screen(&mut self, color: RGB) -> Result {
         let color = core::iter::repeat(color).take(self.width * self.height);
         self.draw_raw_iter(0, 0, self.width as u16, self.height as u16, color)
     }
