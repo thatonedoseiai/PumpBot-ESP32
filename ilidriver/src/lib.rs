@@ -15,7 +15,7 @@ struct ILIDriver<'a> {
 const PARALLEL_LINES: usize = 16;
 
 impl ILIDriver<'_> {
-    fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin) -> Result<Self> {
+    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin) -> Result<Self> {
         let dc_output = PinDriver::output(dc)?;
         let rst_output = PinDriver::output(rst)?;
         let cspin: Option<AnyIOPin> = None;

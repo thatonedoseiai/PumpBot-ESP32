@@ -1,0 +1,8 @@
+[package]
+name = "ledc"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+esp-idf-hal = "0.45.2"
+ilidriver = { path = "../ilidriver" }
