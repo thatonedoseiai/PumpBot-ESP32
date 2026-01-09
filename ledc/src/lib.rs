@@ -1,300 +1,142 @@
-use esp_idf_hal::{
-    gpio::{Output, AnyIOPin, PinDriver},
-};
+use esp_idf_hal::ledc::*;
+use esp_idf_hal::ledc::config::TimerConfig;
+use esp_idf_hal::prelude::*;
+use esp_idf_hal::gpio::{AnyIOPin};
 use ilidriver::RGB;
-use std::sync::{
-    // atomic::{AtomicBool, Ordering}, 
-    Arc,
-    mpsc::{channel, Sender, SendError, Receiver},
-    RwLock,
-};
-use std::{thread, thread::JoinHandle};
-use std::any::Any;
+use std::sync::{Arc, RwLock};
+use std::thread;
+use std::time::Duration;
 
-#[derive(Debug)]
-pub struct Settings {
-    pub RGB_mode: u8,
-    pub RGB_colour: RGB,
-    pub RGB_colour_2: RGB,
-    pub RGB_brightness: u16,
-    pub RGB_speed: u16,
+// --- Types and Configuration ---
+
+
+#[derive(Clone, Debug)]
+pub enum LedMode {
+    Solid(RGB),
+    Fade(RGB, RGB),
+    Rainbow,
+    Off,
 }
 
-pub struct LedPins {
-    r_dr: AnyIOPin,
-    g_dr: AnyIOPin,
-    b_dr: AnyIOPin,
+#[derive(Clone, Debug)]
+struct ControllerState {
+    mode: LedMode,
+    brightness: f32, // 0.0 to 1.0
+    speed_ms: u64,
 }
 
-pub enum LedError {
-    ThreadSendError(SendError<LedThreadMessage>),
-    ThreadJoinError(Box<dyn Any + Send + 'static>),
+// --- The API Handler ---
+
+pub struct LedController {
+    state: Arc<RwLock<ControllerState>>,
 }
 
-impl From<SendError<LedThreadMessage>> for LedError {
-    fn from(val: SendError<LedThreadMessage>) -> Self {
-        LedError::ThreadSendError(val)
+pub struct LedPeripherals {
+    led_r: AnyIOPin,
+    led_g: AnyIOPin,
+    led_b: AnyIOPin,
+    channel_r: CHANNEL0,
+    channel_g: CHANNEL1,
+    channel_b: CHANNEL2,
+    timer: TIMER0
+}
+
+impl LedController {
+    pub fn new(
+        p: LedPeripherals,
+        initial_mode: LedMode,
+    ) -> Self {
+        let state = Arc::new(RwLock::new(ControllerState {
+            mode: initial_mode,
+            brightness: 1.0,
+            speed_ms: 10,
+        }));
+
+        let thread_state = state.clone();
+
+        // Spawn the worker thread
+        thread::spawn(move || {
+            // let peripherals = Peripherals::take().unwrap();
+            let config = TimerConfig::new().frequency(5.kHz().into());
+            let timerdriver = LedcTimerDriver::new(p.timer, &config).unwrap();
+
+            // Initialize Channels
+            let mut ch_r: LedcDriver = LedcDriver::new(p.channel_r, &timerdriver, p.led_r).unwrap();
+            let mut ch_g: LedcDriver = LedcDriver::new(p.channel_g, &timerdriver, p.led_g).unwrap();
+            let mut ch_b: LedcDriver = LedcDriver::new(p.channel_b, &timerdriver, p.led_b).unwrap();
+
+            let max_duty = ch_r.get_max_duty();
+            let mut tick: f32 = 0.0;
+
+            loop {
+                let current = { thread_state.read().unwrap().clone() };
+                
+                let (r, g, b) = match current.mode {
+                    LedMode::Off => (0, 0, 0),
+                    LedMode::Solid(color) => (color.r, color.g, color.b),
+                    LedMode::Fade(c1, c2) => {
+                        let t = (tick.sin() + 1.0) / 2.0; // Oscillate 0 to 1
+                        (
+                            lerp(c1.r, c2.r, t),
+                            lerp(c1.g, c2.g, t),
+                            lerp(c1.b, c2.b, t),
+                        )
+                    }
+                    LedMode::Rainbow => {
+                        hsv_to_rgb(tick % 360.0, 1.0, 1.0)
+                    }
+                };
+
+                // Apply brightness and set duty
+                let apply = |val: u8| -> u32 {
+                    ((val as f32 * current.brightness / 255.0) * max_duty as f32) as u32
+                };
+
+                ch_r.set_duty(apply(r)).unwrap();
+                ch_g.set_duty(apply(g)).unwrap();
+                ch_b.set_duty(apply(b)).unwrap();
+
+                tick += 2.0; // Increment based on speed
+                thread::sleep(Duration::from_millis(current.speed_ms));
+            }
+        });
+
+        Self { state }
+    }
+
+    pub fn update_mode(&self, mode: LedMode) {
+        let mut s = self.state.write().unwrap();
+        s.mode = mode;
+    }
+
+    pub fn set_brightness(&self, brightness: f32) {
+        let mut s = self.state.write().unwrap();
+        s.brightness = brightness.clamp(0.0, 1.0);
+    }
+
+    pub fn set_speed(&self, speed_ms: u64) {
+        let mut s = self.state.write().unwrap();
+        s.speed_ms = speed_ms;
     }
 }
 
-impl From<Box<dyn Any + Send + 'static>> for LedError {
-    fn from(val: Box<dyn Any + Send + 'static>) -> Self {
-        LedError::ThreadJoinError(val)
-    }
+// --- Utilities ---
+
+fn lerp(a: u8, b: u8, t: f32) -> u8 {
+    (a as f32 + (b as f32 - a as f32) * t) as u8
 }
 
-enum LedThreadMessage {
-    Restart,
-    Stop
+fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
+    // Standard HSV to RGB conversion logic...
+    let c = v * s;
+    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+    let m = v - c;
+    let (r, g, b) = if h < 60.0 { (c, x, 0.0) }
+    else if h < 120.0 { (x, c, 0.0) }
+    else if h < 180.0 { (0.0, c, x) }
+    else if h < 240.0 { (0.0, x, c) }
+    else if h < 300.0 { (x, 0.0, c) }
+    else { (c, 0.0, x) };
+    
+    (((r + m) * 255.0) as u8, ((g + m) * 255.0) as u8, ((b + m) * 255.0) as u8)
 }
-
-type Result<T, E = LedError> = std::result::Result<T, E>;
-
-trait LedControl {
-    type Config;
-    fn init(c: Self::Config, l: LedPins) -> Self;
-    fn phase_thread(c: Arc<RwLock<Self::Config>>, l: LedPins, r: Receiver<LedThreadMessage>) -> LedPins;
-    fn restart(&self) -> Result<()>;
-    fn stop(self) -> Result<LedPins>;
-}
-
-pub struct FadeConfig { 
-    colour_1: RGB,
-    colour_2: RGB,
-    brightness: u32,
-    speed: u16,
-}
-
-pub struct Fade { 
-    fc: Arc<RwLock<FadeConfig>>,
-    handle: JoinHandle<LedPins>,
-    threadMsgs: Sender<LedThreadMessage>,
-}
-
-impl LedControl for Fade {
-    type Config = FadeConfig;
-
-    fn init(config: FadeConfig, pins: LedPins) -> Fade {
-        let (threadMsgs, receiver) = channel();
-        let fc = Arc::new(RwLock::new(config));
-
-        let fcthread = fc.clone();
-        let handle = thread::spawn(move || 
-            Fade::phase_thread(fcthread, pins, receiver));
-
-        let fade = Fade {
-            fc, 
-            threadMsgs,
-            handle
-        };
-
-        fade
-    }
-
-    fn phase_thread(conf: Arc<RwLock<FadeConfig>>, pins: LedPins, msgs: Receiver<LedThreadMessage>) -> LedPins {
-        pins
-    }
-
-    fn restart(&self) -> Result<()> {
-        self.threadMsgs.send(LedThreadMessage::Restart)?;
-        Ok(())
-    }
-
-    fn stop(self) -> Result<LedPins> {
-        self.threadMsgs.send(LedThreadMessage::Stop)?;
-        let pins = self.handle.join()?;
-        Ok(pins)
-    }
-}
-
-// static SETTINGS: Settings = Settings {
-//     RGB_mode: 0,
-//     RGB_colour: RGB { r: 255, g: 0, b: 0 },
-//     RGB_colour_2: RGB { r: 0, g: 255, b: 0 },
-//     RGB_brightness: 64,
-//     RGB_speed: 100,
-// };
-
-// static mut CURCOL: [u32; 3] = [0, 0, 0];
-// static mut CURCYCLE: u8 = 0;
-// static GOINGUP: AtomicBool = AtomicBool::new(true);
-
-// fn fade_rgb_callback() {
-//     let settings = &SETTINGS;
-//     unsafe {
-//         for i in 0..3 {
-//             let diff = settings.RGB_colour.r - settings.RGB_colour_2.r;
-//             let largerdiff = ((diff * settings.RGB_brightness) / (settings.RGB_speed << 10)) as u32;
-
-//             if GOINGUP.load(Ordering::Relaxed) {
-//                 CURCOL[i] += largerdiff;
-//             } else {
-//                 CURCOL[i] -= largerdiff;
-//             }
-
-//             if CURCOL[i] < 0 {
-//                 CURCOL[i] = 0;
-//             }
-//             if CURCOL[i] > 16383 {
-//                 CURCOL[i] = 16383;
-//             }
-
-//             // Assuming ledc_set_duty and ledc_update_duty are available in esp_idf_hal
-//             // let channel = Channel::new(i + 4, LowSpeed);
-//             // channel.set_duty(CURCOL[i]).unwrap();
-//             // channel.update_duty().unwrap();
-//         }
-//     }
-// }
-
-// fn rainbow_rgb_callback() {
-//     static mut CURCHAN: usize = 1;
-//     static mut CURVAL: i32 = 0;
-
-//     unsafe {
-//         let settings = &SETTINGS;
-//         CURVAL += if GOINGUP.load(Ordering::Relaxed) {
-//             (12288 / settings.RGB_speed) as i32
-//         } else {
-//             -(12288 / settings.RGB_speed) as i32
-//         };
-
-//         if CURVAL <= 0 || CURVAL >= 16383 {
-//             GOINGUP.store(!GOINGUP.load(Ordering::Relaxed), Ordering::Relaxed);
-//             CURCHAN = (CURCHAN + 2) % 3;
-//         }
-
-//         if CURVAL > 16383 {
-//             CURVAL = 16383;
-//         }
-//         if CURVAL < 0 {
-//             CURVAL = 0;
-//         }
-
-//         // Assuming ledc_set_duty and ledc_update_duty are available in esp_idf_hal
-//         // let channel = Channel::new(CURCHAN + 4, LowSpeed);
-//         // channel.set_duty((CURVAL * settings.RGB_brightness) >> 14).unwrap();
-//         // channel.update_duty().unwrap();
-//     }
-// }
-
-// async fn rainbow_callback(_: &mut Gptimer, _: &GptimerEventCallbacks<'_>) {
-//     rainbow_rgb_callback();
-// }
-
-// async fn fade_callback(_: &mut Gptimer, _: &GptimerEventCallbacks<'_>) {
-//     fade_rgb_callback();
-// }
-
-// pub async fn rgb_update() {
-//     if let Some(rainbow_timer) = unsafe { RainbowTimer::instance() } {
-//         rainbow_timer.stop().unwrap();
-//     }
-//     if let Some(fade_timer) = unsafe { FadeTimer::instance() } {
-//         fade_timer.stop().unwrap();
-//     }
-
-//     match SETTINGS.RGB_mode {
-//         0 => {
-//             // RGB_MODE_FADE
-//             unsafe {
-//                 CURCOL[0] = ((SETTINGS.RGB_colour.r * SETTINGS.RGB_brightness) >> 8) as u32;
-//                 CURCOL[1] = ((SETTINGS.RGB_colour.g * SETTINGS.RGB_brightness) >> 8) as u32;
-//                 CURCOL[2] = ((SETTINGS.RGB_colour.b * SETTINGS.RGB_brightness) >> 8) as u32;
-//             }
-//             unsafe { FadeTimer::instance() }.unwrap().start().unwrap();
-//         }
-//         1 => {
-//             // RGB_MODE_RAINBOW
-//             unsafe { RainbowTimer::instance() }.unwrap().start().unwrap();
-//         }
-//         2 => {
-//             // RGB_MODE_OFF
-//             for i in 0..3 {
-//                 // Assuming ledc_stop is available in esp_idf_hal
-//                 // let channel = Channel::new(i + 4, LowSpeed);
-//                 // channel.stop(0).unwrap();
-//             }
-//         }
-//         _ => {
-//             // RGB_MODE_SOLID
-//             for i in 0..3 {
-//                 // Assuming ledc_set_duty and ledc_update_duty are available in esp_idf_hal
-//                 // let channel = Channel::new(i + 4, LowSpeed);
-//                 // channel.set_duty((SETTINGS.RGB_colour.r * (SETTINGS.RGB_brightness >> 8)) as u32).unwrap();
-//                 // channel.update_duty().unwrap();
-//             }
-//         }
-//     }
-// }
-
-// struct RainbowTimer {
-//     timer: Gptimer,
-// }
-
-// impl RainbowTimer {
-//     fn instance() -> Option<&'static mut Self> {
-//         static mut INSTANCE: Option<RainbowTimer> = None;
-
-//         unsafe {
-//             INSTANCE.get_or_insert_with(|| {
-//                 let config = GptimerConfig::new().enable(true);
-//                 RainbowTimer {
-//                     timer: Gptimer::new(config).unwrap(),
-//                 }
-//             })
-//         }
-//     }
-
-//     fn stop(&mut self) -> Result<(), EspError> {
-//         self.timer.stop()
-//     }
-
-//     fn start(&mut self) -> Result<(), EspError> {
-//         let alarm_config = GptimerAlarmConfig::new().alarm_count(20_000).auto_reload(true);
-//         self.timer.set_alarm_action(&alarm_config)?;
-//         self.timer.register_event_callbacks(&GptimerEventCallbacks {
-//             on_alarm: Some(rainbow_callback),
-//             ..Default::default()
-//         })?;
-//         Ok(())
-//     }
-// }
-
-// struct FadeTimer {
-//     timer: Gptimer,
-// }
-
-// impl FadeTimer {
-//     fn instance() -> Option<&'static mut Self> {
-//         static mut INSTANCE: Option<FadeTimer> = None;
-
-//         unsafe {
-//             INSTANCE.get_or_insert_with(|| {
-//                 let config = GptimerConfig::new().enable(true);
-//                 FadeTimer {
-//                     timer: Gptimer::new(config).unwrap(),
-//                 }
-//             })
-//         }
-//     }
-
-//     fn stop(&mut self) -> Result<(), EspError> {
-//         self.timer.stop()
-//     }
-
-//     fn start(&mut self) -> Result<(), EspError> {
-//         let alarm_config = GptimerAlarmConfig::new().alarm_count(20_000).auto_reload(true);
-//         self.timer.set_alarm_action(&alarm_config)?;
-//         self.timer.register_event_callbacks(&GptimerEventCallbacks {
-//             on_alarm: Some(fade_callback),
-//             ..Default::default()
-//         })?;
-//         Ok(())
-//     }
-// }
-
-// pub async fn rgb_init() {
-//     unsafe { RainbowTimer::instance().unwrap(); }
-//     unsafe { FadeTimer::instance().unwrap(); }
-// }

@@ -93,9 +93,9 @@ type Result<T = (), E = ILIError> = core::result::Result<T, E>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RGB {
-    r: u8,
-    g: u8,
-    b: u8
+    pub r: u8,
+    pub g: u8,
+    pub b: u8
 }
 
 impl From<RGB> for [u8;3] {
