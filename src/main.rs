@@ -8,6 +8,7 @@ use button_idf::button_init;
 use rotenc::start_rotenc_thread;
 use log::info;
 use event::Event;
+use ledc::{LedController, LedPeripherals, LedMode, RGB};
 use std::sync::Arc;
 
 fn main() -> anyhow::Result<()> {
@@ -23,6 +24,17 @@ fn main() -> anyhow::Result<()> {
     //     peripherals.pins.gpio8.downgrade(),
     //     button_queue.clone())?;
     start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
+    let ledperipherals = LedPeripherals::new(
+        peripherals.pins.gpio14.downgrade(), 
+        peripherals.pins.gpio21.downgrade(),
+        peripherals.pins.gpio47.downgrade(),
+        peripherals.ledc.channel0,
+        peripherals.ledc.channel1,
+        peripherals.ledc.channel2,
+        peripherals.ledc.timer0,
+    );
+    let leddriver = LedController::new(ledperipherals, LedMode::Rainbow);
+    leddriver.set_brightness(128);
 
     info!("INITIALIZED BUTTONS!");
     loop {

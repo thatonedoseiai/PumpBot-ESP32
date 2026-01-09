@@ -3,7 +3,6 @@
 
 use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Input, Pull};
 // use esp_idf_hal::peripherals::Peripherals;
-use esp_idf_hal::prelude::Peripherals;
 use esp_idf_hal::task::queue::Queue;
 // use esp_idf_hal::task::Task;
 use esp_idf_hal::sys::EspError;
@@ -19,8 +18,6 @@ use std::fmt;
 // ---------------------------------------------------------------------------
 const LONG_PRESS_DURATION_MS: u64 = 2000;          // default: 2 s
 const LONG_PRESS_REPEAT_MS:   u64 = 50;            // default: 50 ms
-const QUEUE_SIZE:            usize = 4;            // default: 4 entries
-const TASK_STACK_SIZE:       usize = 3072;          // default stack size
 
 // ---------------------------------------------------------------------------
 // Public API – event types

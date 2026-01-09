@@ -5,17 +5,18 @@ use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Output};
 use esp_idf_hal::delay::{Delay};
 use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};
 use display_interface_spi::SPIInterface;
+use std::error::Error;
 
-type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
+// type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 struct ILIDriver<'a> {
     display: Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>,
 }
 
-const PARALLEL_LINES: usize = 16;
+// const PARALLEL_LINES: usize = 16;
 
 impl ILIDriver<'_> {
-    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin) -> Result<Self> {
+    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin) -> Result<Self, Box<dyn Error>> {
         let dc_output = PinDriver::output(dc)?;
         let rst_output = PinDriver::output(rst)?;
         let cspin: Option<AnyIOPin> = None;

@@ -2,10 +2,12 @@ use esp_idf_hal::ledc::*;
 use esp_idf_hal::ledc::config::TimerConfig;
 use esp_idf_hal::prelude::*;
 use esp_idf_hal::gpio::{AnyIOPin};
-use ilidriver::RGB;
+pub use ilidriver::RGB;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
+use embedded_hal::pwm::SetDutyCycle;
+use log::info;
 
 // --- Types and Configuration ---
 
@@ -21,7 +23,7 @@ pub enum LedMode {
 #[derive(Clone, Debug)]
 struct ControllerState {
     mode: LedMode,
-    brightness: f32, // 0.0 to 1.0
+    brightness: u8, // 0.0 to 1.0
     speed_ms: u64,
 }
 
@@ -41,6 +43,24 @@ pub struct LedPeripherals {
     timer: TIMER0
 }
 
+impl LedPeripherals {
+    pub fn new(
+        led_r: AnyIOPin,
+        led_g: AnyIOPin,
+        led_b: AnyIOPin,
+        channel_r: CHANNEL0,
+        channel_g: CHANNEL1,
+        channel_b: CHANNEL2,
+        timer: TIMER0
+    ) -> Self {
+        LedPeripherals {
+            led_r, led_g, led_b,
+            channel_r, channel_g, channel_b,
+            timer
+        }
+    }
+}
+
 impl LedController {
     pub fn new(
         p: LedPeripherals,
@@ -48,7 +68,7 @@ impl LedController {
     ) -> Self {
         let state = Arc::new(RwLock::new(ControllerState {
             mode: initial_mode,
-            brightness: 1.0,
+            brightness: 255,
             speed_ms: 10,
         }));
 
@@ -66,7 +86,8 @@ impl LedController {
             let mut ch_b: LedcDriver = LedcDriver::new(p.channel_b, &timerdriver, p.led_b).unwrap();
 
             let max_duty = ch_r.get_max_duty();
-            let mut tick: f32 = 0.0;
+            let mut tick: u32 = 0;
+            let mut goingup = true;
 
             loop {
                 let current = { thread_state.read().unwrap().clone() };
@@ -74,30 +95,45 @@ impl LedController {
                 let (r, g, b) = match current.mode {
                     LedMode::Off => (0, 0, 0),
                     LedMode::Solid(color) => (color.r, color.g, color.b),
+                    // LedMode::Solid(color) => (255, 0, 0),
                     LedMode::Fade(c1, c2) => {
-                        let t = (tick.sin() + 1.0) / 2.0; // Oscillate 0 to 1
+                        if tick == 0 {
+                            goingup = true
+                        }
+                        if tick == 255 {
+                            goingup = false;
+                        }
+                        if goingup {
+                            tick += 1;
+                        } else {
+                            tick -= 1;
+                        }
                         (
-                            lerp(c1.r, c2.r, t),
-                            lerp(c1.g, c2.g, t),
-                            lerp(c1.b, c2.b, t),
+                            lerp(c1.r, c2.r, tick as u8),
+                            lerp(c1.g, c2.g, tick as u8),
+                            lerp(c1.b, c2.b, tick as u8),
                         )
                     }
                     LedMode::Rainbow => {
-                        hsv_to_rgb(tick % 360.0, 1.0, 1.0)
+                        tick = (tick + 1) % 360;
+                        hsv_to_rgb((tick % 360) as f32, 1.0, 1.0)
                     }
                 };
 
                 // Apply brightness and set duty
                 let apply = |val: u8| -> u32 {
-                    ((val as f32 * current.brightness / 255.0) * max_duty as f32) as u32
+                    (val as u32 * current.brightness as u32 * max_duty) / 65025
                 };
+
+                info!("led: ({} {} {}), max: {}", apply(r), apply(g), apply(b), max_duty);
 
                 ch_r.set_duty(apply(r)).unwrap();
                 ch_g.set_duty(apply(g)).unwrap();
                 ch_b.set_duty(apply(b)).unwrap();
 
-                tick += 2.0; // Increment based on speed
-                thread::sleep(Duration::from_millis(current.speed_ms));
+                // tick += 2.0; // Increment based on speed
+                // thread::sleep(Duration::from_millis(current.speed_ms));
+                esp_idf_hal::delay::FreeRtos::delay_ms(current.speed_ms as u32);
             }
         });
 
@@ -109,9 +145,9 @@ impl LedController {
         s.mode = mode;
     }
 
-    pub fn set_brightness(&self, brightness: f32) {
+    pub fn set_brightness(&self, brightness: u8) {
         let mut s = self.state.write().unwrap();
-        s.brightness = brightness.clamp(0.0, 1.0);
+        s.brightness = brightness;
     }
 
     pub fn set_speed(&self, speed_ms: u64) {
@@ -122,8 +158,10 @@ impl LedController {
 
 // --- Utilities ---
 
-fn lerp(a: u8, b: u8, t: f32) -> u8 {
-    (a as f32 + (b as f32 - a as f32) * t) as u8
+// (a as f32 + (b as f32 - a as f32) * t) as u8
+fn lerp(a: u8, b: u8, t: u8) -> u8 {
+    let diff: u16 = if a > b { a - b } else { b - a } as u16;
+    (a as u16 + (diff * t as u16) / 255) as u8
 }
 
 fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
