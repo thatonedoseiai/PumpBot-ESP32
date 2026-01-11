@@ -30,6 +30,7 @@ rotenc = { path = "./rotenc" }
 esp-idf-hal = "0.45.2"
 anyhow = "1.0.100"
 ledc = { path = "./ledc" }
+pwm = { path = "./pwm" }
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }

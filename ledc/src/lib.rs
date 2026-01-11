@@ -77,7 +77,7 @@ impl LedController {
         // Spawn the worker thread
         thread::spawn(move || {
             // let peripherals = Peripherals::take().unwrap();
-            let config = TimerConfig::new().frequency(5.kHz().into());
+            let config = TimerConfig::new().resolution(Resolution::Bits14);//.frequency(5.kHz().into());
             let timerdriver = LedcTimerDriver::new(p.timer, &config).unwrap();
 
             // Initialize Channels
@@ -125,7 +125,7 @@ impl LedController {
                     (val as u32 * current.brightness as u32 * max_duty) / 65025
                 };
 
-                info!("led: ({} {} {}), max: {}", apply(r), apply(g), apply(b), max_duty);
+                // info!("led: ({} {} {}), max: {}", apply(r), apply(g), apply(b), max_duty);
 
                 ch_r.set_duty(apply(r)).unwrap();
                 ch_g.set_duty(apply(g)).unwrap();
