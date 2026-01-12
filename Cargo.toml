@@ -20,6 +20,10 @@ opt-level = "z"
 [features]
 default = []
 
+[[package.metadata.esp-idf-sys.extra_components]]
+component_dirs = ["components"]
+bindings_header = "src/bindings.h"
+
 experimental = ["esp-idf-svc/experimental"]
 
 [dependencies]
@@ -31,6 +35,7 @@ esp-idf-hal = "0.45.2"
 anyhow = "1.0.100"
 ledc = { path = "./ledc" }
 pwm = { path = "./pwm" }
+esp-idf-sys = "0.36.1"
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }

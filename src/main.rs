@@ -11,11 +11,19 @@ use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode, RGB};
 use pwm::{OutputCtl, OutputPeripherals, Action};
 use std::sync::Arc;
-use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark};
+use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
+use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
+use std::fs;
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
+    
+    register_filesystem()?;
+
+    let contents = fs::read("/fs/test.txt")?;
+    let data = str::from_utf8(contents.as_slice())?;
+    info!("FILE READ: {}", data);
 
     info!("STARTING APP!");
 
@@ -76,6 +84,21 @@ Event::Button(x) => info!("Button Event! {}", x),
         // let mut info = grab()?;
         // info.pin_a.enable_interrupt()?;
         // info.pin_b.enable_interrupt()?;
+    }
+}
+
+fn register_filesystem() -> Result<(), EspError> {
+    let mut fs_config: esp_vfs_littlefs_conf_t = esp_vfs_littlefs_conf_t {
+        base_path: c"/fs".as_ptr(),
+        partition_label: c"filesystem".as_ptr(),
+        ..Default::default()
+    };
+    fs_config.set_format_if_mount_failed(false as u8);
+    fs_config.set_dont_mount(false as u8);
+
+    unsafe {
+        let res = esp_vfs_littlefs_register(&fs_config);
+        EspError::convert(res)
     }
 }
 

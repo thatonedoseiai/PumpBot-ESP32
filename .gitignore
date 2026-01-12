@@ -4,3 +4,4 @@
 /Cargo.lock
 /*/.embuild
 /*/target
+/components/*/
