@@ -8,3 +8,4 @@ embedded-hal = "1.0.0"
 esp-idf-hal = "0.45.2"
 ilidriver = { path = "../ilidriver" }
 log = "0.4.29"
+fontfile = { path = "../fontfile" }

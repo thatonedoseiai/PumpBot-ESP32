@@ -1,6 +1,6 @@
 mod ili9341;
 
-pub use ili9341::{Ili9341, Orientation, DisplaySize240x320, ILIError, RGB};
+pub use ili9341::{Ili9341, Orientation, DisplaySize240x320, ILIError};
 use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Output};
 use esp_idf_hal::delay::{Delay};
 use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};

@@ -34,7 +34,7 @@ use embedded_hal::digital::OutputPin;
 use display_interface::DataFormat;
 use display_interface::WriteOnlyDataCommand;
 use std::fmt;
-use std::slice::from_raw_parts;
+use fontfile::{RGB, ColorConversionError};
 
 // #[cfg(feature = "graphics")]
 // mod graphics_core;
@@ -42,12 +42,6 @@ use std::slice::from_raw_parts;
 // pub use esp_idf_hal::spi::config::MODE_0 as SPI_MODE;
 
 pub use display_interface::DisplayError;
-
-#[derive(Debug, Clone, Copy)]
-pub enum ColorConversionError {
-    NonHomogeneousIterator,
-    TooMuchColorData,
-}
 
 #[derive(Debug, Clone)]
 pub enum ILIError {
@@ -90,30 +84,6 @@ impl From<ColorConversionError> for ILIError {
 }
 
 type Result<T = (), E = ILIError> = core::result::Result<T, E>;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RGB {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8
-}
-
-impl From<RGB> for [u8;3] {
-    fn from(val: RGB) -> [u8;3] {
-        [val.r, val.g, val.b]
-    }
-}
-
-impl RGB {
-    fn to_byte_array(data: &[RGB]) -> Result<&[u8], ColorConversionError> {
-        let len = data.len().checked_mul(3).ok_or(ColorConversionError::TooMuchColorData)?;
-        let ptr = data.as_ptr().cast();
-        let new: &[u8] = unsafe {
-            from_raw_parts(ptr, len)
-        };
-        Ok(new)
-    }
-}
 
 /// Trait that defines display size information
 pub trait DisplaySize {

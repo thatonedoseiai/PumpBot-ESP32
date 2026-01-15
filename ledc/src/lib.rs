@@ -2,7 +2,7 @@ use esp_idf_hal::ledc::*;
 use esp_idf_hal::ledc::config::TimerConfig;
 use esp_idf_hal::prelude::*;
 use esp_idf_hal::gpio::{AnyIOPin};
-pub use ilidriver::RGB;
+use fontfile::RGB;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;

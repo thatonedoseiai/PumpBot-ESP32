@@ -1,6 +1,9 @@
+mod rgb;
+
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::io;
+pub use rgb::{RGB, ColorConversionError};
 
 // Font file constants
 const FONT_NAME_SIZE_12: &str = "font12.cbf";
@@ -19,14 +22,6 @@ pub struct PbBg {
     bg_filename: Option<String>,
     foreground_color: RGB,
     background_color: RGB,
-}
-
-// RGB structure
-#[derive(Debug, Clone, Copy)]
-pub struct RGB {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -90,6 +85,16 @@ impl From<io::Error> for FontFileError {
 }
 
 impl PbFont {
+    pub fn new() -> Self {
+        PbFont {
+            font_file: None,
+            font_metadata: FontMetadata {
+                font_size: 0,
+                num_glyphs: 0,
+            },
+        }
+    }
+
     // Set font size
     pub fn set_font_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
         let font_name = match sz {
@@ -101,11 +106,7 @@ impl PbFont {
         };
 
         // Open new font file
-        let mut file = match File::open(font_name) {
-            Ok(f) => f,
-            Err(_) => return Err(FontFileError::FileNotFound),
-        };
-
+        let mut file = File::open(font_name).map_err(|_| FontFileError::FileNotFound)?;
         Self::verify_font_file(&mut file)?;
 
         self.font_metadata = Self::read_header(&mut file)?;
@@ -218,7 +219,6 @@ impl PbFont {
 
         if curchar == 0x20 {
             return Ok((CharMetadata {
-                // TODO: GET THE METADATA FOR A SPACE
                 advance: 0,
                 x: 0,
                 y: 0,
@@ -256,11 +256,7 @@ impl PbFont {
         // Convert to RGB
         let mut rgb_vec = Vec::with_capacity(decompressed_len);
         for &pixel in &decompressed {
-            rgb_vec.push(RGB {
-                r: pixel,
-                g: pixel,
-                b: pixel,
-            });
+            rgb_vec.push(rgb![pixel]);
         }
 
         // buf = Some(rgb_vec);
@@ -273,6 +269,15 @@ impl PbFont {
 }
 
 impl PbBg {
+    pub fn new() -> Self {
+        PbBg {
+            bg_file: None,
+            bg_filename: None,
+            foreground_color: rgb![0],
+            background_color: rgb![0],
+        }
+    }
+
     // Load background image
     pub fn load_bgimg(&mut self, name: &str, force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
         // let mut image_file = self.bg_file;
@@ -364,33 +369,24 @@ impl PbBg {
                     let fg = self.foreground_color;
                     let bg = self.background_color;
 
-                    buf.push( RGB {
-                        r: ((alpha * fg.r as u32 + inv_alpha * bg.r as u32) / 255) as u8,
-                        g: ((alpha * fg.g as u32 + inv_alpha * bg.g as u32) / 255) as u8,
-                        b: ((alpha * fg.b as u32 + inv_alpha * bg.b as u32) / 255) as u8,
-                    });
+                    buf.push( rgb![
+                        ((alpha * fg.r as u32 + inv_alpha * bg.r as u32) / 255) as u8,
+                        ((alpha * fg.g as u32 + inv_alpha * bg.g as u32) / 255) as u8,
+                        ((alpha * fg.b as u32 + inv_alpha * bg.b as u32) / 255) as u8,
+                    ]);
                 }
             } else {
                 // Direct copy
                 for i in 0..(240 * 320) {
-                    buf.push( RGB {
-                        r: compressed[i * 3],
-                        g: compressed[i * 3 + 1],
-                        b: compressed[i * 3 + 2]
-                    });
+                    buf.push( rgb![
+                        compressed[i * 3],
+                        compressed[i * 3 + 1],
+                        compressed[i * 3 + 2]
+                    ]);
                 }
             }
 
-            // Update filename
-            // unsafe {
-            //     if let Some(ref mut old_filename) = BGIMG_FILENAME {
-            //         drop(old_filename);
-            //     }
-            //     BGIMG_FILENAME = Some(name.to_string());
-            //     IMAGE_COLLECTION_FILE = image_file;
-            // }
             self.bg_filename = Some(name.to_string());
-            // self.bg_file = image_file;
 
             Ok(buf)
         } else {
