@@ -35,6 +35,8 @@ use display_interface::DataFormat;
 use display_interface::WriteOnlyDataCommand;
 use std::fmt;
 use fontfile::{RGB, ColorConversionError};
+use esp_idf_hal::sys::EspError;
+use log::info;
 
 // #[cfg(feature = "graphics")]
 // mod graphics_core;
@@ -46,7 +48,8 @@ pub use display_interface::DisplayError;
 #[derive(Debug, Clone)]
 pub enum ILIError {
     Disp(DisplayError),
-    Conv(ColorConversionError)
+    Conv(ColorConversionError),
+    Esp(EspError),
 }
 
 impl std::error::Error for ILIError { }
@@ -66,7 +69,8 @@ impl fmt::Display for ILIError {
             ILIError::Conv(c) => match c {
                 ColorConversionError::NonHomogeneousIterator => write!(f, "ILIERROR: color iterator has mixed color formats!"),
                 ColorConversionError::TooMuchColorData => write!(f, "ILIERROR: too much color data sent to write function!"),
-            }
+            },
+            ILIError::Esp(c) => write!(f, "Esp Error! {}", c),
         }
     }
 }
@@ -80,6 +84,12 @@ impl From<DisplayError> for ILIError {
 impl From<ColorConversionError> for ILIError {
     fn from(val: ColorConversionError) -> ILIError {
         ILIError::Conv(val)
+    }
+}
+
+impl From<EspError> for ILIError {
+    fn from(val: EspError) -> ILIError {
+        ILIError::Esp(val)
     }
 }
 
@@ -176,6 +186,31 @@ pub struct Ili9341<IFACE, RESET> {
     landscape: bool,
 }
 
+const INIT_COMMANDS: [(Command, &[u8]); 23] = [
+    (Command::PowerControlB, &[0x00, 0x83, 0x30]),
+    (Command::PowerOnSequenceControl, &[0x64, 0x03, 0x12, 0x81]),
+    (Command::DriverTimingControlA, &[0x85, 0x01, 0x79]),
+    (Command::PowerControlA, &[0x39, 0x2c, 0x00, 0x34, 0x02]),
+    (Command::PumpRatioControl, &[0x20]),
+    (Command::DriverTimingControlB, &[0x00, 0x00]),
+    (Command::PowerControl1, &[0x26]),
+    (Command::PowerControl2, &[0x11]),
+    (Command::VComControl1, &[0x35, 0x3e]),
+    (Command::VComControl2, &[0xbe]),
+    (Command::MemoryAccessControl, &[0x18]),
+    (Command::PixelFormatSet, &[0x66]),
+    (Command::NormalModeFrameRate, &[0x00, 0x10]),
+    (Command::Enable3G, &[0x08]),
+    (Command::GammaSet, &[0x01]),
+    (Command::VerticalScrollDefine, &[0x00, 0x00, 0x01, 0x40, 0x00, 0x00]),
+    (Command::PositiveGammaCorrection, &[0x1f, 0x1a, 0x18, 0x0a, 0x0f, 0x06, 0x45, 0x87, 0x32, 0x0a, 0x07, 0x02, 0x07, 0x05, 0x00]),
+    (Command::NegativeGammaCorrection, &[0x00, 0x25, 0x27, 0x05, 0x10, 0x09, 0x3a, 0x78, 0x4d, 0x05, 0x18, 0x0d, 0x38, 0x3a, 0x1f]),
+    (Command::ColumnAddressSet, &[0x00, 0x00, 0x00, 0xef]),
+    (Command::PageAddressSet, &[0x00, 0x00, 0x01, 0x3f]),
+    (Command::MemoryWrite, &[0x00]),
+    (Command::EntryModeSet, &[0x07]),
+    (Command::DisplayFunctionControl, &[0x0a, 0x82, 0x27, 0x00]),
+];
 impl<IFACE, RESET> Ili9341<IFACE, RESET>
 where
     IFACE: WriteOnlyDataCommand,
@@ -225,6 +260,12 @@ where
         // Set pixel format to 16 bits per pixel
         ili9341.set_colormode()?;
         // ili9341.command(Command::PixelFormatSet, &[0x55])?;
+
+        for &(cmd, args) in INIT_COMMANDS.iter() {
+            ili9341.command(cmd, args)?;
+        }
+
+        info!("SENT INIT ARGS THROUGH SPI!");
 
         ili9341.sleep_mode(ModeState::Off)?;
 
@@ -529,6 +570,7 @@ enum Command {
     SleepModeOff = 0x11,
     InvertOff = 0x20,
     InvertOn = 0x21,
+    GammaSet = 0x26,
     DisplayOff = 0x28,
     DisplayOn = 0x29,
     ColumnAddressSet = 0x2a,
@@ -542,4 +584,19 @@ enum Command {
     ContentAdaptiveBrightness = 0x55,
     NormalModeFrameRate = 0xb1,
     IdleModeFrameRate = 0xb2,
+    DisplayFunctionControl = 0xb6,
+    EntryModeSet = 0xb7,
+    PowerControl1 = 0xc0,
+    PowerControl2 = 0xc1,
+    VComControl1 = 0xc5,
+    VComControl2 = 0xc7,
+    PowerControlA = 0xcb,
+    PowerControlB = 0xcf,
+    PositiveGammaCorrection = 0xe0,
+    NegativeGammaCorrection = 0xe1,
+    DriverTimingControlA = 0xe8,
+    DriverTimingControlB = 0xea,
+    PowerOnSequenceControl = 0xed,
+    Enable3G = 0xf2,
+    PumpRatioControl = 0xf7,
 }

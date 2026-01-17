@@ -10,11 +10,11 @@ use log::info;
 use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode};
 use pwm::{OutputCtl, OutputPeripherals, Action};
-use fontfile::RGB;
+use fontfile::{RGB, FontSize, PbFont, rgb};
+use ilidriver::ILIDriver;
 use std::sync::Arc;
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
-use std::fs;
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -22,9 +22,9 @@ fn main() -> anyhow::Result<()> {
     
     register_filesystem()?;
 
-    let contents = fs::read("/fs/test.txt")?;
-    let data = str::from_utf8(contents.as_slice())?;
-    info!("FILE READ: {}", data);
+    // let contents = fs::read("/fs/test.txt")?;
+    // let data = str::from_utf8(contents.as_slice())?;
+    // info!("FILE READ: {}", data);
 
     info!("STARTING APP!");
 
@@ -59,13 +59,35 @@ fn main() -> anyhow::Result<()> {
         ),
         peripherals.ledc.timer1
     );
-    let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
-    outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
-    outputctl.buffer_action(Action::SetDuty(1, OutputCtl::max_duty), 2000)?;
-    outputctl.buffer_action(Action::On(0), 3000)?;
-    outputctl.buffer_action(Action::Off(0), 4000)?;
-    esp_idf_hal::delay::FreeRtos::delay_ms(5000);
-    outputctl.buffer_action(Action::On(1), 1000)?;
+    let mut screen = ILIDriver::new(
+        peripherals.spi2, 
+        peripherals.pins.gpio11.downgrade(),
+        peripherals.pins.gpio9.downgrade(),
+        peripherals.pins.gpio46.downgrade(),
+        peripherals.pins.gpio10.downgrade(),
+        peripherals.pins.gpio12.downgrade(),
+        peripherals.pins.gpio13.downgrade(),
+    )?;
+
+    let mut font = PbFont::new();
+    font.set_size(FontSize::Sz14)?;
+
+    let (char_metrics, char_slice) = font.load_char(0x3d)?;
+
+    info!("{:?}", char_metrics);
+    info!("{:?}", char_slice.len());
+    // info!("{:?}\n{:?}", char_metrics, char_slice);
+    let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
+    screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
+    screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
+
+//     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
+//     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
+//     outputctl.buffer_action(Action::SetDuty(1, OutputCtl::max_duty), 2000)?;
+//     outputctl.buffer_action(Action::On(0), 3000)?;
+//     outputctl.buffer_action(Action::Off(0), 4000)?;
+//     esp_idf_hal::delay::FreeRtos::delay_ms(5000);
+//     outputctl.buffer_action(Action::On(1), 1000)?;
 
     // let mut taskstatuses = [TaskStatus_t::default(); 5];
     // let mut runtime: u32 = 0;

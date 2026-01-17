@@ -1,16 +1,21 @@
+#![feature(iter_array_chunks)]
+
 mod rgb;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::io;
+use std::fmt;
+use std::error::Error;
 pub use rgb::{RGB, ColorConversionError};
+use log::info;
 
 // Font file constants
-const FONT_NAME_SIZE_12: &str = "font12.cbf";
-const FONT_NAME_SIZE_14: &str = "font14.cbf";
-const FONT_NAME_SIZE_18: &str = "font18.cbf";
-const FONT_NAME_SIZE_24: &str = "font24.cbf";
-const FONT_NAME_SIZE_42: &str = "font42.cbf";
+const FONT_NAME_SIZE_12: &str = "NC_12.cbf";
+const FONT_NAME_SIZE_14: &str = "NC_14.cbf";
+const FONT_NAME_SIZE_18: &str = "NC_18.cbf";
+const FONT_NAME_SIZE_24: &str = "NC_24.cbf";
+const FONT_NAME_SIZE_42: &str = "NC_42.cbf";
 
 pub struct PbFont {
     font_file: Option<File>,
@@ -67,6 +72,7 @@ pub struct CharMetadata {
 const CORRECT_MBYTES: [u8; 10] = [0x63, 0x62, 0x66, 0xe5, 0x9c, 0xa7, 0xe5, 0xad, 0x97, 0x02];
 
 // Error codes
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum FontFileError {
     FileNotFound,
     BadFormat,
@@ -77,6 +83,22 @@ pub enum FontFileError {
     IOError,
     FileNotOpen,
 }
+
+impl fmt::Display for FontFileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            FontFileError::FileNotFound => write!(f, "FF: FileNotFound"),
+            FontFileError::BadFormat => write!(f, "FF: BadFormat"),
+            FontFileError::BadSize => write!(f, "FF: BadSize"),
+            FontFileError::BadChar(a, b, c) => write!(f, "FF: BadChar = char: {}, wxh {}x{}", a, b, c),
+            FontFileError::InvalidChar(x) => write!(f, "FF: InvalidChar = {}", x),
+            FontFileError::IndexOutOfBounds => write!(f, "FF: IndexOutOfBounds"),
+            FontFileError::IOError => write!(f, "FF: IOError"),
+            FontFileError::FileNotOpen => write!(f, "FF: FileNotOpen"),
+        }
+    }
+}
+impl Error for FontFileError { }
 
 impl From<io::Error> for FontFileError {
     fn from(_: io::Error) -> FontFileError {
@@ -96,14 +118,14 @@ impl PbFont {
     }
 
     // Set font size
-    pub fn set_font_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
-        let font_name = match sz {
+    pub fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
+        let font_name = format!("/fs/{}", match sz {
             FontSize::Sz12 => FONT_NAME_SIZE_12,
             FontSize::Sz14 => FONT_NAME_SIZE_14,
             FontSize::Sz18 => FONT_NAME_SIZE_18,
             FontSize::Sz24 => FONT_NAME_SIZE_24,
             FontSize::Sz42 => FONT_NAME_SIZE_42,
-        };
+        });
 
         // Open new font file
         let mut file = File::open(font_name).map_err(|_| FontFileError::FileNotFound)?;
@@ -148,7 +170,7 @@ impl PbFont {
 
     // Binary search, returns the offset into the file for the glyph
     fn binary_search(&mut self, k: u16) -> Result<u32, FontFileError> {
-        let mut offset = self.font_metadata.num_glyphs >> 1;
+        let mut offset: i64 = (self.font_metadata.num_glyphs >> 1).into();
         if let Some(ref mut f) = self.font_file {
             f.seek(SeekFrom::Start((offset * 6 + 16) as u64))?;
 
@@ -167,13 +189,13 @@ impl PbFont {
                     offset = 1;
                 }
                 
-                let seek_offset: i64 = if curr_entry > k {
-                    -((offset * 6 + 2) as i64)
+                offset = if curr_entry > k {
+                    (-offset * 6 - 2) as i64
                 } else {
                     (offset * 6 - 2) as i64
                 };
                 
-                f.seek(SeekFrom::Current(seek_offset))?;
+                f.seek(SeekFrom::Current(offset))?;
                 prev_entry = curr_entry;
                 
                 let mut buf = [0u8; 2];
@@ -238,7 +260,7 @@ impl PbFont {
             return Err(FontFileError::BadChar(curchar, width, height))
         }
 
-        let vertical = (advance & 1000) != 0;
+        let vertical = (advance & 0x1000) != 0;
         advance &= 0x4fff;
         // unsafe { CM.vertical } = (unsafe { CM.advance } & 0x1000) >> 12;
         // unsafe { CM.advance } &= 0x4fff;
@@ -247,16 +269,20 @@ impl PbFont {
         // let mut decompressed = vec![0u8; decompressed_len];
         let decompressed;
 
+        info!("DATA: {:?}", data);
         if vertical {
             decompressed = decode_vert(&data, height, width);
         } else {
             decompressed = decode(&data);
         }
+        // info!("DECOMPRESSED LEN: {:?}", decompressed.len());
+        info!("DECOMPRESSED: {:?}", decompressed);
 
         // Convert to RGB
+        // info!("decompressed length: {}", decompressed.len());
         let mut rgb_vec = Vec::with_capacity(decompressed_len);
-        for &pixel in &decompressed {
-            rgb_vec.push(rgb![pixel]);
+        for pixel in (&decompressed).iter().array_chunks::<3>() {
+            rgb_vec.push(rgb![*pixel[0], *pixel[1], *pixel[2]]);
         }
 
         // buf = Some(rgb_vec);
@@ -411,14 +437,17 @@ pub fn decode(indata: &[u8]) -> Vec<u8> {
     while i < indata.len() && indata[i] != 0xff {
         if indata[i] & 0x80 != 0 {
             j = k + (indata[i] ^ 0x80) as usize;
+            info!("OPCODE {} COPY {} BYTES", indata[i], j-k);
             while k <= j {
-                ret.push(indata[i+1]);
+                i += 1;
+                ret.push(indata[i]);
                 // outdata[k] = indata[i + 1];
                 k += 1;
             }
-            i += 2;
+            i += 1;
         } else {
             let count = (indata[i] + 2) as usize;
+            info!("OPCODE {} REPT {} {} times", indata[i], indata[i+1], count);
             for _ in 0..count {
                 ret.push(indata[i+1]);
                 // outdata[k] = indata[i + 1];
@@ -434,7 +463,10 @@ pub fn decode(indata: &[u8]) -> Vec<u8> {
 
 // Vertical decode function
 pub fn decode_vert(indata: &[u8], width: u16, height: u16) -> Vec<u8> {
-    let mut outdata: Vec<u8> = Vec::with_capacity((width * height) as usize);
+    let mut outdata: Vec<u8> = vec![0u8; (width * height) as usize]; // TODO: get rid of this
+                                                                     // somehow and make the decode
+                                                                     // vert properly do without
+                                                                     // capacity
     let mut i = 0;
     let mut j;
     let mut m;
@@ -446,9 +478,10 @@ pub fn decode_vert(indata: &[u8], width: u16, height: u16) -> Vec<u8> {
             j = (indata[i] ^ 0x80) as usize;
             m = 0;
             while m <= j {
+                i += 1;
                 let pos = (y * width + x) as usize;
                 if pos < outdata.len() {
-                    outdata[pos] = indata[i + 1];
+                    outdata[pos] = indata[i];
                 }
                 y += 1;
                 if y >= height {
@@ -457,7 +490,7 @@ pub fn decode_vert(indata: &[u8], width: u16, height: u16) -> Vec<u8> {
                 }
                 m += 1;
             }
-            i += 2;
+            i += 1;
         } else {
             let count = (indata[i] + 2) as usize;
             for _ in 0..count {

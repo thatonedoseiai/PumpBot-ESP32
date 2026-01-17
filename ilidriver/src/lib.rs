@@ -9,14 +9,15 @@ use std::error::Error;
 
 // type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-struct ILIDriver<'a> {
-    display: Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>,
+pub struct ILIDriver<'a> {
+    pub display: Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>,
+    pub backlight: PinDriver<'a, AnyIOPin, Output>,
 }
 
 // const PARALLEL_LINES: usize = 16;
 
 impl ILIDriver<'_> {
-    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin) -> Result<Self, Box<dyn Error>> {
+    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin, bl: AnyIOPin) -> Result<Self, ILIError> {
         let dc_output = PinDriver::output(dc)?;
         let rst_output = PinDriver::output(rst)?;
         let cspin: Option<AnyIOPin> = None;
@@ -31,6 +32,8 @@ impl ILIDriver<'_> {
         )?;
         let interface = SPIInterface::new(spi_device_driver, dc_output);
         let display = Ili9341::new(interface, rst_output, &mut Delay::new_default(), Orientation::Landscape, DisplaySize240x320)?;
-        Ok(ILIDriver { display })
+        let mut backlight = PinDriver::output(bl)?;
+        backlight.set_high()?;
+        Ok(ILIDriver { display, backlight })
     }
 }
