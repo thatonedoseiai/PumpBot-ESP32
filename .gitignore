@@ -2,3 +2,6 @@
 /.embuild
 /target
 /Cargo.lock
+/*/.embuild
+/*/target
+/components/*/
