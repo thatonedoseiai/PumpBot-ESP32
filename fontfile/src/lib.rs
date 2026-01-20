@@ -241,7 +241,7 @@ impl PbFont {
 
         if curchar == 0x20 {
             return Ok((CharMetadata {
-                advance: 0,
+                advance: advance,
                 x: 0,
                 y: 0,
                 width: 0,
@@ -269,14 +269,14 @@ impl PbFont {
         // let mut decompressed = vec![0u8; decompressed_len];
         let decompressed;
 
-        info!("DATA: {:?}", data);
+        // info!("DATA: {:?}", data);
         if vertical {
             decompressed = decode_vert(&data, height, width);
         } else {
             decompressed = decode(&data);
         }
         // info!("DECOMPRESSED LEN: {:?}", decompressed.len());
-        info!("DECOMPRESSED: {:?}", decompressed);
+        // info!("DECOMPRESSED: {:?}", decompressed);
 
         // Convert to RGB
         // info!("decompressed length: {}", decompressed.len());
@@ -437,7 +437,7 @@ pub fn decode(indata: &[u8]) -> Vec<u8> {
     while i < indata.len() && indata[i] != 0xff {
         if indata[i] & 0x80 != 0 {
             j = k + (indata[i] ^ 0x80) as usize;
-            info!("OPCODE {} COPY {} BYTES", indata[i], j-k);
+            // info!("OPCODE {} COPY {} BYTES", indata[i], j-k);
             while k <= j {
                 i += 1;
                 ret.push(indata[i]);
@@ -447,7 +447,7 @@ pub fn decode(indata: &[u8]) -> Vec<u8> {
             i += 1;
         } else {
             let count = (indata[i] + 2) as usize;
-            info!("OPCODE {} REPT {} {} times", indata[i], indata[i+1], count);
+            // info!("OPCODE {} REPT {} {} times", indata[i], indata[i+1], count);
             for _ in 0..count {
                 ret.push(indata[i+1]);
                 // outdata[k] = indata[i + 1];

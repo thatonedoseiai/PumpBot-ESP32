@@ -34,7 +34,7 @@ use embedded_hal::digital::OutputPin;
 use display_interface::DataFormat;
 use display_interface::WriteOnlyDataCommand;
 use std::fmt;
-use fontfile::{RGB, ColorConversionError};
+use fontfile::{RGB, ColorConversionError, FontFileError};
 use esp_idf_hal::sys::EspError;
 use log::info;
 
@@ -50,6 +50,8 @@ pub enum ILIError {
     Disp(DisplayError),
     Conv(ColorConversionError),
     Esp(EspError),
+    FF(FontFileError),
+    WritingOffScreen,
 }
 
 impl std::error::Error for ILIError { }
@@ -71,6 +73,8 @@ impl fmt::Display for ILIError {
                 ColorConversionError::TooMuchColorData => write!(f, "ILIERROR: too much color data sent to write function!"),
             },
             ILIError::Esp(c) => write!(f, "Esp Error! {}", c),
+            ILIError::FF(ff) => write!(f, "{}", ff),
+            ILIError::WritingOffScreen => write!(f, "Error: writing off screen!"),
         }
     }
 }
@@ -90,6 +94,12 @@ impl From<ColorConversionError> for ILIError {
 impl From<EspError> for ILIError {
     fn from(val: EspError) -> ILIError {
         ILIError::Esp(val)
+    }
+}
+
+impl From<FontFileError> for ILIError {
+    fn from(val: FontFileError) -> ILIError {
+        ILIError::FF(val)
     }
 }
 

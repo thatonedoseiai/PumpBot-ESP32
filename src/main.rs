@@ -80,6 +80,7 @@ fn main() -> anyhow::Result<()> {
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
     screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
     screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
+    screen.draw_string(50, 50, "Hello blue!", &mut font, 16)?;
 
 //     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 //     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
