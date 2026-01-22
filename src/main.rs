@@ -1,4 +1,6 @@
 mod event;
+mod menu;
+mod menus;
 
 use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
@@ -15,6 +17,7 @@ use ilidriver::ILIDriver;
 use std::sync::Arc;
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
+use crate::menu::{run_menu_loop, MenuSelection};
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -98,17 +101,19 @@ fn main() -> anyhow::Result<()> {
     // }
 
     info!("INITIALIZED BUTTONS!");
-    loop {
-        if let Some((ev, _)) = button_queue.recv_front(10) {
-            match ev {
-Event::Button(x) => info!("Button Event! {}", x),
-                Event::Rotenc(x) => info!("Rotenc Event! {}", x),
-            }
-        }
-        // let mut info = grab()?;
-        // info.pin_a.enable_interrupt()?;
-        // info.pin_b.enable_interrupt()?;
-    }
+    run_menu_loop(MenuSelection::TitleMenu, button_queue)?;
+    Ok(())
+    // loop {
+    //     if let Some((ev, _)) = button_queue.recv_front(10) {
+    //         match ev {
+// Event::Button(x) => info!("Button Event! {}", x),
+    //             Event::Rotenc(x) => info!("Rotenc Event! {}", x),
+    //         }
+    //     }
+    //     // let mut info = grab()?;
+    //     // info.pin_a.enable_interrupt()?;
+    //     // info.pin_b.enable_interrupt()?;
+    // }
 }
 
 fn register_filesystem() -> Result<(), EspError> {
