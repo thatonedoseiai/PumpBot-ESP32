@@ -1,6 +1,7 @@
 mod event;
 mod menu;
 mod menus;
+mod lang;
 
 use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
