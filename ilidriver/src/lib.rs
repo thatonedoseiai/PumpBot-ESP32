@@ -18,6 +18,28 @@ pub struct ILIDriver<'a> {
 
 // const PARALLEL_LINES: usize = 16;
 
+// pub struct Bbox {
+//     x_1: u16,
+//     x_2: u16,
+//     y_1: u16,
+//     y_2: u16,
+// }
+
+// pub enum IntersectionKind {
+//     SplitX,
+//     SplitY,
+//     ClipWest,
+//     ClipEast,
+//     ClipNorth,
+//     ClipSouth,
+// }
+
+// impl Bbox {
+//     pub fn intersects(&self, &other: Bbox) -> Option<IntersectionKind> {
+        
+//     }
+// }
+
 impl ILIDriver<'_> {
     pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin, bl: AnyIOPin) -> Result<Self, ILIError> {
         let dc_output = PinDriver::output(dc)?;
@@ -36,28 +58,30 @@ impl ILIDriver<'_> {
         let display = Ili9341::new(interface, rst_output, &mut Delay::new_default(), Orientation::Landscape, DisplaySize240x320)?;
         let mut backlight = PinDriver::output(bl)?;
         backlight.set_high()?;
+        info!("backlight high");
         Ok(ILIDriver { display, backlight })
     }
 
     pub fn draw_string(&mut self, x: u16, y: u16, to_draw: &str, font: &mut PbFont, newline_offset: i16) -> Result<(), ILIError> {
-        let mut start_x: i16 = x.try_into().map_err(|_| ILIError::WritingOffScreen)?;
-        let mut start_y: i16 = y.try_into().map_err(|_| ILIError::WritingOffScreen)?;
+        let mut start_x: u16 = x; // x.try_into().map_err(|_| ILIError::WritingOffScreen(x, y))?;
+        let mut start_y: u16 = y; // y.try_into().map_err(|_| ILIError::WritingOffScreen(x, y))?;
         for c in to_draw.encode_utf16() {
+            info!("loading char {}: {} at {} {}", c, char::from_u32(c as u32).unwrap(), start_x, start_y);
             let (char_metrics, char_slice) = font.load_char(c)?;
             if char_metrics.width != 0 {
                 let true_height = char_metrics.height / 3;
-                let char_start_x: u16 = (start_x+char_metrics.x).try_into().map_err(|_| ILIError::WritingOffScreen)?;
-                let char_start_y: u16 = (start_y-char_metrics.y).try_into().map_err(|_| ILIError::WritingOffScreen)?;
+                let char_start_x: u16 = (start_x.checked_sub_signed(char_metrics.x)).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
+                let char_start_y: u16 = (start_y.checked_sub_signed(char_metrics.y)).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
                 if usize::from(char_start_x+char_metrics.width-1) > self.display.width() {
                     if newline_offset > 0 {
-                        start_y -= newline_offset;
-                        start_x = x.try_into().map_err(|_| ILIError::WritingOffScreen)?;
+                        start_y = start_y.checked_sub_signed(newline_offset).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
+                        start_x = x.try_into().map_err(|_| ILIError::WritingOffScreen(char_start_x, char_start_y))?;
                         continue;
                     } else {
-                        return Err(ILIError::WritingOffScreen);
+                        return Err(ILIError::WritingOffScreen(char_start_x, char_start_y));
                     }
                 }
-                info!("draw {} boundaries: {} {} {} {} height: {} y: {}", c, char_start_y, char_start_x, char_start_y+true_height-1, char_start_x+char_metrics.width-1, true_height, char_metrics.y);
+                // info!("draw {}: {} boundaries: {} {} {} {} height: {} y: {}", c, char::from_u32(c as u32).unwrap(), char_start_y, char_start_x, char_start_y+true_height-1, char_start_x+char_metrics.width-1, true_height, char_metrics.y);
                 self.display.draw_raw_slice(
                     // char_start_y-true_height+1, 
                     char_start_y, 
@@ -66,7 +90,8 @@ impl ILIDriver<'_> {
                     char_start_x+char_metrics.width-1, 
                     char_slice.as_slice())?;
             }
-            start_x += i16::try_from(char_metrics.advance).map_err(|_| ILIError::WritingOffScreen)?;
+            start_x += char_metrics.advance;
+            // start_x += i16::try_from(char_metrics.advance).map_err(|_| ILIError::WritingOffScreen(start_x, start_y))?;
         }
         Ok(())
     }

@@ -51,7 +51,7 @@ pub enum ILIError {
     Conv(ColorConversionError),
     Esp(EspError),
     FF(FontFileError),
-    WritingOffScreen,
+    WritingOffScreen(u16, u16),
 }
 
 impl std::error::Error for ILIError { }
@@ -74,7 +74,7 @@ impl fmt::Display for ILIError {
             },
             ILIError::Esp(c) => write!(f, "Esp Error! {}", c),
             ILIError::FF(ff) => write!(f, "{}", ff),
-            ILIError::WritingOffScreen => write!(f, "Error: writing off screen!"),
+            ILIError::WritingOffScreen(x, y) => write!(f, "Error: writing off screen at ({}, {})!", x, y),
         }
     }
 }

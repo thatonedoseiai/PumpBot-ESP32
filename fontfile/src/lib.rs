@@ -9,6 +9,7 @@ use std::fmt;
 use std::error::Error;
 pub use rgb::{RGB, ColorConversionError};
 use log::info;
+use std::sync::Arc;
 
 // Font file constants
 const FONT_NAME_SIZE_12: &str = "NC_12.cbf";
@@ -59,20 +60,48 @@ pub struct FontMetadata {
 
 #[derive(Debug, Clone, Copy)]
 pub struct CharMetadata {
+    pub vertical: bool,
     pub advance: u16,
     pub x: i16,
     pub y: i16,
     pub width: u16,
     pub height: u16,
-    pub vertical: bool,
+}
+
+impl From<[u8; 10]> for CharMetadata {
+    fn from(val: [u8; 10]) -> CharMetadata {
+        let mut advance = u16::from_le_bytes([val[0], val[1]]);
+        let vertical = (advance & 0x8000) == 0x8000;
+        advance &= 0x4fff;
+
+        CharMetadata {
+            vertical,
+            advance,
+            x: i16::from_le_bytes([val[2], val[3]]), 
+            y: i16::from_le_bytes([val[4], val[5]]), 
+            width: u16::from_le_bytes([val[6], val[7]]), 
+            height: u16::from_le_bytes([val[8], val[9]])
+        }
+    }
 }
 
 // Global color references (these should be initialized elsewhere)
 // Correct magic bytes
 const CORRECT_MBYTES: [u8; 10] = [0x63, 0x62, 0x66, 0xe5, 0x9c, 0xa7, 0xe5, 0xad, 0x97, 0x02];
 
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+pub struct IOErrorInfo {
+    kind: io::ErrorKind,
+}
+
+impl fmt::Display for IOErrorInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.kind.fmt(f)
+    }
+}
+
 // Error codes
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum FontFileError {
     FileNotFound,
     BadFormat,
@@ -80,8 +109,9 @@ pub enum FontFileError {
     BadChar(u16, u16, u16),
     InvalidChar(u16),
     IndexOutOfBounds,
-    IOError,
+    IOError(IOErrorInfo),
     FileNotOpen,
+    BadVersion,
 }
 
 impl fmt::Display for FontFileError {
@@ -93,16 +123,19 @@ impl fmt::Display for FontFileError {
             FontFileError::BadChar(a, b, c) => write!(f, "FF: BadChar = char: {}, wxh {}x{}", a, b, c),
             FontFileError::InvalidChar(x) => write!(f, "FF: InvalidChar = {}", x),
             FontFileError::IndexOutOfBounds => write!(f, "FF: IndexOutOfBounds"),
-            FontFileError::IOError => write!(f, "FF: IOError"),
+            FontFileError::IOError(e) => write!(f, "FF: IOError {}", e),
             FontFileError::FileNotOpen => write!(f, "FF: FileNotOpen"),
+            FontFileError::BadVersion => write!(f, "FF: Background file is the wrong version!"),
         }
     }
 }
 impl Error for FontFileError { }
 
 impl From<io::Error> for FontFileError {
-    fn from(_: io::Error) -> FontFileError {
-        FontFileError::IOError
+    fn from(val: io::Error) -> FontFileError {
+        FontFileError::IOError(IOErrorInfo {
+            kind: val.kind(),
+        })
     }
 }
 
@@ -173,6 +206,7 @@ impl PbFont {
         let mut offset: i64 = (self.font_metadata.num_glyphs >> 1).into();
         if let Some(ref mut f) = self.font_file {
             f.seek(SeekFrom::Start((offset * 6 + 16) as u64))?;
+            let mut total_off: u64 = (offset * 6 + 16) as u64;
 
             let mut buf = [0u8; 2];
             f.read_exact(&mut buf)?;
@@ -180,22 +214,36 @@ impl PbFont {
             let mut curr_entry = prev_entry;
 
             while curr_entry != k {
+                // if curr_entry > self.max
                 if prev_entry < k && curr_entry > k && offset == 1 {
                     return Err(FontFileError::InvalidChar(k));
                 }
-                
+
                 offset >>= 1;
                 if offset < 1 {
                     offset = 1;
                 }
-                
-                offset = if curr_entry > k {
+
+                let offset_amt = if curr_entry > k {
                     (-offset * 6 - 2) as i64
                 } else {
                     (offset * 6 - 2) as i64
                 };
-                
-                f.seek(SeekFrom::Current(offset))?;
+
+                f.seek(SeekFrom::Current(offset_amt))?;
+                match total_off.checked_add_signed(offset_amt+2) {
+                    Some(k) => {
+                        // info!("{} + {} = {}", total_off, offset_amt, k);
+                        total_off = k;
+                    },
+                    None => {
+                        info!("BAD: {} + {} = OOB", total_off, offset_amt); 
+                        panic!(); 
+                    }
+                }
+                if total_off > (self.font_metadata.num_glyphs * 6 + 16) as u64 {
+                    return Err(FontFileError::InvalidChar(k));
+                }
                 prev_entry = curr_entry;
                 
                 let mut buf = [0u8; 2];
@@ -219,29 +267,29 @@ impl PbFont {
         let Some(ref mut font_file) = self.font_file else { return Err(FontFileError::FileNotOpen); };
         font_file.seek(SeekFrom::Start(offset as u64))?;
 
-        let mut buf1 = [0u8; 2];
-        font_file.read_exact(&mut buf1)?;
-        let mut advance = u16::from_le_bytes(buf1);
+        let mut buf = [0u8; 10];
+        font_file.read_exact(&mut buf)?;
+        let cm = CharMetadata::from(buf);
 
-        let mut buf1 = [0u8; 2];
-        font_file.read_exact(&mut buf1)?;
-        let x = i16::from_le_bytes(buf1);
-
-        let mut buf1 = [0u8; 2];
-        font_file.read_exact(&mut buf1)?;
-        let y = i16::from_le_bytes(buf1);
-
-        let mut buf1 = [0u8; 2];
-        font_file.read_exact(&mut buf1)?;
-        let width = u16::from_le_bytes(buf1);
-
-        let mut buf1 = [0u8; 2];
-        font_file.read_exact(&mut buf1)?;
-        let height = u16::from_le_bytes(buf1);
+//         let mut buf1 = [0u8; 2];
+//         font_file.read_exact(&mut buf1)?;
+//         let mut advance = u16::from_le_bytes(buf1);
+//         let mut buf1 = [0u8; 2];
+//         font_file.read_exact(&mut buf1)?;
+//         let x = i16::from_le_bytes(buf1);
+//         let mut buf1 = [0u8; 2];
+//         font_file.read_exact(&mut buf1)?;
+//         let y = i16::from_le_bytes(buf1);
+//         let mut buf1 = [0u8; 2];
+//         font_file.read_exact(&mut buf1)?;
+//         let width = u16::from_le_bytes(buf1);
+//         let mut buf1 = [0u8; 2];
+//         font_file.read_exact(&mut buf1)?;
+//         let height = u16::from_le_bytes(buf1);
 
         if curchar == 0x20 {
             return Ok((CharMetadata {
-                advance: advance,
+                advance: cm.advance,
                 x: 0,
                 y: 0,
                 width: 0,
@@ -251,30 +299,30 @@ impl PbFont {
         }
 
         // let data_len = (unsafe { CM.width } * unsafe { CM.height } + 2) as usize;
-        let data_len: usize = (width * height + 2) as usize;
+        let data_len: usize = (cm.width * cm.height + 2) as usize;
         let mut data = vec![0u8; data_len];
         font_file.read_exact(&mut data)?;
 
-        if width == 0 || height == 0 {
+        if cm.width == 0 || cm.height == 0 {
             // println!("BAD CHAR: {} has width {} height {}", curchar, unsafe { CM.width }, unsafe { CM.height });
-            return Err(FontFileError::BadChar(curchar, width, height))
+            return Err(FontFileError::BadChar(curchar, cm.width, cm.height))
         }
 
-        let vertical = (advance & 0x1000) != 0;
-        advance &= 0x4fff;
+        // let vertical = (advance & 0x1000) != 0;
+        // advance &= 0x4fff;
         // unsafe { CM.vertical } = (unsafe { CM.advance } & 0x1000) >> 12;
         // unsafe { CM.advance } &= 0x4fff;
 
-        let decompressed_len: usize = (width * height) as usize;
+        let decompressed_len: usize = (cm.width * cm.height) as usize;
         // let mut decompressed = vec![0u8; decompressed_len];
-        let decompressed;
+        // let decompressed;
 
         // info!("DATA: {:?}", data);
-        if vertical {
-            decompressed = decode_vert(&data, height, width);
+        let decompressed = if cm.vertical {
+            decode_vert(&data, cm.height, cm.width)
         } else {
-            decompressed = decode(&data);
-        }
+            decode(&data)
+        };
         // info!("DECOMPRESSED LEN: {:?}", decompressed.len());
         // info!("DECOMPRESSED: {:?}", decompressed);
 
@@ -288,13 +336,16 @@ impl PbFont {
         // buf = Some(rgb_vec);
 
         // FONT_FILE = Some(font_file);
-        Ok((CharMetadata {
-            advance, x, y, width, height, vertical,
-        }, rgb_vec))
+        // Ok((CharMetadata {
+        //     advance, x, y, width, height, vertical,
+        // }, rgb_vec))
+        Ok((cm, rgb_vec))
     }
 }
 
 impl PbBg {
+    const PB_BG_VERSION: u8 = 2;
+
     pub fn new() -> Self {
         PbBg {
             bg_file: None,
@@ -310,46 +361,59 @@ impl PbBg {
 
         // Check if we need to load a new file
         if force_load || self.bg_filename != Some(name.to_string()) {
-            match File::open(name) {
-                Ok(f) => {
-                    self.bg_file = Some(f);
-                }
-                Err(_) => return Err(FontFileError::FileNotFound),
-            }
+            self.bg_file = Some(File::open(name).map_err(|_| FontFileError::FileNotFound)?);
+            // match File::open(name) {
+            //     Ok(f) => {
+            //         self.bg_file = Some(f);
+            //     }
+            //     Err(_) => return Err(FontFileError::FileNotFound),
+            // }
         }
 
         if let Some(ref mut file) = self.bg_file {
             // Read header
             let mut header = [0u8; 3];
-            match file.read_exact(&mut header) {
-                Ok(_) => {
-                    if header != [0x63, 0x62, 0x69] {  // "cbi" in ASCII
-                        return Err(FontFileError::BadFormat);
-                    }
-                }
-                Err(_) => return Err(FontFileError::FileNotFound),
+            file.read_exact(&mut header).map_err(|_| FontFileError::FileNotFound)?;
+            if header != [0x63, 0x62, 0x69] { // CBI in ascii
+                return Err(FontFileError::BadFormat);
             }
+            // match file.read_exact(&mut header) {
+            //     Ok(_) => {
+            //         if header != [0x63, 0x62, 0x69] {  // "cbi" in ASCII
+            //             return Err(FontFileError::BadFormat);
+            //         }
+            //     }
+            //     Err(_) => return Err(FontFileError::FileNotFound),
+            // }
 
-            let mut header_byte = [0u8; 1];
-            match file.read_exact(&mut header_byte) {
-                Ok(_) => {
-                    if header_byte[0] != 2 {
-                        return Err(FontFileError::BadSize);
-                    }
-                }
-                Err(_) => return Err(FontFileError::FileNotFound),
+            let mut version_byte = [0u8; 1];
+            file.read_exact(&mut version_byte).map_err(|_| FontFileError::FileNotFound)?;
+            if version_byte[0] != Self::PB_BG_VERSION {
+                return Err(FontFileError::BadVersion);
             }
+            // match file.read_exact(&mut header_byte) {
+            //     Ok(_) => {
+            //         if header_byte[0] != 2 {
+            //             return Err(FontFileError::BadSize);
+            //         }
+            //     }
+            //     Err(_) => return Err(FontFileError::FileNotFound),
+            // }
 
             // Read index
-            let mut header_byte = [0u8; 1];
-            match file.read_exact(&mut header_byte) {
-                Ok(_) => {
-                    if index >= header_byte[0] as i32 {
-                        return Err(FontFileError::IndexOutOfBounds);
-                    }
-                }
-                Err(_) => return Err(FontFileError::FileNotFound),
+            let mut num_bgs = [0u8; 1];
+            file.read_exact(&mut num_bgs).map_err(|_| FontFileError::FileNotFound)?;
+            if index >= num_bgs[0] as i32 {
+                return Err(FontFileError::IndexOutOfBounds);
             }
+            // match file.read_exact(&mut header_byte) {
+            //     Ok(_) => {
+            //         if index >= header_byte[0] as i32 {
+            //             return Err(FontFileError::IndexOutOfBounds);
+            //         }
+            //     }
+            //     Err(_) => return Err(FontFileError::FileNotFound),
+            // }
 
             // Seek to image data offset
             file.seek(SeekFrom::Start(5 + 4 * index as u64))?;
@@ -512,3 +576,22 @@ pub fn decode_vert(indata: &[u8], width: u16, height: u16) -> Vec<u8> {
     // (y * width + x) as i32
 }
 
+
+#[cfg(test)]
+mod test {
+    use std::io::{Cursor, Read};
+    use crate::CharMetadata;
+
+    #[test]
+    fn read_char_metadata() {
+        let mut buf = [0u8; 10];
+        Cursor::new(b"\xbc\x8a\x34\x12\x78\x56\xad\xde\xef\xbe").read(&mut buf).unwrap();
+        let cd = CharMetadata::from(buf);
+        assert_eq!(cd.vertical, true);
+        assert_eq!(cd.advance, 0xabc);
+        assert_eq!(cd.x, 0x1234);
+        assert_eq!(cd.y, 0x5678);
+        assert_eq!(cd.width, 0xdead);
+        assert_eq!(cd.height, 0xbeef);
+    }
+}

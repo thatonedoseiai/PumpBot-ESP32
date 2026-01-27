@@ -1,6 +1,7 @@
 use std::ops::Index;
 
-enum Lang {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Lang {
     En,
     Jp,
     Fr,
@@ -12,7 +13,8 @@ enum Lang {
     De
 }
 
-struct LanguageString {
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct LanguageString {
     en: &'static str,
     jp: &'static str,
     fr: &'static str,
@@ -42,7 +44,7 @@ impl Index<Lang> for LanguageString {
     }
 }
 
-const TEXT_LANGUAGE_NAME: LanguageString = LanguageString {
+pub const TEXT_LANGUAGE_NAME: LanguageString = LanguageString {
     en: "English",
     jp: "日本語",
     fr: "Français",
@@ -54,7 +56,7 @@ const TEXT_LANGUAGE_NAME: LanguageString = LanguageString {
     de: "Deutsch",
 };
 
-const TEXT_WELCOME: LanguageString = LanguageString {
+pub const TEXT_WELCOME: LanguageString = LanguageString {
     en: "Welcome to",
     jp: "PumpBotへ",
     fr: "Bienvenue sur",
@@ -67,7 +69,7 @@ const TEXT_WELCOME: LanguageString = LanguageString {
 };
 
 
-const TEXT_WELCOME_A: LanguageString = LanguageString {
+pub const TEXT_WELCOME_A: LanguageString = LanguageString {
     en: "PumpBot!",
     jp: "ようこそ!",
     fr: "PumpBot!",
@@ -79,7 +81,7 @@ const TEXT_WELCOME_A: LanguageString = LanguageString {
     de: "PumpBot!",
 };
 
-const TEXT_PRESSENC: LanguageString = LanguageString {
+pub const TEXT_PRESSENC: LanguageString = LanguageString {
     en: "Press ⤓ to Continue",
     jp: "⤓を押して進む",
     fr: "Appuyez sur ⤓ pour continuer",
@@ -91,7 +93,7 @@ const TEXT_PRESSENC: LanguageString = LanguageString {
     de: "Drücke ⤓ Um Fortzufahren",
 };
 
-const TEXT_LANGUAGE: LanguageString = LanguageString {
+pub const TEXT_LANGUAGE: LanguageString = LanguageString {
     en: "Language",
     jp: "言語",
     fr: "Langue",
@@ -103,7 +105,7 @@ const TEXT_LANGUAGE: LanguageString = LanguageString {
     de: "Sprache",
 };
 
-const TEXT_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS: LanguageString = LanguageString {
     en: "Settings",
     jp: "設定",
     fr: "Options",
@@ -115,7 +117,7 @@ const TEXT_SETTINGS: LanguageString = LanguageString {
     de: "Einstellungen",
 };
 
-const TEXT_ADVANCED_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_ADVANCED_SETTINGS: LanguageString = LanguageString {
     en: "Advanced",
     jp: "アドバンス設定",
     fr: "Options Avancées",
@@ -127,7 +129,7 @@ const TEXT_ADVANCED_SETTINGS: LanguageString = LanguageString {
     de: "Erweiterte Einstellungen",
 };
 
-const TEXT_OK: LanguageString = LanguageString {
+pub const TEXT_OK: LanguageString = LanguageString {
     en: "OK",
     jp: "OK",
     fr: "OK",
@@ -139,7 +141,7 @@ const TEXT_OK: LanguageString = LanguageString {
     de: "OK",
 };
 
-const TEXT_BACK: LanguageString = LanguageString {
+pub const TEXT_BACK: LanguageString = LanguageString {
     en: "Back",
     jp: "戻る",
     fr: "Retour",
@@ -151,7 +153,7 @@ const TEXT_BACK: LanguageString = LanguageString {
     de: "Zurück",
 };
 
-const TEXT_YES: LanguageString = LanguageString {
+pub const TEXT_YES: LanguageString = LanguageString {
     en: "Yes",
     jp: "はい",
     fr: "Oui",
@@ -163,7 +165,7 @@ const TEXT_YES: LanguageString = LanguageString {
     de: "Ja",
 };
 
-const TEXT_NO: LanguageString = LanguageString {
+pub const TEXT_NO: LanguageString = LanguageString {
     en: "No",
     jp: "いいえ",
     fr: "Non",
@@ -175,7 +177,7 @@ const TEXT_NO: LanguageString = LanguageString {
     de: "Nein",
 };
 
-const TEXT_CANCEL: LanguageString = LanguageString {
+pub const TEXT_CANCEL: LanguageString = LanguageString {
     en: "Cancel",
     jp: "キャンセル",
     fr: "Annuler",
@@ -187,7 +189,7 @@ const TEXT_CANCEL: LanguageString = LanguageString {
     de: "Abbrechen",
 };
 
-const TEXT_NEXT: LanguageString = LanguageString {
+pub const TEXT_NEXT: LanguageString = LanguageString {
     en: "Next",
     jp: "次へ",
     fr: "Suivant",
@@ -199,7 +201,7 @@ const TEXT_NEXT: LanguageString = LanguageString {
     de: "Nächstes",
 };
 
-const TEXT_CHOOSE_LANG: LanguageString = LanguageString {
+pub const TEXT_CHOOSE_LANG: LanguageString = LanguageString {
     en: "Choose your Language",
     jp: "言語を選ぶ",
     fr: "Choisissez votre Langue",
@@ -211,7 +213,7 @@ const TEXT_CHOOSE_LANG: LanguageString = LanguageString {
     de: "Wähle deine Sprache",
 };
 
-const TEXT_SETUP_PB: LanguageString = LanguageString {
+pub const TEXT_SETUP_PB: LanguageString = LanguageString {
     en: "How would you like to",
     jp: "PumpBotをどうやって",
     fr: "Comment voulez-vous",
@@ -223,7 +225,7 @@ const TEXT_SETUP_PB: LanguageString = LanguageString {
     de: "Wie würdest du PumpBot",
 };
 
-const TEXT_SETUP_PB_A: LanguageString = LanguageString {
+pub const TEXT_SETUP_PB_A: LanguageString = LanguageString {
     en: "setup PumpBot?",
     jp: "設定したいですか？",
     fr: "configurer Pumpbot?",
@@ -235,7 +237,7 @@ const TEXT_SETUP_PB_A: LanguageString = LanguageString {
     de: "gerne aufsetzen?",
 };
 
-const TEXT_WIFI_SETUP: LanguageString = LanguageString {
+pub const TEXT_WIFI_SETUP: LanguageString = LanguageString {
     en: "Wi-Fi Setup",
     jp: "Wi-Fiでセットアップ",
     fr: "Options Wi-Fi",
@@ -247,7 +249,7 @@ const TEXT_WIFI_SETUP: LanguageString = LanguageString {
     de: "Wi-Fi Setup",
 };
 
-const TEXT_TOOLTIP_WIFI_SETUP: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_WIFI_SETUP: LanguageString = LanguageString {
     en: "Set up PumpBot by connecting",
     jp: "他のデバイスに",
     fr: "Configurer Pumpbot en connectant",
@@ -259,7 +261,7 @@ const TEXT_TOOLTIP_WIFI_SETUP: LanguageString = LanguageString {
     de: "Setze PumpBot durch das Verbinden",
 };
 
-const TEXT_TOOLTIP_WIFI_SETUP_A: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_WIFI_SETUP_A: LanguageString = LanguageString {
     en: "another device",
     jp: "接続して設定する",
     fr: "un autre appareil",
@@ -271,7 +273,7 @@ const TEXT_TOOLTIP_WIFI_SETUP_A: LanguageString = LanguageString {
     de: "eines anderen Gerätes auf",
 };
 
-const TEXT_CONNECT_HERE: LanguageString = LanguageString {
+pub const TEXT_CONNECT_HERE: LanguageString = LanguageString {
     en: "Connect to this Wi-Fi network",
     jp: "PumpBotを設定するためにこの",
     fr: "Connectez-vous à ce Wi-Fi",
@@ -283,7 +285,7 @@ const TEXT_CONNECT_HERE: LanguageString = LanguageString {
     de: "Verbinde zu diesem Wi-Fi Netzwerk um",
 };
 
-const TEXT_CONNECT_HERE_A: LanguageString = LanguageString {
+pub const TEXT_CONNECT_HERE_A: LanguageString = LanguageString {
     en: "to configure PumpBot",
     jp: "ネットワークに接続してください",
     fr: "pour configurer Pumpbot",
@@ -295,7 +297,7 @@ const TEXT_CONNECT_HERE_A: LanguageString = LanguageString {
     de: "PumpBot zu konfigurieren",
 };
 
-const TEXT_GO_TO_URL: LanguageString = LanguageString {
+pub const TEXT_GO_TO_URL: LanguageString = LanguageString {
     en: "Open this URL in your web browser",
     jp: "このリンクをブラウザーで開く",
     fr: "Ouvrez ce lien dans votre navigateur",
@@ -307,7 +309,7 @@ const TEXT_GO_TO_URL: LanguageString = LanguageString {
     de: "Öffne diese URL in ",
 };
 
-const TEXT_GO_TO_URL_A: LanguageString = LanguageString {
+pub const TEXT_GO_TO_URL_A: LanguageString = LanguageString {
     en: "",
     jp: "",
     fr: "",
@@ -319,7 +321,7 @@ const TEXT_GO_TO_URL_A: LanguageString = LanguageString {
     de: "deinem Web-Browser",
 };
 
-const TEXT_WIFI_STARTING: LanguageString = LanguageString {
+pub const TEXT_WIFI_STARTING: LanguageString = LanguageString {
     en: "Starting Wi-Fi Network...",
     jp: "Wi-Fi発散中",
     fr: "Lancement du réseau Wi-Fi...",
@@ -331,7 +333,7 @@ const TEXT_WIFI_STARTING: LanguageString = LanguageString {
     de: "Starte Wi-Fi Netzwerk...",
 };
 
-const TEXT_WIFI_STOP: LanguageString = LanguageString {
+pub const TEXT_WIFI_STOP: LanguageString = LanguageString {
     en: "Stop Wi-Fi Setup",
     jp: "Wi-Fi設定を停止して",
     fr: "Arrêter la configuration Wi-Fi",
@@ -343,7 +345,7 @@ const TEXT_WIFI_STOP: LanguageString = LanguageString {
     de: "Stoppe Wi-Fi Setup",
 };
 
-const TEXT_SAVE_EXIT: LanguageString = LanguageString {
+pub const TEXT_SAVE_EXIT: LanguageString = LanguageString {
     en: "Save and Exit",
     jp: "保存して終了する",
     fr: "Sauvegarder et quitter",
@@ -355,7 +357,7 @@ const TEXT_SAVE_EXIT: LanguageString = LanguageString {
     de: "Speichern und Beenden",
 };
 
-const TEXT_WIFI_CONTINUE_WITHOUT: LanguageString = LanguageString {
+pub const TEXT_WIFI_CONTINUE_WITHOUT: LanguageString = LanguageString {
     en: "Continue without",
     jp: "Wi-Fiに接続せずに",
     fr: "Continuer sans",
@@ -367,7 +369,7 @@ const TEXT_WIFI_CONTINUE_WITHOUT: LanguageString = LanguageString {
     de: "Fortfahren ohne mit",
 };
 
-const TEXT_WIFI_CONTINUE_WITHOUT_A: LanguageString = LanguageString {
+pub const TEXT_WIFI_CONTINUE_WITHOUT_A: LanguageString = LanguageString {
     en: "connecting to Wi-Fi?",
     jp: "続きますか？",
     fr: "se connecter au Wi-Fi? ",
@@ -379,7 +381,7 @@ const TEXT_WIFI_CONTINUE_WITHOUT_A: LanguageString = LanguageString {
     de: "Wi-Fi zu verbinden?",
 };
 
-const TEXT_SETUP_COMPLETE: LanguageString = LanguageString {
+pub const TEXT_SETUP_COMPLETE: LanguageString = LanguageString {
     en: "Setup Complete!",
     jp: "セットアップ完了！",
     fr: "Configuration terminée!",
@@ -391,7 +393,7 @@ const TEXT_SETUP_COMPLETE: LanguageString = LanguageString {
     de: "Setup beendet!",
 };
 
-const TEXT_STANDALONE_SETUP: LanguageString = LanguageString {
+pub const TEXT_STANDALONE_SETUP: LanguageString = LanguageString {
     en: "Standalone Setup",
     jp: "デバイスでセットアップ",
     fr: "Configuration autonome",
@@ -403,7 +405,7 @@ const TEXT_STANDALONE_SETUP: LanguageString = LanguageString {
     de: "Unabhängiges Setup",
 };
 
-const TEXT_TOOLTIP_STANDALONE_SETUP: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_STANDALONE_SETUP: LanguageString = LanguageString {
     en: "Set up PumpBot without connecting ",
     jp: "他のデバイスに",
     fr: "Configurez Pumpbot sans connecter ",
@@ -415,7 +417,7 @@ const TEXT_TOOLTIP_STANDALONE_SETUP: LanguageString = LanguageString {
     de: "Setze PumpBot ohne zusätzliche",
 };
 
-const TEXT_TOOLTIP_STANDALONE_SETUP_A: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_STANDALONE_SETUP_A: LanguageString = LanguageString {
     en: "another device",
     jp: "接続せずに設定する",
     fr: "un autre appareil",
@@ -427,7 +429,7 @@ const TEXT_TOOLTIP_STANDALONE_SETUP_A: LanguageString = LanguageString {
     de: "Geräteverbindung auf",
 };
 
-const TEXT_WIFI_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_WIFI_SETTINGS: LanguageString = LanguageString {
     en: "Wi-Fi Settings",
     jp: "Wi-Fi設定",
     fr: "Paramètres Wi-Fi",
@@ -439,7 +441,7 @@ const TEXT_WIFI_SETTINGS: LanguageString = LanguageString {
     de: "Wi-Fi Einstellungen",
 };
 
-const TEXT_TOOLTIP_WIFI_CONNECT: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_WIFI_CONNECT: LanguageString = LanguageString {
     en: "Connect and Disconnect to Wi-Fi Networks",
     jp: "Wi-Fiネットワークに接続と切断",
     fr: "Se connecter et se déconnecter au Wi-Fi",
@@ -451,7 +453,7 @@ const TEXT_TOOLTIP_WIFI_CONNECT: LanguageString = LanguageString {
     de: "Verbinde und Trenne dich zu Wi-Fi Netzwerken",
 };
 
-const TEXT_NETWORK: LanguageString = LanguageString {
+pub const TEXT_NETWORK: LanguageString = LanguageString {
     en: "Network",
     jp: "ネットワーク",
     fr: "Réseau",
@@ -463,7 +465,7 @@ const TEXT_NETWORK: LanguageString = LanguageString {
     de: "Netzwerk",
 };
 
-const TEXT_NETWORK_NAME: LanguageString = LanguageString {
+pub const TEXT_NETWORK_NAME: LanguageString = LanguageString {
     en: "Network Name",
     jp: "ネットワーク名",
     fr: "Nom du Réseau",
@@ -475,7 +477,7 @@ const TEXT_NETWORK_NAME: LanguageString = LanguageString {
     de: "Netzwerkname",
 };
 
-const TEXT_PASSWORD: LanguageString = LanguageString {
+pub const TEXT_PASSWORD: LanguageString = LanguageString {
     en: "Password",
     jp: "パスワード",
     fr: "Mot de passe",
@@ -487,7 +489,7 @@ const TEXT_PASSWORD: LanguageString = LanguageString {
     de: "Passwort",
 };
 
-const TEXT_IP_ADDR: LanguageString = LanguageString {
+pub const TEXT_IP_ADDR: LanguageString = LanguageString {
     en: "IP Address",
     jp: "IPアドレス",
     fr: "Adresse IP",
@@ -499,7 +501,7 @@ const TEXT_IP_ADDR: LanguageString = LanguageString {
     de: "IP Adresse",
 };
 
-const TEXT_SEARCHING: LanguageString = LanguageString {
+pub const TEXT_SEARCHING: LanguageString = LanguageString {
     en: "Searching...",
     jp: "検索中...",
     fr: "Recherche...",
@@ -511,7 +513,7 @@ const TEXT_SEARCHING: LanguageString = LanguageString {
     de: "Suche...",
 };
 
-const TEXT_SEARCH: LanguageString = LanguageString {
+pub const TEXT_SEARCH: LanguageString = LanguageString {
     en: "Search",
     jp: "検索",
     fr: "Rechercher",
@@ -523,7 +525,7 @@ const TEXT_SEARCH: LanguageString = LanguageString {
     de: "Suche",
 };
 
-const TEXT_CANT_CONNECT: LanguageString = LanguageString {
+pub const TEXT_CANT_CONNECT: LanguageString = LanguageString {
     en: "Can't Connect",
     jp: "接続できません",
     fr: "Impossible de se connecter",
@@ -535,7 +537,7 @@ const TEXT_CANT_CONNECT: LanguageString = LanguageString {
     de: "Verbindung nicht möglich!",
 };
 
-const TEXT_CONNECT: LanguageString = LanguageString {
+pub const TEXT_CONNECT: LanguageString = LanguageString {
     en: "Connect",
     jp: "接続",
     fr: "Se connecter",
@@ -547,7 +549,7 @@ const TEXT_CONNECT: LanguageString = LanguageString {
     de: "Verbinden",
 };
 
-const TEXT_DISCONNECT: LanguageString = LanguageString {
+pub const TEXT_DISCONNECT: LanguageString = LanguageString {
     en: "Disconnect",
     jp: "切断",
     fr: "Se déconnecter",
@@ -559,7 +561,7 @@ const TEXT_DISCONNECT: LanguageString = LanguageString {
     de: "Trennen",
 };
 
-const TEXT_DISCONNECTED: LanguageString = LanguageString {
+pub const TEXT_DISCONNECTED: LanguageString = LanguageString {
     en: "Disconnected",
     jp: "切断されました",
     fr: "Déconnecté",
@@ -571,7 +573,7 @@ const TEXT_DISCONNECTED: LanguageString = LanguageString {
     de: "Getrennt",
 };
 
-const TEXT_CONNECTING: LanguageString = LanguageString {
+pub const TEXT_CONNECTING: LanguageString = LanguageString {
     en: "Connecting...",
     jp: "接続処理中…",
     fr: "Connexion...",
@@ -583,7 +585,7 @@ const TEXT_CONNECTING: LanguageString = LanguageString {
     de: "Verbinden...",
 };
 
-const TEXT_CONNECTED: LanguageString = LanguageString {
+pub const TEXT_CONNECTED: LanguageString = LanguageString {
     en: "Connected!",
     jp: "接続済み！",
     fr: "Connecté!",
@@ -595,7 +597,7 @@ const TEXT_CONNECTED: LanguageString = LanguageString {
     de: "Verbunden!",
 };
 
-const TEXT_CONNECTION_FAIL: LanguageString = LanguageString {
+pub const TEXT_CONNECTION_FAIL: LanguageString = LanguageString {
     en: "Connection Failed!",
     jp: "接続失敗！",
     fr: "Connexion échouée!",
@@ -607,7 +609,7 @@ const TEXT_CONNECTION_FAIL: LanguageString = LanguageString {
     de: "Verbindung fehlgeschlagen",
 };
 
-const TEXT_SERVER_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_SERVER_SETTINGS: LanguageString = LanguageString {
     en: "Server Settings",
     jp: "サーバー設定",
     fr: "Paramètres Serveur",
@@ -619,7 +621,7 @@ const TEXT_SERVER_SETTINGS: LanguageString = LanguageString {
     de: "Server Einstellungen",
 };
 
-const TEXT_SERVER_ADDR: LanguageString = LanguageString {
+pub const TEXT_SERVER_ADDR: LanguageString = LanguageString {
     en: "Server Address",
     jp: "サーバーアドレス",
     fr: "Adresse du Serveur",
@@ -631,7 +633,7 @@ const TEXT_SERVER_ADDR: LanguageString = LanguageString {
     de: "Server Adresse",
 };
 
-const TEXT_SERVER_PASSWORD: LanguageString = LanguageString {
+pub const TEXT_SERVER_PASSWORD: LanguageString = LanguageString {
     en: "Server Password",
     jp: "サーバーパスワード",
     fr: "Mot de passe du serveur",
@@ -643,7 +645,7 @@ const TEXT_SERVER_PASSWORD: LanguageString = LanguageString {
     de: "Server Passwort",
 };
 
-const TEXT_DISPLAY_SETTING: LanguageString = LanguageString {
+pub const TEXT_DISPLAY_SETTING: LanguageString = LanguageString {
     en: "Display Settings",
     jp: "画面設定",
     fr: "Paramètres d'affichage",
@@ -655,7 +657,7 @@ const TEXT_DISPLAY_SETTING: LanguageString = LanguageString {
     de: "Anzeigeeinstellungen",
 };
 
-const TEXT_TOOLTIP_DISPLAY_SETTING: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_DISPLAY_SETTING: LanguageString = LanguageString {
     en: "Change Display Brightness and Theme",
     jp: "画面の明るさとテーマを変えます",
     fr: "Changer le thème et la luminosité",
@@ -667,7 +669,7 @@ const TEXT_TOOLTIP_DISPLAY_SETTING: LanguageString = LanguageString {
     de: "Bildschirmhelligkeit und Theme anpassen",
 };
 
-const TEXT_BRIGHTNESS: LanguageString = LanguageString {
+pub const TEXT_BRIGHTNESS: LanguageString = LanguageString {
     en: "Brightness",
     jp: "明るさ",
     fr: "Luminosité",
@@ -679,7 +681,7 @@ const TEXT_BRIGHTNESS: LanguageString = LanguageString {
     de: "Helligkeit",
 };
 
-const TEXT_THEME: LanguageString = LanguageString {
+pub const TEXT_THEME: LanguageString = LanguageString {
     en: "Theme",
     jp: "テーマ:",
     fr: "Thème",
@@ -691,7 +693,7 @@ const TEXT_THEME: LanguageString = LanguageString {
     de: "Theme",
 };
 
-const TEXT_LIGHT_MODE: LanguageString = LanguageString {
+pub const TEXT_LIGHT_MODE: LanguageString = LanguageString {
     en: "Light Mode",
     jp: "ライトモード",
     fr: "Mode clair",
@@ -703,7 +705,7 @@ const TEXT_LIGHT_MODE: LanguageString = LanguageString {
     de: "Heller Modus",
 };
 
-const TEXT_DARK_MODE: LanguageString = LanguageString {
+pub const TEXT_DARK_MODE: LanguageString = LanguageString {
     en: "Dark Mode",
     jp: "ダークモード",
     fr: "Mode sombre",
@@ -715,7 +717,7 @@ const TEXT_DARK_MODE: LanguageString = LanguageString {
     de: "Dunkler Modus",
 };
 
-const TEXT_CUSTOM: LanguageString = LanguageString {
+pub const TEXT_CUSTOM: LanguageString = LanguageString {
     en: "Custom",
     jp: "カスタム",
     fr: "Personnalisé",
@@ -727,7 +729,7 @@ const TEXT_CUSTOM: LanguageString = LanguageString {
     de: "Benutzerdefiniert",
 };
 
-const TEXT_CUSTOM_COLOR: LanguageString = LanguageString {
+pub const TEXT_CUSTOM_COLOR: LanguageString = LanguageString {
     en: "Custom Color",
     jp: "カスタムな色",
     fr: "Couleur personnalisé",
@@ -739,7 +741,7 @@ const TEXT_CUSTOM_COLOR: LanguageString = LanguageString {
     de: "Benutzerdefinierte Farbe",
 };
 
-const TEXT_RED: LanguageString = LanguageString {
+pub const TEXT_RED: LanguageString = LanguageString {
     en: "Red",
     jp: "赤",
     fr: "Rouge",
@@ -751,7 +753,7 @@ const TEXT_RED: LanguageString = LanguageString {
     de: "Rot",
 };
 
-const TEXT_GREEN: LanguageString = LanguageString {
+pub const TEXT_GREEN: LanguageString = LanguageString {
     en: "Green",
     jp: "緑",
     fr: "Vert",
@@ -763,7 +765,7 @@ const TEXT_GREEN: LanguageString = LanguageString {
     de: "Grün",
 };
 
-const TEXT_BLUE: LanguageString = LanguageString {
+pub const TEXT_BLUE: LanguageString = LanguageString {
     en: "Blue",
     jp: "青",
     fr: "Bleu",
@@ -775,7 +777,7 @@ const TEXT_BLUE: LanguageString = LanguageString {
     de: "Blau",
 };
 
-const TEXT_RGB_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_RGB_SETTINGS: LanguageString = LanguageString {
     en: "RGB Settings",
     jp: "RGB設定",
     fr: "Paramètres RVB",
@@ -787,7 +789,7 @@ const TEXT_RGB_SETTINGS: LanguageString = LanguageString {
     de: "RGB Einstellungen",
 };
 
-const TEXT_TOOLTIP_RGB_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_TOOLTIP_RGB_SETTINGS: LanguageString = LanguageString {
     en: "Change the RGB brightness, color, mode, and more",
     jp: "RGBの明るさや色やモードを変えます",
     fr: "Changer la luminosité RVB, la couleur, le mode, ...",
@@ -799,7 +801,7 @@ const TEXT_TOOLTIP_RGB_SETTINGS: LanguageString = LanguageString {
     de: "Ändere RGB Helligkeit, Farbe, Modus und mehr",
 };
 
-const TEXT_RGB_BRIGHTNESS: LanguageString = LanguageString {
+pub const TEXT_RGB_BRIGHTNESS: LanguageString = LanguageString {
     en: "RGB Brightness",
     jp: "RGBの明るさ",
     fr: "Luminosité RVB",
@@ -811,7 +813,7 @@ const TEXT_RGB_BRIGHTNESS: LanguageString = LanguageString {
     de: "RGB Helligkeit",
 };
 
-const TEXT_RGB_SPEED: LanguageString = LanguageString {
+pub const TEXT_RGB_SPEED: LanguageString = LanguageString {
     en: "RGB Speed",
     jp: "RGBの速さ",
     fr: "Vitesse RVB",
@@ -823,7 +825,7 @@ const TEXT_RGB_SPEED: LanguageString = LanguageString {
     de: "RGB Geschwindigkeit",
 };
 
-const TEXT_RGB_MODE: LanguageString = LanguageString {
+pub const TEXT_RGB_MODE: LanguageString = LanguageString {
     en: "RGB Mode",
     jp: "RGBモード",
     fr: "Mode RVB",
@@ -835,7 +837,7 @@ const TEXT_RGB_MODE: LanguageString = LanguageString {
     de: "RGB Modus",
 };
 
-const TEXT_RAINBOW: LanguageString = LanguageString {
+pub const TEXT_RAINBOW: LanguageString = LanguageString {
     en: "Rainbow",
     jp: "虹色",
     fr: "Arc-en-ciel",
@@ -847,7 +849,7 @@ const TEXT_RAINBOW: LanguageString = LanguageString {
     de: "Regenbogen",
 };
 
-const TEXT_FADE: LanguageString = LanguageString {
+pub const TEXT_FADE: LanguageString = LanguageString {
     en: "Fade ",
     jp: "変る色",
     fr: "Fondu",
@@ -859,7 +861,7 @@ const TEXT_FADE: LanguageString = LanguageString {
     de: "Fade",
 };
 
-const TEXT_SOLID: LanguageString = LanguageString {
+pub const TEXT_SOLID: LanguageString = LanguageString {
     en: "Solid Color",
     jp: "変らない色",
     fr: "Couleur unie",
@@ -871,7 +873,7 @@ const TEXT_SOLID: LanguageString = LanguageString {
     de: "Feste Farbe",
 };
 
-const TEXT_RGB_OFF: LanguageString = LanguageString {
+pub const TEXT_RGB_OFF: LanguageString = LanguageString {
     en: "Off",
     jp: "色なし",
     fr: "Éteint",
@@ -883,7 +885,7 @@ const TEXT_RGB_OFF: LanguageString = LanguageString {
     de: "Aus",
 };
 
-const TEXT_COLOR: LanguageString = LanguageString {
+pub const TEXT_COLOR: LanguageString = LanguageString {
     en: "Color",
     jp: "色",
     fr: "Couleur",
@@ -895,7 +897,7 @@ const TEXT_COLOR: LanguageString = LanguageString {
     de: "Farbe",
 };
 
-const TEXT_COLOR_1: LanguageString = LanguageString {
+pub const TEXT_COLOR_1: LanguageString = LanguageString {
     en: "Color 1",
     jp: "第一の色",
     fr: "Couleur 1",
@@ -907,7 +909,7 @@ const TEXT_COLOR_1: LanguageString = LanguageString {
     de: "Farbe 1",
 };
 
-const TEXT_COLOR_2: LanguageString = LanguageString {
+pub const TEXT_COLOR_2: LanguageString = LanguageString {
     en: "Color 2",
     jp: "第二の色",
     fr: "Couleur 2",
@@ -919,7 +921,7 @@ const TEXT_COLOR_2: LanguageString = LanguageString {
     de: "Farbe 2",
 };
 
-const TEXT_COLOR_PICKER: LanguageString = LanguageString {
+pub const TEXT_COLOR_PICKER: LanguageString = LanguageString {
     en: "Color Picker",
     jp: "色選択",
     fr: "Palette de couleur",
@@ -931,7 +933,7 @@ const TEXT_COLOR_PICKER: LanguageString = LanguageString {
     de: "Farbauswahl",
 };
 
-const TEXT_ADDON_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_ADDON_SETTINGS: LanguageString = LanguageString {
     en: "Add-on Settings",
     jp: "アドオン設定",
     fr: "Options supplémentaires",
@@ -943,7 +945,7 @@ const TEXT_ADDON_SETTINGS: LanguageString = LanguageString {
     de: "Erweiterungseinstellungen ",
 };
 
-const TEXT_MPRLS: LanguageString = LanguageString {
+pub const TEXT_MPRLS: LanguageString = LanguageString {
     en: "Unit of Pressure",
     jp: "空気圧の単位",
     fr: "Unité de pression",
@@ -955,7 +957,7 @@ const TEXT_MPRLS: LanguageString = LanguageString {
     de: "Druckeinheit",
 };
 
-const TEXT_PRESSURE: LanguageString = LanguageString {
+pub const TEXT_PRESSURE: LanguageString = LanguageString {
     en: "Pressure",
     jp: "空圧",
     fr: "Pression",
@@ -967,7 +969,7 @@ const TEXT_PRESSURE: LanguageString = LanguageString {
     de: "Druck",
 };
 
-const TEXT_OUTPUT_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_OUTPUT_SETTINGS: LanguageString = LanguageString {
     en: "Output Settings",
     jp: "出力設定",
     fr: "Paramètres de sortie",
@@ -979,7 +981,7 @@ const TEXT_OUTPUT_SETTINGS: LanguageString = LanguageString {
     de: "Ausgabeeinstellungen",
 };
 
-const TEXT_OUTPUT_MODE: LanguageString = LanguageString {
+pub const TEXT_OUTPUT_MODE: LanguageString = LanguageString {
     en: "Output Mode",
     jp: "出力モード",
     fr: "Mode de sortie",
@@ -991,7 +993,7 @@ const TEXT_OUTPUT_MODE: LanguageString = LanguageString {
     de: "Ausgabemodus",
 };
 
-const TEXT_CHANNEL_NUM: LanguageString = LanguageString {
+pub const TEXT_CHANNEL_NUM: LanguageString = LanguageString {
     en: "Channel ",
     jp: "出力チャンネル",
     fr: "Port",
@@ -1003,7 +1005,7 @@ const TEXT_CHANNEL_NUM: LanguageString = LanguageString {
     de: "Kanal",
 };
 
-const TEXT_PWM: LanguageString = LanguageString {
+pub const TEXT_PWM: LanguageString = LanguageString {
     en: "PWM",
     jp: "PWM",
     fr: "MLI",
@@ -1015,7 +1017,7 @@ const TEXT_PWM: LanguageString = LanguageString {
     de: "PWM",
 };
 
-const TEXT_PWM_FREQ: LanguageString = LanguageString {
+pub const TEXT_PWM_FREQ: LanguageString = LanguageString {
     en: "PWM Frequency",
     jp: "PWM周波数",
     fr: "Fréquence MLI",
@@ -1027,7 +1029,7 @@ const TEXT_PWM_FREQ: LanguageString = LanguageString {
     de: "PWM Frequenz",
 };
 
-const TEXT_ANALOG_DIGITAL: LanguageString = LanguageString {
+pub const TEXT_ANALOG_DIGITAL: LanguageString = LanguageString {
     en: "ON/OFF Mode",
     jp: "ON/OFFモード",
     fr: "Mode ON/OFF",
@@ -1039,7 +1041,7 @@ const TEXT_ANALOG_DIGITAL: LanguageString = LanguageString {
     de: "AN/AUS Modus",
 };
 
-const TEXT_ANALOG: LanguageString = LanguageString {
+pub const TEXT_ANALOG: LanguageString = LanguageString {
     en: "Analog",
     jp: "アナログ",
     fr: "Analogique",
@@ -1051,7 +1053,7 @@ const TEXT_ANALOG: LanguageString = LanguageString {
     de: "Analog",
 };
 
-const TEXT_DIGITAL: LanguageString = LanguageString {
+pub const TEXT_DIGITAL: LanguageString = LanguageString {
     en: "Digital",
     jp: "デジタル",
     fr: "Numérique",
@@ -1063,7 +1065,7 @@ const TEXT_DIGITAL: LanguageString = LanguageString {
     de: "Digital",
 };
 
-const TEXT_PWM_WIZARD: LanguageString = LanguageString {
+pub const TEXT_PWM_WIZARD: LanguageString = LanguageString {
     en: "PWM Wizard",
     jp: "PWMウィザード",
     fr: "Assistant de configuration MLI",
@@ -1075,7 +1077,7 @@ const TEXT_PWM_WIZARD: LanguageString = LanguageString {
     de: "PWM Assistent",
 };
 
-const TEXT_MAP_PWM_RANGE: LanguageString = LanguageString {
+pub const TEXT_MAP_PWM_RANGE: LanguageString = LanguageString {
     en: "Map PWM Range",
     jp: "PWMの強さを変る",
     fr: "Configurer la plage MLI",
@@ -1087,7 +1089,7 @@ const TEXT_MAP_PWM_RANGE: LanguageString = LanguageString {
     de: "Plane PWM Reichweite",
 };
 
-const TEXT_LOWEST_VALUE: LanguageString = LanguageString {
+pub const TEXT_LOWEST_VALUE: LanguageString = LanguageString {
     en: "Lowest Value",
     jp: "最低強さ",
     fr: "Valeur minimale",
@@ -1099,7 +1101,7 @@ const TEXT_LOWEST_VALUE: LanguageString = LanguageString {
     de: "Niedrigster Wert",
 };
 
-const TEXT_HIGHEST_VALUE: LanguageString = LanguageString {
+pub const TEXT_HIGHEST_VALUE: LanguageString = LanguageString {
     en: "Highest Value",
     jp: "最高強さ",
     fr: "Valeur maximale",
@@ -1111,7 +1113,7 @@ const TEXT_HIGHEST_VALUE: LanguageString = LanguageString {
     de: "Höchster Wert",
 };
 
-const TEXT_USB_CONNECTED: LanguageString = LanguageString {
+pub const TEXT_USB_CONNECTED: LanguageString = LanguageString {
     en: "USB Connected!",
     jp: "USB接続済み",
     fr: "USB connecté!",
@@ -1123,7 +1125,7 @@ const TEXT_USB_CONNECTED: LanguageString = LanguageString {
     de: "USB verbunden!",
 };
 
-const TEXT_USB_DISCONNECTED: LanguageString = LanguageString {
+pub const TEXT_USB_DISCONNECTED: LanguageString = LanguageString {
     en: "USB Disconnected!",
     jp: "USB切断済み",
     fr: "USB déconnecté!",
@@ -1135,7 +1137,7 @@ const TEXT_USB_DISCONNECTED: LanguageString = LanguageString {
     de: "USB getrennt!",
 };
 
-const TEXT_SETTINGS_DISPLAY: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_DISPLAY: LanguageString = LanguageString {
     en: "Display",
     jp: "画面",
     fr: "Affichage",
@@ -1147,7 +1149,7 @@ const TEXT_SETTINGS_DISPLAY: LanguageString = LanguageString {
     de: "Anzeige",
 };
 
-const TEXT_SETTINGS_NETWORK: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_NETWORK: LanguageString = LanguageString {
     en: "Network",
     jp: "ネットワーク",
     fr: "Réseau",
@@ -1159,7 +1161,7 @@ const TEXT_SETTINGS_NETWORK: LanguageString = LanguageString {
     de: "Netzwerk",
 };
 
-const TEXT_SETTINGS_OUTPUT: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_OUTPUT: LanguageString = LanguageString {
     en: "Output",
     jp: "出力",
     fr: "Sortie",
@@ -1171,7 +1173,7 @@ const TEXT_SETTINGS_OUTPUT: LanguageString = LanguageString {
     de: "Ausgabe",
 };
 
-const TEXT_SETTINGS_RGB: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_RGB: LanguageString = LanguageString {
     en: "RGB",
     jp: "RGB",
     fr: "RVB",
@@ -1183,7 +1185,7 @@ const TEXT_SETTINGS_RGB: LanguageString = LanguageString {
     de: "RGB",
 };
 
-const TEXT_SETTINGS_ADD_ONS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_ADD_ONS: LanguageString = LanguageString {
     en: "Add-Ons",
     jp: "アドオン",
     fr: "Options supplémentaires",
@@ -1195,7 +1197,7 @@ const TEXT_SETTINGS_ADD_ONS: LanguageString = LanguageString {
     de: "Erweiterungen",
 };
 
-const TEXT_SETTINGS_APPS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_APPS: LanguageString = LanguageString {
     en: "Apps",
     jp: "アプリ",
     fr: "Applications",
@@ -1207,7 +1209,7 @@ const TEXT_SETTINGS_APPS: LanguageString = LanguageString {
     de: "Programme",
 };
 
-const TEXT_SETTINGS_DEVELOPER: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_DEVELOPER: LanguageString = LanguageString {
     en: "Developer",
     jp: "発展者設定",
     fr: "Développeur",
@@ -1219,7 +1221,7 @@ const TEXT_SETTINGS_DEVELOPER: LanguageString = LanguageString {
     de: "Entwickler",
 };
 
-const TEXT_SETTINGS_EXTRAS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_EXTRAS: LanguageString = LanguageString {
     en: "Extras",
     jp: "余分",
     fr: "Suppléments",
@@ -1231,7 +1233,7 @@ const TEXT_SETTINGS_EXTRAS: LanguageString = LanguageString {
     de: "Extras",
 };
 
-const TEXT_SETTINGS_CREDITS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_CREDITS: LanguageString = LanguageString {
     en: "Credits",
     jp: "作成者",
     fr: "Crédits",
@@ -1243,7 +1245,7 @@ const TEXT_SETTINGS_CREDITS: LanguageString = LanguageString {
     de: "Credits",
 };
 
-const TEXT_SETTINGS_SOFTWARE: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_SOFTWARE: LanguageString = LanguageString {
     en: "Software",
     jp: "ソフト",
     fr: "Software",
@@ -1255,7 +1257,7 @@ const TEXT_SETTINGS_SOFTWARE: LanguageString = LanguageString {
     de: "Software",
 };
 
-const TEXT_SETTINGS_HARDWARE: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_HARDWARE: LanguageString = LanguageString {
     en: "Hardware",
     jp: "ハードウェア",
     fr: "Carte",
@@ -1267,7 +1269,7 @@ const TEXT_SETTINGS_HARDWARE: LanguageString = LanguageString {
     de: "Hardware",
 };
 
-const TEXT_SETTINGS_TRANSLATIONS: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_TRANSLATIONS: LanguageString = LanguageString {
     en: "Translations",
     jp: "翻訳者",
     fr: "Traduction",
@@ -1279,7 +1281,7 @@ const TEXT_SETTINGS_TRANSLATIONS: LanguageString = LanguageString {
     de: "Übersetzung",
 };
 
-const TEXT_SETTINGS_CONCEPT: LanguageString = LanguageString {
+pub const TEXT_SETTINGS_CONCEPT: LanguageString = LanguageString {
     en: "Concept",
     jp: "アイディア",
     fr: "Idée",
@@ -1291,7 +1293,7 @@ const TEXT_SETTINGS_CONCEPT: LanguageString = LanguageString {
     de: "Konzept",
 };
 
-const TEXT_APPLICATIONS: LanguageString = LanguageString {
+pub const TEXT_APPLICATIONS: LanguageString = LanguageString {
     en: "Applications",
     jp: "アプリ",
     fr: "Applications",
@@ -1303,7 +1305,7 @@ const TEXT_APPLICATIONS: LanguageString = LanguageString {
     de: "Programme",
 };
 
-const TEXT_APP_DOWNLOAD: LanguageString = LanguageString {
+pub const TEXT_APP_DOWNLOAD: LanguageString = LanguageString {
     en: "Download",
     jp: "アプリ読み込み",
     fr: "Télécharger",
@@ -1315,7 +1317,7 @@ const TEXT_APP_DOWNLOAD: LanguageString = LanguageString {
     de: "Herunterladen",
 };
 
-const TEXT_APP_DOWNLOADING: LanguageString = LanguageString {
+pub const TEXT_APP_DOWNLOADING: LanguageString = LanguageString {
     en: "Downloading...",
     jp: "読み込み中...",
     fr: "Téléchargement...",
@@ -1327,7 +1329,7 @@ const TEXT_APP_DOWNLOADING: LanguageString = LanguageString {
     de: "Lädt herunter...",
 };
 
-const TEXT_APP_DL_FROM_URL: LanguageString = LanguageString {
+pub const TEXT_APP_DL_FROM_URL: LanguageString = LanguageString {
     en: "Download from URL",
     jp: "リンクから読み込み",
     fr: "Télécharger par lien",
@@ -1339,7 +1341,7 @@ const TEXT_APP_DL_FROM_URL: LanguageString = LanguageString {
     de: "Herunterladen von URL",
 };
 
-const TEXT_APP_URL: LanguageString = LanguageString {
+pub const TEXT_APP_URL: LanguageString = LanguageString {
     en: "URL",
     jp: "ﾘﾝｸ",
     fr: "Lien",
@@ -1351,7 +1353,7 @@ const TEXT_APP_URL: LanguageString = LanguageString {
     de: "URL",
 };
 
-const TEXT_APP_GO: LanguageString = LanguageString {
+pub const TEXT_APP_GO: LanguageString = LanguageString {
     en: "Go!",
     jp: "行う",
     fr: "Go!",
@@ -1363,7 +1365,7 @@ const TEXT_APP_GO: LanguageString = LanguageString {
     de: "Los!",
 };
 
-const TEXT_APP_RUN: LanguageString = LanguageString {
+pub const TEXT_APP_RUN: LanguageString = LanguageString {
     en: "Run App",
     jp: "開く",
     fr: "Lancer l'application",
@@ -1375,7 +1377,7 @@ const TEXT_APP_RUN: LanguageString = LanguageString {
     de: "Programm ausführen",
 };
 
-const TEXT_APP_DEL: LanguageString = LanguageString {
+pub const TEXT_APP_DEL: LanguageString = LanguageString {
     en: "Delete App",
     jp: "削除",
     fr: "Désinstaller l'application",
@@ -1387,7 +1389,7 @@ const TEXT_APP_DEL: LanguageString = LanguageString {
     de: "Programm löschen",
 };
 
-const TEXT_APP_DEFAULT: LanguageString = LanguageString {
+pub const TEXT_APP_DEFAULT: LanguageString = LanguageString {
     en: "Set as Default",
     jp: "デフォルトになる",
     fr: "Définir par défaut",
@@ -1399,7 +1401,7 @@ const TEXT_APP_DEFAULT: LanguageString = LanguageString {
     de: "Als Standard setzen",
 };
 
-const TEXT_APP_MANAGE: LanguageString = LanguageString {
+pub const TEXT_APP_MANAGE: LanguageString = LanguageString {
     en: "Manage App",
     jp: "アプリ管理",
     fr: "Paramétrer l'application",
@@ -1411,7 +1413,7 @@ const TEXT_APP_MANAGE: LanguageString = LanguageString {
     de: "Programm verwalten",
 };
 
-const TEXT_ENTER_TEXT: LanguageString = LanguageString {
+pub const TEXT_ENTER_TEXT: LanguageString = LanguageString {
     en: "Enter Text",
     jp: "テキスト入力",
     fr: "Entrer du Texte",
@@ -1423,7 +1425,7 @@ const TEXT_ENTER_TEXT: LanguageString = LanguageString {
     de: "Text eingeben",
 };
 
-const TEXT_PORT: LanguageString = LanguageString {
+pub const TEXT_PORT: LanguageString = LanguageString {
     en: "Port",
     jp: "ボート",
     fr: "Port",
@@ -1435,7 +1437,7 @@ const TEXT_PORT: LanguageString = LanguageString {
     de: "Port",
 };
 
-const TEXT_NETWORK_SETTINGS: LanguageString = LanguageString {
+pub const TEXT_NETWORK_SETTINGS: LanguageString = LanguageString {
     en: "Network Settings",
     jp: "ネットワーク設定",
     fr: "Paramètres réseau",
@@ -1447,7 +1449,7 @@ const TEXT_NETWORK_SETTINGS: LanguageString = LanguageString {
     de: "Netztwerkeinstellungen",
 };
 
-const TEXT_RESET: LanguageString = LanguageString {
+pub const TEXT_RESET: LanguageString = LanguageString {
     en: "Reset",
     jp: "リセット",
     fr: "Réinitialiser",
@@ -1459,7 +1461,7 @@ const TEXT_RESET: LanguageString = LanguageString {
     de: "Zurücksetzen",
 };
 
-const TEXT_FACTORY_RESET: LanguageString = LanguageString {
+pub const TEXT_FACTORY_RESET: LanguageString = LanguageString {
     en: "Factory Reset",
     jp: "再セットアップ",
     fr: "Rétablir la configuration d'usine",

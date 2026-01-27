@@ -18,7 +18,7 @@ use ilidriver::ILIDriver;
 use std::sync::Arc;
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
-use crate::menu::{run_menu_loop, MenuSelection};
+use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -86,7 +86,7 @@ fn main() -> anyhow::Result<()> {
     screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
     screen.draw_string(50, 50, "Hello blue!", &mut font, 16)?;
 
-//     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
+    let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 //     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
 //     outputctl.buffer_action(Action::SetDuty(1, OutputCtl::max_duty), 2000)?;
 //     outputctl.buffer_action(Action::On(0), 3000)?;
@@ -102,8 +102,9 @@ fn main() -> anyhow::Result<()> {
     // }
 
     info!("INITIALIZED BUTTONS!");
-    run_menu_loop(MenuSelection::TitleMenu, button_queue)?;
+    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(screen, leddriver, outputctl, font), button_queue)?;
     Ok(())
+
     // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {
     //         match ev {
