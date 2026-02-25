@@ -19,6 +19,24 @@ use std::sync::Arc;
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
+use lvgl::{Display, DisplayError, DrawBuffer};
+
+#[derive(Debug, Clone)]
+enum LVGLError {
+    Init(DisplayError),
+    SignedUnsignedError(i16),
+    LabelDrawing
+}
+impl std::error::Error for LVGLError {}
+impl std::fmt::Display for LVGLError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Init(e) => write!(f, "LVGL Error: error during initialization: {:?}", e),
+            Self::SignedUnsignedError(e) => write!(f, "LVGL Error: error translating signed to unsigned value: {}", e),
+            Self::LabelDrawing => write!(f, "LVGL Error: error when making label"),
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -72,6 +90,22 @@ fn main() -> anyhow::Result<()> {
         peripherals.pins.gpio12.downgrade(),
         peripherals.pins.gpio13.downgrade(),
     )?;
+    lvgl::init();
+    info!("Registering Display");
+    let buffer = DrawBuffer::<{ (320 * 240) as usize }>::default();
+    let display = Display::register(buffer, 320, 240, |refresh| {
+        let result = screen.display.draw_raw_slice(
+            0u16.saturating_add_signed(refresh.area.y1),
+            0u16.saturating_add_signed(refresh.area.x1),
+            0u16.saturating_add_signed(refresh.area.y2),
+            0u16.saturating_add_signed(refresh.area.x2),
+            &refresh.colors.map(|x| rgb![x.r(), x.g(), x.b()])
+            );
+        if let Err(e) = result {
+            panic!("{}", e);
+        }
+    }).map_err(|e| LVGLError::Init(e))?;
+    info!("Registration successful.");
 
     let mut font = PbFont::new();
     font.set_size(FontSize::Sz14)?;
@@ -102,7 +136,7 @@ fn main() -> anyhow::Result<()> {
     // }
 
     info!("INITIALIZED BUTTONS!");
-    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(screen, leddriver, outputctl, font), button_queue)?;
+    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(screen, leddriver, outputctl, font, display), button_queue)?;
     Ok(())
 
     // loop {

@@ -36,8 +36,20 @@ anyhow = "1.0.100"
 ledc = { path = "./ledc" }
 pwm = { path = "./pwm" }
 esp-idf-sys = "0.36.1"
+# esp-idf-sys = { git =  "https://github.com/esp-rs/esp-idf-sys.git"}
 fontfile = { path = "./fontfile" }
 ilidriver = { path = "./ilidriver" }
+lvgl = { version = "0.6.2", default-features = false, features = [
+    "embedded_graphics",
+    "unsafe_no_autoinit",
+    #"lvgl_alloc",
+    #"alloc"
+] }
+cstr_core = "0.2.6"
+
+[patch.crates-io]
+lvgl = { git = "https://github.com/enelson1001/lv_binding_rust"}
+lvgl-sys = { git = "https://github.com/enelson1001/lv_binding_rust"}
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }

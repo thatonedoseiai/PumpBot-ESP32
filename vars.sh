@@ -1,0 +1,1 @@
+export DEP_LV_CONFIG_PATH=`pwd`

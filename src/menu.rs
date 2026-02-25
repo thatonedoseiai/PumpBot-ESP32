@@ -6,6 +6,7 @@ use pwm::OutputCtl;
 use ledc::LedController;
 use std::sync::Arc;
 use fontfile::PbFont;
+use lvgl::Display;
 
 pub enum MenuSignal {
     None,
@@ -26,11 +27,12 @@ pub struct IOHandles<'a> {
     pub leddriver: LedController,
     pub pwm_output: OutputCtl<'a>,
     pub font: PbFont, 
+    pub display: Display,
 }
 
 impl<'a> IOHandles<'a> {
-    pub fn new(screen: ILIDriver<'a>, leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFont) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font }
+    pub fn new(screen: ILIDriver<'a>, leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFont, display: Display) -> IOHandles<'a> {
+        Self { screen, leddriver, pwm_output, font, display }
     }
 }
 
