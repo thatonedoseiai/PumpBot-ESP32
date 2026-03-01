@@ -1,7 +1,7 @@
 use crate::menu::{MenuSignal, MenuBehaviour, IOHandles};
 use crate::event::Event;
 use crate::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
-use ilidriver::ILIDriver;
+// use ilidriver::ILIDriver;
 use fontfile::FontSize;
 use log::info;
 
@@ -44,10 +44,10 @@ impl MenuBehaviour for TitleState {
         // self.counter = self.counter.wrapping_add(1);
         if self.counter == 0 {
             io_handles.font.set_size(FontSize::Sz24)?;
-            io_handles.screen.draw_string(60, 240-195, TEXT_WELCOME[self.cur_lang], &mut io_handles.font, 0)?;
-            io_handles.screen.draw_string(60, 240-154, TEXT_WELCOME_A[self.cur_lang], &mut io_handles.font, 0)?;
+            // io_handles.screen.draw_string(60, 240-195, TEXT_WELCOME[self.cur_lang], &mut io_handles.font, 0)?;
+            // io_handles.screen.draw_string(60, 240-154, TEXT_WELCOME_A[self.cur_lang], &mut io_handles.font, 0)?;
             io_handles.font.set_size(FontSize::Sz14)?;
-            io_handles.screen.draw_string(60, 230, TEXT_PRESSENC[self.cur_lang], &mut io_handles.font, 0)?;
+            // io_handles.screen.draw_string(60, 230, TEXT_PRESSENC[self.cur_lang], &mut io_handles.font, 0)?;
             self.cur_lang = next_lang(self.cur_lang);
             self.counter = 20;
         }

@@ -1,7 +1,7 @@
 use esp_idf_hal::task::queue::Queue;
 use crate::event::Event;
 use crate::menus::titlescreen::{TitleState};
-use ilidriver::ILIDriver;
+// use ilidriver::ILIDriver;
 use pwm::OutputCtl;
 use ledc::LedController;
 use std::sync::Arc;
@@ -22,15 +22,15 @@ enum MenuStates {
 }
 
 pub struct IOHandles<'a> {
-    pub screen: ILIDriver<'a>, 
+    // pub screen: ILIDriver<'a>, 
     pub leddriver: LedController,
     pub pwm_output: OutputCtl<'a>,
     pub font: PbFont, 
 }
 
 impl<'a> IOHandles<'a> {
-    pub fn new(screen: ILIDriver<'a>, leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFont) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font }
+    pub fn new(/* screen: ILIDriver<'a>, */ leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFont) -> IOHandles<'a> {
+        Self { /*screen,*/ leddriver, pwm_output, font }
     }
 }
 

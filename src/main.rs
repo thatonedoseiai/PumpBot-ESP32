@@ -14,11 +14,22 @@ use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode};
 use pwm::{OutputCtl, OutputPeripherals, Action};
 use fontfile::{RGB, FontSize, PbFont, rgb};
-use ilidriver::ILIDriver;
+// use ilidriver::ILIDriver;
+use ili9341::{DisplaySize240x320, Ili9341, Orientation};
 use std::sync::Arc;
+use esp_idf_hal::delay::{Delay};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
+use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
+use display_interface_spi::SPIInterface;
+use embedded_graphics::{
+    prelude::*,
+    pixelcolor::Rgb565,
+    primitives::{Triangle, PrimitiveStyle},
+    mono_font::{MonoTextStyle, ascii::FONT_6X10},
+    text::Text,
+};
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -63,15 +74,38 @@ fn main() -> anyhow::Result<()> {
         ),
         peripherals.ledc.timer1
     );
-    let mut screen = ILIDriver::new(
-        peripherals.spi2, 
-        peripherals.pins.gpio11.downgrade(),
+    // let mut screen = ILIDriver::new(
+    //     peripherals.spi2, 
+    //     peripherals.pins.gpio11.downgrade(),
+    //     peripherals.pins.gpio9.downgrade(),
+    //     peripherals.pins.gpio46.downgrade(),
+    //     peripherals.pins.gpio10.downgrade(),
+    //     peripherals.pins.gpio12.downgrade(),
+    //     peripherals.pins.gpio13.downgrade(),
+    // )?;
+    let cspin: Option<AnyIOPin> = None;
+    let spi_device_driver = SpiDeviceDriver::new_single(
+        peripherals.spi2,
         peripherals.pins.gpio9.downgrade(),
         peripherals.pins.gpio46.downgrade(),
-        peripherals.pins.gpio10.downgrade(),
-        peripherals.pins.gpio12.downgrade(),
-        peripherals.pins.gpio13.downgrade(),
+        Some(peripherals.pins.gpio10.downgrade()),
+        cspin,
+        &DriverConfig::default(),
+        &Config::default()
     )?;
+    let interface = SPIInterface::new(
+        spi_device_driver,
+        PinDriver::output(peripherals.pins.gpio11.downgrade())?
+    );
+    let mut screen = Ili9341::new(
+        interface,
+        PinDriver::output(peripherals.pins.gpio12.downgrade())?,
+        &mut Delay::new_default(),
+        Orientation::Landscape,
+        DisplaySize240x320
+    ).unwrap();
+
+    screen.clear(Rgb565::BLACK).unwrap();
 
     let mut font = PbFont::new();
     font.set_size(FontSize::Sz14)?;
@@ -82,9 +116,31 @@ fn main() -> anyhow::Result<()> {
     info!("{:?}", char_slice.len());
     // info!("{:?}\n{:?}", char_metrics, char_slice);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
-    screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
-    screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
-    screen.draw_string(50, 50, "Hello blue!", &mut font, 16)?;
+    // screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
+    // screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
+    // screen.draw_string(50, 50, "Hello blue!", &mut font, 16)?;
+
+    let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
+    backlight.set_high()?;
+
+    let yoffset = 10;
+    let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
+    let res = Triangle::new(
+        Point::new(16, 16 + yoffset),
+        Point::new(16 + 16, 16 + yoffset),
+        Point::new(16 + 8, yoffset),
+    )
+    .into_styled(thin_stroke)
+    .draw(&mut screen);
+
+    let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
+    let _ = Text::new("Hello Rust!", Point::new(20, 30), style)
+        .draw(&mut screen);
+
+    match res {
+        Err(x) => panic!("error in drawing triangle: {:?}", x),
+        _ => {}
+    };
 
     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 //     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
@@ -101,8 +157,12 @@ fn main() -> anyhow::Result<()> {
     //     uxTaskGetSystemState(taskstatuses.as_mut_ptr(), taskstatuses.len() as u32, runtimeptr);
     // }
 
-    info!("INITIALIZED BUTTONS!");
-    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(screen, leddriver, outputctl, font), button_queue)?;
+    // run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(/* screen,*/ leddriver, outputctl, font), button_queue)?;
+
+    loop {
+        esp_idf_hal::delay::FreeRtos::delay_ms(5000);
+    }
+
     Ok(())
 
     // loop {
