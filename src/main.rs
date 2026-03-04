@@ -9,27 +9,116 @@ use esp_idf_hal::task::queue::Queue;
 use button_idf::button_init;
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
-use log::info;
+use log::{info, error};
 use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode};
 use pwm::{OutputCtl, OutputPeripherals, Action};
 use fontfile::{RGB, FontSize, PbFont, rgb};
 // use ilidriver::ILIDriver;
-use ili9341::{DisplaySize240x320, Ili9341, Orientation};
+// #[cfg(feature = "ILI")]
+use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
+// #[cfg(feature = "ST")]
+use st7735_lcd::{ST7735, Orientation as STOrientation};
+
 use std::sync::Arc;
 use esp_idf_hal::delay::{Delay};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
-use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver};
+use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
 use display_interface_spi::SPIInterface;
 use embedded_graphics::{
     prelude::*,
     pixelcolor::Rgb565,
-    primitives::{Triangle, PrimitiveStyle},
+    primitives::{Triangle, PrimitiveStyle, Rectangle},
     mono_font::{MonoTextStyle, ascii::FONT_6X10},
     text::Text,
 };
+
+enum Screen<'a> {
+    ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
+    ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>, {128*160*2}>)
+}
+
+#[derive(Debug)]
+enum ScreenDrawError {
+    ILI(ili9341::DisplayError),
+    ST(st7735_lcd::Error<SpiError,GpioError>)
+}
+
+impl From<ili9341::DisplayError> for ScreenDrawError {
+    fn from(val: ili9341::DisplayError) -> Self {
+        ScreenDrawError::ILI(val)
+    }
+}
+
+impl From<st7735_lcd::Error<SpiError,GpioError>> for ScreenDrawError {
+    fn from(val: st7735_lcd::Error<SpiError,GpioError>) -> Self {
+        ScreenDrawError::ST(val)
+    }
+}
+
+impl std::fmt::Display for ScreenDrawError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScreenDrawError::ILI(s) => write!(f, "{:?}", s),
+            ScreenDrawError::ST(s) => write!(f, "{:?}", s),
+        }
+    }
+}
+
+impl std::error::Error for ScreenDrawError { }
+
+impl OriginDimensions for Screen<'_> {
+    fn size(&self) -> Size {
+        match self {
+            Screen::ILI(s) => s.size(),
+            Screen::ST(s) => s.size(),
+        }
+    }
+}
+
+impl DrawTarget for Screen<'_> {
+    type Color = Rgb565; // temporary
+    type Error = ScreenDrawError;
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+        where I: IntoIterator<Item = Pixel<Self::Color>> {
+        match self {
+            Screen::ILI(s) => Ok(s.draw_iter::<I>(pixels)?),
+            Screen::ST(s) => Ok(s.draw_iter::<I>(pixels)?),
+        }
+    }
+
+    fn fill_contiguous<I>(
+        &mut self,
+        area: &Rectangle,
+        colors: I,
+    ) -> Result<(), Self::Error>
+       where I: IntoIterator<Item = Self::Color> {
+        match self {
+            Screen::ILI(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
+            Screen::ST(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
+        }
+    }
+
+    fn fill_solid(
+        &mut self,
+        area: &Rectangle,
+        color: Self::Color,
+    ) -> Result<(), Self::Error> {
+        match self {
+            Screen::ILI(s) => Ok(s.fill_solid(area, color)?),
+            Screen::ST(s) => Ok(s.fill_solid(area, color)?),
+        }
+    }
+
+    fn clear(&mut self, color: Self::Color) -> Result<(), Self::Error> {
+        match self {
+            Screen::ILI(s) => Ok(s.clear(color)?),
+            Screen::ST(s) => Ok(s.clear(color)?),
+        }
+    }
+}
 
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
@@ -83,29 +172,73 @@ fn main() -> anyhow::Result<()> {
     //     peripherals.pins.gpio12.downgrade(),
     //     peripherals.pins.gpio13.downgrade(),
     // )?;
-    let cspin: Option<AnyIOPin> = None;
-    let spi_device_driver = SpiDeviceDriver::new_single(
-        peripherals.spi2,
-        peripherals.pins.gpio9.downgrade(),
-        peripherals.pins.gpio46.downgrade(),
-        Some(peripherals.pins.gpio10.downgrade()),
-        cspin,
-        &DriverConfig::default(),
-        &Config::default()
-    )?;
-    let interface = SPIInterface::new(
-        spi_device_driver,
-        PinDriver::output(peripherals.pins.gpio11.downgrade())?
-    );
-    let mut screen = Ili9341::new(
-        interface,
-        PinDriver::output(peripherals.pins.gpio12.downgrade())?,
-        &mut Delay::new_default(),
-        Orientation::Landscape,
-        DisplaySize240x320
-    ).unwrap();
 
-    screen.clear(Rgb565::BLACK).unwrap();
+    let mut screen = if cfg!(feature = "ILI") {
+        let cspin: Option<AnyIOPin> = None;
+        let spi_device_driver = SpiDeviceDriver::new_single(
+            peripherals.spi2,
+            peripherals.pins.gpio9.downgrade(),
+            peripherals.pins.gpio46.downgrade(),
+            Some(peripherals.pins.gpio10.downgrade()),
+            cspin,
+            &DriverConfig::default(),
+            &Config::default()
+        )?;
+        let interface = SPIInterface::new(
+            spi_device_driver,
+            PinDriver::output(peripherals.pins.gpio11.downgrade())?
+        );
+        let s = Ili9341::new(
+            interface,
+            PinDriver::output(peripherals.pins.gpio12.downgrade())?,
+            &mut Delay::new_default(),
+            ILIOrientation::Landscape,
+            DisplaySize240x320
+        ).unwrap();
+        info!("screen set to ILI");
+        Screen::ILI(s)
+    } else if cfg!(feature = "ST") {
+        let cspin: Option<AnyIOPin> = None;
+        let sdipin: Option<AnyIOPin> = None;
+        let spi_device_driver = SpiDeviceDriver::new_single(
+            peripherals.spi2,
+            peripherals.pins.gpio9.downgrade(),
+            peripherals.pins.gpio10.downgrade(),
+            sdipin,
+            cspin,
+            &DriverConfig::default(),
+            &Config::default()
+        )?;
+        let mut s = ST7735::new(
+            // interface,
+            spi_device_driver,
+            PinDriver::output(peripherals.pins.gpio11.downgrade())?,
+            Some(PinDriver::output(peripherals.pins.gpio12.downgrade())?),
+            // DC
+            // RST
+            true, // rgb
+            false, //inverted
+            128,
+            160,
+        );
+        let k = s.init(&mut Delay::new_default(),);
+        match k {
+            Ok(x) => {info!("initialization okay!")},
+            Err(x) => error!("ST error: {:?}", x),
+        }
+        let f = s.set_orientation(&STOrientation::PortraitSwapped).map_err(|s| ScreenDrawError::from(s));
+        match f {
+            Ok(x) => {info!("orientation set okay!")},
+            Err(x) => error!("ST error: {:?}", x),
+        }
+        info!("screen set to ST");
+        Screen::ST(s)
+    } else {
+        panic!("Either ILI or ST feature must be enabled! Which display are you using?");
+    };
+    info!("screen clearing!");
+    screen.clear(Rgb565::BLACK).expect_err("clearing screen");
+    info!("screen cleared!");
 
     let mut font = PbFont::new();
     font.set_size(FontSize::Sz14)?;
@@ -141,6 +274,7 @@ fn main() -> anyhow::Result<()> {
         Err(x) => panic!("error in drawing triangle: {:?}", x),
         _ => {}
     };
+    info!("ALL DRAWING FINISHED");
 
     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 //     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
@@ -160,6 +294,7 @@ fn main() -> anyhow::Result<()> {
     // run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(/* screen,*/ leddriver, outputctl, font), button_queue)?;
 
     loop {
+        info!("loop");
         esp_idf_hal::delay::FreeRtos::delay_ms(5000);
     }
 
