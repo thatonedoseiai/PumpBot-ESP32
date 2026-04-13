@@ -1,6 +1,7 @@
 #![feature(iter_array_chunks)]
 
 mod rgb;
+pub mod pb_font_renderer;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -10,6 +11,18 @@ use std::error::Error;
 pub use rgb::{RGB, ColorConversionError};
 use log::info;
 use std::sync::Arc;
+
+// use embedded_graphics::{
+//     text::{
+//         renderer::{TextMetrics, CharacterStyle, TextRenderer},
+//         Baseline
+//     }, 
+//     pixelcolor::{Rgb565, Rgb888},
+//     geometry::Point,
+//     prelude::DrawTarget,
+//     image::{Image, ImageRaw},
+// };
+// use az::SaturatingAs;
 
 // Font file constants
 const FONT_NAME_SIZE_12: &str = "NC_12.cbf";
@@ -318,19 +331,28 @@ impl PbFont {
         // let decompressed;
 
         // info!("DATA: {:?}", data);
-        let decompressed = if cm.vertical {
-            decode_vert(&data, cm.height, cm.width)
-        } else {
+        let decompressed = if !cm.vertical {
             decode(&data)
+        } else {
+            decode_vert(&data, cm.height, cm.width)
         };
         // info!("DECOMPRESSED LEN: {:?}", decompressed.len());
         // info!("DECOMPRESSED: {:?}", decompressed);
 
         // Convert to RGB
         // info!("decompressed length: {}", decompressed.len());
-        let mut rgb_vec = Vec::with_capacity(decompressed_len);
+        let mut rgb_vec = vec![rgb![0,0,0]; decompressed_len / 3]; // rgb AND transpose as well
+        let (mut x, mut y) = (0,0);
+        let bufwidth = cm.width as usize;
+        let bufheight = (cm.height / 3).into();
         for pixel in (&decompressed).iter().array_chunks::<3>() {
-            rgb_vec.push(rgb![*pixel[0], *pixel[1], *pixel[2]]);
+            rgb_vec[y * bufwidth + x] = rgb![*pixel[0], *pixel[1], *pixel[2]];
+            y = y + 1;
+            if y == bufheight {
+                y = 0;
+                x = x + 1;
+            }
+            // rgb_vec.push(rgb![*pixel[0], *pixel[1], *pixel[2]]);
         }
 
         // buf = Some(rgb_vec);

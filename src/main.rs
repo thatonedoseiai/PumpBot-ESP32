@@ -13,7 +13,7 @@ use log::info;
 use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode};
 use pwm::{OutputCtl, OutputPeripherals, Action};
-use fontfile::{RGB, FontSize, PbFont, rgb};
+use fontfile::{RGB, FontSize, PbFont, rgb, pb_font_renderer::PbFontRenderer};
 // use ilidriver::ILIDriver;
 use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
 use st7735_lcd::{ST7735, Orientation as STOrientation};
@@ -265,10 +265,14 @@ fn main() -> anyhow::Result<()> {
     let mut font = PbFont::new();
     font.set_size(FontSize::Sz14)?;
 
-    let (char_metrics, char_slice) = font.load_char(0x3d)?;
+    let pb_font_style = PbFontRenderer::new(font);
 
-    info!("{:?}", char_metrics);
-    info!("{:?}", char_slice.len());
+    // let (char_metrics, char_slice) = font.load_char(0x3d)?;
+
+    // info!("{:?}", char_metrics);
+    // info!("{:?}", char_slice.len());
+    
+
     // info!("{:?}\n{:?}", char_metrics, char_slice);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
     // screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
@@ -288,9 +292,9 @@ fn main() -> anyhow::Result<()> {
     .into_styled(thin_stroke)
     .draw(&mut screen);
 
-    // let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
-    // let _ = Text::new("Hello Rust!", Point::new(20, 30), style)
-    //     .draw(&mut screen);
+    let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
+    let _ = Text::new("Hello Rust!", Point::new(20, 30), pb_font_style)
+        .draw(&mut screen);
 
     match res {
         Err(x) => panic!("error in drawing triangle: {:?}", x),
