@@ -224,7 +224,7 @@ fn main() -> anyhow::Result<()> {
         s.set_orientation(&STOrientation::PortraitSwapped)?;
         s.set_offset(1, 2);
         info!("clearing screen!");
-        s.clear(Rgb565::BLACK)?;
+        s.clear(Rgb565::BLUE)?;
 
         // info!("screen clearing!");
         // let mut result = s.set_address_window(

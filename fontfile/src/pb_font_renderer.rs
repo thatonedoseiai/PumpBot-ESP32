@@ -26,8 +26,8 @@ impl PbFontRenderer {
     pub fn new(font: PbFont) -> Self {
         PbFontRenderer {
             font: RefCell::new(font),
-            bgcol: Rgb888::BLACK,
-            fgcol: Rgb888::WHITE,
+            bgcol: Rgb888::GREEN,
+            fgcol: Rgb888::BLUE,
         }
     }
 }
