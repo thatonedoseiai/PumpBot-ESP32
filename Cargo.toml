@@ -37,6 +37,7 @@ esp-idf-hal = "0.45.2"
 anyhow = "1.0.100"
 ledc = { path = "./ledc" }
 pwm = { path = "./pwm" }
+wifi = { path = "./wifi" }
 esp-idf-sys = "0.36.1"
 fontfile = { path = "./fontfile" }
 # ilidriver = { path = "./ilidriver" }
