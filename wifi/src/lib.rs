@@ -3,13 +3,16 @@ use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
     nvs::EspDefaultNvsPartition,
     sys::EspError,
-    wifi::{AuthMethod, BlockingWifi, ClientConfiguration, Configuration, EspWifi},
+    wifi::{AuthMethod, BlockingWifi, ClientConfiguration, EspWifi},
+    wifi,
+    http::server,
 };
 use log::info;
 // use std::cell::RefCell;
 
 pub struct PbWifi<'a> {
     wifi_mod: BlockingWifi<EspWifi<'a>>, // NOTE: Does this need to be blocking? Might need interior mutability
+    // http_config: server::Configuration,
 }
 
 impl<'a> PbWifi<'a> {
@@ -24,7 +27,7 @@ impl<'a> PbWifi<'a> {
     }
 
     pub fn connect(&mut self, ssid: heapless::String<32>, pass: heapless::String<64>) -> Result<(), EspError> {
-        let wifi_configuration: Configuration = Configuration::Client(ClientConfiguration {
+        let wifi_configuration: wifi::Configuration = wifi::Configuration::Client(ClientConfiguration {
             ssid: ssid,
             bssid: None,
             auth_method: AuthMethod::WPA2Personal,
