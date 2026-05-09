@@ -1,3 +1,41 @@
+//! # PumpBot!
+//!
+//! Welcome to the source code for PumpBot. PumpBot is a programmable and remote-controllable PWM
+//! controller for motors, lights, and other such things.
+//!
+//! Different functionalities of the real-time operating system are separated into 
+//! individual crates for ease of programming and separation of responsibilities. 
+//! - [rotenc] - polls the rotary encoder safely.
+//! - [ledc] - controls the LED colours and brightnesses via PWM
+//! - [fontfile] - handles the cbi and cbf font files.
+//! - [ili9341] - drives the ILI9341 display.
+//! - [st7735_lcd] - drives the ST7735 display.
+//! - [button_idf] - polls the left and right buttons with debouncing
+//! - [wifi] - handles the BLE and wifi radio.
+//! - [pwm] - drives and generates PWM signals using timers.
+//!
+//! The main crate is separated into different modules.
+//! - [event] - a wrapper around different kinds of events received by the IO (button and rotenc
+//! events)
+//! - [menu] - the common logic for menus
+//! - [menus] - the individual data for menu functionalities and appearances
+//! - [lang] - the language-translateable strings.
+//!
+//! The main module's responsibility is to start the `main` function, which will initialize the board
+//! and begin on the start menu. The user will then navigate through the menus, ending at the main
+//! control menu. If the board has been previously initialized, `main` will skip all its
+//! functionality and bring the user directly to the control menu.
+//! TODO:
+//! - [ ] Lua functionality
+//! - [ ] Make everything async: we will start by using block_on.
+//! - [ ] Wifi drivers
+//!     - [x] draft
+//!     - [ ] test
+//! - [ ] http drivers
+//!     - [ ] draft
+//!     - [ ] test
+//! - [ ] menus
+
 mod event;
 mod menu;
 mod menus;
@@ -35,11 +73,18 @@ use wifi::PbWifi;
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 
+/// A generalized driver that wraps both kinds of screens. This wrapper can either contain an 
+/// ILI9341 driver, or an ST7735 driver. If a new kind of screen with a new kind of driver is
+/// required, we would put that new driver in here. This helps with modularity so that we can have
+/// more freedom with which screens we might want to use in the future.
 enum Screen<'a> {
     ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
     ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>)
 }
 
+/// Wraps both kinds of errors that we can expect from the screen drawing.
+/// Either an ILI9341 is connected, and in such a case we would use [ili9341::DisplayError],
+/// otherwise an ST7735 is connected, in which case we would use [st7735_lcd::ST7735Error].
 #[derive(Debug)]
 enum ScreenDrawError {
     ILI(ili9341::DisplayError),
@@ -69,6 +114,8 @@ impl std::fmt::Display for ScreenDrawError {
 
 impl std::error::Error for ScreenDrawError { }
 
+/// This is necessary for [crate::Screen] to be usable with [embedded_graphics]. Required for
+/// [DrawTarget]
 impl OriginDimensions for Screen<'_> {
     fn size(&self) -> Size {
         match self {
@@ -78,6 +125,7 @@ impl OriginDimensions for Screen<'_> {
     }
 }
 
+/// This is necessary for [crate::Screen] to be usable with [embedded_graphics].
 impl DrawTarget for Screen<'_> {
     type Color = Rgb565; // temporary
     type Error = ScreenDrawError;
@@ -120,6 +168,8 @@ impl DrawTarget for Screen<'_> {
     }
 }
 
+/// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
+/// the board to reset. This is why it returns an `anyhow::Result<()>`
 fn main() -> anyhow::Result<()> {
     esp_idf_svc::sys::link_patches();
     esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
@@ -347,6 +397,8 @@ fn main() -> anyhow::Result<()> {
     // }
 }
 
+/// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
+/// Please do not change this, as it is known to work. If it fails, it will return an `Err(EspError)`
 fn register_filesystem() -> Result<(), EspError> {
     let mut fs_config: esp_vfs_littlefs_conf_t = esp_vfs_littlefs_conf_t {
         base_path: c"/fs".as_ptr(),
@@ -362,6 +414,7 @@ fn register_filesystem() -> Result<(), EspError> {
     }
 }
 
+/// used for debugging, this function logs the amount of free stack space to the console.
 fn get_stack_size() {
     unsafe {
         let stack: u32 = uxTaskGetStackHighWaterMark(std::ptr::null_mut());

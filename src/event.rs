@@ -1,6 +1,12 @@
+//! This module contains an enum that represents all the different kinds of events we could receive
+//! from things across the board. Currently it only contains events from the Button and Encoder,
+//! but we may also use it for messages received from the remote server (if connected)
+
 use button_idf::ButtonEvent;
 use rotenc::EncoderEvent;
 
+/// A wrapper around multiple kinds of events that we can receive from different IOs. Currently
+/// working only with the Button and Rotenc.
 #[derive(Clone, Copy)]
 pub enum Event {
     Button(ButtonEvent),

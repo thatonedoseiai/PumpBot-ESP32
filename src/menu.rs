@@ -1,3 +1,6 @@
+//! This module contains the common logic for menus. Each menu will build on top of this module to
+//! create its own unique functionality and interact with other menus (e.g. transitions, etc.)
+
 use esp_idf_hal::task::queue::Queue;
 use crate::event::Event;
 use crate::menus::titlescreen::{TitleState};
@@ -7,20 +10,25 @@ use ledc::LedController;
 use std::sync::Arc;
 use fontfile::PbFont;
 
+/// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
+/// or continue displaying the same menu.
 pub enum MenuSignal {
     None,
     Return,
     Transition(MenuSelection)
 }
 
+/// The list of all currently implemented menus.
 pub enum MenuSelection {
     TitleMenu,
 }
 
+/// A wrapper around the current states of every menu.
 enum MenuStates {
     Title(TitleState),
 }
 
+/// A collection of the various IOHandles that menus should be allowed to interact with.
 pub struct IOHandles<'a> {
     // pub screen: ILIDriver<'a>, 
     pub leddriver: LedController,
@@ -34,6 +42,7 @@ impl<'a> IOHandles<'a> {
     }
 }
 
+/// A trait that defines the behaviours that menus are required to implement.
 pub trait MenuBehaviour: Sized {
     // type Args: Into<Self> + From<MenuSelection>;
     fn init(&mut self, io_handles: &mut IOHandles) -> anyhow::Result<MenuSignal>;
@@ -63,6 +72,12 @@ impl MenuBehaviour for MenuStates {
     }
 }
 
+/// Starts a menuing tree. If the user returns from the menu at the bottom of the tree, the
+/// function will return. Parameters:
+/// - `start_menu`: the first menu to start displaying
+/// - `io_handles`: a collection of IO handles that the menus should be allowed to interact with
+/// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
+/// menus to use to react to button presses and rotenc spins.
 pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();

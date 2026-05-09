@@ -1,5 +1,10 @@
+//! This module contains all the strings and their utf8 translations into various languages for 
+//! PB. Each string is encoded as a struct that has nine fields, one for each language. A
+//! `LanguageString` can be indexed using the `[]` operator, e.g.
+//! `TEXT_LANGUAGE_NAME[Fr]` will return the name "français".
 use std::ops::Index;
 
+/// Represents a language that [LanguageString]s support.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Lang {
     En,
@@ -13,6 +18,8 @@ pub enum Lang {
     De
 }
 
+/// Represents a string that has translations in English, Japanese, French, Spanish, Portuguese,
+/// Simplified and Traditional Chinese, Russian, and German.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct LanguageString {
     en: &'static str,
