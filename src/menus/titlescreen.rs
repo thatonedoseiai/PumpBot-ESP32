@@ -1,3 +1,7 @@
+//! The definitions of the functionality for the title screen.
+//! This menu will display the welcome text to pumpbot, while cycling the welcome text language at a
+//! constant rate.
+
 use crate::menu::{MenuSignal, MenuBehaviour, IOHandles};
 use crate::event::Event;
 use crate::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
@@ -5,11 +9,15 @@ use crate::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 use fontfile::FontSize;
 use log::info;
 
+/// represents the internal state of the title screen - what language it's on and how long it has
+/// until it swaps to a different language.
 pub struct TitleState {
     cur_lang: Lang,
     counter: u8,
 }
 
+/// A helper function that determines the order of the language swaps. Russian is currently unused
+/// because it was causing problems due to drawing offscreen.
 const fn next_lang(cur: Lang) -> Lang {
     match cur {
         Lang::En => Lang::Jp,
