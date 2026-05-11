@@ -1,3 +1,13 @@
+//! This crate contains the tools to read CBF and CBI file extensions used for PB. For rendering
+//! purposes, it also houses the main definition of RGB used throughout the project and by LEDc.
+//! Functionalities include:
+//! - Decoding horizontal and vertical characters from CBF file [PbFont::load_char]
+//! - Decoding the background image data stored in a CBI file [PbBg::load_bgimg]
+//!
+//! Each CBF file can only contain a font at one particular size. Thus, in order to swap sizes, we
+//! must close the current CBF file and open the CBF file with the size we want. Only one CBF file
+//! can be open at a time.
+
 #![feature(iter_array_chunks)]
 
 mod rgb;
@@ -31,11 +41,13 @@ const FONT_NAME_SIZE_18: &str = "NC_18.cbf";
 const FONT_NAME_SIZE_24: &str = "NC_24.cbf";
 const FONT_NAME_SIZE_42: &str = "NC_42.cbf";
 
+/// Represents an instance of the CBF file decoding engine.
 pub struct PbFont {
     font_file: Option<File>,
     font_metadata: FontMetadata,
 }
 
+/// Represents an instance of the CBI file decoding engine.
 pub struct PbBg {
     bg_file: Option<File>,
     bg_filename: Option<String>,
@@ -43,6 +55,7 @@ pub struct PbBg {
     background_color: RGB,
 }
 
+/// Represents a font size.
 #[derive(Debug, Clone, Copy)]
 pub enum FontSize {
     Sz12,
@@ -65,12 +78,14 @@ impl From<FontSize> for u16 {
 }
 
 // Metadata structures
+/// Represents the metadata for a CBF font file.
 #[derive(Debug, Clone, Copy)]
 pub struct FontMetadata {
     pub font_size: u16,
     pub num_glyphs: u32,
 }
 
+/// Represents all the stored metadata for a particular character in a CBF font file.
 #[derive(Debug, Clone, Copy)]
 pub struct CharMetadata {
     pub vertical: bool,
@@ -102,6 +117,8 @@ impl From<[u8; 10]> for CharMetadata {
 // Correct magic bytes
 const CORRECT_MBYTES: [u8; 10] = [0x63, 0x62, 0x66, 0xe5, 0x9c, 0xa7, 0xe5, 0xad, 0x97, 0x02];
 
+/// Represents an IO error that occurs when the board fails to open or read from a file, or
+/// something like that.
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 pub struct IOErrorInfo {
     kind: io::ErrorKind,
@@ -114,6 +131,7 @@ impl fmt::Display for IOErrorInfo {
 }
 
 // Error codes
+/// All the different kinds of errors that could occur when reading from CBF files.
 #[derive(Copy, Clone, Debug)]
 pub enum FontFileError {
     FileNotFound,
@@ -153,6 +171,7 @@ impl From<io::Error> for FontFileError {
 }
 
 impl PbFont {
+    /// Creates a new instance of the CBF file reading engine.
     pub fn new() -> Self {
         PbFont {
             font_file: None,
@@ -164,6 +183,11 @@ impl PbFont {
     }
 
     // Set font size
+    /// Opens the file associate with the font size `sz`. Any newly available sizes must be added
+    /// to [FontSize] before they can be used, as this function does not accept a number for the
+    /// size but instead accepts an entry in [FontSize] to work. This is because attempting to
+    /// render a font size which does not have an associated file in the filesystem would result in
+    /// an error and/or not display correctly.
     pub fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
         let font_name = format!("/fs/{}", match sz {
             FontSize::Sz12 => FONT_NAME_SIZE_12,
@@ -273,6 +297,8 @@ impl PbFont {
     }
 
     // Load character
+    /// Loads a character with the character code `curchar`, returning either an error or the
+    /// character metadata and visual data.
     pub fn load_char(&mut self, curchar: u16) -> Result<(CharMetadata, Vec<RGB>), FontFileError> {
         // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
         let offset = self.binary_search(curchar)?;
@@ -368,6 +394,7 @@ impl PbFont {
 impl PbBg {
     const PB_BG_VERSION: u8 = 2;
 
+    /// Creates an instance of the CBI decoding engine
     pub fn new() -> Self {
         PbBg {
             bg_file: None,
@@ -378,6 +405,9 @@ impl PbBg {
     }
 
     // Load background image
+    /// Decodes the `index`th background image, reading from the file `name`. If `force_load` is
+    /// `True`, the file is forced to be opened anew regardless of whether the previous background image
+    /// was from the same file.
     pub fn load_bgimg(&mut self, name: &str, force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
         // let mut image_file = self.bg_file;
 
@@ -507,6 +537,7 @@ impl PbBg {
     }
 
     // Initialize global colors
+    /// Set the foreground and background colours to `foreground` and `background` respectively
     pub fn init_colors(&mut self, foreground: RGB, background: RGB) {
         self.foreground_color = foreground;
         self.background_color = background;
@@ -514,6 +545,8 @@ impl PbBg {
 }
 
 // Decode function
+/// RLE decoding for the visual image data of both fonts and background images. This function is
+/// used for horizontally encoded characters.
 pub fn decode(indata: &[u8]) -> Vec<u8> {
     let mut ret = Vec::new();
     let mut i = 0;
@@ -548,6 +581,8 @@ pub fn decode(indata: &[u8]) -> Vec<u8> {
 }
 
 // Vertical decode function
+/// RLE decoding for visual image data of characters and background images. This function is used
+/// for characters that have been encoded vertically.
 pub fn decode_vert(indata: &[u8], width: u16, height: u16) -> Vec<u8> {
     let mut outdata: Vec<u8> = vec![0u8; (width * height) as usize]; // TODO: get rid of this
                                                                      // somehow and make the decode

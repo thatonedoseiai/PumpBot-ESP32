@@ -1,3 +1,5 @@
+//! This crate handles the LED controls. It contains but does not export color-related utilities.
+
 use esp_idf_hal::ledc::*;
 use esp_idf_hal::ledc::config::TimerConfig;
 use esp_idf_hal::prelude::*;
@@ -11,7 +13,7 @@ use log::info;
 
 // --- Types and Configuration ---
 
-
+/// Represents an operating mode of the LED cycling engine.
 #[derive(Clone, Debug)]
 pub enum LedMode {
     Solid(RGB),
@@ -20,6 +22,8 @@ pub enum LedMode {
     Off,
 }
 
+/// Represents the state of all the LEDs. `speed_ms` is the delay (in ms) between updates of the
+/// LED colour/brightness, i.e. the period between LED updates.
 #[derive(Clone, Debug)]
 struct ControllerState {
     mode: LedMode,
@@ -29,10 +33,12 @@ struct ControllerState {
 
 // --- The API Handler ---
 
+/// The controller. There is only one LED controller instance for the entire OS.
 pub struct LedController {
     state: Arc<RwLock<ControllerState>>,
 }
 
+/// A collection of all the peripherals needed to run the LED driver.
 pub struct LedPeripherals {
     led_r: AnyIOPin,
     led_g: AnyIOPin,
@@ -44,6 +50,7 @@ pub struct LedPeripherals {
 }
 
 impl LedPeripherals {
+    /// Instantiates the collection of peripherals needed from the instances provided.
     pub fn new(
         led_r: AnyIOPin,
         led_g: AnyIOPin,
@@ -62,6 +69,9 @@ impl LedPeripherals {
 }
 
 impl LedController {
+    /// Instantiates a new controller connected to the peripherals `p`, running in mode
+    /// `initial_mode`. This method will also start an independent thread that runs the LEDs
+    /// independently.
     pub fn new(
         p: LedPeripherals,
         initial_mode: LedMode,
@@ -140,16 +150,19 @@ impl LedController {
         Self { state }
     }
 
+    /// Sets the current operating mode of the LED driver to `mode`.
     pub fn update_mode(&self, mode: LedMode) {
         let mut s = self.state.write().unwrap();
         s.mode = mode;
     }
 
+    /// Sets the current brightness of the LEDs to `brightness`. 0 < `brightness` < 255
     pub fn set_brightness(&self, brightness: u8) {
         let mut s = self.state.write().unwrap();
         s.brightness = brightness;
     }
 
+    /// Sets the period between updates to `speed_ms` milliseconds.
     pub fn set_speed(&self, speed_ms: u64) {
         let mut s = self.state.write().unwrap();
         s.speed_ms = speed_ms;
@@ -159,11 +172,13 @@ impl LedController {
 // --- Utilities ---
 
 // (a as f32 + (b as f32 - a as f32) * t) as u8
+/// linearly interpolates between `a` and `b` at a percentage `t/255`.
 fn lerp(a: u8, b: u8, t: u8) -> u8 {
     let diff: u16 = if a > b { a - b } else { b - a } as u16;
     (a as u16 + (diff * t as u16) / 255) as u8
 }
 
+/// Converts HSV to RGB coloration.
 fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
     // Standard HSV to RGB conversion logic...
     let c = v * s;

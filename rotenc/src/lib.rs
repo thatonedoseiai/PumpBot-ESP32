@@ -1,3 +1,7 @@
+//! This crate provides the basic functionality for reading the rotary encoder. A thread is started
+//! to listen to the rotary encoder inputs, and events are sent over a queue to be used by any
+//! other service. 
+
 use esp_idf_hal::task::queue::Queue;
 use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Pull};
 // use quadrature_encoder::{RotaryEncoder, RotaryMovement};
@@ -9,6 +13,7 @@ use std::sync::Arc;
 use std::num::Wrapping;
 use std::fmt;
 
+/// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
 pub struct EncoderEvent {
     pos: Wrapping<u32>,
@@ -31,6 +36,8 @@ impl fmt::Display for EncoderEvent {
     }
 }
 
+/// Starts the rotary encoder listener. `pin_a` represents the left-turning pin, and `pin_b`
+/// represents the right-turning pin. Any events captured by the listener are sent over `queue`.
 pub fn start_rotenc_thread<T: From<EncoderEvent> + Send + Sync + Copy + 'static>(
     queue: Arc<Queue<T>>,
     pin_a: AnyIOPin,
