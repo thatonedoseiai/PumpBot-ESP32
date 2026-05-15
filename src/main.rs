@@ -69,7 +69,7 @@ use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_6X10},
     text::Text,
 };
-use wifi::PbWifi;
+use wifi::{PbWifi, PbHttpServer};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 
@@ -187,7 +187,8 @@ fn main() -> anyhow::Result<()> {
     let nvs = EspDefaultNvsPartition::take()?;
 
     let mut pb_wifi = PbWifi::new(peripherals.modem, sys_loop, nvs)?;
-    pb_wifi.connect("Blue".try_into().unwrap(), "".try_into().unwrap());
+    pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
+    let http_server = PbHttpServer::start()?;
 
     let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;

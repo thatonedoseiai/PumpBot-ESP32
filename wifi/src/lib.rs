@@ -3,6 +3,8 @@
 //! This includes connecting and disconnecting from Wifi, any BLE stuff, or even the HTTP server.
 //! Server logic DOES NOT GO HERE. 
 
+mod http_server;
+
 use esp_idf_svc::{
     hal::modem::WifiModemPeripheral,
     eventloop::EspSystemEventLoop,
@@ -10,8 +12,8 @@ use esp_idf_svc::{
     sys::EspError,
     wifi::{AuthMethod, BlockingWifi, ClientConfiguration, EspWifi},
     wifi,
-    http::server,
 };
+pub use crate::http_server::{PbHttpServer, PbHttpServerError};
 use log::info;
 // use std::cell::RefCell;
 
@@ -39,10 +41,12 @@ impl<'a> PbWifi<'a> {
     /// the password is given by `pass`. Currently does not support different authentication
     /// methods.
     pub fn connect(&mut self, ssid: heapless::String<32>, pass: heapless::String<64>) -> Result<(), EspError> {
+        info!("Attempting to connect to {} with password {}.", &ssid, &pass);
+
         let wifi_configuration: wifi::Configuration = wifi::Configuration::Client(ClientConfiguration {
             ssid: ssid,
             bssid: None,
-            auth_method: AuthMethod::WPA2Personal,
+            auth_method: if pass.len() == 0 { AuthMethod::None } else { AuthMethod::WPA2Personal },
             password: pass,
             channel: None,
             ..Default::default()
@@ -51,13 +55,13 @@ impl<'a> PbWifi<'a> {
         self.wifi_mod.set_configuration(&wifi_configuration)?;
 
         self.wifi_mod.start()?;
-        info!("Wifi started");
+        info!("Wifi started.");
 
         self.wifi_mod.connect()?;
         info!("Wifi connected");
 
         self.wifi_mod.wait_netif_up()?;
-        info!("Wifi netif up");
+        info!("Wifi netif up at IP {}.", self.wifi_mod.wifi().sta_netif().get_ip_info()?.ip);
 
         Ok(())
     }
