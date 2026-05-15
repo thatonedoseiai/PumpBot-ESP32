@@ -1,3 +1,7 @@
+//! This submodule defines the font rendering behaviour following the trait defined in
+//! [embedded_graphics]. Without this submodule, our font would be incompatible with the display
+//! driving method used in `embedded_graphics`.
+
 use embedded_graphics::{
     text::{
         renderer::{TextMetrics, CharacterStyle, TextRenderer},
@@ -15,6 +19,8 @@ use std::cell::RefCell;
 
 use crate::PbFont;
 
+/// Defines the global state of the renderer. Font size and everything is already included in
+/// `PbFont`, so we only need to add `bgcol` (background colour) and `fgcol` (foreground colour).
 pub struct PbFontRenderer {
     // need a cell or something
     font: RefCell<PbFont>,
@@ -23,6 +29,9 @@ pub struct PbFontRenderer {
 }
 
 impl PbFontRenderer {
+    /// Creates a new instance of the renderer state from an existing instance of the open font.
+    /// When reopening a new font, the `PbFont` doesn't get reloaded so the renderer can continue
+    /// to be universal.
     pub fn new(font: PbFont) -> Self {
         PbFontRenderer {
             font: RefCell::new(font),
@@ -81,6 +90,7 @@ impl TextRenderer for PbFontRenderer {
         Ok(position + Point::new(width.saturating_as(), 0))
     }
 
+    /// this function is unimplemented. We need to implement it.
     fn measure_string(
         &self,
         text: &str,
@@ -90,6 +100,7 @@ impl TextRenderer for PbFontRenderer {
         todo!();
     }
 
+    /// this function currently returns a constant. This is a TODO.
     fn line_height(&self) -> u32 {
         return 30u32;
         // todo!();
