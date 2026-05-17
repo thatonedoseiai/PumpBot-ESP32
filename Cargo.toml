@@ -38,6 +38,7 @@ anyhow = "1.0.100"
 ledc = { path = "./ledc" }
 pwm = { path = "./pwm" }
 wifi = { path = "./wifi" }
+global_settings = { path = "./global_settings" }
 esp-idf-sys = "0.36.1"
 fontfile = { path = "./fontfile" }
 # ilidriver = { path = "./ilidriver" }

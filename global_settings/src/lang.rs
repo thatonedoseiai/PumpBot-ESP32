@@ -51,6 +51,38 @@ impl Index<Lang> for LanguageString {
     }
 }
 
+impl Into<u8> for Lang {
+    fn into(self) -> u8 {
+        match self {
+            Lang::En => 0,
+            Lang::Jp => 1,
+            Lang::Fr => 2,
+            Lang::Es => 3,
+            Lang::Pt => 4,
+            Lang::Zh => 5,
+            Lang::Cn => 6,
+            Lang::Ru => 7,
+            Lang::De => 8,
+        }
+    }
+}
+
+impl From<u8> for Lang {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => Lang::Jp,
+            2 => Lang::Fr,
+            3 => Lang::Es,
+            4 => Lang::Pt,
+            5 => Lang::Zh,
+            6 => Lang::Cn,
+            7 => Lang::Ru,
+            8 => Lang::De,
+            _ => Lang::En,
+        }
+    }
+}
+
 pub const TEXT_LANGUAGE_NAME: LanguageString = LanguageString {
     en: "English",
     jp: "日本語",

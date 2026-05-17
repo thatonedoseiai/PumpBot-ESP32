@@ -7,3 +7,4 @@ edition = "2024"
 esp-idf-svc = "0.51"
 heapless = "0.8.0"
 log = "0.4.29"
+global_settings = { path = "../global_settings" }

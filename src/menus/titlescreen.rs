@@ -4,7 +4,7 @@
 
 use crate::menu::{MenuSignal, MenuBehaviour, IOHandles};
 use crate::event::Event;
-use crate::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
+use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;
 use log::info;

@@ -2,6 +2,7 @@
 //!
 //! This includes connecting and disconnecting from Wifi, any BLE stuff, or even the HTTP server.
 //! Server logic DOES NOT GO HERE. 
+#![feature(str_split_remainder)]
 
 mod http_server;
 
@@ -10,7 +11,7 @@ use esp_idf_svc::{
     eventloop::EspSystemEventLoop,
     nvs::EspDefaultNvsPartition,
     sys::EspError,
-    wifi::{AuthMethod, BlockingWifi, ClientConfiguration, EspWifi},
+    wifi::{AuthMethod, BlockingWifi, ClientConfiguration, EspWifi, AccessPointInfo},
     wifi,
 };
 pub use crate::http_server::{PbHttpServer, PbHttpServerError};
@@ -64,5 +65,16 @@ impl<'a> PbWifi<'a> {
         info!("Wifi netif up at IP {}.", self.wifi_mod.wifi().sta_netif().get_ip_info()?.ip);
 
         Ok(())
+    }
+
+    pub fn get_wifis(&mut self) -> Result<Vec<AccessPointInfo>, EspError> {
+        Ok(self.wifi_mod.scan_n::<10>()?.0.to_vec())
+    }
+
+    pub fn currently_connected(&mut self) -> Result<(String, String), EspError> {
+        if let wifi::Configuration::Client(k) = self.wifi_mod.get_configuration()? {
+            return Ok((k.ssid.to_string(), k.password.to_string()));
+        }
+        Ok(("".to_string(), "".to_string())) // TODO: replace this with an error of some kind!
     }
 }

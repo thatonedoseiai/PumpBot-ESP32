@@ -32,14 +32,15 @@
 //!     - [x] draft
 //!     - [ ] test
 //! - [ ] http drivers
-//!     - [ ] draft
+//!     - [x] draft
 //!     - [ ] test
 //! - [ ] menus
 
 mod event;
 mod menu;
 mod menus;
-mod lang;
+// mod lang;
+// mod settings;
 
 use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
@@ -61,6 +62,7 @@ use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
+use global_settings::PbGlobalSettings;
 use display_interface_spi::SPIInterface;
 use embedded_graphics::{
     prelude::*,
@@ -181,6 +183,7 @@ fn main() -> anyhow::Result<()> {
     // info!("FILE READ: {}", data);
 
     info!("STARTING APP!");
+    let mut settings = PbGlobalSettings::new();
 
     let peripherals = Peripherals::take()?;
     let sys_loop = EspSystemEventLoop::take()?;
@@ -380,6 +383,7 @@ fn main() -> anyhow::Result<()> {
 
     loop {
         info!("looping...");
+        http_server.update(&mut settings, &mut pb_wifi)?;
         esp_idf_hal::delay::FreeRtos::delay_ms(5000);
     }
 
