@@ -18,9 +18,10 @@ debug = true    # Symbols are nice, and they don't increase the size on Flash
 opt-level = "z"
 
 [features]
-default = []
+# default = []
 ILI = []
 ST = []
+sim = []
 
 [[package.metadata.esp-idf-sys.extra_components]]
 component_dirs = ["components"]
@@ -47,6 +48,7 @@ ili9341 = "0.6.0"
 display-interface-spi = "0.5.0"
 # st7735-lcd = { git = "https://github.com/sajattack/st7735-lcd-rs.git", branch = "misc-improvements", version = "0.10.0" }
 st7735-lcd = { path = "./st7735-lcd-rs" }
+embedded-graphics-simulator = "0.8.0"
 # probe-rs = "0.31.0"
 
 # --- Optional Embassy Integration ---

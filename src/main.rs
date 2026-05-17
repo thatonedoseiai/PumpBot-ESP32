@@ -59,7 +59,7 @@ use st7735_lcd::{ST7735, Orientation as STOrientation};
 use std::sync::Arc;
 use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
-use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError};
+use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
 use global_settings::PbGlobalSettings;
@@ -74,6 +74,29 @@ use embedded_graphics::{
 use wifi::{PbWifi, PbHttpServer};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
+use std::convert::Infallible;
+
+#[cfg(feature = "sim")]
+use embedded_graphics_simulator::{ SimulatorDisplay };
+
+#[cfg(all(not(feature = "sim"), not(feature = "ST"), not(feature = "ILI")))]
+compile_error!("Declare a screen to compile!");
+
+#[cfg(any(all(feature = "sim", feature = "ILI"), all(feature = "sim", feature = "ST"), all(feature = "ILI", feature = "ST"), all(feature = "ILI", feature = "ST", feature = "sim")))]
+compile_error!("You may only have one screen active at a time!");
+
+// const _: () = {
+//     // Assert that the 'serde' feature is enabled
+//     if !cfg!(feature = "ILI") && !cfg!(feature = "ST") && !cfg!(feature = "sim") {
+//         compile_error!("Declare a screen to compile!");
+//     }
+//     if (cfg!(feature = "ILI") && cfg!(feature = "ST")) ||
+//        (cfg!(feature = "sim") && cfg!(feature = "ST")) ||
+//        (cfg!(feature = "ILI") && cfg!(feature = "sim")) {
+//         compile_error!("You may only have one screen active at a time!");
+//     }
+// };
+
 
 /// A generalized driver that wraps both kinds of screens. This wrapper can either contain an 
 /// ILI9341 driver, or an ST7735 driver. If a new kind of screen with a new kind of driver is
@@ -81,7 +104,9 @@ use esp_idf_svc::nvs::EspDefaultNvsPartition;
 /// more freedom with which screens we might want to use in the future.
 enum Screen<'a> {
     ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
-    ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>)
+    ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>),
+    #[cfg(feature = "sim")]
+    Sim(SimulatorDisplay<Rgb565>),
 }
 
 /// Wraps both kinds of errors that we can expect from the screen drawing.
@@ -90,7 +115,8 @@ enum Screen<'a> {
 #[derive(Debug)]
 enum ScreenDrawError {
     ILI(ili9341::DisplayError),
-    ST(st7735_lcd::ST7735Error)
+    ST(st7735_lcd::ST7735Error),
+    Sim,
 }
 
 impl From<ili9341::DisplayError> for ScreenDrawError {
@@ -105,11 +131,19 @@ impl From<st7735_lcd::ST7735Error> for ScreenDrawError {
     }
 }
 
+// simulator is infallible. It is not necessary to include its error defns.
+impl From<Infallible> for ScreenDrawError {
+    fn from(_: Infallible) -> Self {
+        ScreenDrawError::Sim
+    }
+}
+
 impl std::fmt::Display for ScreenDrawError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ScreenDrawError::ILI(s) => write!(f, "{:?}", s),
             ScreenDrawError::ST(s) => write!(f, "{:?}", s),
+            ScreenDrawError::Sim => write!(f, "Simulator draw error!"),
         }
     }
 }
@@ -123,6 +157,8 @@ impl OriginDimensions for Screen<'_> {
         match self {
             Screen::ILI(s) => s.size(),
             Screen::ST(s) => s.size(),
+            #[cfg(feature = "sim")]
+            Screen::Sim(s) => s.size(),
         }
     }
 }
@@ -136,6 +172,8 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.draw_iter::<I>(pixels)?),
             Screen::ST(s) => Ok(s.draw_iter::<I>(pixels)?),
+            #[cfg(feature = "sim")]
+            Screen::Sim(s) => Ok(s.draw_iter::<I>(pixels)?),
         }
     }
 
@@ -148,6 +186,8 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
             Screen::ST(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
+            #[cfg(feature = "sim")]
+            Screen::Sim(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
         }
     }
 
@@ -159,6 +199,8 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.fill_solid(area, color)?),
             Screen::ST(s) => Ok(s.fill_solid(area, color)?),
+            #[cfg(feature = "sim")]
+            Screen::Sim(s) => Ok(s.fill_solid(area, color)?),
         }
     }
 
@@ -166,8 +208,77 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.clear(color)?),
             Screen::ST(s) => Ok(s.clear(color)?),
+            #[cfg(feature = "sim")]
+            Screen::Sim(s) => Ok(s.clear(color)?),
         }
     }
+}
+
+/// Initialize the appropriate screen.
+#[cfg(feature = "ILI")]
+fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio46: Gpio46, gpio10: Gpio10, gpio11: Gpio11, gpio12: Gpio12) -> anyhow::Result<Screen<'a>> {
+    info!("SCREEN: using ILI");
+    let cspin: Option<AnyIOPin> = None;
+    let spi_device_driver = SpiDeviceDriver::new_single(
+        spi2,
+        gpio9.downgrade(),
+        gpio46.downgrade(),
+        Some(gpio10.downgrade()),
+        cspin,
+        &DriverConfig::default(),
+        &Config::default()
+    )?;
+    let interface = SPIInterface::new(
+        spi_device_driver,
+        PinDriver::output(gpio11.downgrade())?
+    );
+    Ok(Screen::ILI(Ili9341::new(
+        interface,
+        PinDriver::output(gpio12.downgrade())?,
+        &mut Delay::new_default(),
+        ILIOrientation::Landscape,
+        DisplaySize240x320
+    ).unwrap()))
+}
+
+#[cfg(feature = "ST")]
+fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio10: Gpio10, gpio11: Gpio11, gpio12: Gpio12) -> anyhow::Result<Screen<'a>> {
+    info!("SCREEN: using ST");
+    let cspin: Option<AnyIOPin> = None;
+    let sdipin: Option<AnyIOPin> = None;
+    let spi_device_driver = SpiDeviceDriver::new_single(
+        spi2,
+        gpio9.downgrade(),
+        gpio10.downgrade(),
+        sdipin,
+        cspin,
+        &DriverConfig::default(),
+        &Config::default()
+    )?;
+    let mut s = ST7735::new(
+        spi_device_driver, // SPI
+        PinDriver::output(gpio11.downgrade())?, // DC
+        Some(PinDriver::output(gpio12.downgrade())?), // RST
+        true,  // rgb
+        false, // inverted
+        128,   // width
+        160    // height
+    );
+    let mut delay = FreeRtos;
+    let res = s.init(&mut delay)?;
+    s.set_orientation(&STOrientation::PortraitSwapped)?;
+    s.set_offset(1, 2);
+    // info!("clearing screen!");
+    s.clear(Rgb565::BLUE)?;
+    // info!("screen result!");
+    Ok(Screen::ST(s))
+}
+
+#[cfg(feature = "sim")]
+fn init_screen<'a>() -> anyhow::Result<Screen<'a>> {
+    info!("SCREEN: using simulator");
+    let s = SimulatorDisplay::<Rgb565>::new(Size::new(128,160));
+    Ok(Screen::Sim(s))
 }
 
 /// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
@@ -177,10 +288,6 @@ fn main() -> anyhow::Result<()> {
     esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
     
     register_filesystem()?;
-
-    // let contents = fs::read("/fs/test.txt")?;
-    // let data = str::from_utf8(contents.as_slice())?;
-    // info!("FILE READ: {}", data);
 
     info!("STARTING APP!");
     let mut settings = PbGlobalSettings::new();
@@ -195,9 +302,6 @@ fn main() -> anyhow::Result<()> {
 
     let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
-    // rotary_encoder_init(peripherals.pins.gpio17.downgrade(),
-    //     peripherals.pins.gpio8.downgrade(),
-    //     button_queue.clone())?;
     start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
     let ledperipherals = LedPeripherals::new(
         peripherals.pins.gpio14.downgrade(), 
@@ -223,124 +327,39 @@ fn main() -> anyhow::Result<()> {
         ),
         peripherals.ledc.timer1
     );
-    // let mut screen = ILIDriver::new(
-    //     peripherals.spi2, 
-    //     peripherals.pins.gpio11.downgrade(),
-    //     peripherals.pins.gpio9.downgrade(),
-    //     peripherals.pins.gpio46.downgrade(),
-    //     peripherals.pins.gpio10.downgrade(),
-    //     peripherals.pins.gpio12.downgrade(),
-    //     peripherals.pins.gpio13.downgrade(),
-    // )?;
     info!("initializing screen");
-    let mut screen = if cfg!(feature = "ILI") {
-        info!("using ILI");
-        let cspin: Option<AnyIOPin> = None;
-        let spi_device_driver = SpiDeviceDriver::new_single(
-            peripherals.spi2,
-            peripherals.pins.gpio9.downgrade(),
-            peripherals.pins.gpio46.downgrade(),
-            Some(peripherals.pins.gpio10.downgrade()),
-            cspin,
-            &DriverConfig::default(),
-            &Config::default()
-        )?;
-        let interface = SPIInterface::new(
-            spi_device_driver,
-            PinDriver::output(peripherals.pins.gpio11.downgrade())?
-        );
-        Screen::ILI(Ili9341::new(
-            interface,
-            PinDriver::output(peripherals.pins.gpio12.downgrade())?,
-            &mut Delay::new_default(),
-            ILIOrientation::Landscape,
-            DisplaySize240x320
-        ).unwrap())
-    } else if cfg!(feature = "ST") {
-        info!("using ST");
-        let cspin: Option<AnyIOPin> = None;
-        let sdipin: Option<AnyIOPin> = None;
-        let spi_device_driver = SpiDeviceDriver::new_single(
-            peripherals.spi2,
-            peripherals.pins.gpio9.downgrade(),
-            peripherals.pins.gpio10.downgrade(),
-            sdipin,
-            cspin,
-            &DriverConfig::default(),
-            &Config::default()
-        )?;
-        let mut s = ST7735::new(
-            spi_device_driver, // SPI
-            PinDriver::output(peripherals.pins.gpio11.downgrade())?, // DC
-            Some(PinDriver::output(peripherals.pins.gpio12.downgrade())?), // RST
-            true,  // rgb
-            false, // inverted
-            128,   // width
-            160    // height
-        );
-        let mut delay = FreeRtos;
-        let res = s.init(&mut delay)?;
-        // match res {
-        //     Ok(s) => {},
-        //     Err(e) => {panic!("error initializing display: {:?}", e);}
-        // };
-        s.set_orientation(&STOrientation::PortraitSwapped)?;
-        s.set_offset(1, 2);
-        info!("clearing screen!");
-        s.clear(Rgb565::BLUE)?;
 
-        // info!("screen clearing!");
-        // let mut result = s.set_address_window(
-        //     0,
-        //     0,
-        //     128 as u16 - 1,
-        //     160 as u16 - 1,);
-        // match result {
-        //     Ok(s) => { info!("window result ok!"); },
-        //     Err(e) => { panic!("error in setting display window: {:?}", e); },
-        // }
+    #[cfg(feature = "ILI")]
+    let mut screen = init_screen(
+        peripherals.spi2,
+        peripherals.pins.gpio9,
+        peripherals.pins.gpio46,
+        peripherals.pins.gpio10,
+        peripherals.pins.gpio11,
+        peripherals.pins.gpio12)?;
+    #[cfg(feature = "ST")]
+    let mut screen = init_screen(
+        peripherals.spi2,
+        peripherals.pins.gpio9,
+        peripherals.pins.gpio10,
+        peripherals.pins.gpio11,
+        peripherals.pins.gpio12)?;
+    #[cfg(feature = "sim")]
+    let mut screen = init_screen()?;
 
-        // let coloriter = core::iter::repeat_n(RawU16::from(Rgb565::BLACK).into_inner(),
-        //         (128 * 160) as usize);
-        // result = s.write_pixels_buffered(
-        // //     [0u16, 0u16, 0u16, 0u16]
-        //     coloriter
-        //     // core::iter::repeat_n(RawU16::from(Rgb565::BLACK).into_inner(),
-        //     //     (128 * 160) as usize),
-        // );
-        // get_stack_size();
-        info!("screen result!");
-        Screen::ST(s)
-    } else {
-        panic!("enable a screen feature")
-    };
-    // panic!();
 
-    info!("screen clearing!");
-
-    // let result = screen.clear(Rgb565::BLACK);
-    info!("screen result!");
-    // match result {
-    //     Ok(s) => {},
-    //     Err(e) => { panic!("error initialization display: {:?}", e); },
-    // }
+    // let mut screen = if cfg!(feature = "ILI") {
+    // } else if cfg!(feature = "ST") {
+    // } else if cfg!(feature = "sim") {
+    // } else {
+    //     panic!("enable a screen feature")
+    // };
 
     let mut font = PbFont::new();
     font.set_size(FontSize::Sz14)?;
 
     let pb_font_style = PbFontRenderer::new(font);
-
-    // let (char_metrics, char_slice) = font.load_char(0x3d)?;
-
-    // info!("{:?}", char_metrics);
-    // info!("{:?}", char_slice.len());
-    
-
-    // info!("{:?}\n{:?}", char_metrics, char_slice);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
-    // screen.display.draw_raw_slice(10, 10, 19, 19, color_vec.as_slice())?;
-    // screen.display.draw_raw_slice(30, 30, 29+(char_metrics.height / 3), 29+char_metrics.width, char_slice.as_slice())?;
-    // screen.draw_string(50, 50, "Hello blue!", &mut font, 16)?;
 
     let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
     backlight.set_high()?;
@@ -365,31 +384,8 @@ fn main() -> anyhow::Result<()> {
     };
 
     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
-//     outputctl.buffer_action(Action::SetDuty(0, OutputCtl::max_duty / 2), 2000)?;
-//     outputctl.buffer_action(Action::SetDuty(1, OutputCtl::max_duty), 2000)?;
-//     outputctl.buffer_action(Action::On(0), 3000)?;
-//     outputctl.buffer_action(Action::Off(0), 4000)?;
-//     esp_idf_hal::delay::FreeRtos::delay_ms(5000);
-//     outputctl.buffer_action(Action::On(1), 1000)?;
-
-    // let mut taskstatuses = [TaskStatus_t::default(); 5];
-    // let mut runtime: u32 = 0;
-    // let runtimeptr: *mut u32 = &mut runtime;
-    // unsafe {
-    //     uxTaskGetSystemState(taskstatuses.as_mut_ptr(), taskstatuses.len() as u32, runtimeptr);
-    // }
-
-    // run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(/* screen,*/ leddriver, outputctl, font), button_queue)?;
 
     loop {
-        info!("looping...");
-        http_server.update(&mut settings, &mut pb_wifi)?;
-        esp_idf_hal::delay::FreeRtos::delay_ms(5000);
-    }
-
-    Ok(())
-
-    // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {
     //         match ev {
 // Event::Button(x) => info!("Button Event! {}", x),
@@ -399,7 +395,12 @@ fn main() -> anyhow::Result<()> {
     //     // let mut info = grab()?;
     //     // info.pin_a.enable_interrupt()?;
     //     // info.pin_b.enable_interrupt()?;
-    // }
+        info!("looping...");
+        http_server.update(&mut settings, &mut pb_wifi)?;
+        esp_idf_hal::delay::FreeRtos::delay_ms(5000);
+    }
+
+    Ok(())
 }
 
 /// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
