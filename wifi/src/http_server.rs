@@ -28,6 +28,7 @@ pub struct PbHttpServer<'a> {
     response_outgoing: Sender<PbHttpServerResponse>,
 }
 
+/// All the possible commands the http server can send to the main thread
 pub enum PbHttpServerCommands {
     GetLanguage,
     GetWifi,
@@ -35,6 +36,7 @@ pub enum PbHttpServerCommands {
     SetSettings(String),
 }
 
+/// All the possible responses the main thread could send back to the user through http
 pub enum PbHttpServerResponse {
     Language(u8),
     WifiList(Vec<String>),
@@ -148,11 +150,6 @@ impl PbHttpServer<'_> {
 
         Ok( PbHttpServer { serv, cmds_incoming: cmd_out, response_outgoing: resp_in })
     }
-
-//     /// destroys the server, returning the modified settings.
-//     pub fn consume(self) -> Result<PbGlobalSettings, PbHttpServerError> {
-//         Ok(Arc::into_inner(self.settings).ok_or(PbHttpServerError::ArcReclaim)?.into_inner()?)
-//     }
 
     /// Responds to requests using owned instances of the necessary peripherals. Must be called on
     /// the main thread because sending these peripherals across threads is nasty nasty business.

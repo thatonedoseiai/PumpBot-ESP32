@@ -3,13 +3,14 @@ pub mod lang;
 
 use crate::lang::Lang;
 use std::string::ToString;
-// use wifi::PbWifi;
 
+/// The main structure of global settings that the entire board will use
 pub struct PbGlobalSettings {
     pub lang: Lang,
 }
 
 impl PbGlobalSettings {
+    /// Create a new instance of the global settings
     pub fn new() -> Self {
         PbGlobalSettings {
             lang: Lang::En,
@@ -17,6 +18,8 @@ impl PbGlobalSettings {
     }
 
     // break up this method later
+    /// Set all the global settings from a string in the format `key=value&key=value...`
+    /// TODO: stop unwrapping things and make like proper errors for this damn thing
     pub fn set_from_string(&mut self, s: String) {
         let mut split = s.split("&");
         let _ = split.next(); // theme

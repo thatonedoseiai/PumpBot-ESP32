@@ -11,15 +11,15 @@
 //! - [ili9341] - drives the ILI9341 display.
 //! - [st7735_lcd] - drives the ST7735 display.
 //! - [button_idf] - polls the left and right buttons with debouncing
-//! - [wifi] - handles the BLE and wifi radio.
+//! - [wifi] - handles the BLE and wifi radio, as well as HTTP server behaviour.
 //! - [pwm] - drives and generates PWM signals using timers.
+//! - [global_settings] - defines all the global data for the board e.g. languages and settings
 //!
 //! The main crate is separated into different modules.
 //! - [event] - a wrapper around different kinds of events received by the IO (button and rotenc
 //! events)
 //! - [menu] - the common logic for menus
 //! - [menus] - the individual data for menu functionalities and appearances
-//! - [lang] - the language-translateable strings.
 //!
 //! The main module's responsibility is to start the `main` function, which will initialize the board
 //! and begin on the start menu. The user will then navigate through the menus, ending at the main
