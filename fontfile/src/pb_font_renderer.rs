@@ -59,14 +59,15 @@ impl TextRenderer for PbFontRenderer {
             let (metrics, coldata) = self.font.borrow_mut().load_char(c).unwrap(); // TODO: fix this!
             if metrics.width != 0 {
                 let true_height = metrics.height / 3;
-                let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.height - 1).into());
+                // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
+                println!("drawing letter {:?} {:?}", std::char::from_u32(c as u32), metrics);
                 let byteslice = coldata.into_iter()
                                        .map(|x| -> [u8;3] { x.into() })
                                        .flatten()
                                        .collect::<Vec<u8>>();
                 let rawimage = ImageRaw::<Rgb888>::new(
                     &byteslice.as_slice(), metrics.width.into());
-                let image = Image::new(&rawimage, start_char_point - Point::new(0, true_height.into()));
+                let image = Image::new(&rawimage, start_char_point - Point::new(0, metrics.y.into()));
                 image.draw(&mut target.color_converted())?;
                 // target.draw_iter(
                 //     start_char_point.y,
