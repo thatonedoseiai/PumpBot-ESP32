@@ -129,11 +129,17 @@ pub mod screen {
     };
 
     pub struct Screen<'a> {
-        disp: SimulatorDisplay<Rgb565>,
+        pub disp: SimulatorDisplay<Rgb565>,
         _marker: PhantomData<&'a ()>,
     }
 
     pub type ScreenDrawError = Infallible;
+
+    impl Screen<'_> {
+        pub fn new(disp: SimulatorDisplay<Rgb565>) -> Self {
+            Screen { disp, _marker: PhantomData }
+        }
+    }
 
     /// This is necessary for [crate::Screen] to be usable with [embedded_graphics]. Required for
     /// [DrawTarget]

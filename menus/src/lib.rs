@@ -2,9 +2,9 @@
 //! create its own unique functionality and interact with other menus (e.g. transitions, etc.)
 
 pub mod menus;
-mod mock_queue;
-mod mock_ledc;
-mod mock_pwm;
+pub mod mock_queue;
+pub mod mock_ledc;
+pub mod mock_pwm;
 
 mod event;
 mod screen;
@@ -13,7 +13,7 @@ pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
 // use ilidriver::ILIDriver;
 use std::sync::Arc;
-use fontfile::PbFont;
+use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
 pub use crate::screen::screen::{Screen, ScreenDrawError};
 
 #[cfg(target_os = "espidf")]
@@ -30,6 +30,9 @@ use mock_ledc::LedController;
 use esp_idf_hal::task::queue::Queue;
 #[cfg(not(target_os = "espidf"))]
 use mock_queue::Queue;
+
+#[cfg(not(target_os = "espidf"))]
+use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 
 /// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
 /// or continue displaying the same menu.
@@ -51,15 +54,15 @@ enum MenuStates {
 
 /// A collection of the various IOHandles that menus should be allowed to interact with.
 pub struct IOHandles<'a> {
-    // pub screen: ILIDriver<'a>, 
+    pub screen: Screen<'a>,
     pub leddriver: LedController,
     pub pwm_output: OutputCtl<'a>,
-    pub font: PbFont, 
+    pub font: PbFontRenderer, 
 }
 
 impl<'a> IOHandles<'a> {
-    pub fn new(/* screen: ILIDriver<'a>, */ leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFont) -> IOHandles<'a> {
-        Self { /*screen,*/ leddriver, pwm_output, font }
+    pub fn new( screen: Screen<'a>, leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFontRenderer) -> IOHandles<'a> {
+        Self { screen, leddriver, pwm_output, font }
     }
 }
 
@@ -99,6 +102,7 @@ impl MenuBehaviour for MenuStates {
 /// - `io_handles`: a collection of IO handles that the menus should be allowed to interact with
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
+#[cfg(target_os = "espidf")]
 pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();
@@ -118,6 +122,37 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
             },
             MenuSignal::Return => { return Ok(()); },
             _ => {}
+        }
+        events.clear();
+    }
+}
+
+#[cfg(not(target_os = "espidf"))]
+pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>, mut window: Window) -> anyhow::Result<()> {
+
+    let mut cur_menu: MenuStates = start_menu.into();
+    let mut events = vec![];
+    cur_menu.init(io_handles)?;
+
+    loop {
+        // q.recv(10);
+        if let Some((ev, _)) = q.recv_front(10) {
+            events.push(ev);
+        }
+        let response = cur_menu.update(io_handles, &mut events)?;
+        match response {
+            MenuSignal::Transition(m) => { 
+                cur_menu = m.into();
+                cur_menu.init(io_handles)?;
+            },
+            MenuSignal::Return => { return Ok(()); },
+            _ => {}
+        }
+        window.update(&io_handles.screen.disp);
+        for event in window.events() {
+            if event == SimulatorEvent::Quit {
+                return Ok(());
+            }
         }
         events.clear();
     }

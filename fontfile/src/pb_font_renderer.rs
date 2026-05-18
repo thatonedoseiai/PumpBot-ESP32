@@ -16,14 +16,16 @@ use embedded_graphics::{
 };
 use az::SaturatingAs;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use crate::PbFont;
 
 /// Defines the global state of the renderer. Font size and everything is already included in
 /// `PbFont`, so we only need to add `bgcol` (background colour) and `fgcol` (foreground colour).
+#[derive(Clone)]
 pub struct PbFontRenderer {
     // need a cell or something
-    font: RefCell<PbFont>,
+    pub font: Rc<RefCell<PbFont>>,
     bgcol: Rgb888,
     fgcol: Rgb888,
 }
@@ -34,7 +36,7 @@ impl PbFontRenderer {
     /// to be universal.
     pub fn new(font: PbFont) -> Self {
         PbFontRenderer {
-            font: RefCell::new(font),
+            font: Rc::new(RefCell::new(font)),
             bgcol: Rgb888::GREEN,
             fgcol: Rgb888::BLUE,
         }

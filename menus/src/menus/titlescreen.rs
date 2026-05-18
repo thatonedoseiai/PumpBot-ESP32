@@ -8,6 +8,10 @@ use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;
 use log::info;
+use embedded_graphics::{
+    prelude::*,
+    text::Text,
+};
 
 /// represents the internal state of the title screen - what language it's on and how long it has
 /// until it swaps to a different language.
@@ -51,10 +55,13 @@ impl MenuBehaviour for TitleState {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
         if self.counter == 0 {
-            io_handles.font.set_size(FontSize::Sz24)?;
+            io_handles.font.font.borrow_mut().set_size(FontSize::Sz24)?;
+            Text::new(TEXT_WELCOME[self.cur_lang], Point::new(10, 10), io_handles.font.clone()).draw(&mut io_handles.screen);
+            Text::new(TEXT_WELCOME_A[self.cur_lang], Point::new(10, 50), io_handles.font.clone()).draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 240-195, TEXT_WELCOME[self.cur_lang], &mut io_handles.font, 0)?;
             // io_handles.screen.draw_string(60, 240-154, TEXT_WELCOME_A[self.cur_lang], &mut io_handles.font, 0)?;
-            io_handles.font.set_size(FontSize::Sz14)?;
+            io_handles.font.font.borrow_mut().set_size(FontSize::Sz14)?;
+            Text::new(TEXT_PRESSENC[self.cur_lang], Point::new(10, 80), io_handles.font.clone()).draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 230, TEXT_PRESSENC[self.cur_lang], &mut io_handles.font, 0)?;
             self.cur_lang = next_lang(self.cur_lang);
             self.counter = 20;

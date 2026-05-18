@@ -9,7 +9,7 @@ pub struct EspError {}
 type TickType_t = u32;
 
 impl<T> Queue<T> where T: Copy {
-    pub fn new(size: usize) -> Self {
+    pub fn new(_: usize) -> Self {
         Queue {
             c: RefCell::new(Vec::<T>::new())
         }
