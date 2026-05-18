@@ -1,14 +1,33 @@
 //! This module contains the common logic for menus. Each menu will build on top of this module to
 //! create its own unique functionality and interact with other menus (e.g. transitions, etc.)
 
-use esp_idf_hal::task::queue::Queue;
-use crate::event::Event;
+pub mod menus;
+mod mock_queue;
+mod mock_ledc;
+mod mock_pwm;
+
+mod event;
+
+pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
 // use ilidriver::ILIDriver;
-use pwm::OutputCtl;
-use ledc::LedController;
 use std::sync::Arc;
 use fontfile::PbFont;
+
+#[cfg(target_os = "espidf")]
+use pwm::OutputCtl;
+#[cfg(not(target_os = "espidf"))]
+use mock_pwm::OutputCtl;
+
+#[cfg(target_os = "espidf")]
+use ledc::LedController;
+#[cfg(not(target_os = "espidf"))]
+use mock_ledc::LedController;
+
+#[cfg(target_os = "espidf")]
+use esp_idf_hal::task::queue::Queue;
+#[cfg(not(target_os = "espidf"))]
+use mock_queue::Queue;
 
 /// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
 /// or continue displaying the same menu.

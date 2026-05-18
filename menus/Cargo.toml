@@ -1,0 +1,17 @@
+[package]
+name = "menus"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+fontfile = { path = "../fontfile" }
+log = "0.4.29"
+global_settings = { path = "../global_settings" }
+
+[target.'cfg(target_os = "espidf")'.dependencies]
+esp-idf-hal = "0.45.2"
+ledc = { path = "../ledc" }
+rotenc = { path = "../rotenc" }
+pwm = { path = "../pwm" }
+button_idf = { path = "../button_idf" }

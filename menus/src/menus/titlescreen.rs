@@ -2,8 +2,8 @@
 //! This menu will display the welcome text to pumpbot, while cycling the welcome text language at a
 //! constant rate.
 
-use crate::menu::{MenuSignal, MenuBehaviour, IOHandles};
-use crate::event::Event;
+use crate::{MenuSignal, MenuBehaviour, IOHandles};
+use crate::Event;
 use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;

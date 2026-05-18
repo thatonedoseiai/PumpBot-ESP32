@@ -1,0 +1,11 @@
+[package]
+name = "sim"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+embedded-graphics = "0.8.2"
+embedded-graphics-simulator = "0.8.0"
+menus = { path = "../menus" }
+fontfile = { path = "../fontfile" }

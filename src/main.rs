@@ -14,12 +14,11 @@
 //! - [wifi] - handles the BLE and wifi radio, as well as HTTP server behaviour.
 //! - [pwm] - drives and generates PWM signals using timers.
 //! - [global_settings] - defines all the global data for the board e.g. languages and settings
+//! - [menus] - defines all the shared behaviour for the menus, and contains a module for unifying
+//! various events from different places into one shared event type
 //!
-//! The main crate is separated into different modules.
-//! - [event] - a wrapper around different kinds of events received by the IO (button and rotenc
-//! events)
-//! - [menu] - the common logic for menus
-//! - [menus] - the individual data for menu functionalities and appearances
+//! There is a different module [sim] which we plan to use to simulate the screens. This can be
+//! used for visual testing of menus.
 //!
 //! The main module's responsibility is to start the `main` function, which will initialize the board
 //! and begin on the start menu. The user will then navigate through the menus, ending at the main
@@ -36,12 +35,6 @@
 //!     - [ ] test
 //! - [ ] menus
 
-mod event;
-mod menu;
-mod menus;
-// mod lang;
-// mod settings;
-
 use esp_idf_hal::gpio::*;
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::task::queue::Queue;
@@ -49,7 +42,6 @@ use button_idf::button_init;
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
 use log::info;
-use event::Event;
 use ledc::{LedController, LedPeripherals, LedMode};
 use pwm::{OutputCtl, OutputPeripherals, Action};
 use fontfile::{RGB, FontSize, PbFont, rgb, pb_font_renderer::PbFontRenderer};
@@ -61,7 +53,7 @@ use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
-use crate::menu::{run_menu_loop, MenuSelection, IOHandles};
+use menus::{run_menu_loop, MenuSelection, IOHandles, Event};
 use global_settings::PbGlobalSettings;
 use display_interface_spi::SPIInterface;
 use embedded_graphics::{
@@ -76,27 +68,11 @@ use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use std::convert::Infallible;
 
-#[cfg(feature = "sim")]
-use embedded_graphics_simulator::{ SimulatorDisplay };
-
-#[cfg(all(not(feature = "sim"), not(feature = "ST"), not(feature = "ILI")))]
+#[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
 compile_error!("Declare a screen to compile!");
 
-#[cfg(any(all(feature = "sim", feature = "ILI"), all(feature = "sim", feature = "ST"), all(feature = "ILI", feature = "ST"), all(feature = "ILI", feature = "ST", feature = "sim")))]
+#[cfg(any(all(feature = "ILI", feature = "ST")))]
 compile_error!("You may only have one screen active at a time!");
-
-// const _: () = {
-//     // Assert that the 'serde' feature is enabled
-//     if !cfg!(feature = "ILI") && !cfg!(feature = "ST") && !cfg!(feature = "sim") {
-//         compile_error!("Declare a screen to compile!");
-//     }
-//     if (cfg!(feature = "ILI") && cfg!(feature = "ST")) ||
-//        (cfg!(feature = "sim") && cfg!(feature = "ST")) ||
-//        (cfg!(feature = "ILI") && cfg!(feature = "sim")) {
-//         compile_error!("You may only have one screen active at a time!");
-//     }
-// };
-
 
 /// A generalized driver that wraps both kinds of screens. This wrapper can either contain an 
 /// ILI9341 driver, or an ST7735 driver. If a new kind of screen with a new kind of driver is
@@ -105,8 +81,6 @@ compile_error!("You may only have one screen active at a time!");
 enum Screen<'a> {
     ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
     ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>),
-    #[cfg(feature = "sim")]
-    Sim(SimulatorDisplay<Rgb565>),
 }
 
 /// Wraps both kinds of errors that we can expect from the screen drawing.
@@ -157,8 +131,6 @@ impl OriginDimensions for Screen<'_> {
         match self {
             Screen::ILI(s) => s.size(),
             Screen::ST(s) => s.size(),
-            #[cfg(feature = "sim")]
-            Screen::Sim(s) => s.size(),
         }
     }
 }
@@ -172,8 +144,6 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.draw_iter::<I>(pixels)?),
             Screen::ST(s) => Ok(s.draw_iter::<I>(pixels)?),
-            #[cfg(feature = "sim")]
-            Screen::Sim(s) => Ok(s.draw_iter::<I>(pixels)?),
         }
     }
 
@@ -186,8 +156,6 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
             Screen::ST(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
-            #[cfg(feature = "sim")]
-            Screen::Sim(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
         }
     }
 
@@ -199,8 +167,6 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.fill_solid(area, color)?),
             Screen::ST(s) => Ok(s.fill_solid(area, color)?),
-            #[cfg(feature = "sim")]
-            Screen::Sim(s) => Ok(s.fill_solid(area, color)?),
         }
     }
 
@@ -208,8 +174,6 @@ impl DrawTarget for Screen<'_> {
         match self {
             Screen::ILI(s) => Ok(s.clear(color)?),
             Screen::ST(s) => Ok(s.clear(color)?),
-            #[cfg(feature = "sim")]
-            Screen::Sim(s) => Ok(s.clear(color)?),
         }
     }
 }
@@ -272,13 +236,6 @@ fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio10: Gpio10, gpio11: Gpio11, gpi
     s.clear(Rgb565::BLUE)?;
     // info!("screen result!");
     Ok(Screen::ST(s))
-}
-
-#[cfg(feature = "sim")]
-fn init_screen<'a>() -> anyhow::Result<Screen<'a>> {
-    info!("SCREEN: using simulator");
-    let s = SimulatorDisplay::<Rgb565>::new(Size::new(128,160));
-    Ok(Screen::Sim(s))
 }
 
 /// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
@@ -344,8 +301,6 @@ fn main() -> anyhow::Result<()> {
         peripherals.pins.gpio10,
         peripherals.pins.gpio11,
         peripherals.pins.gpio12)?;
-    #[cfg(feature = "sim")]
-    let mut screen = init_screen()?;
 
 
     // let mut screen = if cfg!(feature = "ILI") {
