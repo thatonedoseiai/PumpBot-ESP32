@@ -1,5 +1,5 @@
 use menus::{run_menu_loop, MenuSelection, IOHandles, Event};
-use embedded_graphics_simulator::SimulatorDisplay;
+use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder};
 use fontfile::{FontSize, PbFont, pb_font_renderer::PbFontRenderer};
 use embedded_graphics::{
     prelude::*,
@@ -25,6 +25,9 @@ fn main() -> anyhow::Result<()> {
     .draw(&mut screen);
 
     // let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
-    Text::new("Hello Rust!", Point::new(20, 30), pb_font_style).draw(&mut screen)?;
+
+    Text::new("Hello Rust!", Point::new(20, 50), pb_font_style).draw(&mut screen)?;
+    let output_settings = OutputSettingsBuilder::new().scale(2).build();
+    Window::new("Hello World", &output_settings).show_static(&screen);
     Ok(())
 }

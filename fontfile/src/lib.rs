@@ -189,7 +189,17 @@ impl PbFont {
     /// render a font size which does not have an associated file in the filesystem would result in
     /// an error and/or not display correctly.
     pub fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
+        #[cfg(target_os = "espidf")]
         let font_name = format!("/fs/{}", match sz {
+            FontSize::Sz12 => FONT_NAME_SIZE_12,
+            FontSize::Sz14 => FONT_NAME_SIZE_14,
+            FontSize::Sz18 => FONT_NAME_SIZE_18,
+            FontSize::Sz24 => FONT_NAME_SIZE_24,
+            FontSize::Sz42 => FONT_NAME_SIZE_42,
+        });
+
+        #[cfg(not(target_os = "espidf"))]
+        let font_name = format!("./fs/{}", match sz {
             FontSize::Sz12 => FONT_NAME_SIZE_12,
             FontSize::Sz14 => FONT_NAME_SIZE_14,
             FontSize::Sz18 => FONT_NAME_SIZE_18,
