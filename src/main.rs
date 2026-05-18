@@ -53,7 +53,7 @@ use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
 use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
-use menus::{run_menu_loop, MenuSelection, IOHandles, Event};
+use menus::{run_menu_loop, MenuSelection, IOHandles, Event, Screen};
 use global_settings::PbGlobalSettings;
 use display_interface_spi::SPIInterface;
 use embedded_graphics::{
@@ -73,110 +73,6 @@ compile_error!("Declare a screen to compile!");
 
 #[cfg(any(all(feature = "ILI", feature = "ST")))]
 compile_error!("You may only have one screen active at a time!");
-
-/// A generalized driver that wraps both kinds of screens. This wrapper can either contain an 
-/// ILI9341 driver, or an ST7735 driver. If a new kind of screen with a new kind of driver is
-/// required, we would put that new driver in here. This helps with modularity so that we can have
-/// more freedom with which screens we might want to use in the future.
-enum Screen<'a> {
-    ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
-    ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>),
-}
-
-/// Wraps both kinds of errors that we can expect from the screen drawing.
-/// Either an ILI9341 is connected, and in such a case we would use [ili9341::DisplayError],
-/// otherwise an ST7735 is connected, in which case we would use [st7735_lcd::ST7735Error].
-#[derive(Debug)]
-enum ScreenDrawError {
-    ILI(ili9341::DisplayError),
-    ST(st7735_lcd::ST7735Error),
-    Sim,
-}
-
-impl From<ili9341::DisplayError> for ScreenDrawError {
-    fn from(val: ili9341::DisplayError) -> Self {
-        ScreenDrawError::ILI(val)
-    }
-}
-
-impl From<st7735_lcd::ST7735Error> for ScreenDrawError {
-    fn from(val: st7735_lcd::ST7735Error) -> Self {
-        ScreenDrawError::ST(val)
-    }
-}
-
-// simulator is infallible. It is not necessary to include its error defns.
-impl From<Infallible> for ScreenDrawError {
-    fn from(_: Infallible) -> Self {
-        ScreenDrawError::Sim
-    }
-}
-
-impl std::fmt::Display for ScreenDrawError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ScreenDrawError::ILI(s) => write!(f, "{:?}", s),
-            ScreenDrawError::ST(s) => write!(f, "{:?}", s),
-            ScreenDrawError::Sim => write!(f, "Simulator draw error!"),
-        }
-    }
-}
-
-impl std::error::Error for ScreenDrawError { }
-
-/// This is necessary for [crate::Screen] to be usable with [embedded_graphics]. Required for
-/// [DrawTarget]
-impl OriginDimensions for Screen<'_> {
-    fn size(&self) -> Size {
-        match self {
-            Screen::ILI(s) => s.size(),
-            Screen::ST(s) => s.size(),
-        }
-    }
-}
-
-/// This is necessary for [crate::Screen] to be usable with [embedded_graphics].
-impl DrawTarget for Screen<'_> {
-    type Color = Rgb565; // temporary
-    type Error = ScreenDrawError;
-    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
-        where I: IntoIterator<Item = Pixel<Self::Color>> {
-        match self {
-            Screen::ILI(s) => Ok(s.draw_iter::<I>(pixels)?),
-            Screen::ST(s) => Ok(s.draw_iter::<I>(pixels)?),
-        }
-    }
-
-    fn fill_contiguous<I>(
-        &mut self,
-        area: &Rectangle,
-        colors: I,
-    ) -> Result<(), Self::Error>
-       where I: IntoIterator<Item = Self::Color> {
-        match self {
-            Screen::ILI(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
-            Screen::ST(s) => Ok(s.fill_contiguous::<I>(area, colors)?),
-        }
-    }
-
-    fn fill_solid(
-        &mut self,
-        area: &Rectangle,
-        color: Self::Color,
-    ) -> Result<(), Self::Error> {
-        match self {
-            Screen::ILI(s) => Ok(s.fill_solid(area, color)?),
-            Screen::ST(s) => Ok(s.fill_solid(area, color)?),
-        }
-    }
-
-    fn clear(&mut self, color: Self::Color) -> Result<(), Self::Error> {
-        match self {
-            Screen::ILI(s) => Ok(s.clear(color)?),
-            Screen::ST(s) => Ok(s.clear(color)?),
-        }
-    }
-}
 
 /// Initialize the appropriate screen.
 #[cfg(feature = "ILI")]

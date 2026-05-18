@@ -894,6 +894,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ili9341"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc105605dba076630f5a1a22ba80bcff216af2619859f1595e9ddd72b89db30a"
+dependencies = [
+ "display-interface",
+ "embedded-graphics-core",
+ "embedded-hal 1.0.0",
+]
+
+[[package]]
 name = "ilidriver"
 version = "0.1.0"
 dependencies = [
@@ -1041,13 +1052,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "button_idf",
+ "display-interface-spi",
+ "embedded-graphics",
+ "embedded-graphics-simulator",
  "esp-idf-hal",
  "fontfile",
  "global_settings",
+ "ili9341",
  "ledc",
  "log",
  "pwm",
  "rotenc",
+ "st7735-lcd",
 ]
 
 [[package]]
@@ -1491,6 +1507,15 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
+
+[[package]]
+name = "st7735-lcd"
+version = "0.10.0"
+dependencies = [
+ "embedded-graphics-core",
+ "embedded-hal 1.0.0",
+ "nb 1.1.0",
+]
 
 [[package]]
 name = "stable_deref_trait"

@@ -7,12 +7,14 @@ mod mock_ledc;
 mod mock_pwm;
 
 mod event;
+mod screen;
 
 pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
 // use ilidriver::ILIDriver;
 use std::sync::Arc;
 use fontfile::PbFont;
+pub use crate::screen::screen::{Screen, ScreenDrawError};
 
 #[cfg(target_os = "espidf")]
 use pwm::OutputCtl;

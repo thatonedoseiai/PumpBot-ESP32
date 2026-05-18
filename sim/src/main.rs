@@ -1,5 +1,5 @@
 use menus::{run_menu_loop, MenuSelection, IOHandles, Event};
-use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder};
+use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 use fontfile::{FontSize, PbFont, pb_font_renderer::PbFontRenderer};
 use embedded_graphics::{
     prelude::*,
@@ -28,6 +28,13 @@ fn main() -> anyhow::Result<()> {
 
     Text::new("Hello Rust!", Point::new(20, 50), pb_font_style).draw(&mut screen)?;
     let output_settings = OutputSettingsBuilder::new().scale(2).build();
-    Window::new("Hello World", &output_settings).show_static(&screen);
-    Ok(())
+    let mut window = Window::new("Hello World", &output_settings);//.update(&screen);
+    loop {
+        window.update(&screen);
+        for event in window.events() {
+            if event == SimulatorEvent::Quit {
+                return Ok(());
+            }
+        }
+    }
 }
