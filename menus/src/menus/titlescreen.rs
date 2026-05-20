@@ -10,8 +10,9 @@ use fontfile::FontSize;
 use log::info;
 use embedded_graphics::{
     prelude::*,
-    text::Text,
+    text::{Text, Alignment},
     pixelcolor::Rgb565,
+    primitives::{Rectangle, PrimitiveStyleBuilder}
 };
 
 /// represents the internal state of the title screen - what language it's on and how long it has
@@ -58,12 +59,20 @@ impl MenuBehaviour for TitleState {
         if self.counter == 0 {
             io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
             io_handles.screen.clear(Rgb565::BLACK);
-            Text::new(TEXT_WELCOME[self.cur_lang], Point::new(10, 20), io_handles.font.clone()).draw(&mut io_handles.screen);
-            Text::new(TEXT_WELCOME_A[self.cur_lang], Point::new(10, 50), io_handles.font.clone()).draw(&mut io_handles.screen);
+            Text::with_alignment(TEXT_WELCOME[self.cur_lang], Point::new(64, 20), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen);
+            Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 240-195, TEXT_WELCOME[self.cur_lang], &mut io_handles.font, 0)?;
             // io_handles.screen.draw_string(60, 240-154, TEXT_WELCOME_A[self.cur_lang], &mut io_handles.font, 0)?;
             io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
-            Text::new(TEXT_PRESSENC[self.cur_lang], Point::new(10, 80), io_handles.font.clone()).draw(&mut io_handles.screen);
+            let push_text = Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 80), io_handles.font.clone(), Alignment::Center);
+            // let push_text = Text::new(TEXT_PRESSENC[self.cur_lang], Point::new(10, 80), io_handles.font.clone());
+            let style = PrimitiveStyleBuilder::new()
+                .stroke_color(Rgb565::RED)
+                .stroke_width(3)
+                .fill_color(Rgb565::GREEN)
+                .build();
+            push_text.bounding_box().into_styled(style).draw(&mut io_handles.screen);
+            push_text.draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 230, TEXT_PRESSENC[self.cur_lang], &mut io_handles.font, 0)?;
             self.cur_lang = next_lang(self.cur_lang);
             self.counter = 20;

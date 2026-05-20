@@ -325,22 +325,6 @@ impl PbFont {
         font_file.read_exact(&mut buf)?;
         let cm = CharMetadata::from(buf);
 
-//         let mut buf1 = [0u8; 2];
-//         font_file.read_exact(&mut buf1)?;
-//         let mut advance = u16::from_le_bytes(buf1);
-//         let mut buf1 = [0u8; 2];
-//         font_file.read_exact(&mut buf1)?;
-//         let x = i16::from_le_bytes(buf1);
-//         let mut buf1 = [0u8; 2];
-//         font_file.read_exact(&mut buf1)?;
-//         let y = i16::from_le_bytes(buf1);
-//         let mut buf1 = [0u8; 2];
-//         font_file.read_exact(&mut buf1)?;
-//         let width = u16::from_le_bytes(buf1);
-//         let mut buf1 = [0u8; 2];
-//         font_file.read_exact(&mut buf1)?;
-//         let height = u16::from_le_bytes(buf1);
-
         if curchar == 0x20 {
             return Ok((CharMetadata {
                 advance: cm.advance,
@@ -362,16 +346,8 @@ impl PbFont {
             return Err(FontFileError::BadChar(curchar, cm.width, cm.height))
         }
 
-        // let vertical = (advance & 0x1000) != 0;
-        // advance &= 0x4fff;
-        // unsafe { CM.vertical } = (unsafe { CM.advance } & 0x1000) >> 12;
-        // unsafe { CM.advance } &= 0x4fff;
-
         let decompressed_len: usize = (cm.width * cm.height) as usize;
-        // let mut decompressed = vec![0u8; decompressed_len];
-        // let decompressed;
 
-        // info!("DATA: {:?}", data);
         let decompressed = if !cm.vertical {
             decode(&data)
         } else {
@@ -403,6 +379,36 @@ impl PbFont {
         //     advance, x, y, width, height, vertical,
         // }, rgb_vec))
         Ok((cm, rgb_vec))
+    }
+
+    pub fn load_char_metadata(&mut self, curchar: u16) -> Result<CharMetadata, FontFileError> {
+        // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
+        let offset = self.binary_search(curchar)?;
+
+        let Some(ref mut font_file) = self.font_file else { return Err(FontFileError::FileNotOpen); };
+        font_file.seek(SeekFrom::Start(offset as u64))?;
+
+        let mut buf = [0u8; 10];
+        font_file.read_exact(&mut buf)?;
+        let cm = CharMetadata::from(buf);
+
+        if curchar == 0x20 {
+            return Ok(CharMetadata {
+                advance: cm.advance,
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 0,
+                vertical: false,
+            });
+        }
+
+        if cm.width == 0 || cm.height == 0 {
+            // println!("BAD CHAR: {} has width {} height {}", curchar, unsafe { CM.width }, unsafe { CM.height });
+            return Err(FontFileError::BadChar(curchar, cm.width, cm.height))
+        }
+
+        Ok(cm)
     }
 }
 

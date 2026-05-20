@@ -9,10 +9,11 @@ use embedded_graphics::{
     }, 
     pixelcolor::{Rgb565, Rgb888},
     geometry::Point,
-    prelude::{DrawTarget, RgbColor},
+    prelude::{DrawTarget, RgbColor, Size},
     image::{Image, ImageRaw},
     Drawable,
     draw_target::DrawTargetExt,
+    primitives::Rectangle,
 };
 use az::SaturatingAs;
 use std::cell::RefCell;
@@ -60,14 +61,13 @@ impl TextRenderer for PbFontRenderer {
             if metrics.width != 0 {
                 let true_height = metrics.height / 3;
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
-                // println!("drawing letter {:?} {:?}", std::char::from_u32(c as u32), metrics);
                 let byteslice = coldata.into_iter()
                                        .map(|x| -> [u8;3] { x.into() })
                                        .flatten()
                                        .collect::<Vec<u8>>();
                 let rawimage = ImageRaw::<Rgb888>::new(
                     &byteslice.as_slice(), metrics.width.into());
-                println!("character {:?} metrics {:?}", char::from_u32(c as u32), &metrics);
+                // println!("character {:?} metrics {:?}", char::from_u32(c as u32), &metrics);
                 let image = Image::new(&rawimage, start_char_point - Point::new(0, metrics.y.into()));
                 image.draw(&mut target.color_converted())?;
                 // target.draw_iter(
@@ -101,7 +101,46 @@ impl TextRenderer for PbFontRenderer {
         position: Point,
         baseline: Baseline,
     ) -> TextMetrics {
-        todo!();
+        // let mut bounding_box = Rectangle::new(position, Size::new(0, 0));
+        let mut bb_top_left = position;
+        let mut bb_bottom_right = position;
+        let mut start_char_point = position;
+        for c in text.encode_utf16() {
+            let metrics = self.font.borrow_mut().load_char_metadata(c).unwrap(); // TODO: fix this!
+            let top_left = start_char_point - Point::new(0, metrics.y.into());
+            let bottom_right = top_left + Size::new(metrics.width.into(), (metrics.height / 3).into());
+            if top_left.x < bb_top_left.x {
+                bb_top_left.x = top_left.x;
+            }
+            if top_left.y < bb_top_left.y {
+                bb_top_left.y = top_left.y;
+            }
+            if bottom_right.x > bb_bottom_right.x {
+                bb_bottom_right.x = bottom_right.x;
+            }
+            if bottom_right.y > bb_bottom_right.y {
+                bb_bottom_right.y = bottom_right.y;
+            }
+            // if top_left.x < bounding_box.top_left.x {
+            //     bounding_box.top_left.x = top_left.x;
+            // }
+            // if top_left.y < bounding_box.top_left.y {
+            //     bounding_box.top_left.y = top_left.y;
+            // }
+            // if bottom_right.x > bounding_box.top_left.x.saturating_add_unsigned(bounding_box.size.width) {
+            //     bounding_box.size.width += (bottom_right.x - bounding_box.top_left.x.saturating_add_unsigned(bounding_box.size.width)) as u32;
+            // }
+            // if bottom_right.y > bounding_box.top_left.y.saturating_add_unsigned(bounding_box.size.height) {
+            //     bounding_box.size.height += (bottom_right.y - bounding_box.top_left.y.saturating_add_unsigned(bounding_box.size.height)) as u32;
+            // }
+            start_char_point += Point::new(metrics.advance.into(), 0);
+        }
+        let bounding_box = Rectangle::with_corners(bb_top_left, bb_bottom_right);
+        TextMetrics {
+            bounding_box, 
+            next_position: start_char_point,
+        }
+        // todo!();
     }
 
     /// this function currently returns a constant. This is a TODO.

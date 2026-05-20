@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
     // let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
 
     // Text::new("Hello Rust!", Point::new(20, 50), pb_font_style.clone()).draw(&mut screen)?;
-    let output_settings = OutputSettingsBuilder::new().scale(2).build();
+    let output_settings = OutputSettingsBuilder::new().scale(4).build();
     let mut window = Window::new("Hello World", &output_settings);//.update(&screen);
     
     run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(
