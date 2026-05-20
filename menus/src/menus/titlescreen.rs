@@ -19,6 +19,7 @@ use embedded_graphics::{
 pub struct TitleState {
     cur_lang: Lang,
     counter: u8,
+    undraw_bbs: [Rectangle;3]
 }
 
 /// A helper function that determines the order of the language swaps. Russian is currently unused
@@ -42,6 +43,7 @@ impl TitleState {
         TitleState {
             cur_lang: Lang::En,
             counter: 20,
+            undraw_bbs: [Rectangle::zero(); 3]
         }
     }
 }
@@ -57,11 +59,24 @@ impl MenuBehaviour for TitleState {
         // self.counter = self.counter.wrapping_add(1);
         if self.counter == 0 {
             io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
-            io_handles.screen.clear(Rgb565::BLACK);
-            Text::with_alignment(TEXT_WELCOME[self.cur_lang], Point::new(64, 30), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen);
-            Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen);
+            // io_handles.screen.clear(Rgb565::BLACK);
+            let black = PrimitiveStyleBuilder::new()
+                    .fill_color(Rgb565::BLACK)
+                    .build();
+            for rect in self.undraw_bbs {
+                rect.into_styled(black).draw(&mut io_handles.screen)?;
+            }
+
+            let top_text = Text::with_alignment(TEXT_WELCOME[self.cur_lang], Point::new(64, 30), io_handles.font.clone(), Alignment::Center);
+            self.undraw_bbs[0] = top_text.bounding_box();
+            top_text.draw(&mut io_handles.screen)?;
+            let mid_text = Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center);
+            self.undraw_bbs[1] = mid_text.bounding_box();
+            mid_text.draw(&mut io_handles.screen)?;
             io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
-            let push_text = Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen);
+            let push_text = Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center);
+            self.undraw_bbs[2] = push_text.bounding_box();
+            push_text.draw(&mut io_handles.screen)?;
             // push_text.draw(&mut io_handles.screen);
             self.cur_lang = next_lang(self.cur_lang);
             self.counter = 20;
