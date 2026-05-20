@@ -11,6 +11,7 @@ use log::info;
 use embedded_graphics::{
     prelude::*,
     text::Text,
+    pixelcolor::Rgb565,
 };
 
 /// represents the internal state of the title screen - what language it's on and how long it has
@@ -55,12 +56,13 @@ impl MenuBehaviour for TitleState {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
         if self.counter == 0 {
-            io_handles.font.font.borrow_mut().set_size(FontSize::Sz24)?;
-            Text::new(TEXT_WELCOME[self.cur_lang], Point::new(10, 10), io_handles.font.clone()).draw(&mut io_handles.screen);
+            io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+            io_handles.screen.clear(Rgb565::BLACK);
+            Text::new(TEXT_WELCOME[self.cur_lang], Point::new(10, 20), io_handles.font.clone()).draw(&mut io_handles.screen);
             Text::new(TEXT_WELCOME_A[self.cur_lang], Point::new(10, 50), io_handles.font.clone()).draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 240-195, TEXT_WELCOME[self.cur_lang], &mut io_handles.font, 0)?;
             // io_handles.screen.draw_string(60, 240-154, TEXT_WELCOME_A[self.cur_lang], &mut io_handles.font, 0)?;
-            io_handles.font.font.borrow_mut().set_size(FontSize::Sz14)?;
+            io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
             Text::new(TEXT_PRESSENC[self.cur_lang], Point::new(10, 80), io_handles.font.clone()).draw(&mut io_handles.screen);
             // io_handles.screen.draw_string(60, 230, TEXT_PRESSENC[self.cur_lang], &mut io_handles.font, 0)?;
             self.cur_lang = next_lang(self.cur_lang);

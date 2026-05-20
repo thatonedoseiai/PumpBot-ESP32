@@ -26,7 +26,7 @@ use crate::PbFont;
 pub struct PbFontRenderer {
     // need a cell or something
     pub font: Rc<RefCell<PbFont>>,
-    bgcol: Rgb888,
+    bgcol: Option<Rgb888>,
     fgcol: Rgb888,
 }
 
@@ -37,7 +37,7 @@ impl PbFontRenderer {
     pub fn new(font: PbFont) -> Self {
         PbFontRenderer {
             font: Rc::new(RefCell::new(font)),
-            bgcol: Rgb888::GREEN,
+            bgcol: Some(Rgb888::GREEN),
             fgcol: Rgb888::BLUE,
         }
     }
@@ -67,6 +67,7 @@ impl TextRenderer for PbFontRenderer {
                                        .collect::<Vec<u8>>();
                 let rawimage = ImageRaw::<Rgb888>::new(
                     &byteslice.as_slice(), metrics.width.into());
+                println!("character {:?} metrics {:?}", char::from_u32(c as u32), &metrics);
                 let image = Image::new(&rawimage, start_char_point - Point::new(0, metrics.y.into()));
                 image.draw(&mut target.color_converted())?;
                 // target.draw_iter(

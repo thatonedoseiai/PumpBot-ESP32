@@ -35,6 +35,7 @@ use std::sync::Arc;
 // use az::SaturatingAs;
 
 // Font file constants
+const FONT_NAME_SIZE_7: &str = "NC_7.cbf";
 const FONT_NAME_SIZE_12: &str = "NC_12.cbf";
 const FONT_NAME_SIZE_14: &str = "NC_14.cbf";
 const FONT_NAME_SIZE_18: &str = "NC_18.cbf";
@@ -58,6 +59,7 @@ pub struct PbBg {
 /// Represents a font size.
 #[derive(Debug, Clone, Copy)]
 pub enum FontSize {
+    Sz7,
     Sz12,
     Sz14,
     Sz18,
@@ -68,6 +70,7 @@ pub enum FontSize {
 impl From<FontSize> for u16 {
     fn from(val: FontSize) -> u16 {
         match val {
+            FontSize::Sz7 => 7,
             FontSize::Sz12 => 12,
             FontSize::Sz14 => 14,
             FontSize::Sz18 => 18,
@@ -99,7 +102,7 @@ pub struct CharMetadata {
 impl From<[u8; 10]> for CharMetadata {
     fn from(val: [u8; 10]) -> CharMetadata {
         let mut advance = u16::from_le_bytes([val[0], val[1]]);
-        let vertical = (advance & 0x8000) == 0x8000;
+        let vertical = (advance & 0x1000) == 0x1000;
         advance &= 0x4fff;
 
         CharMetadata {
@@ -191,6 +194,7 @@ impl PbFont {
     pub fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
         #[cfg(target_os = "espidf")]
         let font_name = format!("/fs/{}", match sz {
+            FontSize::Sz7 => FONT_NAME_SIZE_7,
             FontSize::Sz12 => FONT_NAME_SIZE_12,
             FontSize::Sz14 => FONT_NAME_SIZE_14,
             FontSize::Sz18 => FONT_NAME_SIZE_18,
@@ -200,6 +204,7 @@ impl PbFont {
 
         #[cfg(not(target_os = "espidf"))]
         let font_name = format!("./fs/{}", match sz {
+            FontSize::Sz7 => FONT_NAME_SIZE_7,
             FontSize::Sz12 => FONT_NAME_SIZE_12,
             FontSize::Sz14 => FONT_NAME_SIZE_14,
             FontSize::Sz18 => FONT_NAME_SIZE_18,
