@@ -217,26 +217,33 @@ fn main() -> anyhow::Result<()> {
 
     let yoffset = 10;
     let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
-    let res = Triangle::new(
-        Point::new(16, 16 + yoffset),
-        Point::new(16 + 16, 16 + yoffset),
-        Point::new(16 + 8, yoffset),
-    )
-    .into_styled(thin_stroke)
-    .draw(&mut screen);
+    // let res = Triangle::new(
+    //     Point::new(16, 16 + yoffset),
+    //     Point::new(16 + 16, 16 + yoffset),
+    //     Point::new(16 + 8, yoffset),
+    // )
+    // .into_styled(thin_stroke)
+    // .draw(&mut screen);
 
     let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
-    let _ = Text::new("Hello Rust!", Point::new(20, 30), pb_font_style)
-        .draw(&mut screen);
+    // let _ = Text::new("Hello Rust!", Point::new(20, 30), pb_font_style)
+    //     .draw(&mut screen);
 
-    match res {
-        Err(x) => panic!("error in drawing triangle: {:?}", x),
-        _ => {}
-    };
+    // match res {
+    //     Err(x) => panic!("error in drawing triangle: {:?}", x),
+    //     _ => {}
+    // };
 
     let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
-    loop {
+    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(
+                screen,
+                leddriver,
+                outputctl,
+                pb_font_style,
+            ), button_queue)?;
+
+    // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {
     //         match ev {
 // Event::Button(x) => info!("Button Event! {}", x),
@@ -246,10 +253,10 @@ fn main() -> anyhow::Result<()> {
     //     // let mut info = grab()?;
     //     // info.pin_a.enable_interrupt()?;
     //     // info.pin_b.enable_interrupt()?;
-        info!("looping...");
-        http_server.update(&mut settings, &mut pb_wifi)?;
-        esp_idf_hal::delay::FreeRtos::delay_ms(5000);
-    }
+        // info!("looping...");
+        // http_server.update(&mut settings, &mut pb_wifi)?;
+        // esp_idf_hal::delay::FreeRtos::delay_ms(5000);
+    // }
 
     Ok(())
 }
