@@ -15,6 +15,7 @@ use crate::menus::titlescreen::{TitleState};
 use std::sync::Arc;
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
 pub use crate::screen::screen::{Screen, ScreenDrawError};
+use log::warn;
 
 #[cfg(target_os = "espidf")]
 use pwm::OutputCtl;
@@ -34,6 +35,10 @@ use mock_queue::Queue;
 #[cfg(not(target_os = "espidf"))]
 use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 
+pub enum MenuError {
+    UnimplementedMenu,
+}
+
 /// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
 /// or continue displaying the same menu.
 pub enum MenuSignal {
@@ -45,6 +50,7 @@ pub enum MenuSignal {
 /// The list of all currently implemented menus.
 pub enum MenuSelection {
     TitleMenu,
+    Unimplemented
 }
 
 /// A wrapper around the current states of every menu.
@@ -77,6 +83,7 @@ impl From<MenuSelection> for MenuStates {
     fn from(val: MenuSelection) -> MenuStates {
         match val {
             MenuSelection::TitleMenu => MenuStates::Title(TitleState::new()),
+            MenuSelection::Unimplemented => unreachable!(),
         }
     }
 }
@@ -117,6 +124,10 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
         let response = cur_menu.update(io_handles, &mut events)?;
         match response {
             MenuSignal::Transition(m) => { 
+                if m == MenuSelection::Unimplemented {
+                    warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
+                    return Err(UnimplementedMenu);
+                }
                 cur_menu = m.into();
                 cur_menu.init(io_handles)?;
             },
