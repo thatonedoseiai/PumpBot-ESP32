@@ -121,18 +121,6 @@ impl TextRenderer for PbFontRenderer {
             if bottom_right.y > bb_bottom_right.y {
                 bb_bottom_right.y = bottom_right.y;
             }
-            // if top_left.x < bounding_box.top_left.x {
-            //     bounding_box.top_left.x = top_left.x;
-            // }
-            // if top_left.y < bounding_box.top_left.y {
-            //     bounding_box.top_left.y = top_left.y;
-            // }
-            // if bottom_right.x > bounding_box.top_left.x.saturating_add_unsigned(bounding_box.size.width) {
-            //     bounding_box.size.width += (bottom_right.x - bounding_box.top_left.x.saturating_add_unsigned(bounding_box.size.width)) as u32;
-            // }
-            // if bottom_right.y > bounding_box.top_left.y.saturating_add_unsigned(bounding_box.size.height) {
-            //     bounding_box.size.height += (bottom_right.y - bounding_box.top_left.y.saturating_add_unsigned(bounding_box.size.height)) as u32;
-            // }
             start_char_point += Point::new(metrics.advance.into(), 0);
         }
         let bounding_box = Rectangle::with_corners(bb_top_left, bb_bottom_right);
