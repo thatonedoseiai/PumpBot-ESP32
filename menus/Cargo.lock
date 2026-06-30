@@ -693,6 +693,7 @@ dependencies = [
  "az",
  "embedded-graphics",
  "log",
+ "profiler",
 ]
 
 [[package]]
@@ -1056,11 +1057,13 @@ dependencies = [
  "embedded-graphics",
  "embedded-graphics-simulator",
  "esp-idf-hal",
+ "esp-idf-sys",
  "fontfile",
  "global_settings",
  "ili9341",
  "ledc",
  "log",
+ "profiler",
  "pwm",
  "rotenc",
  "st7735-lcd",
@@ -1264,6 +1267,13 @@ dependencies = [
  "syn 2.0.117",
  "version_check",
  "yansi",
+]
+
+[[package]]
+name = "profiler"
+version = "0.1.0"
+dependencies = [
+ "esp-idf-sys",
 ]
 
 [[package]]

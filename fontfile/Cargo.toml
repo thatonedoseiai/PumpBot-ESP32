@@ -6,4 +6,6 @@ edition = "2024"
 [dependencies]
 az = "1.2.1"
 embedded-graphics = "0.8.2"
+esp-idf-hal = "0.45.2"
 log = "0.4.29"
+profiler = { path = "../profiler" }

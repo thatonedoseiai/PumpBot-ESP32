@@ -206,7 +206,7 @@ where
     }
 
     fn write_words_buffered(&mut self, words: impl IntoIterator<Item = u16>) -> Result<()> {
-        let mut buffer = [0; 32];
+        let mut buffer = [0; 512];
         let mut index = 0;
         for word in words {
             let as_bytes = word.to_be_bytes();
@@ -218,7 +218,10 @@ where
                 index = 0;
             }
         }
-        self.write_data(&buffer[0..index])
+        if index > 0 {
+            self.write_data(&buffer[0..index])?;
+        }
+        Ok(())
     }
 
     pub fn set_orientation(&mut self, orientation: &Orientation) -> Result<()> {
@@ -362,9 +365,26 @@ where
         I: IntoIterator<Item = Self::Color>,
     {
         // Clamp area to drawable part of the display target
+        let pixel_count = (area.size.width * area.size.height) as usize;
         let drawable_area = area.intersection(&Rectangle::new(Point::zero(), self.size()));
 
-        if drawable_area.size != Size::zero() {
+        if drawable_area.size == Size::zero() {
+            return Ok(());
+        }
+
+        if drawable_area == *area {
+            // Fast path: area is fully within bounds, no filtering needed
+            self.set_pixels_buffered(
+                area.top_left.x as u16,
+                area.top_left.y as u16,
+                (area.top_left.x + (area.size.width - 1) as i32) as u16,
+                (area.top_left.y + (area.size.height - 1) as i32) as u16,
+                colors.into_iter()
+                      .take(pixel_count)
+                      .map(|c| RawU16::from(c).into_inner()),
+            )?;
+        } else {
+            // Slow path: partial clip, filtering required
             self.set_pixels_buffered(
                 drawable_area.top_left.x as u16,
                 drawable_area.top_left.y as u16,
@@ -372,8 +392,8 @@ where
                 (drawable_area.top_left.y + (drawable_area.size.height - 1) as i32) as u16,
                 area.points()
                     .zip(colors)
-                    .filter(|(pos, _color)| drawable_area.contains(*pos))
-                    .map(|(_pos, color)| RawU16::from(color).into_inner()),
+                    .filter(|(pos, _)| drawable_area.contains(*pos))
+                    .map(|(_, color)| RawU16::from(color).into_inner()),
             )?;
         }
 

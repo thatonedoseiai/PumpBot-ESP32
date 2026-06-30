@@ -51,7 +51,7 @@ use st7735_lcd::{ST7735, Orientation as STOrientation};
 use std::sync::Arc;
 use esp_idf_hal::delay::{Delay, FreeRtos};
 use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
-use esp_idf_hal::spi::{SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
+use esp_idf_hal::spi::{Dma, SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
 use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
 use menus::{run_menu_loop, MenuSelection, IOHandles, Event, Screen};
 use global_settings::PbGlobalSettings;
@@ -67,6 +67,7 @@ use wifi::{PbWifi, PbHttpServer};
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use esp_idf_svc::nvs::EspDefaultNvsPartition;
 use std::convert::Infallible;
+use esp_idf_hal::units::Hertz;
 
 #[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
 compile_error!("Declare a screen to compile!");
@@ -106,14 +107,20 @@ fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio10: Gpio10, gpio11: Gpio11, gpi
     info!("SCREEN: using ST");
     let cspin: Option<AnyIOPin> = None;
     let sdipin: Option<AnyIOPin> = None;
-    let spi_device_driver = SpiDeviceDriver::new_single(
+    // let config = Config::default().baudrate(26.MHz().into());
+    let config = Config::default().baudrate(Hertz(26_000_000)).queue_size(2048).write_only(true).polling(false);
+    let driverconfig = DriverConfig::default().dma(Dma::Auto(32768));
+    let spidriver = SpiDriver::new(
         spi2,
         gpio9.downgrade(),
         gpio10.downgrade(),
         sdipin,
+        &driverconfig,
+    )?;
+    let spi_device_driver = SpiDeviceDriver::new(
+        spidriver,
         cspin,
-        &DriverConfig::default(),
-        &Config::default()
+        &config,
     )?;
     let mut s = ST7735::new(
         spi_device_driver, // SPI

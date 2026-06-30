@@ -20,7 +20,9 @@ use std::fmt;
 use std::error::Error;
 pub use rgb::{RGB, ColorConversionError};
 use log::info;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+
+use profiler::{timed, SpanGuard};
 
 // use embedded_graphics::{
 //     text::{
@@ -77,6 +79,19 @@ impl From<FontSize> for u16 {
             FontSize::Sz24 => 24,
             FontSize::Sz42 => 42,
         }
+    }
+}
+
+struct CharCache {
+    contents: Vec<(u16, u32)>,
+    lru: [(u16, u32); 32],
+}
+
+static CHAR_CACHE: Mutex<CharCache> = Mutex::new(CharCache { contents: Vec::new(), lru: [(0,0); 32] });
+
+impl CharCache {
+    fn set_contents(&mut self, n: Vec<(u16, u32)>) {
+        self.contents = n;
     }
 }
 
@@ -217,12 +232,13 @@ impl PbFont {
         Self::verify_font_file(&mut file)?;
 
         self.font_metadata = Self::read_header(&mut file)?;
-        
+
         if self.font_metadata.font_size != u16::from(sz) {
             return Err(FontFileError::FileNotFound);
         }
 
         self.font_file = Some(file);
+        self.cache_char_index();
 
         Ok(())
     }
@@ -251,6 +267,35 @@ impl PbFont {
             font_size: u16::from_le_bytes(buf),
             num_glyphs: u32::from_le_bytes(buf1)
         })
+    }
+
+    // loads the char index and caches it in RAM.
+    fn cache_char_index(&mut self) -> Result<(), FontFileError> {
+        if let Some(ref mut f) = self.font_file {
+            f.seek(SeekFrom::Start(16_u64))?;
+            let mut bytes = vec![0u8; 6 * self.font_metadata.num_glyphs as usize];
+            f.read_exact(&mut bytes)?;
+            let entries: Vec<(u16, u32)> = bytes
+                .chunks_exact(6)
+                .map(|chunk| {
+                    let codepoint = u16::from_le_bytes([chunk[0], chunk[1]]);
+                    let offset = u32::from_le_bytes([chunk[2], chunk[3], chunk[4], chunk[5]]);
+                    (codepoint, offset)
+                })
+                .collect();
+            CHAR_CACHE.lock().unwrap().set_contents(entries);
+        }
+        Ok(())
+    }
+
+    fn binary_search_cache(&mut self, k: u16) -> Result<u32, FontFileError> {
+        let contents_ref = &CHAR_CACHE.lock().unwrap().contents;
+        let result = contents_ref
+            .binary_search_by_key(&k, |&(codepoint, _)| codepoint)
+            .ok()
+            .map(|i| contents_ref[i].1)
+            .ok_or(FontFileError::InvalidChar(k))?;
+        Ok(result)
     }
 
     // Binary search, returns the offset into the file for the glyph
@@ -316,14 +361,19 @@ impl PbFont {
     /// character metadata and visual data.
     pub fn load_char(&mut self, curchar: u16) -> Result<(CharMetadata, Vec<RGB>), FontFileError> {
         // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
-        let offset = self.binary_search(curchar)?;
+        let offset = timed!("binary search", self.binary_search_cache(curchar)?);
 
         let Some(ref mut font_file) = self.font_file else { return Err(FontFileError::FileNotOpen); };
-        font_file.seek(SeekFrom::Start(offset as u64))?;
+        timed!("seek", font_file.seek(SeekFrom::Start(offset as u64))?);
 
         let mut buf = [0u8; 10];
-        font_file.read_exact(&mut buf)?;
-        let cm = CharMetadata::from(buf);
+        timed!("read metadata", font_file.read_exact(&mut buf)?);
+        let cm = timed!("convert metadata", CharMetadata::from(buf));
+
+        // let data_len = (unsafe { CM.width } * unsafe { CM.height } + 2) as usize;
+        let data_len: usize = (cm.width * cm.height + 2) as usize;
+        let mut data = vec![0u8; data_len];
+        timed!("read char data", font_file.read_exact(&mut data)?);
 
         if curchar == 0x20 {
             return Ok((CharMetadata {
@@ -336,11 +386,6 @@ impl PbFont {
             }, vec![]));
         }
 
-        // let data_len = (unsafe { CM.width } * unsafe { CM.height } + 2) as usize;
-        let data_len: usize = (cm.width * cm.height + 2) as usize;
-        let mut data = vec![0u8; data_len];
-        font_file.read_exact(&mut data)?;
-
         if cm.width == 0 || cm.height == 0 {
             // println!("BAD CHAR: {} has width {} height {}", curchar, unsafe { CM.width }, unsafe { CM.height });
             return Err(FontFileError::BadChar(curchar, cm.width, cm.height))
@@ -348,20 +393,21 @@ impl PbFont {
 
         let decompressed_len: usize = (cm.width * cm.height) as usize;
 
-        let decompressed = if !cm.vertical {
+        let decompressed = timed!("decode data", if !cm.vertical {
             decode(&data)
         } else {
             decode_vert(&data, cm.height, cm.width)
-        };
+        });
         // info!("DECOMPRESSED LEN: {:?}", decompressed.len());
         // info!("DECOMPRESSED: {:?}", decompressed);
 
         // Convert to RGB
         // info!("decompressed length: {}", decompressed.len());
-        let mut rgb_vec = vec![rgb![0,0,0]; decompressed_len / 3]; // rgb AND transpose as well
+        let mut rgb_vec = timed!("create decompressed vec", vec![rgb![0,0,0]; decompressed_len / 3]); // rgb AND transpose as well
         let (mut x, mut y) = (0,0);
         let bufwidth = cm.width as usize;
         let bufheight = (cm.height / 3).into();
+        timed!("transpose", {
         for pixel in (&decompressed).iter().array_chunks::<3>() {
             rgb_vec[y * bufwidth + x] = rgb![*pixel[0], *pixel[1], *pixel[2]];
             y = y + 1;
@@ -371,6 +417,7 @@ impl PbFont {
             }
             // rgb_vec.push(rgb![*pixel[0], *pixel[1], *pixel[2]]);
         }
+        });
 
         // buf = Some(rgb_vec);
 
@@ -383,7 +430,7 @@ impl PbFont {
 
     pub fn load_char_metadata(&mut self, curchar: u16) -> Result<CharMetadata, FontFileError> {
         // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
-        let offset = self.binary_search(curchar)?;
+        let offset = self.binary_search_cache(curchar)?;
 
         let Some(ref mut font_file) = self.font_file else { return Err(FontFileError::FileNotOpen); };
         font_file.seek(SeekFrom::Start(offset as u64))?;

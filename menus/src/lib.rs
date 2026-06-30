@@ -18,6 +18,8 @@ pub use crate::screen::screen::{Screen, ScreenDrawError};
 use log::warn;
 use std::fmt;
 
+use profiler::SpanGuard;
+
 #[cfg(target_os = "espidf")]
 use pwm::OutputCtl;
 #[cfg(not(target_os = "espidf"))]
@@ -137,25 +139,30 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
     let mut events = vec![];
     cur_menu.init(io_handles)?;
 
+    log::info!("beginning loop!");
+
     loop {
         // q.recv(10);
-        if let Some((ev, _)) = q.recv_front(10) {
+        if let Some((ev, _)) = q.recv_front(1) { // PROBLEM HERE???
             events.push(ev);
         }
         let response = cur_menu.update(io_handles, &mut events)?;
-        match response {
-            MenuSignal::Transition(m) => { 
-                if m == MenuSelection::Unimplemented {
-                    warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
-                    return Err(MenuError::UnimplementedMenu)?;
-                }
-                cur_menu = m.into();
-                cur_menu.init(io_handles)?;
-            },
-            MenuSignal::Return => { return Ok(()); },
-            _ => {}
-        }
+            match response {
+                MenuSignal::Transition(m) => { 
+                    if m == MenuSelection::Unimplemented {
+                        warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
+                        return Err(MenuError::UnimplementedMenu)?;
+                    }
+                    cur_menu = m.into();
+                    cur_menu.init(io_handles)?;
+                },
+                MenuSignal::Return => { return Ok(()); },
+                _ => {}
+            }
         events.clear();
+
+        // PROFILER.lock().unwrap().dump();
+        SpanGuard::dump();
     }
 }
 

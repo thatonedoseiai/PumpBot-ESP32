@@ -13,6 +13,7 @@ use embedded_graphics::{
     pixelcolor::Rgb565,
     primitives::{Rectangle, PrimitiveStyleBuilder}
 };
+use profiler::{timed, SpanGuard};
 
 /// represents the internal state of the title screen - what language it's on and how long it has
 /// until it swaps to a different language.
@@ -57,30 +58,57 @@ impl MenuBehaviour for TitleState {
     fn update(&mut self, io_handles: &mut IOHandles, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal> {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
-        if self.counter == 0 {
-            io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+        // if self.counter == 0 {
+            timed!("Set font size", {
+                io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+            });
             // io_handles.screen.clear(Rgb565::BLACK);
-            let black = PrimitiveStyleBuilder::new()
-                    .fill_color(Rgb565::BLACK)
-                    .build();
-            for rect in self.undraw_bbs {
-                rect.into_styled(black).draw(&mut io_handles.screen)?;
-            }
+            let black = timed!("Create black style", {
+                PrimitiveStyleBuilder::new()
+                        .fill_color(Rgb565::BLACK)
+                        .build()
+            });
 
-            let top_text = Text::with_alignment(TEXT_WELCOME[self.cur_lang], Point::new(64, 30), io_handles.font.clone(), Alignment::Center);
-            self.undraw_bbs[0] = top_text.bounding_box();
-            top_text.draw(&mut io_handles.screen)?;
-            let mid_text = Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center);
-            self.undraw_bbs[1] = mid_text.bounding_box();
-            mid_text.draw(&mut io_handles.screen)?;
-            io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
-            let push_text = Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center);
-            self.undraw_bbs[2] = push_text.bounding_box();
-            push_text.draw(&mut io_handles.screen)?;
+            timed!("Draw all screen clearing rects", {
+                for rect in self.undraw_bbs {
+                    rect.into_styled(black).draw(&mut io_handles.screen)?;
+                }
+            });
+
+            let top_text = timed!("Create WELCOME", {
+                Text::with_alignment(TEXT_WELCOME[self.cur_lang], Point::new(64, 30), io_handles.font.clone(), Alignment::Center)
+            });
+            self.undraw_bbs[0] = timed!("push box WELCOME", {
+                top_text.bounding_box()
+            });
+            timed!("Draw WELCOME", {
+                top_text.draw(&mut io_handles.screen)?
+            });
+            let mid_text = timed!("Create WELCOME 2", {
+                Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center)
+            });
+            self.undraw_bbs[1] = timed!("push box WELCOME 2", {
+                mid_text.bounding_box()
+            });
+            timed!("draw WELCOME 2", {
+                mid_text.draw(&mut io_handles.screen)?
+            });
+            timed!("Change font size", {
+                io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?
+            });
+            let push_text = timed!("Create push rotenc to continue", {
+                Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center)
+            });
+            self.undraw_bbs[2] = timed!("push box rotenc", {
+                push_text.bounding_box()
+            });
+            timed!("Draw rotenc", {
+                push_text.draw(&mut io_handles.screen)?
+            });
             // push_text.draw(&mut io_handles.screen);
             self.cur_lang = next_lang(self.cur_lang);
             self.counter = 20;
-        }
+        // }
         self.counter -= 1;
 
         if let Some(Event::Button(v)) = events.pop() {

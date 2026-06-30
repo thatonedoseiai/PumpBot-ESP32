@@ -15,11 +15,13 @@ use embedded_graphics::{
     draw_target::DrawTargetExt,
     primitives::Rectangle,
 };
+use esp_idf_hal::gpio::{Gpio14, PinDriver};
 use az::SaturatingAs;
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::PbFont;
+use profiler::{SpanGuard, timed};
 
 /// Defines the global state of the renderer. Font size and everything is already included in
 /// `PbFont`, so we only need to add `bgcol` (background colour) and `fgcol` (foreground colour).
@@ -56,20 +58,36 @@ impl TextRenderer for PbFontRenderer {
     ) -> Result<Point, D::Error>
        where D: DrawTarget<Color = Self::Color> {
         let mut start_char_point = position;
+
+        let mut DBG_PINDRIVER = unsafe {
+            PinDriver::output(Gpio14::new()).unwrap()
+        };
+
         for c in text.encode_utf16() {
-            let (metrics, coldata) = self.font.borrow_mut().load_char(c).unwrap(); // TODO: fix this!
+
+            DBG_PINDRIVER.set_low().unwrap();
+
+            let (metrics, coldata) = timed!("load char", { 
+                self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
+            });
             if metrics.width != 0 {
-                let true_height = metrics.height / 3;
+                let true_height = timed!("true_height = ", metrics.height / 3);
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
-                let byteslice = coldata.into_iter()
+                let byteslice = timed!("set byteslice", {
+                                coldata.into_iter()
                                        .map(|x| -> [u8;3] { x.into() })
                                        .flatten()
-                                       .collect::<Vec<u8>>();
-                let rawimage = ImageRaw::<Rgb888>::new(
-                    &byteslice.as_slice(), metrics.width.into());
+                                       .collect::<Vec<u8>>()
+                    });
+                let rawimage = timed!("convert to ImageRaw", {
+                    ImageRaw::<Rgb888>::new(
+                    &byteslice.as_slice(), metrics.width.into())
+                });
                 // println!("character {:?} metrics {:?}", char::from_u32(c as u32), &metrics);
                 let image = Image::new(&rawimage, start_char_point - Point::new(0, metrics.y.into()));
-                image.draw(&mut target.color_converted())?;
+                timed!("draw char as image", {
+                    image.draw(&mut timed!("convert char color", target.color_converted()))?
+                });
                 // target.draw_iter(
                 //     start_char_point.y,
                 //     start_char_point.x,
@@ -78,6 +96,9 @@ impl TextRenderer for PbFontRenderer {
                 //     coldata.as_slice())?;
             }
             start_char_point += Point::new(metrics.advance.into(), 0);
+
+            DBG_PINDRIVER.set_high().unwrap();
+
         }
 
         Ok(start_char_point)

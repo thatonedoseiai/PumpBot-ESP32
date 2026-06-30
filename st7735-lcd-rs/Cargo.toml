@@ -11,6 +11,7 @@ documentation = "https://docs.rs/st7735-lcd"
 
 [dependencies]
 embedded-hal = "1.0.0"
+log = "0.4.33"
 nb = "1.1.0"
 
 [dependencies.embedded-graphics-core]
