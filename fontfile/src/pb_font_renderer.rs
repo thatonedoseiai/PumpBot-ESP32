@@ -4,7 +4,7 @@
 
 use embedded_graphics::{
     text::{
-        renderer::{TextMetrics, CharacterStyle, TextRenderer},
+        renderer::{TextMetrics, TextRenderer},
         Baseline
     }, 
     pixelcolor::{Rgb565, Rgb888},
@@ -15,10 +15,13 @@ use embedded_graphics::{
     draw_target::DrawTargetExt,
     primitives::Rectangle,
 };
-use esp_idf_hal::gpio::{Gpio14, PinDriver};
+// use esp_idf_hal::gpio::{Gpio14, PinDriver};
+use esp_hal::peripherals::GPIO14;
+use esp_hal::gpio::{Output, OutputConfig, Level};
 use az::SaturatingAs;
-use std::cell::RefCell;
-use std::rc::Rc;
+use core::cell::RefCell;
+use alloc::rc::Rc;
+use alloc::vec::Vec;
 
 use crate::PbFont;
 use profiler::{SpanGuard, timed};
@@ -37,7 +40,7 @@ impl PbFontRenderer {
     /// Creates a new instance of the renderer state from an existing instance of the open font.
     /// When reopening a new font, the `PbFont` doesn't get reloaded so the renderer can continue
     /// to be universal.
-    pub fn new(font: PbFont) -> Self {
+    pub fn new(font: PbFont) -> PbFontRenderer {
         PbFontRenderer {
             font: Rc::new(RefCell::new(font)),
             bgcol: Some(Rgb888::GREEN),
@@ -53,19 +56,20 @@ impl TextRenderer for PbFontRenderer {
         &self,
         text: &str,
         position: Point,
-        baseline: Baseline,
+        _baseline: Baseline,
         target: &mut D,
     ) -> Result<Point, D::Error>
        where D: DrawTarget<Color = Self::Color> {
         let mut start_char_point = position;
 
         let mut DBG_PINDRIVER = unsafe {
-            PinDriver::output(Gpio14::new()).unwrap()
+            // PinDriver::output(Gpio14::new()).unwrap()
+            Output::new(GPIO14::steal(), Level::High, OutputConfig::default())
         };
 
         for c in text.encode_utf16() {
 
-            DBG_PINDRIVER.set_low().unwrap();
+            DBG_PINDRIVER.set_low();
 
             let (metrics, coldata) = timed!("load char", { 
                 self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
@@ -97,7 +101,7 @@ impl TextRenderer for PbFontRenderer {
             }
             start_char_point += Point::new(metrics.advance.into(), 0);
 
-            DBG_PINDRIVER.set_high().unwrap();
+            DBG_PINDRIVER.set_high();
 
         }
 
@@ -108,7 +112,7 @@ impl TextRenderer for PbFontRenderer {
         &self,
         width: u32,
         position: Point,
-        baseline: Baseline,
+        _baseline: Baseline,
         target: &mut D,
     ) -> Result<Point, D::Error>
        where D: DrawTarget<Color = Self::Color> {
@@ -120,7 +124,7 @@ impl TextRenderer for PbFontRenderer {
         &self,
         text: &str,
         position: Point,
-        baseline: Baseline,
+        _baseline: Baseline,
     ) -> TextMetrics {
         // let mut bounding_box = Rectangle::new(position, Size::new(0, 0));
         let mut bb_top_left = position;

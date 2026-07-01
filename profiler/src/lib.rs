@@ -1,18 +1,28 @@
-use std::sync::Mutex;
-use std::collections::HashMap;
+#![no_std]
+#![no_main]
 
-pub(crate) static PROFILER: Mutex<Profiler> = Mutex::new(Profiler::new());
+extern crate alloc;
+
+use embassy_sync::blocking_mutex::{Mutex, CriticalSectionMutex};
+use esp_hal::time::Instant;
+use alloc::vec::Vec;
+use core::ops::Drop;
+use core::option::Option::Some;
+use core::cell::RefCell;
+use esp_println::println;
+
+pub(crate) static PROFILER: CriticalSectionMutex<RefCell<Profiler>> = Mutex::new(RefCell::new(Profiler::new()));
 
 pub struct Span {
     pub name: &'static str,
-    pub start: i64,
-    pub end: i64,
+    pub start: u64,
+    pub end: u64,
     pub depth: usize,
 }
 
 pub struct Profiler {
     spans: Vec<Span>,
-    stack: Vec<(&'static str, i64, usize)>,
+    stack: Vec<(&'static str, u64, usize)>,
     depth: usize,
 }
 
@@ -22,16 +32,18 @@ impl Profiler {
     }
 
     pub fn enter(&mut self, name: &'static str) {
-        let now = unsafe { esp_idf_sys::esp_timer_get_time() };
-        self.stack.push((name, now, self.depth));
+        // let now = unsafe { esp_idf_sys::esp_timer_get_time() };
+        let now = Instant::now().duration_since_epoch();
+        self.stack.push((name, now.as_micros(), self.depth));
         self.depth += 1;
     }
 
     pub fn exit(&mut self) {
-        let now = unsafe { esp_idf_sys::esp_timer_get_time() };
+        // let now = unsafe { esp_idf_sys::esp_timer_get_time() };
+        let now = Instant::now().duration_since_epoch();
         if let Some((name, start, depth)) = self.stack.pop() {
             self.depth = depth;
-            self.spans.push(Span { name, start, end: now, depth });
+            self.spans.push(Span { name, start, end: now.as_micros(), depth });
         }
     }
 
@@ -49,18 +61,18 @@ pub struct SpanGuard;
 
 impl SpanGuard {
     pub fn new(name: &'static str) -> Self {
-        PROFILER.lock().unwrap().enter(name);
+        PROFILER.lock(|f| f.borrow_mut().enter(name));
         SpanGuard
     }
 
     pub fn dump() {
-        PROFILER.lock().unwrap().dump();
+        PROFILER.lock(|f| f.borrow().dump());
     }
 }
 
 impl Drop for SpanGuard {
     fn drop(&mut self) {
-        PROFILER.lock().unwrap().exit();
+        PROFILER.lock(|f| f.borrow_mut().exit());
     }
 }
 

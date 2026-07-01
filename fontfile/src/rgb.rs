@@ -1,6 +1,6 @@
 //! This submodule defines several utility functions for handling RGB colours with 24bbp bitdepth. 
 
-use std::slice::from_raw_parts;
+use core::slice::from_raw_parts;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorConversionError {
