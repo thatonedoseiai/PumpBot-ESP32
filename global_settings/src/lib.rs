@@ -1,8 +1,15 @@
 //! This crate defines the structure of the global settings that is shared by the whole board.
+
+#![no_std]
+#![no_main]
+
+extern crate alloc;
+
 pub mod lang;
 
 use crate::lang::Lang;
-use std::string::ToString;
+use alloc::string::{ToString, String};
+use alloc::format;
 
 /// The main structure of global settings that the entire board will use
 pub struct PbGlobalSettings {

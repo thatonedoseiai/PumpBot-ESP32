@@ -2,7 +2,8 @@
 //! PB. Each string is encoded as a struct that has nine fields, one for each language. A
 //! `LanguageString` can be indexed using the `[]` operator, e.g.
 //! `TEXT_LANGUAGE_NAME[Fr]` will return the name "français".
-use std::ops::Index;
+
+use core::ops::Index;
 
 /// Represents a language that [LanguageString]s support.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
