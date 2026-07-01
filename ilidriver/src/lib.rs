@@ -1,19 +1,33 @@
+#![no_std]
+#![no_main]
+
 mod ili9341;
 
 pub use ili9341::{Ili9341, Orientation, DisplaySize240x320, ILIError};
 use fontfile::{PbFont};
-use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Output};
-use esp_idf_hal::delay::{Delay};
-use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};
+// use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Output};
+// use esp_idf_hal::delay::{Delay};
+// use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};
 use display_interface_spi::SPIInterface;
-use std::error::Error;
+use esp_hal::Blocking;
+use esp_hal::spi::master::{Spi, Config, ConfigError};
+use esp_hal::gpio::{Output, AnyPin, OutputConfig, Level, Input, InputConfig, Pull};
+use esp_hal::delay::Delay;
+use esp_hal::peripherals::SPI2;
+use esp_hal::time::Rate;
+use embedded_hal_bus::spi::ExclusiveDevice;
+use dummy_pin::DummyPin;
+// use std::error::Error;
+use core::error;
 use log::info;
 
 // type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub struct ILIDriver<'a> {
-    pub display: Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>,
-    pub backlight: PinDriver<'a, AnyIOPin, Output>,
+    // pub display: Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>,
+    // pub backlight: PinDriver<'a, AnyIOPin, Output>,
+    pub display: Ili9341<SPIInterface<ExclusiveDevice<Spi<'a, Blocking>, DummyPin, Delay>, Output<'a>>, Output<'a>>,
+    pub backlight: Output<'a>
 }
 
 // const PARALLEL_LINES: usize = 16;
@@ -40,24 +54,48 @@ pub struct ILIDriver<'a> {
 //     }
 // }
 
-impl ILIDriver<'_> {
-    pub fn new(spi: SPI2, dc: AnyIOPin, sclk: AnyIOPin, sdo: AnyIOPin, sdi: AnyIOPin, rst: AnyIOPin, bl: AnyIOPin) -> Result<Self, ILIError> {
-        let dc_output = PinDriver::output(dc)?;
-        let rst_output = PinDriver::output(rst)?;
-        let cspin: Option<AnyIOPin> = None;
-        let spi_device_driver = SpiDeviceDriver::new_single(
-            spi, 
-            sclk, 
-            sdo,
-            Some(sdi),
-            cspin,
-            &DriverConfig::default(),
-            &Config::default(),
-        )?;
-        let interface = SPIInterface::new(spi_device_driver, dc_output);
-        let display = Ili9341::new(interface, rst_output, &mut Delay::new_default(), Orientation::Landscape, DisplaySize240x320)?;
-        let mut backlight = PinDriver::output(bl)?;
-        backlight.set_high()?;
+impl<'a> ILIDriver<'a> {
+    pub fn new(spi2: SPI2<'a>,
+               dc: AnyPin<'a>,
+               sclk: AnyPin<'a>,
+               sdo: AnyPin<'a>,
+               sdi: AnyPin<'a>,
+               rst: AnyPin<'a>,
+               bl: AnyPin<'a>,
+        ) -> Result<ILIDriver<'a>, ILIError> {
+        let config = OutputConfig::default();
+        let inputconfig = InputConfig::default().with_pull(Pull::Up);
+
+        let sclk_driver = Output::new(sclk, Level::Low, config);
+        let mosi_driver = Output::new(sdo, Level::Low, config);
+        let miso_driver = Input::new(sdi, inputconfig);
+        let spi = Spi::new(
+            spi2,
+            Config::default()
+                .with_frequency(Rate::from_mhz(26)),
+        )?.with_sck(sclk_driver)
+            .with_mosi(mosi_driver)
+            .with_miso(miso_driver);  // ConfigError
+        let Ok(spidevice) = ExclusiveDevice::new(spi, DummyPin::new_low(), Delay::new());
+        let dc_output = Output::new(dc, Level::Low, config);
+        let rst_output = Output::new(rst, Level::Low, config);
+        // let dc_output = PinDriver::output(dc)?;
+        // let rst_output = PinDriver::output(rst)?;
+        // let cspin: Option<AnyIOPin> = None;
+        // let spi_device_driver = SpiDeviceDriver::new_single(
+        //     spi, 
+        //     sclk, 
+        //     sdo,
+        //     Some(sdi),
+        //     cspin,
+        //     &DriverConfig::default(),
+        //     &Config::default(),
+        // )?;
+        let interface = SPIInterface::new(spidevice, dc_output);
+        let display = Ili9341::new(interface, rst_output, &mut Delay::new(), Orientation::Landscape, DisplaySize240x320)?;
+        // let mut backlight = PinDriver::output(bl)?;
+        let mut backlight = Output::new(bl, Level::Low, config);
+        backlight.set_high();
         info!("backlight high");
         Ok(ILIDriver { display, backlight })
     }

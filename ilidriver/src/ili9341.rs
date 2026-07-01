@@ -25,18 +25,21 @@
 //! ```
 //!
 //! [display-interface-spi crate]: https://crates.io/crates/display-interface-spi
-// use embedded_hal::delay::DelayNs;
-// use embedded_hal::digital::OutputPin;
-use esp_idf_hal::delay::Delay;
+use embedded_hal::delay::DelayNs;
+// use esp_idf_hal::delay::Delay;
 // use esp_idf_hal::gpio::OutputPin;
 use embedded_hal::digital::OutputPin;
 
 use display_interface::DataFormat;
 use display_interface::WriteOnlyDataCommand;
-use std::fmt;
+// use std::fmt;
 use fontfile::{RGB, ColorConversionError, FontFileError};
-use esp_idf_hal::sys::EspError;
+// use esp_idf_hal::sys::EspError;
+use esp_hal::spi::master::ConfigError;
+use esp_hal::delay::Delay;
 use log::info;
+use core::error::Error;
+use core::fmt;
 
 // #[cfg(feature = "graphics")]
 // mod graphics_core;
@@ -49,12 +52,13 @@ pub use display_interface::DisplayError;
 pub enum ILIError {
     Disp(DisplayError),
     Conv(ColorConversionError),
-    Esp(EspError),
+    // Esp(EspError),
     FF(FontFileError),
     WritingOffScreen(u16, u16),
+    SpiConfigError(ConfigError),
 }
 
-impl std::error::Error for ILIError { }
+impl Error for ILIError { }
 impl fmt::Display for ILIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -72,7 +76,7 @@ impl fmt::Display for ILIError {
                 ColorConversionError::NonHomogeneousIterator => write!(f, "ILIERROR: color iterator has mixed color formats!"),
                 ColorConversionError::TooMuchColorData => write!(f, "ILIERROR: too much color data sent to write function!"),
             },
-            ILIError::Esp(c) => write!(f, "Esp Error! {}", c),
+            ILIError::SpiConfigError(c) => write!(f, "Spi Configuration error! {}", c),
             ILIError::FF(ff) => write!(f, "{}", ff),
             ILIError::WritingOffScreen(x, y) => write!(f, "Error: writing off screen at ({}, {})!", x, y),
         }
@@ -91,11 +95,17 @@ impl From<ColorConversionError> for ILIError {
     }
 }
 
-impl From<EspError> for ILIError {
-    fn from(val: EspError) -> ILIError {
-        ILIError::Esp(val)
+impl From<ConfigError> for ILIError {
+    fn from(val: ConfigError) -> ILIError {
+        ILIError::SpiConfigError(val)
     }
 }
+
+// impl From<EspError> for ILIError {
+//     fn from(val: EspError) -> ILIError {
+//         ILIError::Esp(val)
+//     }
+// }
 
 impl From<FontFileError> for ILIError {
     fn from(val: FontFileError) -> ILIError {
