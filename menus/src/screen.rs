@@ -1,4 +1,4 @@
-#[cfg(target_os = "espidf")]
+#[cfg(not(feature = "sim"))]
 pub mod screen {
     use embedded_graphics::{
         prelude::*,
@@ -7,9 +7,15 @@ pub mod screen {
     };
     use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
     use st7735_lcd::{ST7735, Orientation as STOrientation};
-    use std::convert::Infallible;
-    use esp_idf_hal::gpio::{AnyIOPin, Output, PinDriver};
-    use esp_idf_hal::spi::{SpiDriver, SpiDeviceDriver};
+    use core::convert::Infallible;
+    // use esp_idf_hal::gpio::{AnyIOPin, Output, PinDriver};
+    // use esp_idf_hal::spi::{SpiDriver, SpiDeviceDriver};
+    use esp_hal::gpio::{AnyPin, Output, Level};
+    use esp_hal::spi::master::{Spi};
+    use esp_hal::Blocking;
+    use esp_hal::delay::Delay;
+    use dummy_pin::DummyPin;
+    use embedded_hal_bus::spi::ExclusiveDevice;
     use display_interface_spi::SPIInterface;
 
     /// A generalized driver that wraps both kinds of screens. This wrapper can either contain an 
@@ -17,8 +23,9 @@ pub mod screen {
     /// required, we would put that new driver in here. This helps with modularity so that we can have
     /// more freedom with which screens we might want to use in the future.
     pub enum Screen<'a> {
-        ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
-        ST(ST7735<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>, PinDriver<'a, AnyIOPin, Output>>),
+        // ILI(Ili9341<SPIInterface<SpiDeviceDriver<'a, SpiDriver<'a>>, PinDriver<'a, AnyIOPin, Output>>, PinDriver<'a, AnyIOPin, Output>>),
+        ILI(Ili9341<SPIInterface<ExclusiveDevice<Spi<'a, Blocking>, DummyPin, Delay>, Output<'a>>, Output<'a>>),
+        ST(ST7735<ExclusiveDevice<Spi<'a, Blocking>, DummyPin, Delay>, Output<'a>, Output<'a>>),
     }
 
     /// Wraps both kinds of errors that we can expect from the screen drawing.
@@ -50,8 +57,8 @@ pub mod screen {
         }
     }
 
-    impl std::fmt::Display for ScreenDrawError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl core::fmt::Display for ScreenDrawError {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             match self {
                 ScreenDrawError::ILI(s) => write!(f, "{:?}", s),
                 ScreenDrawError::ST(s) => write!(f, "{:?}", s),
@@ -60,7 +67,7 @@ pub mod screen {
         }
     }
 
-    impl std::error::Error for ScreenDrawError { }
+    impl core::error::Error for ScreenDrawError { }
 
     /// This is necessary for [crate::Screen] to be usable with [embedded_graphics]. Required for
     /// [DrawTarget]
@@ -117,7 +124,7 @@ pub mod screen {
     }
 }
 
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 pub mod screen {
     use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
     use std::marker::PhantomData;

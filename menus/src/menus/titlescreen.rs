@@ -14,6 +14,7 @@ use embedded_graphics::{
     primitives::{Rectangle, PrimitiveStyleBuilder}
 };
 use profiler::{timed, SpanGuard};
+use alloc::vec::Vec;
 
 /// represents the internal state of the title screen - what language it's on and how long it has
 /// until it swaps to a different language.

@@ -1,9 +1,18 @@
 //! This module contains the common logic for menus. Each menu will build on top of this module to
 //! create its own unique functionality and interact with other menus (e.g. transitions, etc.)
 
+#![no_std]
+#![no_main]
+
+extern crate alloc;
+
 pub mod menus;
+
+#[cfg(feature = "sim")]
 pub mod mock_queue;
+#[cfg(feature = "sim")]
 pub mod mock_ledc;
+#[cfg(feature = "sim")]
 pub mod mock_pwm;
 
 mod event;
@@ -12,30 +21,34 @@ mod screen;
 pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
 // use ilidriver::ILIDriver;
-use std::sync::Arc;
+// use alloc::sync::Arc;
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
 pub use crate::screen::screen::{Screen, ScreenDrawError};
 use log::warn;
-use std::fmt;
+use core::fmt;
+use rotenc::EncoderEvent;
+use button_idf::ButtonEvent;
+use alloc::{vec::Vec, vec};
 
 use profiler::SpanGuard;
 
-#[cfg(target_os = "espidf")]
-use pwm::OutputCtl;
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 use mock_pwm::OutputCtl;
+#[cfg(not(feature = "sim"))]
+use pwm::Pwm;
 
-#[cfg(target_os = "espidf")]
-use ledc::LedController;
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 use mock_ledc::LedController;
+#[cfg(not(feature = "sim"))]
+use ledc::LedController;
 
-#[cfg(target_os = "espidf")]
-use esp_idf_hal::task::queue::Queue;
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
+// use esp_idf_hal::task::queue::Queue;
 use mock_queue::Queue;
+#[cfg(not(feature = "sim"))]
+use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
 
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 
 #[derive(Debug)]
@@ -51,7 +64,7 @@ impl fmt::Display for MenuError {
     }
 }
 
-impl std::error::Error for MenuError { }
+impl core::error::Error for MenuError { }
 
 /// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
 /// or continue displaying the same menu.
@@ -85,12 +98,12 @@ impl fmt::Display for MenuStates {
 pub struct IOHandles<'a> {
     pub screen: Screen<'a>,
     pub leddriver: LedController,
-    pub pwm_output: OutputCtl<'a>,
+    pub pwm_output: Pwm<'a>,
     pub font: PbFontRenderer, 
 }
 
 impl<'a> IOHandles<'a> {
-    pub fn new( screen: Screen<'a>, leddriver: LedController, pwm_output: OutputCtl<'a>, font: PbFontRenderer) -> IOHandles<'a> {
+    pub fn new( screen: Screen<'a>, leddriver: LedController, pwm_output: Pwm<'a>, font: PbFontRenderer) -> IOHandles<'a> {
         Self { screen, leddriver, pwm_output, font }
     }
 }
@@ -132,8 +145,8 @@ impl MenuBehaviour for MenuStates {
 /// - `io_handles`: a collection of IO handles that the menus should be allowed to interact with
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
-#[cfg(target_os = "espidf")]
-pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>) -> anyhow::Result<()> {
+#[cfg(not(feature = "sim"))]
+pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, rotenc_events: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>, button_events: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();
     let mut events = vec![];
@@ -143,8 +156,14 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
 
     loop {
         // q.recv(10);
-        if let Some((ev, _)) = q.recv_front(1) { // PROBLEM HERE???
-            events.push(ev);
+        // if let Some((ev, _)) = q.recv_front(1) { // PROBLEM HERE???
+        //     events.push(ev);
+        // }
+        if let Ok(button_event) = button_events.try_receive() {
+            events.push(button_event.into());
+        }
+        if let Ok(rotenc_event) = rotenc_events.try_receive() {
+            events.push(rotenc_event.into())
         }
         let response = cur_menu.update(io_handles, &mut events)?;
             match response {
@@ -166,7 +185,7 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
     }
 }
 
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>, mut window: Window) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();

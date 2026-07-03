@@ -2,7 +2,7 @@
 //! from things across the board. Currently it only contains events from the Button and Encoder,
 //! but we may also use it for messages received from the remote server (if connected)
 
-#[cfg(target_os = "espidf")]
+#[cfg(not(feature = "sim"))]
 pub mod event {
     use button_idf::ButtonEvent;
     use rotenc::EncoderEvent;
@@ -28,7 +28,7 @@ pub mod event {
     }
 }
 
-#[cfg(not(target_os = "espidf"))]
+#[cfg(feature = "sim")]
 pub mod event {
     #[derive(Clone, Copy)]
     pub enum Event {

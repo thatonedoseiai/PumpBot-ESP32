@@ -3,25 +3,32 @@ name = "menus"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+sim = []
+
 [dependencies]
-anyhow = "1.0.102"
+anyhow = { version = "1.0.102", default-features = false }
 fontfile = { path = "../fontfile" }
 log = "0.4.29"
 global_settings = { path = "../global_settings" }
 embedded-graphics = "0.8.2"
 display-interface-spi = "0.5.0"
-embedded-graphics-simulator = "0.8.0"
+embassy-sync = "0.8.0"
+esp-hal = { version = "1.1.1", features = ["esp32s3", "unstable"] }
+embedded-hal-bus = "0.3.0"
+dummy-pin = "1.0.0"
+# embedded-graphics-simulator = "0.8.0"
 
-[target.'cfg(target_os = "espidf")'.dependencies]
-esp-idf-hal = "0.45.2"
+[target.'cfg(not(feature = "sim"))'.dependencies]
+# esp-idf-hal = "0.45.2"
 ledc = { path = "../ledc" }
 rotenc = { path = "../rotenc" }
 pwm = { path = "../pwm" }
 button_idf = { path = "../button_idf" }
 ili9341 = "0.6.0"
 st7735-lcd = { path = "../st7735-lcd-rs" }
-esp-idf-sys = "0.36.1"
+# esp-idf-sys = "0.36.1"
 profiler = { path = "../profiler" }
 
-[target.'cfg(not(target_os = "espidf"))'.dependencies]
+[target.'cfg(feature = "sim")'.dependencies]
 embedded-graphics-simulator = "0.8.0"
