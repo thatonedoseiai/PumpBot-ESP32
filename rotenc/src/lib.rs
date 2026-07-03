@@ -1,17 +1,29 @@
 //! This crate provides the basic functionality for reading the rotary encoder. A thread is started
 //! to listen to the rotary encoder inputs, and events are sent over a queue to be used by any
 //! other service. 
-
-use esp_idf_hal::task::queue::Queue;
-use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Pull};
 // use quadrature_encoder::{RotaryEncoder, RotaryMovement};
-use esp_idf_hal::sys::EspError;
-use esp_idf_hal::delay::FreeRtos;
+
+#![no_std]
+#![no_main]
+
+extern crate alloc;
+
+// use esp_idf_hal::task::queue::Queue;
+// use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Pull};
+// use esp_idf_hal::sys::EspError;
+// use esp_idf_hal::delay::FreeRtos;
+// use std::thread;
+// use std::sync::Arc;
+// use std::num::Wrapping;
+// use std::fmt;
 use rotary_encoder_embedded::{standard::StandardMode, Direction};
-use std::thread;
-use std::sync::Arc;
-use std::num::Wrapping;
-use std::fmt;
+use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
+use esp_hal::delay::Delay;
+use embassy_sync::channel::{Channel, Receiver};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_executor::Spawner;
+use core::num::Wrapping;
+use core::fmt;
 
 /// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
@@ -36,36 +48,45 @@ impl fmt::Display for EncoderEvent {
     }
 }
 
+static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 10> = Channel::new();
+
+/// the rotary encoder thread
+#[embassy_executor::task]
+async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
+    let inputconfig = InputConfig::default().with_pull(Pull::Down);
+    let pin_a_driver = Input::new(pin_a, inputconfig);
+    let pin_b_driver = Input::new(pin_b, inputconfig);
+    let delay = Delay::new();
+
+    let mut encoder = StandardMode::new();
+    let mut position = Wrapping(0u32);
+
+    loop {
+        let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
+        match dir {
+            Direction::Clockwise => {position += 1;}
+            Direction::Anticlockwise => {position -= 1;}
+            _ => {}
+        }
+        if dir != Direction::None {
+            // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
+            EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
+        }
+        delay.delay_millis(10);
+        // FreeRtos::delay_ms(10);
+    }
+}
+
 /// Starts the rotary encoder listener. `pin_a` represents the left-turning pin, and `pin_b`
 /// represents the right-turning pin. Any events captured by the listener are sent over `queue`.
-pub fn start_rotenc_thread<T: From<EncoderEvent> + Send + Sync + Copy + 'static>(
-    queue: Arc<Queue<T>>,
-    pin_a: AnyIOPin,
-    pin_b: AnyIOPin,
-) -> Result<(), EspError> {
-    let q_task = queue.clone();
-    let mut pin_a_driver = PinDriver::input(pin_a)?;
-    let mut pin_b_driver = PinDriver::input(pin_b)?;
-    pin_a_driver.set_pull(Pull::Down)?;
-    pin_b_driver.set_pull(Pull::Down)?;
+pub fn start_rotenc_thread(
+    // queue: Arc<Queue<T>>,
+    spawner: Spawner,
+    pin_a: AnyPin<'static>,
+    pin_b: AnyPin<'static>,
+) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10> {
 
-    let _ = thread::spawn(move || {
-        let mut encoder = StandardMode::new();
-        let mut position = Wrapping(0u32);
+    let _ = spawner.spawn(rotenc_thread(pin_a, pin_b).unwrap());
 
-        loop {
-            let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
-            match dir {
-                Direction::Clockwise => {position += 1;}
-                Direction::Anticlockwise => {position -= 1;}
-                _ => {}
-            }
-            if dir != Direction::None {
-                let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
-            }
-            FreeRtos::delay_ms(10);
-        }
-    });
-    
-    Ok(())
+    EVENT_QUEUE.receiver()
 }
