@@ -165,9 +165,9 @@ impl LedController {
     /// `initial_mode`. This method will also start an independent thread that runs the LEDs
     /// independently.
     pub fn new(
+        spawner: Spawner,
         p: LedPeripherals<'static>,
         initial_mode: LedMode,
-        spawner: Spawner,
     ) -> Self {
         let inner_arc = Arc::new(RwLock::new(ControllerState {
             mode: initial_mode,

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Tortus-exe <65506144+Tortus-exe@users.noreply.github.com>"]
 edition = "2021"
 resolver = "2"
-rust-version = "1.77"
+# rust-version = "1.77"
 
 [[bin]]
 name = "pb_test_buttons"
@@ -23,37 +23,49 @@ ILI = []
 ST = []
 # sim = []
 
-[[package.metadata.esp-idf-sys.extra_components]]
-component_dirs = ["components"]
-bindings_header = "src/bindings.h"
+# [[package.metadata.esp-idf-sys.extra_components]]
+# component_dirs = ["components"]
+# bindings_header = "src/bindings.h"
 
-experimental = ["esp-idf-svc/experimental"]
+# experimental = ["esp-idf-svc/experimental"]
 
 [dependencies]
 log = "0.4"
 button_idf = { path = "./button_idf" }
 rotenc = { path = "./rotenc" }
-anyhow = "1.0.100"
+anyhow = { version = "1.0.100", default-features = false }
 ledc = { path = "./ledc" }
 pwm = { path = "./pwm" }
 wifi = { path = "./wifi" }
 global_settings = { path = "./global_settings" }
 fontfile = { path = "./fontfile" }
+flash_storage = { path = "./flash_storage" }
 # ilidriver = { path = "./ilidriver" }
 embedded-graphics = "0.8.2"
 ili9341 = "0.6.0"
 display-interface-spi = "0.5.0"
 # st7735-lcd = { git = "https://github.com/sajattack/st7735-lcd-rs.git", branch = "misc-improvements", version = "0.10.0" }
 st7735-lcd = { path = "./st7735-lcd-rs", features = ["graphics"] }
-embedded-graphics-simulator = "0.8.0"
-esp-idf-hal = "0.45.2"
-esp-idf-svc = "0.51"
-esp-idf-sys = "0.36.1"
+# embedded-graphics-simulator = "0.8.0"
+# esp-idf-hal = "0.45.2"
+# esp-idf-svc = "0.51"
+# esp-idf-sys = "0.36.1"
 menus = { path = "./menus" }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
+embassy-executor = "0.10.0"
+esp-hal = { version = "1.1.1", features = ["esp32s3"] }
+littlefs2 = "0.8.0"
+esp-alloc = { version = "0.10.0", features = ["esp32s3"] }
+esp-rtos = { version = "0.3.0", features = ["embassy", "esp32s3"] }
+esp-println = { version = "0.17.0", features = ["esp32s3", "log-04"] }
+embedded-hal-bus = "0.3.0"
+static_cell = "2.1.1"
+dummy-pin = "1.0.0"
+# serde = { version = "1.0.228", features = ["derive"] }
+# serde_json = "1.0.150"
 # probe-rs = "0.31.0"
 
+[profile.dev.package.xtensa-lx-rt]
+opt-level = 'z'
 
 # --- Optional Embassy Integration ---
 # esp-idf-svc = { version = "0.51", features = ["critical-section", "embassy-time-driver", "embassy-sync"] }
@@ -72,5 +84,5 @@ serde_json = "1.0.150"
 # esp-idf-svc = { version = "0.51", features = ["embassy-time-driver", "embassy-sync"] }
 # critical-section = { version = "1.1", features = ["std"], default-features = false }
 
-[build-dependencies]
-embuild = "0.33"
+# [build-dependencies]
+# embuild = "0.33"

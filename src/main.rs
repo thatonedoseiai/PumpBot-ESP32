@@ -35,24 +35,57 @@
 //!     - [ ] test
 //! - [ ] menus
 
-use esp_idf_hal::gpio::*;
-use esp_idf_hal::peripherals::Peripherals;
-use esp_idf_hal::task::queue::Queue;
+#![no_std]
+#![no_main]
+
+extern crate alloc;
+
+// use esp_idf_hal::gpio::*;
+// use esp_idf_hal::peripherals::Peripherals;
+// use esp_idf_hal::task::queue::Queue;
+// use esp_idf_hal::delay::{Delay, FreeRtos};
+// use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
+// use esp_idf_hal::spi::{Dma, SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
+// use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
+// use esp_idf_hal::units::Hertz;
+// use esp_idf_svc::eventloop::EspSystemEventLoop;
+// use esp_idf_svc::nvs::EspDefaultNvsPartition;
+
+use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull};
+use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, GPIO46, SPI2, FLASH};
+use esp_hal::delay::Delay;
+use esp_alloc::psram_allocator;
+use esp_println::logger::init_logger_from_env;
+use esp_rtos::start;
+use esp_hal::interrupt::software::SoftwareInterruptControl;
+use esp_hal::ram;
+use esp_hal::timer::timg::TimerGroup;
+use esp_hal::spi::master::{Spi, Config};
+use esp_hal::time::Rate;
+use esp_hal::clock::CpuClock;
+// use esp_alloc::HEAP;
+
+use littlefs2::io;
+use littlefs2::fs::{Filesystem, Allocation};
+use static_cell::StaticCell;
 use button_idf::button_init;
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
-use log::info;
+use log::{info, error};
 use ledc::{LedController, LedPeripherals, LedMode};
-use pwm::{OutputCtl, OutputPeripherals, Action};
+// use pwm::{OutputCtl, OutputPeripherals, Action};
+use pwm::{Pwm, PwmAction, Command};
 use fontfile::{RGB, FontSize, PbFont, rgb, pb_font_renderer::PbFontRenderer};
 // use ilidriver::ILIDriver;
+use flash_storage::PbFlashStorage;
+use dummy_pin::DummyPin;
+use embedded_hal_bus::spi::ExclusiveDevice;
 use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
 use st7735_lcd::{ST7735, Orientation as STOrientation};
-use std::sync::Arc;
-use esp_idf_hal::delay::{Delay, FreeRtos};
-use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
-use esp_idf_hal::spi::{Dma, SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
-use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
+// use std::sync::Arc;
+use alloc::sync::Arc;
+use alloc::vec;
+use alloc::vec::Vec;
 use menus::{run_menu_loop, MenuSelection, IOHandles, Event, Screen};
 use global_settings::PbGlobalSettings;
 use display_interface_spi::SPIInterface;
@@ -63,11 +96,10 @@ use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_6X10},
     text::Text,
 };
-use wifi::{PbWifi, PbHttpServer};
-use esp_idf_svc::eventloop::EspSystemEventLoop;
-use esp_idf_svc::nvs::EspDefaultNvsPartition;
-use std::convert::Infallible;
-use esp_idf_hal::units::Hertz;
+use wifi::PbWifi;
+use embassy_executor::Spawner;
+use core::convert::Infallible;
+use core::fmt;
 
 #[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
 compile_error!("Declare a screen to compile!");
@@ -75,63 +107,71 @@ compile_error!("Declare a screen to compile!");
 #[cfg(any(all(feature = "ILI", feature = "ST")))]
 compile_error!("You may only have one screen active at a time!");
 
+#[derive(Debug, Copy, Clone)]
+enum PbError {
+    FSError(io::Error)
+}
+
+impl core::error::Error for PbError { }
+impl fmt::Display for PbError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PbError::FSError(e) => write!(f, "FS error! {:?}", e),
+        }
+    }
+}
+
 /// Initialize the appropriate screen.
 #[cfg(feature = "ILI")]
-fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio46: Gpio46, gpio10: Gpio10, gpio11: Gpio11, gpio12: Gpio12) -> anyhow::Result<Screen<'a>> {
+fn init_screen<'a>(spi2: SPI2<'a>, dc: GPIO11<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, miso: GPIO46<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
     info!("SCREEN: using ILI");
-    let cspin: Option<AnyIOPin> = None;
-    let spi_device_driver = SpiDeviceDriver::new_single(
+    let config = OutputConfig::default();
+    let inputconfig = InputConfig::default().with_pull(Pull::Down);
+
+    let sclk_driver = Output::new(sclk, Level::Low, config);
+    let mosi_driver = Output::new(mosi, Level::Low, config);
+    let miso_driver = Input::new(miso, inputconfig);
+    let spi = Spi::new(
         spi2,
-        gpio9.downgrade(),
-        gpio46.downgrade(),
-        Some(gpio10.downgrade()),
-        cspin,
-        &DriverConfig::default(),
-        &Config::default()
-    )?;
-    let interface = SPIInterface::new(
-        spi_device_driver,
-        PinDriver::output(gpio11.downgrade())?
-    );
-    Ok(Screen::ILI(Ili9341::new(
-        interface,
-        PinDriver::output(gpio12.downgrade())?,
-        &mut Delay::new_default(),
-        ILIOrientation::Landscape,
-        DisplaySize240x320
-    ).unwrap()))
+        Config::default()
+            .with_frequency(Rate::from_mhz(26)),
+    )?.with_sck(sclk_driver)
+        .with_mosi(mosi_driver)
+        .with_miso(miso_driver);  // ConfigError
+    let Ok(spidevice) = ExclusiveDevice::new(spi, DummyPin::new_low(), Delay::new());
+    let dc_output = Output::new(dc, Level::Low, config);
+    let rst_output = Output::new(rst, Level::Low, config);
+    let interface = SPIInterface::new(spidevice, dc_output);
+    let display = Ili9341::new(interface, rst_output, &mut Delay::new(), Orientation::Landscape, DisplaySize240x320)?;
+    Ok(Screen::ILI(display))
 }
 
 #[cfg(feature = "ST")]
-fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio10: Gpio10, gpio11: Gpio11, gpio12: Gpio12) -> anyhow::Result<Screen<'a>> {
-    info!("SCREEN: using ST");
-    let cspin: Option<AnyIOPin> = None;
-    let sdipin: Option<AnyIOPin> = None;
-    // let config = Config::default().baudrate(26.MHz().into());
-    let config = Config::default().baudrate(Hertz(26_000_000)).queue_size(2048).write_only(true).polling(false);
-    let driverconfig = DriverConfig::default().dma(Dma::Auto(32768));
-    let spidriver = SpiDriver::new(
+fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: GPIO11<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
+    let config = OutputConfig::default();
+
+    let sclk_driver = Output::new(sclk, Level::Low, config);
+    let mosi_driver = Output::new(mosi, Level::Low, config);
+    let spi = Spi::new(
         spi2,
-        gpio9.downgrade(),
-        gpio10.downgrade(),
-        sdipin,
-        &driverconfig,
-    )?;
-    let spi_device_driver = SpiDeviceDriver::new(
-        spidriver,
-        cspin,
-        &config,
-    )?;
+        Config::default()
+            .with_frequency(Rate::from_mhz(26)),
+    )?.with_sck(sclk_driver)
+        .with_mosi(mosi_driver);  // ConfigError
+    let Ok(spidevice) = ExclusiveDevice::new(spi, DummyPin::new_low(), Delay::new());
+    let dc_output = Output::new(dc, Level::Low, config);
+    let rst_output = Output::new(rst, Level::Low, config);
     let mut s = ST7735::new(
-        spi_device_driver, // SPI
-        PinDriver::output(gpio11.downgrade())?, // DC
-        Some(PinDriver::output(gpio12.downgrade())?), // RST
+        spidevice, // SPI
+        dc_output, // DC
+        Some(rst_output), // RST
         true,  // rgb
         false, // inverted
         128,   // width
         160    // height
     );
-    let mut delay = FreeRtos;
+    // let mut delay = FreeRtos;
+    let mut delay = Delay::new();
     let res = s.init(&mut delay)?;
     s.set_orientation(&STOrientation::PortraitSwapped)?;
     s.set_offset(1, 2);
@@ -141,69 +181,86 @@ fn init_screen<'a>(spi2: SPI2, gpio9: Gpio9, gpio10: Gpio10, gpio11: Gpio11, gpi
     Ok(Screen::ST(s))
 }
 
+#[esp_rtos::main]
+async fn main(spawner: Spawner) -> ! {
+    let program_result = init_board(spawner).await;
+
+    match program_result {
+        Ok(_) => info!("MAIN RETURNED."),
+        Err(e) => error!("MAIN ERRORED OUT WITH CODE {}!", e)
+    }
+
+    loop { }
+}
+
 /// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
 /// the board to reset. This is why it returns an `anyhow::Result<()>`
-fn main() -> anyhow::Result<()> {
-    esp_idf_svc::sys::link_patches();
-    esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
-    
-    register_filesystem()?;
+async fn init_board(spawner: Spawner) -> anyhow::Result<()> {
+    // esp_idf_svc::sys::link_patches();
+    // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
+    esp_println::logger::init_logger_from_env();
+    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+    let peripherals = esp_hal::init(config);
+    esp_alloc::heap_allocator!(size: 64*1024);
+    psram_allocator!(peripherals.PSRAM, esp_hal::psram);
+    let timg0 = TimerGroup::new(peripherals.TIMG0);
+    let sw_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
+    start(timg0.timer0, sw_interrupt.software_interrupt0);
+
+    let fs: &'static Filesystem<'static, PbFlashStorage> = register_filesystem(peripherals.FLASH).map_err(|e| PbError::FSError(e))?; // TODO: MAKE THIS STATIC
 
     info!("STARTING APP!");
     let mut settings = PbGlobalSettings::new();
 
-    let peripherals = Peripherals::take()?;
-    let sys_loop = EspSystemEventLoop::take()?;
-    let nvs = EspDefaultNvsPartition::take()?;
+    // let peripherals = Peripherals::take()?;
+    // let sys_loop = EspSystemEventLoop::take()?;
+    // let nvs = EspDefaultNvsPartition::take()?;
 
-    let mut pb_wifi = PbWifi::new(peripherals.modem, sys_loop, nvs)?;
-    pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
-    let http_server = PbHttpServer::start()?;
+    // let mut pb_wifi = PbWifi::new(peripherals.modem, sys_loop, nvs)?;
+    // pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
+    // let http_server = PbHttpServer::start()?;
 
-    let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
-    button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
-    start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
+    let mut pb_wifi = PbWifi::new(spawner, peripherals.WIFI);
+
+    // let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
+    // button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
+    // start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
+    let button_receiver = button_init(spawner, vec![peripherals.GPIO0.into(), peripherals.GPIO3.into(), peripherals.GPIO18.into()]);
+    let rotenc_receiver = start_rotenc_thread(spawner, peripherals.GPIO17.into(), peripherals.GPIO8.into());
+
     let ledperipherals = LedPeripherals::new(
-        peripherals.pins.gpio14.downgrade(), 
-        peripherals.pins.gpio21.downgrade(),
-        peripherals.pins.gpio47.downgrade(),
-        peripherals.ledc.channel0,
-        peripherals.ledc.channel1,
-        peripherals.ledc.channel2,
-        peripherals.ledc.timer0,
+        peripherals.GPIO14.into(),
+        peripherals.GPIO21.into(),
+        peripherals.GPIO47.into(),
+        peripherals.LEDC,
     );
-    let leddriver = LedController::new(ledperipherals, LedMode::Off);
+    let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off);
     leddriver.set_brightness(128);
-    let outputperipherals = OutputPeripherals::new(
-        ( peripherals.pins.gpio4.downgrade(),
-          peripherals.pins.gpio5.downgrade(),
-          peripherals.pins.gpio6.downgrade(),
-          peripherals.pins.gpio7.downgrade(),
-        ),
-        ( peripherals.ledc.channel3,
-          peripherals.ledc.channel4,
-          peripherals.ledc.channel5,
-          peripherals.ledc.channel6,
-        ),
-        peripherals.ledc.timer1
-    );
+    let outputperipherals = Pwm::new(
+        &spawner, 
+        [
+            peripherals.GPIO4.into(),
+            peripherals.GPIO5.into(),
+            peripherals.GPIO6.into(),
+            peripherals.GPIO7.into(),
+        ]);
     info!("initializing screen");
 
     #[cfg(feature = "ILI")]
     let mut screen = init_screen(
-        peripherals.spi2,
-        peripherals.pins.gpio9,
-        peripherals.pins.gpio46,
-        peripherals.pins.gpio10,
-        peripherals.pins.gpio11,
-        peripherals.pins.gpio12)?;
+        peripherals.SPI2,
+        peripherals.GPIO9,
+        peripherals.GPIO46,
+        peripherals.GPIO10,
+        peripherals.GPIO11,
+        peripherals.GPIO12)?;
     #[cfg(feature = "ST")]
     let mut screen = init_screen(
-        peripherals.spi2,
-        peripherals.pins.gpio9,
-        peripherals.pins.gpio10,
-        peripherals.pins.gpio11,
-        peripherals.pins.gpio12)?;
+        peripherals.SPI2,
+        peripherals.GPIO9,
+        peripherals.GPIO10,
+        peripherals.GPIO11,
+        peripherals.GPIO12)?;
 
 
     // let mut screen = if cfg!(feature = "ILI") {
@@ -213,14 +270,15 @@ fn main() -> anyhow::Result<()> {
     //     panic!("enable a screen feature")
     // };
 
-    let mut font = PbFont::new();
+    let mut font = PbFont::new(&fs);
     font.set_size(FontSize::Sz14)?;
 
     let pb_font_style = PbFontRenderer::new(font);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
 
-    let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
-    backlight.set_high()?;
+    // let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
+    let mut backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
+    backlight.set_high();
 
     let yoffset = 10;
     let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
@@ -241,14 +299,14 @@ fn main() -> anyhow::Result<()> {
     //     _ => {}
     // };
 
-    let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
+    // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
     run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(
                 screen,
                 leddriver,
-                outputctl,
+                outputperipherals,
                 pb_font_style,
-            ), button_queue)?;
+            ), rotenc_receiver, button_receiver)?;
 
     // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {
@@ -268,27 +326,44 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+static PB_FLASH_STORAGE: StaticCell<PbFlashStorage> = StaticCell::new();
+static PB_FLASH_ALLOC: StaticCell<Allocation<PbFlashStorage>> = StaticCell::new();
+static PB_FS: StaticCell<Filesystem<'static, PbFlashStorage>> = StaticCell::new();
+
 /// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
 /// Please do not change this, as it is known to work. If it fails, it will return an `Err(EspError)`
-fn register_filesystem() -> Result<(), EspError> {
-    let mut fs_config: esp_vfs_littlefs_conf_t = esp_vfs_littlefs_conf_t {
-        base_path: c"/fs".as_ptr(),
-        partition_label: c"filesystem".as_ptr(),
-        ..Default::default()
-    };
-    fs_config.set_format_if_mount_failed(false as u8);
-    fs_config.set_dont_mount(false as u8);
+fn register_filesystem(flash: FLASH<'static>) -> Result<&'static mut Filesystem<'static, PbFlashStorage<'static>>, io::Error> {
+    let pb_flash_storage = PB_FLASH_STORAGE.init(PbFlashStorage::new(flash));
 
-    unsafe {
-        let res = esp_vfs_littlefs_register(&fs_config);
-        EspError::convert(res)
-    }
+    Filesystem::format(pb_flash_storage)?;
+    let alloc = PB_FLASH_ALLOC.init(Filesystem::allocate());
+    let fs = PB_FS.init(Filesystem::mount(alloc, pb_flash_storage)?);
+
+    Ok(fs)
+
+    // let mut fs_config: esp_vfs_littlefs_conf_t = esp_vfs_littlefs_conf_t {
+    //     base_path: c"/fs".as_ptr(),
+    //     partition_label: c"filesystem".as_ptr(),
+    //     ..Default::default()
+    // };
+    // fs_config.set_format_if_mount_failed(false as u8);
+    // fs_config.set_dont_mount(false as u8);
+
+    // unsafe {
+    //     let res = esp_vfs_littlefs_register(&fs_config);
+    //     EspError::convert(res)
+    // }
 }
 
-/// used for debugging, this function logs the amount of free stack space to the console.
-fn get_stack_size() {
-    unsafe {
-        let stack: u32 = uxTaskGetStackHighWaterMark(std::ptr::null_mut());
-        info!("FREE STACK SPACE: {}", stack);
-    }
+#[panic_handler]
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    esp_hal::system::software_reset()
 }
+
+// used for debugging, this function logs the amount of free stack space to the console.
+// fn get_stack_size() {
+//     unsafe {
+//         let stack: u32 = uxTaskGetStackHighWaterMark(std::ptr::null_mut());
+//         info!("FREE STACK SPACE: {}", stack);
+//     }
+// }

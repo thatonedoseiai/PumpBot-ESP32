@@ -182,8 +182,8 @@ static CHANNEL: Channel<CriticalSectionRawMutex, ButtonEvent, CHANNEL_BUFFER_SIZ
 /// will initialize all buttons in `pin_select`, then regularly poll their state. 
 /// It will send events out via `queue`.
 pub fn button_init(
-    pin_select: Vec<AnyPin<'static>>,
     spawner: Spawner,
+    pin_select: Vec<AnyPin<'static>>,
     // queue: ,
 ) -> Receiver<'static, CriticalSectionRawMutex, ButtonEvent, CHANNEL_BUFFER_SIZE>
     // where T: From<ButtonEvent> + Copy + Send + Sync + 'static
