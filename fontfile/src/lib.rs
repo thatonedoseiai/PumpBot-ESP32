@@ -50,30 +50,30 @@ use profiler::{timed, SpanGuard};
 // use az::SaturatingAs;
 
 // Font file constants
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_7:  &Path = path!("/fs/NC_7.cbf");
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_12: &Path = path!("/fs/NC_12.cbf");
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_14: &Path = path!("/fs/NC_14.cbf");
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_18: &Path = path!("/fs/NC_18.cbf");
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_24: &Path = path!("/fs/NC_24.cbf");
-#[cfg(target_os = "espidf")]
-const FONT_NAME_SIZE_42: &Path = path!("/fs/NC_42.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_7:  &Path = path!("/NC_7.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_12: &Path = path!("/NC_12.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_14: &Path = path!("/NC_14.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_18: &Path = path!("/NC_18.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_24: &Path = path!("/NC_24.cbf");
+#[cfg(target_os = "none")]
+const FONT_NAME_SIZE_42: &Path = path!("/NC_42.cbf");
 
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_7:  &Path = path!("./fs/NC_7.cbf");
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_12: &Path = path!("./fs/NC_12.cbf");
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_14: &Path = path!("./fs/NC_14.cbf");
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_18: &Path = path!("./fs/NC_18.cbf");
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_24: &Path = path!("./fs/NC_24.cbf");
-#[cfg(not(target_os = "espidf"))]
+#[cfg(not(target_os = "none"))]
 const FONT_NAME_SIZE_42: &Path = path!("./fs/NC_42.cbf");
 
 type File<'a, 'b, 'c> = littlefs2::fs::File<'a, 'b, PbFlashStorage<'c>>;
@@ -182,7 +182,8 @@ pub struct IOErrorInfo {
 
 impl fmt::Display for IOErrorInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.e.fmt(f)
+        write!(f, "littlefs2 io error: code {}", self.e.code())
+        // self.e.fmt(f)
     }
 }
 
@@ -263,9 +264,14 @@ impl PbFont {
 
         // Open new font file
         // let mut file = File::open(font_name).map_err(|_| FontFileError::FileNotFound)?;
-        self.font_metadata = self.fs.open_file_and_then(
+        if !self.fs.exists(sz.as_path()) {
+            return Err(FontFileError::FileNotFound);
+        }
+        self.font_metadata = self.fs.open_file_with_options_and_then(
+            |options| options.read(true).write(true).create(false),
             sz.as_path(),
             |file: &File| {
+                log::info!("opened file!");
                 let res = Self::verify_font_file(file);
                 if let Err(e) = res {
                     return Ok(Err(e));
@@ -290,6 +296,7 @@ impl PbFont {
     // Verify font file
     fn verify_font_file(font: &File) -> Result<(), FontFileError> {
         let mut mbytes_buffer = [0u8; 10];
+        info!("READING HEADER");
         font.read_exact(&mut mbytes_buffer)?;
         if mbytes_buffer != CORRECT_MBYTES {
             Err(FontFileError::BadFormat)

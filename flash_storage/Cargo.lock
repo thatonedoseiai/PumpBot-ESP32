@@ -709,6 +709,7 @@ dependencies = [
  "esp-hal",
  "esp-storage",
  "littlefs2",
+ "log",
 ]
 
 [[package]]

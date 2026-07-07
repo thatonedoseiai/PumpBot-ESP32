@@ -24,33 +24,37 @@ impl<'a> PbFlashStorage<'a> {
     }
 }
 
+const LITTLEFS_OFFSET: usize = 0x210000;
 impl Storage for PbFlashStorage<'_> {
     type CACHE_SIZE = consts::U256;
     type LOOKAHEAD_SIZE = consts::U32;
 
     const READ_SIZE: usize = 16;
-    const WRITE_SIZE: usize = 256;
+    const WRITE_SIZE: usize = 16;
     const BLOCK_SIZE: usize = 4096;
-    const BLOCK_COUNT: usize = 256; // 1MB for: usize now
+    const BLOCK_COUNT: usize = 512; // 2MB for: usize now
 
     // Required methods
     fn read(&mut self, off: usize, buf: &mut [u8]) -> io::Result<usize> {
-        let new_off: u32 = off.try_into().map_err(|_| {Error::INVALID})?;
+        // log::info!("READ @ {} + 0x210000", off);
+        let new_off: u32 = (off + LITTLEFS_OFFSET).try_into().map_err(|_| {Error::INVALID})?;
         self.internal_flash.read(new_off, buf).map_err(flash_to_littlefs_error)?;
-        Ok(0)
+        Ok(buf.len())
     }
 
     fn write(&mut self, off: usize, data: &[u8]) -> io::Result<usize> {
-        let new_off: u32 = off.try_into().map_err(|_| {Error::INVALID})?;
+        // log::info!("WRITE OF {:?} @ {} + 0x210000", data, off);
+        let new_off: u32 = (off + LITTLEFS_OFFSET).try_into().map_err(|_| {Error::INVALID})?;
         self.internal_flash.write(new_off, data).map_err(flash_to_littlefs_error)?;
-        Ok(0)
+        Ok(data.len())
     }
 
     fn erase(&mut self, off: usize, len: usize) -> io::Result<usize> {
-        let from: u32 = off.try_into().map_err(|_| {Error::INVALID})?;
-        let to: u32 = (len + off).try_into().map_err(|_| {Error::INVALID})?;
+        // log::info!("ERASE OF {} BYTES @ {} + 0x210000", len, off);
+        let from: u32 = (off + LITTLEFS_OFFSET).try_into().map_err(|_| {Error::INVALID})?;
+        let to: u32 = (len + off + LITTLEFS_OFFSET).try_into().map_err(|_| {Error::INVALID})?;
         self.internal_flash.erase(from, to).map_err(flash_to_littlefs_error)?;
-        Ok(0)
+        Ok(len)
     }
 }
 

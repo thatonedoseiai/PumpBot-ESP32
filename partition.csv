@@ -2,4 +2,4 @@
 phy_init,   data, phy,     0x9000,   0x3000,
 nvs,        data, nvs,     0xC000,   0x4000,
 factory,    app,  factory, 0x10000,  2M,
-filesystem, data, littlefs,  , 8M,
+filesystem, data, littlefs, 0x210000, 8M,

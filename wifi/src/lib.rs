@@ -4,7 +4,7 @@
 //! Server logic DOES NOT GO HERE. 
 #![no_std]
 #![no_main]
-#![feature(str_split_remainder)]
+// #![feature(str_split_remainder)]
 
 extern crate alloc;
 

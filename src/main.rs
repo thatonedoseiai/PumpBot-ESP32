@@ -37,6 +37,12 @@
 
 #![no_std]
 #![no_main]
+#![deny(
+    clippy::mem_forget,
+    reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
+    holding buffers for the duration of a data transfer."
+)]
+#![deny(clippy::large_stack_frames)]
 
 extern crate alloc;
 
@@ -51,8 +57,10 @@ extern crate alloc;
 // use esp_idf_svc::eventloop::EspSystemEventLoop;
 // use esp_idf_svc::nvs::EspDefaultNvsPartition;
 
+use esp_backtrace as _;
+
 use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull};
-use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, GPIO46, SPI2, FLASH};
+use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, GPIO46, SPI2, FLASH, Peripherals, SW_INTERRUPT, TIMG0};
 use esp_hal::delay::Delay;
 use esp_alloc::psram_allocator;
 use esp_println::logger::init_logger_from_env;
@@ -71,7 +79,7 @@ use static_cell::StaticCell;
 use button_idf::button_init;
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
-use log::{info, error};
+use log::{info, error, warn};
 use ledc::{LedController, LedPeripherals, LedMode};
 // use pwm::{OutputCtl, OutputPeripherals, Action};
 use pwm::{Pwm, PwmAction, Command};
@@ -106,6 +114,13 @@ compile_error!("Declare a screen to compile!");
 
 #[cfg(any(all(feature = "ILI", feature = "ST")))]
 compile_error!("You may only have one screen active at a time!");
+
+esp_bootloader_esp_idf::esp_app_desc!();
+
+#[allow(
+    clippy::large_stack_frames,
+    reason = "it's not unusual to allocate larger buffers etc. in main"
+)]
 
 #[derive(Debug, Copy, Clone)]
 enum PbError {
@@ -183,7 +198,11 @@ fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: GPIO11
 
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
-    let program_result = init_board(spawner).await;
+    esp_println::logger::init_logger_from_env();
+    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+    let peripherals = esp_hal::init(config);
+
+    let program_result = init_board(spawner, peripherals).await;
 
     match program_result {
         Ok(_) => info!("MAIN RETURNED."),
@@ -195,18 +214,17 @@ async fn main(spawner: Spawner) -> ! {
 
 /// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
 /// the board to reset. This is why it returns an `anyhow::Result<()>`
-async fn init_board(spawner: Spawner) -> anyhow::Result<()> {
-    // esp_idf_svc::sys::link_patches();
-    // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
-    esp_println::logger::init_logger_from_env();
-    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let peripherals = esp_hal::init(config);
+async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Result<()> {
+
     esp_alloc::heap_allocator!(size: 64*1024);
-    psram_allocator!(peripherals.PSRAM, esp_hal::psram);
+    // psram_allocator!(peripherals.PSRAM, esp_hal::psram);
+
     let timg0 = TimerGroup::new(peripherals.TIMG0);
     let sw_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-    start(timg0.timer0, sw_interrupt.software_interrupt0);
+    esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
+    // esp_idf_svc::sys::link_patches();
+    // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
     let fs: &'static Filesystem<'static, PbFlashStorage> = register_filesystem(peripherals.FLASH).map_err(|e| PbError::FSError(e))?; // TODO: MAKE THIS STATIC
 
     info!("STARTING APP!");
@@ -335,35 +353,130 @@ static PB_FS: StaticCell<Filesystem<'static, PbFlashStorage>> = StaticCell::new(
 fn register_filesystem(flash: FLASH<'static>) -> Result<&'static mut Filesystem<'static, PbFlashStorage<'static>>, io::Error> {
     let pb_flash_storage = PB_FLASH_STORAGE.init(PbFlashStorage::new(flash));
 
-    Filesystem::format(pb_flash_storage)?;
     let alloc = PB_FLASH_ALLOC.init(Filesystem::allocate());
-    let fs = PB_FS.init(Filesystem::mount(alloc, pb_flash_storage)?);
+    let fs = PB_FS.init(Filesystem::mount_or_else(
+            alloc, 
+            pb_flash_storage, 
+            |_,storage,_| {
+                info!("filesystem not found or formatted incorrectly... formatting before mounting!");
+                Filesystem::format(storage)
+            })?);
 
-    Ok(fs)
+    use littlefs2::path;
+    info!("READING /:");
+    fs.read_dir_and_then(path!("/"), |contents| {
+        for entry in contents {
+            info!("{}", entry?.path());
+        }
+        Ok(())
+        // contents.for_each(|entry| info!("{}", entry?.path()));
+    })?;
 
-    // let mut fs_config: esp_vfs_littlefs_conf_t = esp_vfs_littlefs_conf_t {
-    //     base_path: c"/fs".as_ptr(),
-    //     partition_label: c"filesystem".as_ptr(),
-    //     ..Default::default()
-    // };
-    // fs_config.set_format_if_mount_failed(false as u8);
-    // fs_config.set_dont_mount(false as u8);
+    // Filesystem::format(pb_flash_storage)?;
+    // let fs = PB_FS.init(Filesystem::mount(alloc, pb_flash_storage)?);
 
     // unsafe {
-    //     let res = esp_vfs_littlefs_register(&fs_config);
-    //     EspError::convert(res)
+    //     // 0x210000 is the physical offset, size is 4096 bytes
+    //     esp_hal::rom::Cache_Invalidate_Addr(0x210000, 4096);
     // }
+
+    // test_storage(unsafe {fs.borrow_storage_mut()});
+
+    Ok(fs)
 }
 
-#[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    esp_hal::system::software_reset()
+
+fn test_storage(flash: &mut PbFlashStorage<'static>) {
+    use littlefs2::driver::Storage;
+    // const TEST_PARTITION_OFFSET: usize = 0x210000;
+    const TEST_PARTITION_OFFSET: usize = 0;
+    let test_write_data: [u8; 16] = [0xAA, 0xBB, 0xCC, 0xDD, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x00, 0xAA, 0xFF];
+    let mut test_read_buf: [u8; 16] = [0; 16];
+
+    info!("=== BEGIN STORAGE SANITY CHECK ===");
+
+    // let &mut flash = PB_FLASH_STORAGE;
+
+    // if let Err(e) = flash.write(TEST_PARTITION_OFFSET, &[0xFF; 4096]) {
+    if let Err(e) = flash.erase(TEST_PARTITION_OFFSET, 4096) {
+        error!("Flash Erase Failed! Error: {:?}", e);
+    } else {
+        info!("Erase command sent successfully.");
+    }
+
+    if let Err(e) = flash.read(TEST_PARTITION_OFFSET, &mut test_read_buf) {
+        error!("Flash Read (post-erase) Failed! Error: {:?}", e);
+    } else {
+        info!("Read post-erase: {:?}", test_read_buf);
+        if test_read_buf != [0xFF; 16] {
+            warn!("CRITICAL: Sector did not return all 0xFF after erase! Cache or hardware lock issue.");
+        }
+    }
+
+    info!("Writing test pattern to offset 0x{:X}...", TEST_PARTITION_OFFSET);
+    if let Err(e) = flash.write(TEST_PARTITION_OFFSET, &test_write_data) {
+        error!("Flash Write Failed! Error: {:?}", e);
+    } else {
+        info!("Write command sent successfully.");
+    }
+
+    info!("Reading back data to verify match...");
+    if let Err(e) = flash.read(TEST_PARTITION_OFFSET, &mut test_read_buf) {
+        error!("Flash Read (post-write) Failed! Error: {:?}", e);
+    } else {
+        info!("Read post-write: {:?}", test_read_buf);
+        if test_read_buf == test_write_data {
+            info!("SUCCESS: Raw flash driver is reading and writing properly!");
+        } else {
+            error!("FAILURE: Data mismatch! Expected {:?}, got {:?}", test_write_data, test_read_buf);
+        }
+    }
+
+    info!("--- END FLASH HARDWARE SANITY CHECK ---");
 }
 
-// used for debugging, this function logs the amount of free stack space to the console.
-// fn get_stack_size() {
-//     unsafe {
-//         let stack: u32 = uxTaskGetStackHighWaterMark(std::ptr::null_mut());
-//         info!("FREE STACK SPACE: {}", stack);
-//     }
-// }
+
+use core::ffi::c_char;
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strspn(s: *const c_char, accept: *const c_char) -> usize {
+    let mut count = 0;
+    let mut s_ptr = s;
+
+    while *s_ptr != 0 {
+        let mut a_ptr = accept;
+        let mut found = false;
+        while *a_ptr != 0 {
+            if *s_ptr == *a_ptr {
+                found = true;
+                break;
+            }
+            a_ptr = a_ptr.add(1);
+        }
+        if !found {
+            break;
+        }
+        count += 1;
+        s_ptr = s_ptr.add(1);
+    }
+    count
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcspn(s: *const c_char, reject: *const c_char) -> usize {
+    let mut count = 0;
+    let mut s_ptr = s;
+
+    while *s_ptr != 0 {
+        let mut r_ptr = reject;
+        while *r_ptr != 0 {
+            if *s_ptr == *r_ptr {
+                return count;
+            }
+            r_ptr = r_ptr.add(1);
+        }
+        count += 1;
+        s_ptr = s_ptr.add(1);
+    }
+    count
+}

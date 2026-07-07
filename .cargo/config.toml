@@ -1,10 +1,22 @@
-[build]
-target = "xtensa-esp32s3-none-elf"
-
-# [unstable]
-# build-std = ["std", "panic_abort"]
-[unstable]
-build-std = ["core", "alloc"] # Do NOT include "std" here!
+[target.xtensa-esp32s3-none-elf]
+runner = "espflash flash --monitor --chip esp32s3 --partition-table ./partition.csv"
 
 [env]
+ESP_LOG="info"
 MCU="esp32s3"
+# CROSS_COMPILE="xtensa-esp32s3-elf"
+CC = "xtensa-esp32s3-elf-cc"
+AR = "xtensa-esp32s3-elf-ar"
+CFLAGS = "-mlongcalls"
+EXTRA_CFLAGS="-mlongcalls"
+
+[build]
+rustflags = [
+  "-C", "link-arg=-nostartfiles",
+  "-Z", "stack-protector=all",
+]
+
+target = "xtensa-esp32s3-none-elf"
+
+[unstable]
+build-std = ["alloc", "core"]
