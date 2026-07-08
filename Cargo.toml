@@ -47,7 +47,8 @@ display-interface-spi = "0.5.0"
 st7735-lcd = { path = "./st7735-lcd-rs", features = ["graphics"] }
 menus = { path = "./menus" }
 embassy-executor = { version = "0.10.0", features = ["log"] }
-littlefs2 = { version = "0.8.0", features = ["alloc", "c-stubs"] }
+# littlefs2 = { version = "0.8.0", features = ["alloc", "c-stubs"] }
+littlefs2 = { git = "https://github.com/Tortus-exe/littlefs2.git", features = ["alloc", "c-stubs"] }
 embedded-hal-bus = "0.3.0"
 static_cell = "2.1.1"
 critical-section = "1.2.0"
@@ -70,3 +71,4 @@ embassy-net = { version = "0.9.1", features = [
   "udp",
 ] }
 embassy-time = { version = "0.5.0", features = ["log"] }
+embassy-sync = "0.8.0"
