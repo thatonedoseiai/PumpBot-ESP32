@@ -216,8 +216,28 @@ async fn main(spawner: Spawner) -> ! {
 /// the board to reset. This is why it returns an `anyhow::Result<()>`
 async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Result<()> {
 
-    esp_alloc::heap_allocator!(size: 64*1024);
-    // psram_allocator!(peripherals.PSRAM, esp_hal::psram);
+    // These GPIO pins are in use by some feature of the module and should not be used.
+    let _ = peripherals.GPIO27;
+    let _ = peripherals.GPIO28;
+    let _ = peripherals.GPIO29;
+    let _ = peripherals.GPIO30;
+    let _ = peripherals.GPIO31;
+    let _ = peripherals.GPIO32;
+    let _ = peripherals.GPIO33;
+    let _ = peripherals.GPIO34;
+    let _ = peripherals.GPIO35;
+    let _ = peripherals.GPIO36;
+    let _ = peripherals.GPIO37;
+
+    esp_alloc::heap_allocator!(size: 128*1024);
+
+    let psram_config = esp_hal::psram::PsramConfig {
+        size: esp_hal::psram::PsramSize::Size(16 * 1024 * 1024), // or ::Size(8 * 1024 * 1024) if you want to force it
+        // mode is picked up from ESP_HAL_CONFIG_PSRAM_MODE at build time on S3
+        ..Default::default()
+    };
+
+    psram_allocator!(peripherals.PSRAM, esp_hal::psram, psram_config);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
     let sw_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);

@@ -9,6 +9,7 @@ CC = "xtensa-esp32s3-elf-cc"
 AR = "xtensa-esp32s3-elf-ar"
 CFLAGS = "-mlongcalls"
 EXTRA_CFLAGS="-mlongcalls"
+# ESP_HAL_CONFIG_PSRAM_MODE = "octal"
 
 [build]
 rustflags = [

@@ -20,7 +20,7 @@ opt-level = "s"
 
 [profile.dev]
 debug = true    # Symbols are nice, and they don't increase the size on Flash
-opt-level = "s"
+opt-level = 3 # "s"
 
 [features]
 # default = []
@@ -55,7 +55,7 @@ dummy-pin = "1.0.0"
 esp-hal = { version = "1.1.1", features = ["esp32s3", "log-04", "unstable"] }
 esp-rtos = { version = "0.3.0", features = ["embassy", "esp32s3", "esp-alloc", "esp-radio", "log-04"] }
 esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32s3", "log-04"] }
-esp-alloc = "0.10.0"
+esp-alloc = { version = "0.10.0", features = ["esp32s3", "nightly"] }
 esp-backtrace = { version = "0.19.0", features = ["esp32s3", "panic-handler", "println"] }
 esp-println = { version = "0.17.0", features = ["esp32s3", "log-04"] }
 esp-radio = { version = "1.0.0-beta.0", features = ["esp32s3", "esp-alloc", "log-04", "unstable", "wifi"] }
@@ -70,9 +70,3 @@ embassy-net = { version = "0.9.1", features = [
   "udp",
 ] }
 embassy-time = { version = "0.5.0", features = ["log"] }
-
-[profile.dev.package.esp-storage]
-opt-level = 3
-
-[profile.dev.package.xtensa-lx-rt]
-opt-level = 'z'
