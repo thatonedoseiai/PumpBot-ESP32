@@ -48,11 +48,13 @@ impl Profiler {
     }
 
     pub fn dump(&self) {
-        // Print as folded stack format for inferno, or as a simple table
-        println!("=== PROFILE RESULTS ===");
-        for span in &self.spans {
-            let indent = "  ".repeat(span.depth);
-            println!("{}[{}] {}µs", indent, span.name, span.end - span.start);
+        if cfg!(feature = "enable") {
+            // Print as folded stack format for inferno, or as a simple table
+            println!("=== PROFILE RESULTS ===");
+            for span in &self.spans {
+                let indent = "  ".repeat(span.depth);
+                println!("{}[{}] {}µs", indent, span.name, span.end - span.start);
+            }
         }
     }
 }
@@ -76,10 +78,19 @@ impl Drop for SpanGuard {
     }
 }
 
+#[cfg(feature = "enable")]
 #[macro_export]
 macro_rules! timed {
     ($label:expr, $block:expr) => {{
         let _guard = SpanGuard::new($label);
+        $block
+    }};
+}
+
+#[cfg(not(feature = "enable"))]
+#[macro_export]
+macro_rules! timed {
+    ($label:expr, $block:expr) => {{
         $block
     }};
 }
