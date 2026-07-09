@@ -15,6 +15,7 @@ use embedded_hal::delay::DelayNs;
 use embassy_executor::Spawner;
 use embassy_sync::channel::{Channel, Receiver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_time::{Timer, Duration};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use alloc::fmt;
@@ -141,7 +142,7 @@ impl Debounce<'_> {
 async fn listen_button(mut debounces: Vec<Debounce<'static>>) {
     // let timer = TimerDriver::new(timerg, &TimerConfig::new()).unwrap();
     let instant = Instant::now();
-    let mut delay = Delay::new();
+    // let mut delay = Delay::new();
     let event_sender = CHANNEL.sender();
     loop {
         // let time = timer.counter().unwrap();
@@ -172,7 +173,8 @@ async fn listen_button(mut debounces: Vec<Debounce<'static>>) {
 
         // 10 ms delay – same as the original 10 / portTICK_PERIOD_MS
         // esp_idf_hal::delay::FreeRtos::delay_ms(10);
-        delay.delay_ms(1000 as u32);
+        // delay.delay_ms(1000 as u32);
+        Timer::after(Duration::from_millis(1000)).await;
     }
 }
 

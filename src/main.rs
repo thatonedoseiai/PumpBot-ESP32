@@ -101,6 +101,8 @@ use wifi::PbWifi;
 use embassy_executor::Spawner;
 use core::convert::Infallible;
 use core::fmt;
+use embedded_hal::delay::DelayNs;
+use embassy_time::{Timer, Duration};
 
 #[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
 compile_error!("Declare a screen to compile!");
@@ -233,12 +235,13 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     psram_allocator!(peripherals.PSRAM, esp_hal::psram, psram_config);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
+    // let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER);
     let sw_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
     // esp_idf_svc::sys::link_patches();
     // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
-    register_filesystem(peripherals.FLASH).await.map_err(|e| PbError::FSError(e))?;
+    let fs = register_filesystem(peripherals.FLASH).await.map_err(|e| PbError::FSError(e))?;
 
     info!("STARTING APP!");
     let mut settings = PbGlobalSettings::new();
@@ -301,8 +304,8 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     //     panic!("enable a screen feature")
     // };
 
-    let mut font = PbFont::new(&PB_FS);
-    font.set_size(FontSize::Sz14).await?;
+    let mut font = PbFont::new(fs.clone());
+    font.set_size(FontSize::Sz14)?;
 
     let pb_font_style = PbFontRenderer::new(font);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
@@ -359,11 +362,11 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
 static PB_FLASH_STORAGE: StaticCell<PbFlashStorage> = StaticCell::new();
 static PB_FLASH_ALLOC: StaticCell<Allocation<PbFlashStorage>> = StaticCell::new();
-static PB_FS: RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage>>> = RwLock::new(None); // StaticCell::new();
+// static PB_FS: RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage>>> = RwLock::new(None); // StaticCell::new();
 
 /// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
 /// Please do not change this, as it is known to work. If it fails, it will return an `Err(EspError)`
-async fn register_filesystem(flash: FLASH<'static>) -> Result<(), io::Error> {
+async fn register_filesystem(flash: FLASH<'static>) -> Result<Arc<Filesystem<'static, PbFlashStorage>>, io::Error> {
     let pb_flash_storage = PB_FLASH_STORAGE.init(PbFlashStorage::new(flash));
 
     let alloc = PB_FLASH_ALLOC.init(Filesystem::allocate());
@@ -393,14 +396,13 @@ async fn register_filesystem(flash: FLASH<'static>) -> Result<(), io::Error> {
     //     esp_hal::rom::Cache_Invalidate_Addr(0x210000, 4096);
     // }
 
-    let mut fs_lock = PB_FS.write().await;
-    *fs_lock = Some(fs);
+    // let mut fs_lock = PB_FS.write().await;
+    // *fs_lock = Some(fs);
 
     // test_storage(unsafe {fs.borrow_storage_mut()});
 
-    Ok(())
+    Ok(Arc::new(fs))
 }
-
 
 fn test_storage(flash: &mut PbFlashStorage<'static>) {
     use littlefs2::driver::Storage;

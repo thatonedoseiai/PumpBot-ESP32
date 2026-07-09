@@ -124,6 +124,7 @@ version = "0.1.0"
 dependencies = [
  "embassy-executor",
  "embassy-sync 0.8.0",
+ "embassy-time",
  "embedded-hal 1.0.0",
  "esp-alloc",
  "esp-hal",
@@ -982,6 +983,7 @@ dependencies = [
  "esp-hal",
  "esp-storage",
  "littlefs2",
+ "log",
 ]
 
 [[package]]
@@ -1014,6 +1016,7 @@ name = "fontfile"
 version = "0.1.0"
 dependencies = [
  "az",
+ "embassy-futures",
  "embassy-sync 0.8.0",
  "embedded-graphics",
  "esp-hal",
@@ -1253,6 +1256,7 @@ version = "0.1.0"
 dependencies = [
  "embassy-executor",
  "embassy-sync 0.8.0",
+ "embassy-time",
  "embedded-hal 1.0.0",
  "esp-hal",
  "fontfile",
@@ -1291,8 +1295,7 @@ checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 [[package]]
 name = "littlefs2"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e00aee790b8914c83815e9f6952731f4ddd9965c160aa66fe2a89abeb5c406a"
+source = "git+https://github.com/Tortus-exe/littlefs2.git#6032f48ed18cc3b852185740400487437adcddad"
 dependencies = [
  "bitflags 2.11.1",
  "delog",
@@ -1305,8 +1308,7 @@ dependencies = [
 [[package]]
 name = "littlefs2-core"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dd2d1cad5532f5e11b0fd871b8a981885efd3fdaec0427c0d637322ae09efbf"
+source = "git+https://github.com/Tortus-exe/littlefs2.git#6032f48ed18cc3b852185740400487437adcddad"
 dependencies = [
  "bitflags 2.11.1",
  "serde",
@@ -1365,6 +1367,7 @@ dependencies = [
  "display-interface-spi",
  "dummy-pin",
  "embassy-sync 0.8.0",
+ "embassy-time",
  "embedded-graphics",
  "embedded-graphics-simulator",
  "embedded-hal-bus",
@@ -1733,6 +1736,7 @@ version = "0.1.0"
 dependencies = [
  "embassy-executor",
  "embassy-sync 0.8.0",
+ "embassy-time",
  "esp-hal",
  "rotary-encoder-embedded",
 ]

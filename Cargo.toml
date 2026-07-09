@@ -72,3 +72,5 @@ embassy-net = { version = "0.9.1", features = [
 ] }
 embassy-time = { version = "0.5.0", features = ["log"] }
 embassy-sync = "0.8.0"
+embedded-hal = "1.0.0"
+embassy-futures = "0.1.2"

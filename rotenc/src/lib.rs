@@ -18,12 +18,13 @@ extern crate alloc;
 // use std::fmt;
 use rotary_encoder_embedded::{standard::StandardMode, Direction};
 use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
-use esp_hal::delay::Delay;
+// use esp_hal::delay::Delay;
 use embassy_sync::channel::{Channel, Receiver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_executor::Spawner;
 use core::num::Wrapping;
 use core::fmt;
+use embassy_time::{Timer, Duration};
 
 /// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
@@ -56,7 +57,7 @@ async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
     let inputconfig = InputConfig::default().with_pull(Pull::Down);
     let pin_a_driver = Input::new(pin_a, inputconfig);
     let pin_b_driver = Input::new(pin_b, inputconfig);
-    let delay = Delay::new();
+    // let delay = Delay::new();
 
     let mut encoder = StandardMode::new();
     let mut position = Wrapping(0u32);
@@ -72,7 +73,8 @@ async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
             // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
             EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
         }
-        delay.delay_millis(10);
+        Timer::after(Duration::from_millis(100)).await;
+        // delay.delay_millis(10);
         // FreeRtos::delay_ms(10);
     }
 }

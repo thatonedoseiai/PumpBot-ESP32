@@ -51,6 +51,9 @@ use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMut
 #[cfg(feature = "sim")]
 use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 
+#[cfg(not(feature = "sim"))]
+use embassy_time::{Timer, Duration};
+
 #[derive(Debug)]
 pub enum MenuError {
     UnimplementedMenu,
@@ -179,6 +182,8 @@ pub async fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles
                 _ => {}
             }
         events.clear();
+
+        Timer::after(Duration::from_millis(10)).await;
 
         // PROFILER.lock().unwrap().dump();
         SpanGuard::dump();

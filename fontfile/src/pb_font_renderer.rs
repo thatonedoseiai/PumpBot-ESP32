@@ -22,7 +22,6 @@ use az::SaturatingAs;
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
-use embassy_futures::block_on;
 
 use crate::PbFont;
 use profiler::{SpanGuard, timed};
@@ -73,7 +72,7 @@ impl TextRenderer for PbFontRenderer {
             DBG_PINDRIVER.set_low();
 
             let (metrics, coldata) = timed!("load char", { 
-                block_on(self.font.borrow_mut().load_char(c)).unwrap() // TODO: fix this!
+                self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
             });
             if metrics.width != 0 {
                 let true_height = timed!("true_height = ", metrics.height / 3);
@@ -132,7 +131,7 @@ impl TextRenderer for PbFontRenderer {
         let mut bb_bottom_right = position;
         let mut start_char_point = position;
         for c in text.encode_utf16() {
-            let metrics = block_on(self.font.borrow_mut().load_char_metadata(c)).unwrap(); // TODO: fix this!
+            let metrics = self.font.borrow_mut().load_char_metadata(c).unwrap(); // TODO: fix this!
             let top_left = start_char_point - Point::new(0, metrics.y.into());
             let bottom_right = top_left + Size::new(metrics.width.into(), (metrics.height / 3).into());
             if top_left.x < bb_top_left.x {

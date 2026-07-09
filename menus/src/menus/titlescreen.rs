@@ -61,7 +61,7 @@ impl MenuBehaviour for TitleState {
         // self.counter = self.counter.wrapping_add(1);
         // if self.counter == 0 {
             timed!("Set font size", {
-                io_handles.font.font.borrow_mut().set_size(FontSize::Sz12).await?;
+                io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
             });
             // io_handles.screen.clear(Rgb565::BLACK);
             let black = timed!("Create black style", {
@@ -95,7 +95,7 @@ impl MenuBehaviour for TitleState {
                 mid_text.draw(&mut io_handles.screen)?
             });
             timed!("Change font size", {
-                io_handles.font.font.borrow_mut().set_size(FontSize::Sz7).await?
+                io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?
             });
             let push_text = timed!("Create push rotenc to continue", {
                 Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center)

@@ -21,6 +21,7 @@ use embassy_executor::Spawner;
 // use embassy_sync::rwlock::RwLock;
 use embassy_sync::once_lock::OnceLock;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_time::{Timer as ETimer, Duration as EDuration};
 use log::info;
 
 // use std::thread;
@@ -109,7 +110,7 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
     let max_duty = p.channel_r.max_duty_cycle();
     let mut tick: u32 = 0;
     let mut goingup = true;
-    let delay = Delay::new();
+    // let delay = Delay::new();
 
     loop {
         let current = STATE.get().await.clone();
@@ -156,7 +157,8 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
         // tick += 2.0; // Increment based on speed
         // thread::sleep(Duration::from_millis(current.speed_ms));
         // esp_idf_hal::delay::FreeRtos::delay_ms(current.speed_ms as u32);
-        delay.delay_millis(current.read().await.speed_ms as u32);
+        // delay.delay_millis(current.read().await.speed_ms as u32);
+        ETimer::after(EDuration::from_millis(current.read().await.speed_ms)).await;
     }
 }
 

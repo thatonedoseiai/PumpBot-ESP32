@@ -105,7 +105,7 @@ impl<'a> ILIDriver<'a> {
         let mut start_y: u16 = y; // y.try_into().map_err(|_| ILIError::WritingOffScreen(x, y))?;
         for c in to_draw.encode_utf16() {
             info!("loading char {}: {} at {} {}", c, char::from_u32(c as u32).unwrap(), start_x, start_y);
-            let (char_metrics, char_slice) = font.load_char(c).await?;
+            let (char_metrics, char_slice) = font.load_char(c)?;
             if char_metrics.width != 0 {
                 let true_height = char_metrics.height / 3;
                 let char_start_x: u16 = (start_x.checked_sub_signed(char_metrics.x)).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
