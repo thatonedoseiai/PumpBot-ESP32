@@ -23,6 +23,8 @@ use littlefs2::fs::Filesystem;
 use littlefs2::path;
 use littlefs2::path::Path;
 use embassy_sync::blocking_mutex::CriticalSectionMutex;
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::rwlock::RwLock;
 use alloc::{
     vec::Vec, 
     string::{ToString, String},
@@ -82,7 +84,7 @@ type Mutex<T> = CriticalSectionMutex<T>;
 /// Represents an instance of the CBF file decoding engine.
 pub struct PbFont {
     // font_file: Option<File<'a>>,
-    fs: &'static Filesystem<'static, PbFlashStorage<'static>>,
+    fs: &'static RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage<'static>>>>,
     font_size: Option<FontSize>,
     font_metadata: FontMetadata,
 }
@@ -90,7 +92,7 @@ pub struct PbFont {
 /// Represents an instance of the CBI file decoding engine.
 pub struct PbBg {
     // bg_file: Option<File<'a>>,
-    fs: &'static Filesystem<'static, PbFlashStorage<'static>>,
+    fs: &'static RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage<'static>>>>,
     bg_filename: Option<String>,
     foreground_color: RGB,
     background_color: RGB,
@@ -242,7 +244,7 @@ impl FontSize {
 
 impl PbFont {
     /// Creates a new instance of the CBF file reading engine.
-    pub fn new(fs: &'static Filesystem<'static, PbFlashStorage>) -> Self {
+    pub fn new(fs: &'static RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage>>>) -> Self {
         PbFont {
             // font_file: None,
             fs: fs,
@@ -260,18 +262,18 @@ impl PbFont {
     /// size but instead accepts an entry in [FontSize] to work. This is because attempting to
     /// render a font size which does not have an associated file in the filesystem would result in
     /// an error and/or not display correctly.
-    pub fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
+    pub async fn set_size(&mut self, sz: FontSize) -> Result<(), FontFileError> {
 
         // Open new font file
         // let mut file = File::open(font_name).map_err(|_| FontFileError::FileNotFound)?;
-        if !self.fs.exists(sz.as_path()) {
+        if !self.fs.read().await.as_ref().unwrap().exists(sz.as_path()) {
             return Err(FontFileError::FileNotFound);
         }
-        self.font_metadata = self.fs.open_file_with_options_and_then(
+        self.font_metadata = self.fs.read().await.as_ref().unwrap().open_file_with_options_and_then(
             |options| options.read(true).write(true).create(false),
             sz.as_path(),
             |file: &File| {
-                log::info!("opened file!");
+                // log::info!("opened file!");
                 let res = Self::verify_font_file(file);
                 if let Err(e) = res {
                     return Ok(Err(e));
@@ -288,7 +290,7 @@ impl PbFont {
 
         // self.font_file = Some(file);
         self.font_size = Some(sz);
-        self.cache_char_index()?;
+        self.cache_char_index().await?;
 
         Ok(())
     }
@@ -296,7 +298,7 @@ impl PbFont {
     // Verify font file
     fn verify_font_file(font: &File) -> Result<(), FontFileError> {
         let mut mbytes_buffer = [0u8; 10];
-        info!("READING HEADER");
+        // info!("READING HEADER");
         font.read_exact(&mut mbytes_buffer)?;
         if mbytes_buffer != CORRECT_MBYTES {
             Err(FontFileError::BadFormat)
@@ -321,9 +323,9 @@ impl PbFont {
     }
 
     // loads the char index and caches it in RAM.
-    fn cache_char_index(&mut self) -> Result<(), FontFileError> {
+    async fn cache_char_index(&mut self) -> Result<(), FontFileError> {
         if let Some(sz) = self.font_size {
-            self.fs.open_file_and_then(
+            self.fs.read().await.as_ref().unwrap().open_file_and_then(
                 sz.as_path(),
                 |f| {
                     f.seek(SeekFrom::Start(16_u32))?;
@@ -362,10 +364,10 @@ impl PbFont {
     }
 
     // Binary search, returns the offset into the file for the glyph
-    fn binary_search(&mut self, k: u16) -> Result<u32, FontFileError> {
+    async fn binary_search(&mut self, k: u16) -> Result<u32, FontFileError> {
         let mut offset: i64 = (self.font_metadata.num_glyphs >> 1).into();
         if let Some(sz) = self.font_size {
-            Ok(self.fs.open_file_and_then(
+            Ok(self.fs.read().await.as_ref().unwrap().open_file_and_then(
                 sz.as_path(),
                 |f| {
                     f.seek(SeekFrom::Start((offset * 6 + 16) as u32))?;
@@ -426,12 +428,12 @@ impl PbFont {
     // Load character
     /// Loads a character with the character code `curchar`, returning either an error or the
     /// character metadata and visual data.
-    pub fn load_char(&mut self, curchar: u16) -> Result<(CharMetadata, Vec<RGB>), FontFileError> {
+    pub async fn load_char(&mut self, curchar: u16) -> Result<(CharMetadata, Vec<RGB>), FontFileError> {
         // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
         let offset = timed!("binary search", self.binary_search_cache(curchar)?);
 
         let Some(sz) = self.font_size else { return Err(FontFileError::FileNotOpen); };
-        self.fs.open_file_and_then(
+        self.fs.read().await.as_ref().unwrap().open_file_and_then(
             sz.as_path(),
             |font_file| -> Result<Result<(CharMetadata, Vec<RGB>), FontFileError>, littlefs2::io::Error> {
                 timed!("seek", font_file.seek(SeekFrom::Start(offset))?);
@@ -492,12 +494,12 @@ impl PbFont {
             })?
     }
 
-    pub fn load_char_metadata(&mut self, curchar: u16) -> Result<CharMetadata, FontFileError> {
+    pub async fn load_char_metadata(&mut self, curchar: u16) -> Result<CharMetadata, FontFileError> {
         // let mut font_file = unsafe { FONT_FILE.take() }.unwrap();
         let offset = self.binary_search_cache(curchar)?;
 
         let Some(sz) = self.font_size else { return Err(FontFileError::FileNotOpen); };
-        self.fs.open_file_and_then(
+        self.fs.read().await.as_ref().unwrap().open_file_and_then(
             sz.as_path(),
             |font_file| {
                 font_file.seek(SeekFrom::Start(offset))?;
@@ -531,7 +533,7 @@ impl PbBg {
     const PB_BG_VERSION: u8 = 2;
 
     /// Creates an instance of the CBI decoding engine
-    pub fn new(fs: &'static Filesystem<'static, PbFlashStorage<'static>>) -> Self {
+    pub fn new(fs: &'static RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage<'static>>>>) -> Self {
         PbBg {
             // bg_file: None,
             fs: fs,
@@ -545,10 +547,10 @@ impl PbBg {
     /// Decodes the `index`th background image, reading from the file `name`. If `force_load` is
     /// `True`, the file is forced to be opened anew regardless of whether the previous background image
     /// was from the same file.
-    pub fn load_bgimg(&mut self, name: &Path, force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
+    pub async fn load_bgimg(&mut self, name: &Path, force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
         // let mut image_file = self.bg_file;
 
-        let res: Result<Result<Vec<RGB>, FontFileError>, littlefs2::io::Error> = self.fs.open_file_and_then(
+        let res: Result<Result<Vec<RGB>, FontFileError>, littlefs2::io::Error> = self.fs.read().await.as_ref().unwrap().open_file_and_then(
             name, 
             |file| {
                 // Read header

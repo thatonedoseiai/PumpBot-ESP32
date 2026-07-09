@@ -112,7 +112,7 @@ impl<'a> IOHandles<'a> {
 pub trait MenuBehaviour: Sized {
     // type Args: Into<Self> + From<MenuSelection>;
     fn init(&mut self, io_handles: &mut IOHandles) -> anyhow::Result<MenuSignal>;
-    fn update(&mut self, io_handles: &mut IOHandles, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal>;
+    async fn update(&mut self, io_handles: &mut IOHandles, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal>;
 }
 
 impl From<MenuSelection> for MenuStates {
@@ -132,9 +132,9 @@ impl MenuBehaviour for MenuStates {
         }
     }
 
-    fn update(&mut self, io_handles: &mut IOHandles, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal> {
+    async fn update(&mut self, io_handles: &mut IOHandles<'_>, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal> {
         match self {
-            MenuStates::Title(t) => t.update(io_handles, events),
+            MenuStates::Title(t) => t.update(io_handles, events).await,
         }
     }
 }
@@ -146,7 +146,7 @@ impl MenuBehaviour for MenuStates {
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
 #[cfg(not(feature = "sim"))]
-pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, rotenc_events: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>, button_events: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>) -> anyhow::Result<()> {
+pub async fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles<'_>, rotenc_events: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>, button_events: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();
     let mut events = vec![];
@@ -165,7 +165,7 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, rote
         if let Ok(rotenc_event) = rotenc_events.try_receive() {
             events.push(rotenc_event.into())
         }
-        let response = cur_menu.update(io_handles, &mut events)?;
+        let response = cur_menu.update(io_handles, &mut events).await?;
             match response {
                 MenuSignal::Transition(m) => { 
                     if m == MenuSelection::Unimplemented {
@@ -186,7 +186,7 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, rote
 }
 
 #[cfg(feature = "sim")]
-pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>, mut window: Window) -> anyhow::Result<()> {
+pub async fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>, mut window: Window) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();
     let mut events = vec![];
@@ -197,7 +197,7 @@ pub fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: A
         if let Some((ev, _)) = q.recv_front(10) {
             events.push(ev);
         }
-        let response = cur_menu.update(io_handles, &mut events)?;
+        let response = cur_menu.update(io_handles, &mut events).await?;
         match response {
             MenuSignal::Transition(m) => { 
                 cur_menu = m.into();

@@ -46,17 +46,6 @@
 
 extern crate alloc;
 
-// use esp_idf_hal::gpio::*;
-// use esp_idf_hal::peripherals::Peripherals;
-// use esp_idf_hal::task::queue::Queue;
-// use esp_idf_hal::delay::{Delay, FreeRtos};
-// use esp_idf_hal::sys::{uxTaskGetStackHighWaterMark, EspError};
-// use esp_idf_hal::spi::{Dma, SpiDeviceDriver, config::{DriverConfig, Config}, SpiDriver, SpiError, SPI2};
-// use esp_idf_sys::{esp_vfs_littlefs_conf_t, esp_vfs_littlefs_register};
-// use esp_idf_hal::units::Hertz;
-// use esp_idf_svc::eventloop::EspSystemEventLoop;
-// use esp_idf_svc::nvs::EspDefaultNvsPartition;
-
 use esp_backtrace as _;
 
 use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull};
@@ -103,6 +92,10 @@ use embedded_graphics::{
     primitives::{Triangle, Rectangle, PrimitiveStyle},
     mono_font::{MonoTextStyle, ascii::FONT_6X10},
     text::Text,
+};
+use embassy_sync::{
+    rwlock::RwLock,
+    blocking_mutex::raw::CriticalSectionRawMutex
 };
 use wifi::PbWifi;
 use embassy_executor::Spawner;
@@ -245,7 +238,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // esp_idf_svc::sys::link_patches();
     // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
-    let fs: &'static Filesystem<'static, PbFlashStorage> = register_filesystem(peripherals.FLASH).map_err(|e| PbError::FSError(e))?; // TODO: MAKE THIS STATIC
+    register_filesystem(peripherals.FLASH).await.map_err(|e| PbError::FSError(e))?;
 
     info!("STARTING APP!");
     let mut settings = PbGlobalSettings::new();
@@ -308,8 +301,8 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     //     panic!("enable a screen feature")
     // };
 
-    let mut font = PbFont::new(&fs);
-    font.set_size(FontSize::Sz14)?;
+    let mut font = PbFont::new(&PB_FS);
+    font.set_size(FontSize::Sz14).await?;
 
     let pb_font_style = PbFontRenderer::new(font);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
@@ -344,7 +337,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
                 leddriver,
                 outputperipherals,
                 pb_font_style,
-            ), rotenc_receiver, button_receiver)?;
+            ), rotenc_receiver, button_receiver).await?;
 
     // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {
@@ -366,21 +359,21 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
 static PB_FLASH_STORAGE: StaticCell<PbFlashStorage> = StaticCell::new();
 static PB_FLASH_ALLOC: StaticCell<Allocation<PbFlashStorage>> = StaticCell::new();
-static PB_FS: StaticCell<Filesystem<'static, PbFlashStorage>> = StaticCell::new();
+static PB_FS: RwLock<CriticalSectionRawMutex, Option<Filesystem<'static, PbFlashStorage>>> = RwLock::new(None); // StaticCell::new();
 
 /// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
 /// Please do not change this, as it is known to work. If it fails, it will return an `Err(EspError)`
-fn register_filesystem(flash: FLASH<'static>) -> Result<&'static mut Filesystem<'static, PbFlashStorage<'static>>, io::Error> {
+async fn register_filesystem(flash: FLASH<'static>) -> Result<(), io::Error> {
     let pb_flash_storage = PB_FLASH_STORAGE.init(PbFlashStorage::new(flash));
 
     let alloc = PB_FLASH_ALLOC.init(Filesystem::allocate());
-    let fs = PB_FS.init(Filesystem::mount_or_else(
+    let fs = Filesystem::mount_or_else(
             alloc, 
             pb_flash_storage, 
             |_,storage,_| {
                 info!("filesystem not found or formatted incorrectly... formatting before mounting!");
                 Filesystem::format(storage)
-            })?);
+            })?;
 
     use littlefs2::path;
     info!("READING /:");
@@ -400,9 +393,12 @@ fn register_filesystem(flash: FLASH<'static>) -> Result<&'static mut Filesystem<
     //     esp_hal::rom::Cache_Invalidate_Addr(0x210000, 4096);
     // }
 
+    let mut fs_lock = PB_FS.write().await;
+    *fs_lock = Some(fs);
+
     // test_storage(unsafe {fs.borrow_storage_mut()});
 
-    Ok(fs)
+    Ok(())
 }
 
 
