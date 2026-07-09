@@ -15,13 +15,24 @@ use embedded_graphics::{
 };
 use profiler::{timed, SpanGuard};
 use alloc::vec::Vec;
+use embassy_executor::Spawner;
+use embassy_sync::channel::{Channel, Sender, Receiver};
+use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use button_idf::ButtonEvent;
+use embassy_futures::select::{select, Either};
+use embassy_time::{Timer, Duration};
 
 /// represents the internal state of the title screen - what language it's on and how long it has
 /// until it swaps to a different language.
 pub struct TitleState {
     cur_lang: Lang,
     counter: u8,
-    undraw_bbs: [Rectangle;3]
+    undraw_bbs: [Rectangle;3],
+    ipc: Channel<CriticalSectionRawMutex, IpcMessage, 1>,
+}
+
+enum IpcMessage {
+    NextMenu,
 }
 
 /// A helper function that determines the order of the language swaps. Russian is currently unused
@@ -45,21 +56,23 @@ impl TitleState {
         TitleState {
             cur_lang: Lang::En,
             counter: 20,
-            undraw_bbs: [Rectangle::zero(); 3]
+            undraw_bbs: [Rectangle::zero(); 3],
+            ipc: Channel::new()
         }
     }
 }
 
 impl MenuBehaviour for TitleState {
     // Args = ()
-    fn init(&mut self, io_handles: &mut IOHandles) -> anyhow::Result<MenuSignal> {
+    async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         Ok(MenuSignal::None)
     }
 
-    async fn update(&mut self, io_handles: &mut IOHandles<'_>, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal> {
+    async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
         // if self.counter == 0 {
+        loop {
             timed!("Set font size", {
                 io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
             });
@@ -108,15 +121,16 @@ impl MenuBehaviour for TitleState {
             });
             // push_text.draw(&mut io_handles.screen);
             self.cur_lang = next_lang(self.cur_lang);
-            self.counter = 20;
-        // }
-        self.counter -= 1;
-
-        if let Some(Event::Button(v)) = events.pop() {
-            if v.pin == 18 {
-                // info!("next menu!");
-                return Ok(MenuSignal::Transition(MenuSelection::Unimplemented));
-            }
+            let result = select(
+                Timer::after(Duration::from_secs(1)), 
+                async {
+                    while io_handles.button.receive().await.pin != 18 { }
+                }
+            ).await;
+            match result {
+                Either::Second(_) => break,
+                _ => {},
+            };
         }
         Ok(MenuSignal::None)
     }

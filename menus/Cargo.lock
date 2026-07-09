@@ -1366,6 +1366,8 @@ dependencies = [
  "button_idf",
  "display-interface-spi",
  "dummy-pin",
+ "embassy-executor",
+ "embassy-futures",
  "embassy-sync 0.8.0",
  "embassy-time",
  "embedded-graphics",

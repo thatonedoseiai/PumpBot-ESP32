@@ -335,12 +335,14 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
-    run_menu_loop(MenuSelection::TitleMenu, &mut IOHandles::new(
+    run_menu_loop(spawner, MenuSelection::TitleMenu, &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,
                 pb_font_style,
-            ), rotenc_receiver, button_receiver).await?;
+                button_receiver,
+                rotenc_receiver,
+            )).await?;
 
     // loop {
     //     if let Some((ev, _)) = button_queue.recv_front(10) {

@@ -47,6 +47,8 @@ use ledc::LedController;
 use mock_queue::Queue;
 #[cfg(not(feature = "sim"))]
 use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
+#[cfg(not(feature = "sim"))]
+use embassy_executor::Spawner;
 
 #[cfg(feature = "sim")]
 use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
@@ -102,20 +104,29 @@ pub struct IOHandles<'a> {
     pub screen: Screen<'a>,
     pub leddriver: LedController,
     pub pwm_output: Pwm<'a>,
-    pub font: PbFontRenderer, 
+    pub font: PbFontRenderer,
+    pub button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
+    pub rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
 }
 
 impl<'a> IOHandles<'a> {
-    pub fn new( screen: Screen<'a>, leddriver: LedController, pwm_output: Pwm<'a>, font: PbFontRenderer) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font }
+    pub fn new(
+        screen: Screen<'a>,
+        leddriver: LedController,
+        pwm_output: Pwm<'a>,
+        font: PbFontRenderer,
+        button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
+        rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>
+    ) -> IOHandles<'a> {
+        Self { screen, leddriver, pwm_output, font, button, rotenc }
     }
 }
 
 /// A trait that defines the behaviours that menus are required to implement.
 pub trait MenuBehaviour: Sized {
     // type Args: Into<Self> + From<MenuSelection>;
-    fn init(&mut self, io_handles: &mut IOHandles) -> anyhow::Result<MenuSignal>;
-    async fn update(&mut self, io_handles: &mut IOHandles, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal>;
+    fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles) -> impl core::future::Future<Output = anyhow::Result<MenuSignal>>;
+    fn update(&mut self, io_handles: &mut IOHandles) -> impl core::future::Future<Output = anyhow::Result<MenuSignal>>;
 }
 
 impl From<MenuSelection> for MenuStates {
@@ -129,15 +140,15 @@ impl From<MenuSelection> for MenuStates {
 
 impl MenuBehaviour for MenuStates {
     // Args = MenuSelection;
-    fn init(&mut self, io_handles: &mut IOHandles) -> anyhow::Result<MenuSignal> {
+    async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         match self {
-            MenuStates::Title(t) => t.init(io_handles),
+            MenuStates::Title(t) => t.init(spawner, io_handles).await,
         }
     }
 
-    async fn update(&mut self, io_handles: &mut IOHandles<'_>, events: &mut Vec<Event>) -> anyhow::Result<MenuSignal> {
+    async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         match self {
-            MenuStates::Title(t) => t.update(io_handles, events).await,
+            MenuStates::Title(t) => t.update(io_handles).await,
         }
     }
 }
@@ -149,41 +160,41 @@ impl MenuBehaviour for MenuStates {
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
 #[cfg(not(feature = "sim"))]
-pub async fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles<'_>, rotenc_events: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>, button_events: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>) -> anyhow::Result<()> {
+pub async fn run_menu_loop(spawner: Spawner, start_menu: MenuSelection, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
 
     let mut cur_menu: MenuStates = start_menu.into();
-    let mut events = vec![];
-    cur_menu.init(io_handles)?;
+    // let mut events = vec![];
+    cur_menu.init(spawner, io_handles).await?;
 
-    log::info!("beginning loop!");
+    log::info!("beginning menu loop!");
 
     loop {
         // q.recv(10);
         // if let Some((ev, _)) = q.recv_front(1) { // PROBLEM HERE???
         //     events.push(ev);
         // }
-        if let Ok(button_event) = button_events.try_receive() {
-            events.push(button_event.into());
+        // if let Ok(button_event) = button_events.try_receive() {
+        //     events.push(button_event.into());
+        // }
+        // if let Ok(rotenc_event) = rotenc_events.try_receive() {
+        //     events.push(rotenc_event.into())
+        // }
+        let response = cur_menu.update(io_handles).await?;
+        match response {
+            MenuSignal::Transition(m) => { 
+                if m == MenuSelection::Unimplemented {
+                    warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
+                    return Err(MenuError::UnimplementedMenu)?;
+                }
+                cur_menu = m.into();
+                cur_menu.init(spawner, io_handles).await?;
+            },
+            MenuSignal::Return => { return Ok(()); },
+            _ => {}
         }
-        if let Ok(rotenc_event) = rotenc_events.try_receive() {
-            events.push(rotenc_event.into())
-        }
-        let response = cur_menu.update(io_handles, &mut events).await?;
-            match response {
-                MenuSignal::Transition(m) => { 
-                    if m == MenuSelection::Unimplemented {
-                        warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
-                        return Err(MenuError::UnimplementedMenu)?;
-                    }
-                    cur_menu = m.into();
-                    cur_menu.init(io_handles)?;
-                },
-                MenuSignal::Return => { return Ok(()); },
-                _ => {}
-            }
-        events.clear();
+        // events.clear();
 
-        Timer::after(Duration::from_millis(10)).await;
+        Timer::after(Duration::from_millis(10)).await; // do the other tasks
 
         // PROFILER.lock().unwrap().dump();
         SpanGuard::dump();

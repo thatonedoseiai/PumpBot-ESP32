@@ -18,6 +18,8 @@ esp-hal = { version = "1.1.1", features = ["esp32s3", "unstable"] }
 embedded-hal-bus = "0.3.0"
 dummy-pin = "1.0.0"
 embassy-time = "0.5.1"
+embassy-executor = "0.10.0"
+embassy-futures = "0.1.2"
 # embedded-graphics-simulator = "0.8.0"
 
 [target.'cfg(not(feature = "sim"))'.dependencies]
