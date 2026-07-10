@@ -132,6 +132,6 @@ impl MenuBehaviour for TitleState {
                 _ => {},
             };
         }
-        Ok(MenuSignal::None)
+        Ok(MenuSignal::Return) // TODO: fix this
     }
 }

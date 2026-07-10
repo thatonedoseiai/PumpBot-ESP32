@@ -174,7 +174,7 @@ async fn listen_button(mut debounces: Vec<Debounce<'static>>) {
         // 10 ms delay – same as the original 10 / portTICK_PERIOD_MS
         // esp_idf_hal::delay::FreeRtos::delay_ms(10);
         // delay.delay_ms(1000 as u32);
-        Timer::after(Duration::from_millis(1000)).await;
+        Timer::after(Duration::from_millis(10)).await;
     }
 }
 
