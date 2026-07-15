@@ -24,6 +24,10 @@ use core::fmt;
 use rotenc::EncoderEvent;
 use button_idf::ButtonEvent;
 use alloc::{vec::Vec, vec};
+use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::prelude::RgbColor;
+use embedded_graphics::draw_target::DrawTarget;
+use log::info;
 
 use profiler::SpanGuard;
 
@@ -142,6 +146,7 @@ pub async fn run_menu_loop(spawner: Spawner, start_menu: MenuSelection, io_handl
                     warn!("transition to unimplemented menu from {}! Returning now.", cur_menu);
                     return Err(MenuError::UnimplementedMenu)?;
                 }
+                io_handles.screen.clear(Rgb565::BLACK)?;
                 cur_menu = m.into();
                 cur_menu.init(spawner, io_handles).await?;
             },
@@ -150,7 +155,7 @@ pub async fn run_menu_loop(spawner: Spawner, start_menu: MenuSelection, io_handl
         }
         // events.clear();
 
-        Timer::after(Duration::from_millis(10)).await; // do the other tasks
+        // Timer::after(Duration::from_millis(10)).await; // do the other tasks
 
         // PROFILER.lock().unwrap().dump();
         SpanGuard::dump();
