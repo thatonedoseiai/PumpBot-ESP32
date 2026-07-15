@@ -13,6 +13,7 @@ mod menu_define;
 
 pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
+use crate::menus::language_selection::LanguageState;
 // use crate::menus_define;
 // use ilidriver::ILIDriver;
 // use alloc::sync::Arc;
@@ -69,11 +70,13 @@ impl core::error::Error for MenuError { }
 pub enum MenuSignal {
     None,
     Return,
+    Back,
     Transition(MenuSelection)
 }
 
 menus_define![
-    TitleMenu, Title(TitleState)
+    TitleMenu, Title(TitleState);
+    LanguageMenu, Lang(LanguageState)
 ];
 
 /// A collection of the various IOHandles that menus should be allowed to interact with.

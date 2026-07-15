@@ -132,6 +132,6 @@ impl MenuBehaviour for TitleState {
                 _ => {},
             };
         }
-        Ok(MenuSignal::Return) // TODO: fix this
+        Ok(MenuSignal::Transition(MenuSelection::LanguageMenu)) // TODO: fix this
     }
 }

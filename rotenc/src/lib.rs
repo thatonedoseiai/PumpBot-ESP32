@@ -16,7 +16,7 @@ extern crate alloc;
 // use std::sync::Arc;
 // use std::num::Wrapping;
 // use std::fmt;
-use rotary_encoder_embedded::{standard::StandardMode, Direction};
+pub use rotary_encoder_embedded::{standard::StandardMode, Direction};
 use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
 // use esp_hal::delay::Delay;
 use embassy_sync::channel::{Channel, Receiver};
@@ -29,8 +29,8 @@ use embassy_time::{Timer, Duration};
 /// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
 pub struct EncoderEvent {
-    pos: Wrapping<u32>,
-    dir: Direction,
+    pub pos: Wrapping<u32>,
+    pub dir: Direction,
 }
 
 impl EncoderEvent {
