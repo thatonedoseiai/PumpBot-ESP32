@@ -7,14 +7,6 @@
 extern crate alloc;
 
 pub mod menus;
-
-#[cfg(feature = "sim")]
-pub mod mock_queue;
-#[cfg(feature = "sim")]
-pub mod mock_ledc;
-#[cfg(feature = "sim")]
-pub mod mock_pwm;
-
 mod event;
 mod screen;
 mod menu_define;
@@ -36,6 +28,10 @@ use profiler::SpanGuard;
 
 #[cfg(feature = "sim")]
 mod cond_deps {
+    pub mod mock_queue;
+    pub mod mock_ledc;
+    pub mod mock_pwm;
+
     pub use mock_pwm::OutputCtl;
     pub use mock_ledc::LedController;
     // pub use esp_idf_hal::task::queue::Queue;
