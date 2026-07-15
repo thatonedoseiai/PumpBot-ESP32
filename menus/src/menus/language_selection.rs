@@ -28,7 +28,7 @@ impl LanguageState {
 
 impl MenuBehaviour for LanguageState {
     async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+        io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
 
         Text::with_alignment(TEXT_CHOOSE_LANG[Lang::En], Point::new(64, 20), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen)?;
         Text::with_alignment(TEXT_LANGUAGE[Lang::En], Point::new(8, 50), io_handles.font.clone(), Alignment::Left).draw(&mut io_handles.screen)?;
@@ -39,9 +39,13 @@ impl MenuBehaviour for LanguageState {
     }
 
     async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        let mut draw = false;
+        let mut draw = true;
         loop {
             if draw {
+                let black = PrimitiveStyleBuilder::new()
+                        .fill_color(Rgb565::BLACK)
+                        .build();
+                self.undraw_language.into_styled(black).draw(&mut io_handles.screen)?;
                 let language_name = Text::with_alignment(TEXT_LANGUAGE_NAME[self.cur_lang], Point::new(120, 50), io_handles.font.clone(), Alignment::Right);
                 self.undraw_language = language_name.bounding_box();
                 language_name.draw(&mut io_handles.screen)?;

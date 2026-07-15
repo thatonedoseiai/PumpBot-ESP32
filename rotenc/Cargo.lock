@@ -1131,6 +1131,7 @@ dependencies = [
  "embassy-sync 0.8.0",
  "embassy-time",
  "esp-hal",
+ "log",
  "rotary-encoder-embedded",
 ]
 

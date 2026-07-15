@@ -73,7 +73,7 @@ async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
             // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
             EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
         }
-        Timer::after(Duration::from_millis(100)).await;
+        Timer::after(Duration::from_millis(10)).await;
         // delay.delay_millis(10);
         // FreeRtos::delay_ms(10);
     }
