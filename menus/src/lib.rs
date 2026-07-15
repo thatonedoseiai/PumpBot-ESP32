@@ -17,9 +17,11 @@ pub mod mock_pwm;
 
 mod event;
 mod screen;
+mod menu_define;
 
 pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
+// use crate::menus_define;
 // use ilidriver::ILIDriver;
 // use alloc::sync::Arc;
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
@@ -79,25 +81,9 @@ pub enum MenuSignal {
     Transition(MenuSelection)
 }
 
-/// The list of all currently implemented menus.
-#[derive(PartialEq, Debug)]
-pub enum MenuSelection {
-    TitleMenu,
-    Unimplemented
-}
-
-/// A wrapper around the current states of every menu.
-enum MenuStates {
-    Title(TitleState),
-}
-
-impl fmt::Display for MenuStates {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            MenuStates::Title(_) => write!(f, "Title"),
-        }
-    }
-}
+menus_define![
+    TitleMenu, Title(TitleState)
+];
 
 /// A collection of the various IOHandles that menus should be allowed to interact with.
 pub struct IOHandles<'a> {
@@ -127,30 +113,6 @@ pub trait MenuBehaviour: Sized {
     // type Args: Into<Self> + From<MenuSelection>;
     fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles) -> impl core::future::Future<Output = anyhow::Result<MenuSignal>>;
     fn update(&mut self, io_handles: &mut IOHandles) -> impl core::future::Future<Output = anyhow::Result<MenuSignal>>;
-}
-
-impl From<MenuSelection> for MenuStates {
-    fn from(val: MenuSelection) -> MenuStates {
-        match val {
-            MenuSelection::TitleMenu => MenuStates::Title(TitleState::new()),
-            MenuSelection::Unimplemented => unreachable!(),
-        }
-    }
-}
-
-impl MenuBehaviour for MenuStates {
-    // Args = MenuSelection;
-    async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        match self {
-            MenuStates::Title(t) => t.init(spawner, io_handles).await,
-        }
-    }
-
-    async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        match self {
-            MenuStates::Title(t) => t.update(io_handles).await,
-        }
-    }
 }
 
 /// Starts a menuing tree. If the user returns from the menu at the bottom of the tree, the
