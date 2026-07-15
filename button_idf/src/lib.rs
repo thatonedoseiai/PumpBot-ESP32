@@ -19,6 +19,7 @@ use embassy_time::{Timer, Duration};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use alloc::fmt;
+use derive_more::Display;
 
 // ---------------------------------------------------------------------------
 // Configuration – feel free to change / make these const generics
@@ -30,6 +31,14 @@ const CHANNEL_BUFFER_SIZE: usize  = 10;
 // ---------------------------------------------------------------------------
 // Public API – event types
 // ---------------------------------------------------------------------------
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
+#[display("[BTN: {}]", _variant)]
+pub enum ButtonType {
+    Right,
+    Left,
+    Rotenc,
+}
 
 /// represents the state of a single button.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -45,16 +54,16 @@ pub enum ButtonEventKind {
 /// held down.)
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ButtonEvent {
-    pub pin:   i32,
-    pub event: ButtonEventKind,
+    pub button_type: ButtonType,
+    pub event:  ButtonEventKind,
 }
 
 impl fmt::Display for ButtonEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.event {
-            ButtonEventKind::Down => write!(f, "({}, Down)", self.pin),
-            ButtonEventKind::Up => write!(f, "({}, Up)", self.pin),
-            ButtonEventKind::Held => write!(f, "({}, Held)", self.pin),
+            ButtonEventKind::Down => write!(f, "({}, Down)", self.button_type),
+            ButtonEventKind::Up => write!(f, "({}, Up)", self.button_type),
+            ButtonEventKind::Held => write!(f, "({}, Held)", self.button_type),
         }
     }
 }
@@ -74,7 +83,7 @@ struct Debounce<'a> {
     down_time:  u64,
     next_long_time: u64,
     pin: Box<Input<'a>>,
-    pintype: i32, // TODO: make this a proper enum
+    pintype: ButtonType, // TODO: make this a proper enum
 }
 
 impl Debounce<'_> {
@@ -154,18 +163,18 @@ async fn listen_button(mut debounces: Vec<Debounce<'static>>) {
 
             if d.button_up() {
                 d.down_time = 0;
-                let ev = ButtonEvent { pin: d.pintype, event: ButtonEventKind::Up };
+                let ev = ButtonEvent { button_type: d.pintype, event: ButtonEventKind::Up };
                 // let _ = queue_task.push(ev.into());
                 event_sender.send(ev).await;
             } else if d.down_time != 0 && now_ms >= d.next_long_time {
-                let ev = ButtonEvent { pin: d.pintype, event: ButtonEventKind::Held };
+                let ev = ButtonEvent { button_type: d.pintype, event: ButtonEventKind::Held };
                 // let _ = queue_task.push(ev.into());
                 event_sender.send(ev).await;
                 d.next_long_time += LONG_PRESS_REPEAT_MS;
             } else if d.button_down() && d.down_time == 0 {
                 d.down_time = now_ms;
                 d.next_long_time = now_ms + LONG_PRESS_DURATION_MS;
-                let ev = ButtonEvent { pin: d.pintype, event: ButtonEventKind::Down };
+                let ev = ButtonEvent { button_type: d.pintype, event: ButtonEventKind::Down };
                 event_sender.send(ev).await;
                 // let _ = queue_task.push(ev.into());
             }
@@ -185,7 +194,7 @@ static CHANNEL: Channel<CriticalSectionRawMutex, ButtonEvent, CHANNEL_BUFFER_SIZ
 /// It will send events out via `queue`.
 pub fn button_init(
     spawner: Spawner,
-    pin_select: Vec<AnyPin<'static>>,
+    pin_select: Vec<(AnyPin<'static>, ButtonType)>,
     // queue: ,
 ) -> Receiver<'static, CriticalSectionRawMutex, ButtonEvent, CHANNEL_BUFFER_SIZE>
     // where T: From<ButtonEvent> + Copy + Send + Sync + 'static
@@ -200,9 +209,9 @@ pub fn button_init(
 
     // 3️⃣  Build the debounce list
     let mut debounces: Vec<Debounce> = Vec::with_capacity(pin_select.len());
-    for pin in pin_select {
+    for (pin, button_type) in pin_select {
         // pin.set_pull(Pull::Down)?;
-        let pin_number: i32 = pin.number() as i32;
+        // let pin_number: i32 = pin.number() as i32;
         let pin_obj = Input::new(pin, InputConfig::default().with_pull(Pull::Up));
         debounces.push(Debounce {
             inverted:      true,              // active‑low buttons
@@ -210,7 +219,7 @@ pub fn button_init(
             down_time:     0,
             next_long_time:0,
             pin:           Box::new(pin_obj),
-            pintype:       pin_number,
+            pintype:       button_type,
         });
     }
 

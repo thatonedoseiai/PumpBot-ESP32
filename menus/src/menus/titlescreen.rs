@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 use embassy_executor::Spawner;
 use embassy_sync::channel::{Channel, Sender, Receiver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
-use button_idf::ButtonEvent;
+use button_idf::{ButtonEvent, ButtonType};
 use embassy_futures::select::{select, Either};
 use embassy_time::{Timer, Duration};
 
@@ -124,7 +124,7 @@ impl MenuBehaviour for TitleState {
             let result = select(
                 Timer::after(Duration::from_secs(1)), 
                 async {
-                    while io_handles.button.receive().await.pin != 18 { }
+                    while io_handles.button.receive().await.button_type != ButtonType::Rotenc { }
                 }
             ).await;
             match result {

@@ -65,7 +65,7 @@ use esp_hal::clock::CpuClock;
 use littlefs2::io;
 use littlefs2::fs::{Filesystem, Allocation};
 use static_cell::StaticCell;
-use button_idf::button_init;
+use button_idf::{button_init, ButtonType};
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
 use log::{info, error, warn};
@@ -259,7 +259,10 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     // let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     // button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
     // start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
-    let button_receiver = button_init(spawner, vec![peripherals.GPIO0.into(), peripherals.GPIO3.into(), peripherals.GPIO18.into()]);
+    let button_receiver = button_init(spawner, vec![
+        (peripherals.GPIO0.into(), ButtonType::Left), 
+        (peripherals.GPIO3.into(), ButtonType::Right), 
+        (peripherals.GPIO18.into(), ButtonType::Rotenc)]);
     let rotenc_receiver = start_rotenc_thread(spawner, peripherals.GPIO17.into(), peripherals.GPIO8.into());
 
     let ledperipherals = LedPeripherals::new(

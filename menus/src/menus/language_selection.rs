@@ -1,5 +1,6 @@
 use crate::{MenuSignal, MenuBehaviour, IOHandles, Event, MenuSelection};
 use rotenc::Direction;
+use button_idf::ButtonType;
 use fontfile::FontSize;
 use global_settings::lang::{Lang, TEXT_LANGUAGE_NAME, TEXT_LANGUAGE, TEXT_CHOOSE_LANG, TEXT_NEXT, TEXT_BACK};
 use embedded_graphics::{
@@ -44,6 +45,7 @@ impl MenuBehaviour for LanguageState {
                 let language_name = Text::with_alignment(TEXT_LANGUAGE_NAME[self.cur_lang], Point::new(120, 50), io_handles.font.clone(), Alignment::Right);
                 self.undraw_language = language_name.bounding_box();
                 language_name.draw(&mut io_handles.screen)?;
+                draw = false;
             }
             let result = select(
                 io_handles.rotenc.receive(),
@@ -52,15 +54,21 @@ impl MenuBehaviour for LanguageState {
             match result {
                 Either::First(r) => {
                     match r.dir {
-                        Direction::Clockwise => self.cur_lang = next_lang(self.cur_lang),
-                        Direction::Anticlockwise => self.cur_lang = prev_lang(self.cur_lang),
+                        Direction::Clockwise => {
+                            self.cur_lang = next_lang(self.cur_lang);
+                            draw = true;
+                        },
+                        Direction::Anticlockwise => {
+                            self.cur_lang = prev_lang(self.cur_lang);
+                            draw = true;
+                        },
                         _ => {}
                     };
                 },
                 Either::Second(b) => {
-                    match b.pin {
-                        3 => return Ok(MenuSignal::Return),
-                        0 => return Ok(MenuSignal::Transition(MenuSelection::TitleMenu)),
+                    match b.button_type {
+                        ButtonType::Right => return Ok(MenuSignal::Return),
+                        ButtonType::Left => return Ok(MenuSignal::Transition(MenuSelection::TitleMenu)),
                         _ => {}
                     };
                 }
