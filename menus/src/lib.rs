@@ -35,28 +35,23 @@ use alloc::{vec::Vec, vec};
 use profiler::SpanGuard;
 
 #[cfg(feature = "sim")]
-use mock_pwm::OutputCtl;
+mod cond_deps {
+    pub use mock_pwm::OutputCtl;
+    pub use mock_ledc::LedController;
+    // pub use esp_idf_hal::task::queue::Queue;
+    pub use mock_queue::Queue;
+    pub use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
+}
 #[cfg(not(feature = "sim"))]
-use pwm::Pwm;
+mod cond_deps {
+    pub use pwm::Pwm;
+    pub use ledc::LedController;
+    pub use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
+    pub use embassy_executor::Spawner;
+    pub use embassy_time::{Timer, Duration};
+}
 
-#[cfg(feature = "sim")]
-use mock_ledc::LedController;
-#[cfg(not(feature = "sim"))]
-use ledc::LedController;
-
-#[cfg(feature = "sim")]
-// use esp_idf_hal::task::queue::Queue;
-use mock_queue::Queue;
-#[cfg(not(feature = "sim"))]
-use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
-#[cfg(not(feature = "sim"))]
-use embassy_executor::Spawner;
-
-#[cfg(feature = "sim")]
-use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
-
-#[cfg(not(feature = "sim"))]
-use embassy_time::{Timer, Duration};
+use crate::cond_deps::*;
 
 #[derive(Debug)]
 pub enum MenuError {
