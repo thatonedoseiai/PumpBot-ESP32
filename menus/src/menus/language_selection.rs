@@ -2,7 +2,7 @@ use crate::{MenuSignal, MenuBehaviour, IOHandles, Event, MenuSelection};
 use rotenc::Direction;
 use button_idf::ButtonType;
 use fontfile::FontSize;
-use global_settings::lang::{Lang, TEXT_LANGUAGE_NAME, TEXT_LANGUAGE, TEXT_CHOOSE_LANG, TEXT_NEXT, TEXT_BACK};
+use global_settings::{lang::{Lang, TEXT_LANGUAGE_NAME, TEXT_LANGUAGE, TEXT_CHOOSE_LANG, TEXT_NEXT, TEXT_BACK}, PB_GLOBAL_SETTINGS};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -13,14 +13,12 @@ use embassy_futures::select::{select, Either};
 use embassy_executor::Spawner;
 
 pub struct LanguageState {
-    cur_lang: Lang,
     undraw_language: Rectangle
 }
 
 impl LanguageState {
     pub fn new() -> Self {
         LanguageState {
-            cur_lang: Lang::En,
             undraw_language: Rectangle::zero(),
         }
     }
@@ -40,13 +38,14 @@ impl MenuBehaviour for LanguageState {
 
     async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let mut draw = true;
+        let mut cur_lang = PB_GLOBAL_SETTINGS.read().await.lang;
         loop {
             if draw {
                 let black = PrimitiveStyleBuilder::new()
                         .fill_color(Rgb565::BLACK)
                         .build();
                 self.undraw_language.into_styled(black).draw(&mut io_handles.screen)?;
-                let language_name = Text::with_alignment(TEXT_LANGUAGE_NAME[self.cur_lang], Point::new(120, 50), io_handles.font.clone(), Alignment::Right);
+                let language_name = Text::with_alignment(TEXT_LANGUAGE_NAME[cur_lang], Point::new(120, 50), io_handles.font.clone(), Alignment::Right);
                 self.undraw_language = language_name.bounding_box();
                 language_name.draw(&mut io_handles.screen)?;
                 draw = false;
@@ -59,11 +58,11 @@ impl MenuBehaviour for LanguageState {
                 Either::First(r) => {
                     match r.dir {
                         Direction::Clockwise => {
-                            self.cur_lang = next_lang(self.cur_lang);
+                            cur_lang = next_lang(cur_lang);
                             draw = true;
                         },
                         Direction::Anticlockwise => {
-                            self.cur_lang = prev_lang(self.cur_lang);
+                            cur_lang = prev_lang(cur_lang);
                             draw = true;
                         },
                         _ => {}
@@ -71,7 +70,10 @@ impl MenuBehaviour for LanguageState {
                 },
                 Either::Second(b) => {
                     match b.button_type {
-                        ButtonType::Right => return Ok(MenuSignal::Return),
+                        ButtonType::Right => {
+                            PB_GLOBAL_SETTINGS.write().await.lang = cur_lang;
+                            return Ok(MenuSignal::Return);
+                        },
                         ButtonType::Left => return Ok(MenuSignal::Transition(MenuSelection::TitleMenu)),
                         _ => {}
                     };

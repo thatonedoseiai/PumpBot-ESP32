@@ -11,6 +11,10 @@ use crate::lang::Lang;
 use alloc::string::{ToString, String};
 use alloc::format;
 
+use embassy_sync::{rwlock::RwLock, blocking_mutex::raw::CriticalSectionRawMutex};
+
+pub static PB_GLOBAL_SETTINGS: RwLock<CriticalSectionRawMutex, PbGlobalSettings> = RwLock::new(PbGlobalSettings::new());
+
 /// The main structure of global settings that the entire board will use
 pub struct PbGlobalSettings {
     pub lang: Lang,
@@ -18,7 +22,7 @@ pub struct PbGlobalSettings {
 
 impl PbGlobalSettings {
     /// Create a new instance of the global settings
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         PbGlobalSettings {
             lang: Lang::En,
         }
