@@ -32,6 +32,7 @@ ili9341 = "0.6.0"
 st7735-lcd = { path = "../st7735-lcd-rs" }
 # esp-idf-sys = "0.36.1"
 profiler = { path = "../profiler" }
+wifi = { path = "../wifi" }
 
 [target.'cfg(feature = "sim")'.dependencies]
 embedded-graphics-simulator = "0.8.0"

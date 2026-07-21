@@ -7,6 +7,7 @@
 extern crate alloc;
 
 pub mod menus;
+pub mod components;
 mod event;
 mod screen;
 mod menu_define;
@@ -14,6 +15,8 @@ mod menu_define;
 pub use crate::event::event::Event;
 use crate::menus::titlescreen::{TitleState};
 use crate::menus::language_selection::LanguageState;
+use crate::menus::setup_method::SetupMethodState;
+use crate::menus::test_component_menu::TestComponentMenu;
 // use crate::menus_define;
 // use ilidriver::ILIDriver;
 // use alloc::sync::Arc;
@@ -23,6 +26,7 @@ use log::warn;
 use core::fmt;
 use rotenc::EncoderEvent;
 use button_idf::ButtonEvent;
+use wifi::PbWifi;
 use alloc::{vec::Vec, vec};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::RgbColor;
@@ -80,7 +84,9 @@ pub enum MenuSignal {
 
 menus_define![
     TitleMenu, Title(TitleState);
-    LanguageMenu, Lang(LanguageState)
+    LanguageMenu, Lang(LanguageState);
+    SetupMethodMenu, SetupMethod(SetupMethodState);
+    ComponentMenuTest, TESTCOMPONENTMENU(TestComponentMenu)
 ];
 
 /// A collection of the various IOHandles that menus should be allowed to interact with.
@@ -91,6 +97,7 @@ pub struct IOHandles<'a> {
     pub font: PbFontRenderer,
     pub button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
     pub rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
+    pub wifi: PbWifi<'a>,
 }
 
 impl<'a> IOHandles<'a> {
@@ -100,9 +107,10 @@ impl<'a> IOHandles<'a> {
         pwm_output: Pwm<'a>,
         font: PbFontRenderer,
         button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
-        rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>
+        rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
+        wifi: PbWifi<'a>,
     ) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font, button, rotenc }
+        Self { screen, leddriver, pwm_output, font, button, rotenc, wifi }
     }
 }
 

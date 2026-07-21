@@ -22,7 +22,7 @@ extern crate alloc;
 use embassy_executor::Spawner;
 use embassy_net::{Config as EConfig, StackResources, DhcpConfig, Stack, Runner};
 // use static_cell::make_static;
-use embassy_futures::block_on;
+// use embassy_futures::block_on;
 use esp_radio::wifi::{ControllerConfig, WifiController, Config, sta::{StationConfig, ConnectedInfo}, AuthenticationMethod, WifiError, Interface, ap::AccessPointInfo, scan::ScanConfig, Ssid};
 use esp_hal::rng::Rng;
 use esp_hal::peripherals::WIFI;
@@ -82,7 +82,7 @@ impl<'a> PbWifi<'a> {
     /// Connect the ESP radio to an existing wifi network. The network name is given by `ssid` and
     /// the password is given by `pass`. Currently does not support different authentication
     /// methods.
-    pub fn connect(&mut self, ssid: &str, pass: &str) -> Result<(), WifiError> {
+    pub async fn connect(&mut self, ssid: &str, pass: &str) -> Result<(), WifiError> {
         info!("Attempting to connect to {} with password {}.", &ssid, &pass);
 
         let auth_method = if pass.len() == 0 {
@@ -97,9 +97,9 @@ impl<'a> PbWifi<'a> {
             .with_auth_method(auth_method));
 
         self.wifi_mod.set_config(&wifi_configuration)?;
-        self.connected_info = Some(block_on(self.wifi_mod.connect_async())?);
+        self.connected_info = Some(self.wifi_mod.connect_async().await?);
 
-        block_on(self.netstack.wait_config_up());
+        self.netstack.wait_config_up().await;
         if let Some(config) = self.netstack.config_v4() {
             info!("Wifi netif up at IP {}", config.address);
         }
@@ -129,10 +129,10 @@ impl<'a> PbWifi<'a> {
         Ok(())
     }
 
-    pub fn get_wifis(&mut self) -> Result<Vec<AccessPointInfo>, WifiError> {
+    pub async fn get_wifis(&mut self) -> Result<Vec<AccessPointInfo>, WifiError> {
         // Ok(self.wifi_mod.scan_n::<10>()?.0.to_vec())
         let scan_config = ScanConfig::default().with_max(10);
-        block_on(self.wifi_mod.scan_async(&scan_config))
+        self.wifi_mod.scan_async(&scan_config).await
     }
 
     pub fn currently_connected(&self) -> Result<(Ssid, String), WifiError> {

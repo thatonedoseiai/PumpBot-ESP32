@@ -11,6 +11,8 @@ use embedded_graphics::{
 };
 use embassy_futures::select::{select, Either};
 use embassy_executor::Spawner;
+use core::borrow::BorrowMut;
+use core::cell::RefCell;
 
 pub struct LanguageState {
     undraw_language: Rectangle
@@ -26,12 +28,12 @@ impl LanguageState {
 
 impl MenuBehaviour for LanguageState {
     async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?;
+        RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
 
-        Text::with_alignment(TEXT_CHOOSE_LANG[Lang::En], Point::new(64, 20), io_handles.font.clone(), Alignment::Center).draw(&mut io_handles.screen)?;
-        Text::with_alignment(TEXT_LANGUAGE[Lang::En], Point::new(8, 50), io_handles.font.clone(), Alignment::Left).draw(&mut io_handles.screen)?;
-        Text::with_alignment(TEXT_BACK[Lang::En], Point::new(8, 150), io_handles.font.clone(), Alignment::Left).draw(&mut io_handles.screen)?;
-        Text::with_alignment(TEXT_NEXT[Lang::En], Point::new(120, 150), io_handles.font.clone(), Alignment::Right).draw(&mut io_handles.screen)?;
+        Text::with_alignment(TEXT_CHOOSE_LANG[Lang::En], Point::new(64, 20), io_handles.font.clone(), Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_LANGUAGE[Lang::En], Point::new(8, 50), io_handles.font.clone(), Alignment::Left).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_BACK[Lang::En], Point::new(8, 150), io_handles.font.clone(), Alignment::Left).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_NEXT[Lang::En], Point::new(120, 150), io_handles.font.clone(), Alignment::Right).draw(io_handles.screen.borrow_mut())?;
 
         Ok(MenuSignal::None)
     }
@@ -44,10 +46,10 @@ impl MenuBehaviour for LanguageState {
                 let black = PrimitiveStyleBuilder::new()
                         .fill_color(Rgb565::BLACK)
                         .build();
-                self.undraw_language.into_styled(black).draw(&mut io_handles.screen)?;
+                self.undraw_language.into_styled(black).draw(io_handles.screen.borrow_mut())?;
                 let language_name = Text::with_alignment(TEXT_LANGUAGE_NAME[cur_lang], Point::new(120, 50), io_handles.font.clone(), Alignment::Right);
                 self.undraw_language = language_name.bounding_box();
-                language_name.draw(&mut io_handles.screen)?;
+                language_name.draw(io_handles.screen.borrow_mut())?;
                 draw = false;
             }
             let result = select(
@@ -72,7 +74,7 @@ impl MenuBehaviour for LanguageState {
                     match b.button_type {
                         ButtonType::Right => {
                             PB_GLOBAL_SETTINGS.write().await.lang = cur_lang;
-                            return Ok(MenuSignal::Return);
+                            return Ok(MenuSignal::Transition(MenuSelection::SetupMethodMenu));
                         },
                         ButtonType::Left => return Ok(MenuSignal::Transition(MenuSelection::TitleMenu)),
                         _ => {}

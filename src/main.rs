@@ -254,7 +254,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     // pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
     // let http_server = PbHttpServer::start()?;
 
-    let mut pb_wifi = PbWifi::new(spawner, peripherals.WIFI);
+    let mut pb_wifi = PbWifi::new(spawner, peripherals.WIFI)?;
 
     // let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     // button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
@@ -338,13 +338,14 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
-    run_menu_loop(spawner, MenuSelection::TitleMenu, &mut IOHandles::new(
+    run_menu_loop(spawner, MenuSelection::ComponentMenuTest, &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,
                 pb_font_style,
                 button_receiver,
                 rotenc_receiver,
+                pb_wifi,
             )).await?;
 
     // loop {

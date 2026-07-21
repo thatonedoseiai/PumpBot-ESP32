@@ -21,6 +21,8 @@ use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use button_idf::{ButtonEvent, ButtonType};
 use embassy_futures::select::{select, Either};
 use embassy_time::{Timer, Duration};
+use core::borrow::BorrowMut;
+use core::cell::RefCell;
 
 /// represents the internal state of the title screen - what language it's on and how long it has
 /// until it swaps to a different language.
@@ -74,7 +76,7 @@ impl MenuBehaviour for TitleState {
         // if self.counter == 0 {
         loop {
             timed!("Set font size", {
-                io_handles.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+                RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz12)?;
             });
             // io_handles.screen.clear(Rgb565::BLACK);
             let black = timed!("Create black style", {
@@ -85,7 +87,7 @@ impl MenuBehaviour for TitleState {
 
             timed!("Draw all screen clearing rects", {
                 for rect in self.undraw_bbs {
-                    rect.into_styled(black).draw(&mut io_handles.screen)?;
+                    rect.into_styled(black).draw(io_handles.screen.borrow_mut())?;
                 }
             });
 
@@ -96,7 +98,7 @@ impl MenuBehaviour for TitleState {
                 top_text.bounding_box()
             });
             timed!("Draw WELCOME", {
-                top_text.draw(&mut io_handles.screen)?
+                top_text.draw(io_handles.screen.borrow_mut())?
             });
             let mid_text = timed!("Create WELCOME 2", {
                 Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), io_handles.font.clone(), Alignment::Center)
@@ -105,10 +107,10 @@ impl MenuBehaviour for TitleState {
                 mid_text.bounding_box()
             });
             timed!("draw WELCOME 2", {
-                mid_text.draw(&mut io_handles.screen)?
+                mid_text.draw(io_handles.screen.borrow_mut())?
             });
             timed!("Change font size", {
-                io_handles.font.font.borrow_mut().set_size(FontSize::Sz7)?
+                RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?
             });
             let push_text = timed!("Create push rotenc to continue", {
                 Text::with_alignment(TEXT_PRESSENC[self.cur_lang], Point::new(64, 140), io_handles.font.clone(), Alignment::Center)
@@ -117,9 +119,9 @@ impl MenuBehaviour for TitleState {
                 push_text.bounding_box()
             });
             timed!("Draw rotenc", {
-                push_text.draw(&mut io_handles.screen)?
+                push_text.draw(io_handles.screen.borrow_mut())?
             });
-            // push_text.draw(&mut io_handles.screen);
+            // push_text.draw(io_handles.screen.borrow_mut());
             self.cur_lang = next_lang(self.cur_lang);
             let result = select(
                 Timer::after(Duration::from_secs(1)), 
