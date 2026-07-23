@@ -2,7 +2,7 @@
 //! This menu will display the welcome text to pumpbot, while cycling the welcome text language at a
 //! constant rate.
 
-use crate::{MenuSignal, MenuBehaviour, IOHandles, Event, MenuSelection};
+use crate::{MenuSignal, MenuBehaviour, IOHandles, Event};
 use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;
@@ -65,12 +65,7 @@ impl TitleState {
 }
 
 impl MenuBehaviour for TitleState {
-    // Args = ()
-    async fn init(&mut self, spawner: Spawner, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        Ok(MenuSignal::None)
-    }
-
-    async fn update(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
         // if self.counter == 0 {
@@ -134,6 +129,7 @@ impl MenuBehaviour for TitleState {
                 _ => {},
             };
         }
-        Ok(MenuSignal::Transition(MenuSelection::LanguageMenu)) // TODO: fix this
+        // Ok(MenuSignal::Transition(MenuSelection::LanguageMenu)) // TODO: fix this
+        Ok(MenuSignal::Return)
     }
 }

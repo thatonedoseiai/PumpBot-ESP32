@@ -7,17 +7,26 @@ macro_rules! menus_define {
     ] => {
         /// The list of all currently implemented menus.
         #[derive(PartialEq, Debug)]
-        pub enum MenuSelection {
+        pub enum Menu {
             $($selection_name,)*
             Unimplemented
         }
 
         /// A wrapper around the current states of every menu.
-        enum MenuStates {
-            $($state_enum_name($state_name),)*
+        enum MenuState {
+            $($state_enum_name { 
+                layout: &'static Layout, 
+                state: $state_name 
+            },)*
         }
 
-        impl fmt::Display for MenuStates {
+        impl MenuState {
+            fn layout(&self) -> &Layout {
+                $(MenuState::$state_enum_name { layout, .. } => layout,)*
+            }
+        }
+
+        impl fmt::Display for MenuState {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
                     $(
@@ -27,10 +36,12 @@ macro_rules! menus_define {
             }
         }
 
-        impl From<MenuSelection> for MenuStates {
-            fn from(val: MenuSelection) -> MenuStates {
-                match val {
-                    $(MenuSelection::$selection_name => MenuStates::$state_enum_name($state_name::new()),)*
+        impl From<&'static Layout> for MenuState {
+            fn from(val: &'static Layout) -> MenuState {
+                match val.defined_menu {
+                    $(Menu::$selection_name => MenuState::$state_enum_name {
+                        layout: val, state: $state_type::new()
+                    },)*
                     MenuSelection::Unimplemented => unreachable!(),
                 }
             }
