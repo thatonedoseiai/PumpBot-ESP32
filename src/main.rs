@@ -83,7 +83,7 @@ use st7735_lcd::{ST7735, Orientation as STOrientation};
 use alloc::sync::Arc;
 use alloc::vec;
 use alloc::vec::Vec;
-use menus::{run_menu_loop, TITLESCREEN, IOHandles, Event, Screen};
+use menus::{run_menu_loop, Menu, ComponentMenu, CustomMenu, IOHandles, Screen};
 use global_settings::PbGlobalSettings;
 use display_interface_spi::SPIInterface;
 use embedded_graphics::{
@@ -338,7 +338,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
-    run_menu_loop(spawner, &TITLESCREEN, &mut IOHandles::new(
+    run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::Title), &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,

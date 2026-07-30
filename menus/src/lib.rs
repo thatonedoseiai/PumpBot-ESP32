@@ -6,14 +6,21 @@
 
 extern crate alloc;
 
-pub mod menus;
+// pub mod menus;
 // pub mod components;
-mod event;
+// mod event;
 mod screen;
-mod menu_define;
+// mod menu_define;
+mod handlers;
+mod components;
+mod menu_definitions;
 
-pub use crate::event::event::Event;
-use crate::menus::titlescreen::TitleState;
+use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
+use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
+use crate::menu_definitions::{TITLE, LANG};
+
+// pub use crate::event::event::Event;
+// use crate::menus::titlescreen::TitleState;
 // use crate::menus::language_selection::LanguageState;
 // use crate::menus::setup_method::SetupMethodState;
 // use crate::menus::test_component_menu::TestComponentMenu;
@@ -25,7 +32,7 @@ pub use crate::screen::screen::{Screen, ScreenDrawError};
 use log::warn;
 use core::fmt;
 use rotenc::EncoderEvent;
-use button_idf::{ButtonEvent, ButtonType};
+use button_idf::{ButtonEvent, ButtonType, ButtonEventKind};
 use rotenc::Direction;
 use embassy_futures::select::{Either, select};
 use wifi::PbWifi;
@@ -76,208 +83,190 @@ impl fmt::Display for MenuError {
 
 impl core::error::Error for MenuError { }
 
-#[derive(Debug, Clone, Copy)]
-enum ComponentSignal {
-    Next,
-    Prev,
-    Transition(&'static Layout),
-    None,
-}
-
-#[derive(Debug)]
-enum Handler {
-    Print(Cow<'static, str>),
-    Signal(ComponentSignal),
-}
-
-impl Handler {
-    fn dispatch(&self, io_handles: &mut IOHandles<'_>) -> ComponentSignal {
-        match self {
-            Handler::Print(s) => {
-                info!("{}", s);
-                ComponentSignal::None
-            },
-            Handler::Signal(s) => {
-                info!("SIGNAL (TODO: SHOW WHAT SIGNAL IS COMING OUT)");
-                *s
-            }
-        }
-    }
-}
-
-
-
-/// Defines the visual construction of a menu
-#[derive(Debug)]
-pub struct Layout {
-    menu_type: Menu,
-    components: &'static [Component],
-    left_behaviour: Handler,
-    right_behaviour: Handler,
-}
-
-impl From<&'static Layout> for MenuState {
-    fn from(val: &'static Layout) -> MenuState {
-        match val.menu_type {
-            Menu::TitleMenu => MenuState::TitleMenu (
-                TitleState::new()
-            ),
-            Menu::Unimplemented => MenuState::Unimplemented(
-                ComponentMenu { 
-                    layout: val, 
-                    state: EmptyState { } 
-                }
-            ),
-            // Menu::Lang => MenuState::Lang {
-            //     layout: val, state: TitleInternalState { }
-            // },
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Component {
-    onclick: Handler,
-    rotenc_right: Handler,
-    rotenc_left: Handler,
-    component_spec: ComponentType,
-}
-
-#[derive(Debug)]
-pub enum ComponentType {
-    Button,
-}
-
-pub enum ComponentState {
-    Button { 
-        highlighted: bool,
-    },
-}
-
-pub struct ComponentWithState {
-    state: ComponentState,
-    component: &'static Component
-}
-
-impl From<&'static Component> for ComponentWithState {
-    fn from(val: &'static Component) -> ComponentWithState {
-        ComponentWithState {
-            state: match val.component_spec {
-                ComponentType::Button => ComponentState::Button {
-                    highlighted: false
-                }
-            },
-            component: val,
-        }
-    }
-}
-
-pub trait ComponentBehaviour {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, f: &mut PbFontRenderer, d: &mut D) -> Result<(), <D as DrawTarget>::Error>;
-}
-
-impl ComponentBehaviour for ComponentWithState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, f: &mut PbFontRenderer, d: &mut D) -> Result<(), <D as DrawTarget>::Error> {
-        match self.component.component_spec {
-            ComponentType::Button => { info!("draw button!") }
-        };
-        Ok(())
-    }
-}
-
-/// Signals for menu controller actions, such as to stop menuing, transition to a different menu,
-/// or continue displaying the same menu.
-pub enum MenuSignal {
-    None,
-    Return,
+enum MenuSignal {
     Back,
-    Transition(&'static Layout)
+    Transition(Menu),
+    Return,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Menu {
-    TitleMenu,
-    // LanguageMenu,
-    // SetupMethodMenu,
-    Unimplemented
+struct ComponentMenuDefinition {
+    components: &'static [ComponentDefinition],
+    left_btn: MenuHandler,
+    right_btn: MenuHandler,
 }
 
-struct ComponentMenu {
-    layout: &'static Layout,
-    state: EmptyState,
+#[derive(PartialEq, Clone, Copy)]
+enum ComponentMenuMode {
+    Browse,
+    Edit,
 }
 
-enum MenuState {
-    TitleMenu(TitleState),
-    // LanguageMenu { layout: &'static Layout, state: EmptyState },
-    // SetupMethodMenu { layout: &'static Layout, state: EmptyState },
-    Unimplemented(ComponentMenu),
+struct ComponentMenuInAction {
+    layout: &'static ComponentMenuDefinition,
+    component_states: Vec<ComponentState>,
+    internal_state: MenuInternalState,
+    selected_component: usize,
+    mode: ComponentMenuMode
 }
 
-pub trait MenuBehaviour {
-    async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal>;
-}
+impl ComponentMenuInAction {
+    fn next_component(&mut self) {
+        if !self.component_states.is_empty() {
+            self.selected_component = (self.selected_component + 1) % self.component_states.len();
+        }
+    }
 
-impl MenuBehaviour for MenuState {
-    async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        match self {
-            MenuState::TitleMenu(t) => t.run(io_handles).await,
-            MenuState::Unimplemented(t) => t.run(io_handles).await,
+    fn prev_component(&mut self) {
+        if !self.component_states.is_empty() {
+            self.selected_component = (self.selected_component + self.component_states.len() - 1) % self.component_states.len();
+        }
+    }
+
+    fn selected(&mut self) -> Option<&mut ComponentState> {
+        if self.component_states.is_empty() {
+            None
+        } else {
+            Some(&mut self.component_states[self.selected_component])
         }
     }
 }
 
-impl MenuBehaviour for ComponentMenu {
-    async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        let mut components = Vec::new();
-        for i in self.layout.components.into_iter() {
-            let with_state: ComponentWithState = i.into();
-            with_state.draw(&mut io_handles.font.clone(), &mut io_handles.screen)?;
-            components.push(with_state);
-        }
+enum MenuInternalState {
+    Title { },
+    Lang {
+        language: u8,
+    }
+}
 
-        let mut selected_component = 0;
+#[derive(Debug, Clone, Copy)]
+pub enum ComponentMenu {
+    Title,
+    Lang(u8),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum CustomMenu {
+    CustomTitle,
+    CustomSetup,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Menu {
+    CustomMenu(CustomMenu),
+    ComponentMenu(ComponentMenu),
+}
+
+trait MenuStateBehaviour {
+    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal>;
+}
+
+impl ComponentMenu {
+    const fn definition(&self) -> &'static ComponentMenuDefinition {
+        match self {
+            Self::Title => &TITLE,
+            Self::Lang(_) => &LANG,
+        }
+    }
+
+    const fn initial_state(&self) -> MenuInternalState {
+        match self {
+            Self::Title => MenuInternalState::Title { },
+            Self::Lang(s) => MenuInternalState::Lang { language: *s },
+        }
+    }
+}
+
+impl MenuStateBehaviour for Menu {
+    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+        match self {
+            Self::CustomMenu(m) => m.run(h).await,
+            Self::ComponentMenu(m) => m.run(h).await,
+        }
+    }
+}
+
+impl MenuStateBehaviour for ComponentMenu {
+    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+        let mut cur_menu_state = ComponentMenuInAction {
+            layout: self.definition(),
+            component_states: self.definition()
+                                      .components
+                                      .into_iter()
+                                      .map(|f| f.construct())
+                                      .collect(),
+            internal_state: self.initial_state(),
+            selected_component: 0,
+            mode: ComponentMenuMode::Browse,
+        };
+        cur_menu_state.selected().map(|c| c.highlight());
+        cur_menu_state.component_states.iter().try_for_each(|f| f.draw(&mut h.screen, h.font.clone()))?;
         loop {
-            let result = select(
-                io_handles.rotenc.receive(),
-                io_handles.button.receive(),
+            let inp = select(
+                h.button.receive(),
+                h.rotenc.receive(),
             ).await;
-            let signal = match result {
-                Either::First(r) => {
-                    match r.dir {
-                        Direction::Clockwise => self.layout.components[selected_component].rotenc_right.dispatch(io_handles),
-                        Direction::Anticlockwise => self.layout.components[selected_component].rotenc_left.dispatch(io_handles),
-                        _ => { ComponentSignal::None },
+            let signal = match inp {
+                Either::Second(EncoderEvent {dir: Direction::Clockwise, ..}) => {
+                    match cur_menu_state.mode {
+                        ComponentMenuMode::Browse => {
+                            cur_menu_state.selected().map(|c| c.unhighlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            cur_menu_state.next_component();
+                            cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            None
+                        },
+                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.right_handle(h))
                     }
                 },
-                Either::Second(b) => {
-                    match b.button_type {
-                        ButtonType::Right => self.layout.right_behaviour.dispatch(io_handles),
-                        ButtonType::Left => self.layout.left_behaviour.dispatch(io_handles),
-                        ButtonType::Rotenc => self.layout.components[selected_component].onclick.dispatch(io_handles),
+                Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
+                    match cur_menu_state.mode {
+                        ComponentMenuMode::Browse => {
+                            cur_menu_state.selected().map(|c| c.unhighlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            cur_menu_state.prev_component();
+                            cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            None
+                        },
+                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.left_handle(h))
                     }
-                }
+                },
+                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h)),
+                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h)),
+                Either::First(ButtonEvent { button_type: ButtonType::Rotenc, event: ButtonEventKind::Down }) => {
+                    let cur_mode = cur_menu_state.mode;
+                    match (cur_mode, cur_menu_state.selected().map(|f| f.definition().interaction_type())) {
+                        (ComponentMenuMode::Browse, Some(InteractionType::Editable)) => {
+                            cur_menu_state.mode = ComponentMenuMode::Edit;
+                            None
+                        },
+                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => cur_menu_state.selected().map(|f| f.click_handle(h)),
+                        (ComponentMenuMode::Edit, _) => cur_menu_state.selected().map(|f| f.click_handle(h)),
+                        _ => None
+                    }
+                },
+                _ => None,
             };
+            // println!("selecting {}", cur_menu_state.selected_component);
             match signal {
-                ComponentSignal::None => {},
-                ComponentSignal::Next => {
-                    selected_component = (selected_component + 1) % self.layout.components.len();
-                    info!("selected component: {}", selected_component);
-                },
-                ComponentSignal::Prev => {
-                    selected_component = (selected_component + self.layout.components.len() - 1) % self.layout.components.len();
-                    info!("selected component: {}", selected_component);
+                Some(HandlerResult::Transition(m)) => {
+                    // println!("TRANSITIONING TO {:?}", m);
+                    return Ok(MenuSignal::Transition(m));
                 }
-                ComponentSignal::Transition(t) => {
-                    info!("transitioning to {:?}", t);
-                    return Ok(MenuSignal::Transition(t));
+                Some(HandlerResult::Unfocus) => {cur_menu_state.mode = ComponentMenuMode::Browse;}
+                Some(HandlerResult::Back) => {
+                    // println!("GOING BACK TO PREVIOUS MENU");
+                    return Ok(MenuSignal::Back);
                 }
+                _ => {}
             }
         }
     }
 }
 
-struct EmptyState { }
+impl MenuStateBehaviour for CustomMenu {
+    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+        // Do custom things here
+        Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomTitle)))
+    }
+}
 
 // menus_define![
 //     TitleMenu, Title(TitleState);
@@ -318,38 +307,60 @@ impl<'a> IOHandles<'a> {
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
 #[cfg(not(feature = "sim"))]
-pub async fn run_menu_loop(spawner: Spawner, start_menu: &'static Layout, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
+pub async fn run_menu_loop(spawner: Spawner, start_menu: Menu, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
     log::info!("beginning menu loop!");
 
-    let mut layout = MenuSignal::Transition(start_menu);
+    let mut menu_stack = vec![];
+    let mut menu = start_menu;
     loop {
-        match layout {
-            MenuSignal::Transition(l) => { 
-                if l.menu_type == Menu::Unimplemented {
-                    warn!("transition to unimplemented menu! Returning now.");
-                    return Err(MenuError::UnimplementedMenu)?;
-                }
-                io_handles.screen.clear(Rgb565::BLACK)?;
-                let mut m: MenuState = l.into();
-                layout = m.run(io_handles).await?;
-                // cur_menu = m.into();
-                // cur_menu.init(spawner, io_handles).await?;
+        let result = menu.run(io_handles).await?;
+        match result {
+            MenuSignal::Transition(m) => {
+                menu_stack.push(menu);
+                menu = m; 
             },
-            MenuSignal::Return => { return Ok(()); },
-            _ => {}
+            MenuSignal::Back => {
+                let maybe_menu = menu_stack.pop();
+                if let Some(m) = maybe_menu {
+                    menu = m;
+                }
+            },
+            MenuSignal::Return => {
+                return Ok(());
+            }
         }
-
         // PROFILER.lock().unwrap().dump();
         // SpanGuard::dump();
     }
+
+
+    // let mut layout = MenuSignal::Transition(start_menu);
+    // loop {
+    //     match layout {
+    //         MenuSignal::Transition(l) => { 
+    //             if l.menu_type == Menu::Unimplemented {
+    //                 warn!("transition to unimplemented menu! Returning now.");
+    //                 return Err(MenuError::UnimplementedMenu)?;
+    //             }
+    //             io_handles.screen.clear(Rgb565::BLACK)?;
+    //             let mut m: MenuState = l.into();
+    //             layout = m.run(io_handles).await?;
+    //             // cur_menu = m.into();
+    //             // cur_menu.init(spawner, io_handles).await?;
+    //         },
+    //         MenuSignal::Return => { return Ok(()); },
+    //         _ => {}
+    //     }
+
+    //     // PROFILER.lock().unwrap().dump();
+    //     // SpanGuard::dump();
+    // }
 }
 
-pub const TITLESCREEN: Layout = Layout {
-    menu_type: Menu::TitleMenu,
-    components: &[],
-    left_behaviour: Handler::Print(Cow::Borrowed("left button!")),
-    right_behaviour: Handler::Print(Cow::Borrowed("right button!")),
-};
+
+
+
+
 
 #[cfg(feature = "sim")]
 pub async fn run_menu_loop(start_menu: MenuSelection, io_handles: &mut IOHandles, q: Arc<Queue<Event>>, mut window: Window) -> anyhow::Result<()> {
