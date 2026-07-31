@@ -6,8 +6,8 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(0, 0),
-                size: Size::new(10, 10),
+                pos: Point::new(10, 0),
+                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[first button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[first button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[first button right]")),
@@ -15,8 +15,8 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(10, 10),
-                size: Size::new(10, 10),
+                pos: Point::new(10, 30),
+                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[second button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
@@ -24,8 +24,8 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(20, 20),
-                size: Size::new(10, 10),
+                pos: Point::new(10, 50),
+                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[third button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[third button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[third button right]")),

@@ -1,6 +1,9 @@
 //! This submodule defines several utility functions for handling RGB colours with 24bbp bitdepth. 
 
 use core::slice::from_raw_parts;
+use core::ops::{Add, Sub, Mul};
+use core::num::Saturating;
+use crate::rgb;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorConversionError {
@@ -21,6 +24,50 @@ pub struct RGB {
 impl From<RGB> for [u8;3] {
     fn from(val: RGB) -> [u8;3] {
         [val.r, val.g, val.b]
+    }
+}
+
+impl Add for RGB {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        rgb![
+            (Saturating(self.r) + Saturating(other.r)).0, 
+            (Saturating(self.g) + Saturating(other.g)).0, 
+            (Saturating(self.b) + Saturating(other.b)).0
+        ]
+    }
+}
+
+impl Sub for RGB {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        rgb![
+            (Saturating(self.r) - Saturating(other.r)).0,
+            (Saturating(self.g) - Saturating(other.g)).0,
+            (Saturating(self.b) - Saturating(other.b)).0
+        ]
+    }
+}
+
+impl Mul for RGB {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        rgb![
+            (Saturating(self.r) * Saturating(other.r)).0,
+            (Saturating(self.g) * Saturating(other.g)).0,
+            (Saturating(self.b) * Saturating(other.b)).0
+        ]
+    }
+}
+
+impl Mul<u8> for RGB {
+    type Output = Self;
+
+    fn mul(self, other: u8) -> Self {
+        rgb![self.r * other, self.g * other, self.b * other]
     }
 }
 

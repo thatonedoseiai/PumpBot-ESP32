@@ -1,4 +1,5 @@
-use crate::{ButtonState, ComponentMenuInAction, Menu, IOHandles};
+use crate::components::{ButtonState, OptionSwitchState};
+use crate::{ComponentMenuInAction, Menu, IOHandles};
 
 #[derive(Debug, Clone, Copy)]
 pub enum HandlerResult {
@@ -53,6 +54,20 @@ pub enum ButtonHandler {
 
 impl Handler<ButtonState> for ButtonHandler {
     fn handle(&self, state: &mut ButtonState, h: &mut IOHandles) -> HandlerResult {
+        match self {
+            Self::Generic(g) => {
+                g.handle(&mut (), h)
+            }
+        }
+    }
+}
+
+pub enum OptionSwitchHandler {
+    Generic(GenericHandler),
+}
+
+impl Handler<OptionSwitchState> for OptionSwitchHandler {
+    fn handle(&self, state: &mut OptionSwitchState, h: &mut IOHandles) -> HandlerResult {
         match self {
             Self::Generic(g) => {
                 g.handle(&mut (), h)

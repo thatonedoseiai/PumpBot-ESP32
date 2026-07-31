@@ -8,7 +8,7 @@ use embedded_graphics::{
         Baseline
     }, 
     pixelcolor::{Rgb565, Rgb888},
-    geometry::Point,
+    geometry::{Point},
     prelude::{DrawTarget, RgbColor, Size},
     image::{Image, ImageRaw},
     Drawable,
@@ -23,7 +23,7 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
 
-use crate::PbFont;
+use crate::{PbFont, RGB, rgb};
 use profiler::{SpanGuard, timed};
 
 /// Defines the global state of the renderer. Font size and everything is already included in
@@ -32,8 +32,8 @@ use profiler::{SpanGuard, timed};
 pub struct PbFontRenderer {
     // need a cell or something
     pub font: Rc<RefCell<PbFont>>,
-    bgcol: Option<Rgb888>,
-    fgcol: Rgb888,
+    bgcol: RGB,
+    fgcol: RGB,
 }
 
 impl PbFontRenderer {
@@ -43,8 +43,8 @@ impl PbFontRenderer {
     pub fn new(font: PbFont) -> PbFontRenderer {
         PbFontRenderer {
             font: Rc::new(RefCell::new(font)),
-            bgcol: Some(Rgb888::GREEN),
-            fgcol: Rgb888::BLUE,
+            bgcol: rgb![0, 255, 0],
+            fgcol: rgb![0, 0, 255],
         }
     }
 }
@@ -79,7 +79,15 @@ impl TextRenderer for PbFontRenderer {
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
                 let byteslice = timed!("set byteslice", {
                                 coldata.into_iter()
-                                       .map(|x| -> [u8;3] { x.into() })
+                                       .map(|x| -> [u8;3] { 
+                                           // let col = x * self.fgcol + (rgb![255] - x) * self.bgcol;
+                                           let col = rgb![
+                                               ((((x.r as u16) * (self.fgcol.r as u16)) + ((255 - x.r) as u16) * (self.bgcol.r as u16)) / 255) as u8,
+                                               ((((x.g as u16) * (self.fgcol.g as u16)) + ((255 - x.g) as u16) * (self.bgcol.g as u16)) / 255) as u8,
+                                               ((((x.b as u16) * (self.fgcol.b as u16)) + ((255 - x.b) as u16) * (self.bgcol.b as u16)) / 255) as u8,
+                                           ];
+                                           col.into()
+                                       })
                                        .flatten()
                                        .collect::<Vec<u8>>()
                     });
