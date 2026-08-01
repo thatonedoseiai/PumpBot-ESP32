@@ -13,7 +13,7 @@ use esp_hal::gpio::{AnyPin, Output, OutputConfig, Level};
 use esp_hal::ledc::{timer::Timer, LowSpeed, channel::{Channel, Number}, Ledc};
 use esp_hal::peripherals::LEDC;
 use esp_hal::delay::Delay;
-use fontfile::RGB;
+use global_settings::rgb::RGB;
 use alloc::sync::Arc;
 use core::time::Duration;
 use embedded_hal::pwm::SetDutyCycle;

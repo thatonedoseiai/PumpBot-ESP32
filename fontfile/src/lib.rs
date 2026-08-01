@@ -14,7 +14,7 @@
 
 extern crate alloc;
 
-mod rgb;
+// mod rgb;
 pub mod pb_font_renderer;
 
 use littlefs2::io;
@@ -30,7 +30,7 @@ use alloc::{
 use core::fmt;
 use core::error::Error;
 use log::info;
-pub use rgb::{RGB, ColorConversionError};
+use global_settings::{rgb::{RGB, ColorConversionError}, rgb};
 use flash_storage::PbFlashStorage;
 use core::fmt::Debug;
 use core::cell::RefCell;

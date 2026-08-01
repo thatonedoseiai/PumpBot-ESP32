@@ -4,6 +4,7 @@ use core::slice::from_raw_parts;
 use core::ops::{Add, Sub, Mul};
 use core::num::Saturating;
 use crate::rgb;
+use embedded_graphics::pixelcolor::{Rgb565, Rgb888};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorConversionError {
@@ -24,6 +25,18 @@ pub struct RGB {
 impl From<RGB> for [u8;3] {
     fn from(val: RGB) -> [u8;3] {
         [val.r, val.g, val.b]
+    }
+}
+
+impl From<RGB> for Rgb565 {
+    fn from(val: RGB) -> Rgb565 {
+        Rgb565::new(val.r >> 3, val.g >> 2, val.b >> 3)
+    }
+}
+
+impl From<RGB> for Rgb888 {
+    fn from(val: RGB) -> Rgb888 {
+        Rgb888::new(val.r, val.g, val.b)
     }
 }
 
@@ -81,6 +94,12 @@ impl RGB {
             from_raw_parts(ptr, len)
         };
         Ok(new)
+    }
+
+    pub const fn luminance(&self) -> u16 {
+        ((self.r as u16 * 77) + 
+        (self.g as u16 * 150) + 
+        (self.b as u16 * 29)) >> 8
     }
 }
 

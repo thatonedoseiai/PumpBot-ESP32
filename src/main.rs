@@ -72,7 +72,8 @@ use log::{info, error, warn};
 use ledc::{LedController, LedPeripherals, LedMode};
 // use pwm::{OutputCtl, OutputPeripherals, Action};
 use pwm::{Pwm, PwmAction, Command};
-use fontfile::{RGB, FontSize, PbFont, rgb, pb_font_renderer::PbFontRenderer};
+use fontfile::{FontSize, PbFont, pb_font_renderer::PbFontRenderer};
+use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS};
 // use ilidriver::ILIDriver;
 use flash_storage::PbFlashStorage;
 use dummy_pin::DummyPin;
@@ -133,7 +134,7 @@ impl fmt::Display for PbError {
 
 /// Initialize the appropriate screen.
 #[cfg(feature = "ILI")]
-fn init_screen<'a>(spi2: SPI2<'a>, dc: GPIO11<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, miso: GPIO46<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
+async fn init_screen<'a>(spi2: SPI2<'a>, dc: GPIO11<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, miso: GPIO46<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
     info!("SCREEN: using ILI");
     let config = OutputConfig::default();
     let inputconfig = InputConfig::default().with_pull(Pull::Down);
@@ -157,7 +158,7 @@ fn init_screen<'a>(spi2: SPI2<'a>, dc: GPIO11<'a>, sclk: GPIO9<'a>, mosi: GPIO10
 }
 
 #[cfg(feature = "ST")]
-fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: GPIO11<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
+async fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: GPIO11<'a>, rst: GPIO12<'a>) -> anyhow::Result<Screen<'a>> {
     let config = OutputConfig::default();
 
     let sclk_driver = Output::new(sclk, Level::Low, config);
@@ -186,7 +187,7 @@ fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: GPIO11
     s.set_orientation(&STOrientation::PortraitSwapped)?;
     s.set_offset(1, 2);
     // info!("clearing screen!");
-    s.clear(Rgb565::BLUE)?;
+    s.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().into())?;
     // info!("screen result!");
     Ok(Screen::ST(s))
 }
@@ -290,14 +291,14 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         peripherals.GPIO46,
         peripherals.GPIO10,
         peripherals.GPIO11,
-        peripherals.GPIO12)?;
+        peripherals.GPIO12).await?;
     #[cfg(feature = "ST")]
     let mut screen = init_screen(
         peripherals.SPI2,
         peripherals.GPIO9,
         peripherals.GPIO10,
         peripherals.GPIO11,
-        peripherals.GPIO12)?;
+        peripherals.GPIO12).await?;
 
 
     // let mut screen = if cfg!(feature = "ILI") {

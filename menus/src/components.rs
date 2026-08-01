@@ -1,7 +1,8 @@
 use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler};
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, RGB, rgb};
+use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
+use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -34,22 +35,22 @@ pub enum ComponentState {
 }
 
 pub trait RunHandlers {
-    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
-    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
-    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
+    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
 pub trait ComponentBehaviour {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error>;
+    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error>;
     fn highlight(&mut self) -> &mut Self;
     fn unhighlight(&mut self) -> &mut Self;
 }
 
 impl ComponentBehaviour for ComponentState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
         match self {
-            Self::Button(b) => b.draw(s, f),
-            Self::OptionSwitch(b) => b.draw(s, f),
+            Self::Button(b) => b.draw(s, f).await,
+            Self::OptionSwitch(b) => b.draw(s, f).await,
         }
     }
 
@@ -71,24 +72,24 @@ impl ComponentBehaviour for ComponentState {
 }
 
 impl RunHandlers for ComponentState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.left_handle(h),
-            Self::OptionSwitch(b) => b.left_handle(h),
+            Self::Button(b) => b.left_handle(h).await,
+            Self::OptionSwitch(b) => b.left_handle(h).await,
         }
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.right_handle(h),
-            Self::OptionSwitch(b) => b.right_handle(h),
+            Self::Button(b) => b.right_handle(h).await,
+            Self::OptionSwitch(b) => b.right_handle(h).await,
         }
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.click_handle(h),
-            Self::OptionSwitch(b) => b.click_handle(h),
+            Self::Button(b) => b.click_handle(h).await,
+            Self::OptionSwitch(b) => b.click_handle(h).await,
         }
     }
 }
@@ -106,7 +107,13 @@ impl ComponentDefinition {
     pub fn construct(&self) -> ComponentState {
         match self {
             Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false }),
-            Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { definition, mode: OptionSwitchMode::Unhighlighted, selection: 0, undraws: None, }),
+            Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 
+                definition, 
+                mode: OptionSwitchMode::Unhighlighted, 
+                selection: 0, 
+                text_undraw: None,
+                cursor_undraws: None,
+            }),
         }
     }
 
@@ -141,7 +148,7 @@ const BUTTON_HIGHLIGHTED_GRAPHIC_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleB
     .build();
 
 impl ComponentBehaviour for ButtonState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
         // println!("DRAWING COMPONENT [{}]", self.id);
         let button_text = Text::with_alignment(self.definition.text, self.definition.pos, f, Alignment::Left);
         let text_bb = button_text.bounding_box();
@@ -185,16 +192,16 @@ pub struct ButtonDefinition {
 }
 
 impl RunHandlers for ButtonState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.left.handle(self, h)
+    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, h).await
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.right.handle(self, h)
+    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, h).await
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, h)
+    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, h).await
     }
 }
 // }}}
@@ -210,7 +217,8 @@ pub struct OptionSwitchState {
     pub definition: &'static OptionSwitchDefinition,
     pub mode: OptionSwitchMode,
     pub selection: usize,
-    undraws: Option<[Rectangle; 3]>,
+    text_undraw: Option<Rectangle>,
+    cursor_undraws: Option<[Rectangle; 2]>,
 }
 
 pub struct OptionSwitchDefinition {
@@ -222,16 +230,16 @@ pub struct OptionSwitchDefinition {
 }
 
 impl RunHandlers for OptionSwitchState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.left.handle(self, h)
+    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, h).await
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.right.handle(self, h)
+    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, h).await
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, h)
+    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, h).await
     }
 }
 
@@ -261,26 +269,26 @@ const OPTION_SWITCH_UNDRAW_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder
  
 
 impl ComponentBehaviour for OptionSwitchState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
-        if let Some(boxes) = self.undraws {
-            boxes.iter().try_for_each(|k| k.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s))?;
-            self.undraws = None;
+    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+        if let Some(boxes) = self.text_undraw {
+            boxes.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+            self.text_undraw = None;
+        }
+        if let Some(c_undraws) = self.cursor_undraws {
+            c_undraws.iter().try_for_each(|k| k.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s))?;
+            self.cursor_undraws = None;
         }
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
                 let old_fgcol = f.fgcol;
                 f.fgcol = OPTION_SWITCH_DEFAULT_TEXT_COLOR;
                 Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
-                // OPTION_SWITCH_LEFT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
-                // OPTION_SWITCH_RIGHT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
                 f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Highlighted => {
                 let old_fgcol = f.fgcol;
                 f.fgcol = OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR;
                 Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
-                // OPTION_SWITCH_LEFT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
-                // OPTION_SWITCH_RIGHT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
                 f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Selected => {
@@ -296,10 +304,10 @@ impl ComponentBehaviour for OptionSwitchState {
                 right_cursor.into_styled(OPTION_SWITCH_CURSOR_STYLE).draw(s)?;
                 text.draw(s)?;
                 f.fgcol = old_fgcol;
-                self.undraws = Some([
+                self.text_undraw = Some(text_bb);
+                self.cursor_undraws = Some([
                     left_cursor.bounding_box(),
                     right_cursor.bounding_box(),
-                    text_bb
                 ]);
             },
         }

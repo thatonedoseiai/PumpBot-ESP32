@@ -12,3 +12,4 @@ embedded-hal-bus = "0.3.0"
 esp-hal = { version = "1.1.1", features = ["esp32s3", "unstable"] }
 fontfile = { path = "../fontfile" }
 log = "0.4.29"
+global_settings = { path = "../global_settings" }

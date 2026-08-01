@@ -6,8 +6,11 @@
 extern crate alloc;
 
 pub mod lang;
+pub mod rgb;
 
 use crate::lang::Lang;
+use crate::rgb::RGB;
+// use fontfile::rgb::RGB;
 use alloc::string::{ToString, String};
 use alloc::format;
 
@@ -18,6 +21,7 @@ pub static PB_GLOBAL_SETTINGS: RwLock<CriticalSectionRawMutex, PbGlobalSettings>
 /// The main structure of global settings that the entire board will use
 pub struct PbGlobalSettings {
     pub lang: Lang,
+    pub theme: Theme,
 }
 
 impl PbGlobalSettings {
@@ -25,6 +29,7 @@ impl PbGlobalSettings {
     pub const fn new() -> Self {
         PbGlobalSettings {
             lang: Lang::En,
+            theme: Theme::Dark,
         }
     }
 
@@ -52,5 +57,37 @@ impl PbGlobalSettings {
 impl ToString for PbGlobalSettings {
     fn to_string(&self) -> String {
         format!("0,#000000,0,0,0,0,#000000,#000000,0,{}", <Lang as Into<u8>>::into(self.lang))
+    }
+}
+
+pub enum Theme {
+    Dark,
+    Light,
+    Custom(RGB),
+}
+
+impl Theme {
+    pub const fn bg(&self) -> RGB {
+        match self {
+            Theme::Dark => rgb![0, 10, 0],
+            Theme::Light => rgb![255, 240, 255],
+            Theme::Custom(r) => *r,
+        }
+    }
+
+    pub const fn fg(&self) -> RGB {
+        match self {
+            Theme::Dark => rgb![255, 255, 255],
+            Theme::Light => rgb![0, 0, 0],
+            Theme::Custom(r) => if r.luminance() > 100 {
+                rgb![0, 0, 0]
+            } else {
+                rgb![255, 255, 255]
+            },
+        }
+    }
+
+    pub const fn highlight(&self) -> RGB {
+        rgb![255, 0, 0] // TODO: make this an appropriate colour
     }
 }

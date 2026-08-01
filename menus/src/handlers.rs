@@ -10,7 +10,7 @@ pub enum HandlerResult {
 }
 
 pub trait Handler<S> {
-    fn handle(&self, state: &mut S, _: &mut IOHandles) -> anyhow::Result<HandlerResult>;
+    async fn handle(&self, state: &mut S, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
 pub enum GenericHandler {
@@ -19,7 +19,7 @@ pub enum GenericHandler {
 }
 
 impl Handler<()> for GenericHandler {
-    fn handle(&self, state: &mut (), h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut (), h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Print(s) => {
                 // println!("{s}");
@@ -39,10 +39,10 @@ pub enum MenuHandler {
 }
 
 impl Handler<ComponentMenuInAction> for MenuHandler {
-    fn handle(&self, state: &mut ComponentMenuInAction, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut ComponentMenuInAction, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h)
+                g.handle(&mut (), h).await
             }
         }
     }
@@ -53,10 +53,10 @@ pub enum ButtonHandler {
 }
 
 impl Handler<ButtonState> for ButtonHandler {
-    fn handle(&self, state: &mut ButtonState, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut ButtonState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h)
+                g.handle(&mut (), h).await
             }
         }
     }
@@ -70,20 +70,20 @@ pub enum OptionSwitchHandler {
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
-    fn handle(&self, state: &mut OptionSwitchState, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut OptionSwitchState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h)
+                g.handle(&mut (), h).await
             },
             Self::NextElement => {
                 state.selection = (state.selection + 1) % state.definition.options.len();
-                state.draw(&mut h.screen, h.font.clone())?;
+                state.draw(&mut h.screen, h.font.clone()).await?;
                 Ok(HandlerResult::None)
             },
             Self::PrevElement => {
                 let num_options = state.definition.options.len();
                 state.selection = (state.selection + num_options - 1) % num_options;
-                state.draw(&mut h.screen, h.font.clone())?;
+                state.draw(&mut h.screen, h.font.clone()).await?;
                 Ok(HandlerResult::None)
             },
             Self::ToggleFocus => {
@@ -94,7 +94,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
                 };
                 log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
-                state.draw(&mut h.screen, h.font.clone())?;
+                state.draw(&mut h.screen, h.font.clone()).await?;
                 if state.mode == OptionSwitchMode::Highlighted {
                     Ok(HandlerResult::Unfocus)
                 } else {

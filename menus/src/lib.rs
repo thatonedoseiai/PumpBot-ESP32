@@ -199,7 +199,9 @@ impl MenuStateBehaviour for ComponentMenu {
             mode: ComponentMenuMode::Browse,
         };
         cur_menu_state.selected().map(|c| c.highlight());
-        cur_menu_state.component_states.iter_mut().try_for_each(|f| f.draw(&mut h.screen, h.font.clone()))?;
+        for m in cur_menu_state.component_states.iter_mut() {
+            m.draw(&mut h.screen, h.font.clone()).await?;
+        }
         loop {
             let inp = select(
                 h.button.receive(),
@@ -209,37 +211,49 @@ impl MenuStateBehaviour for ComponentMenu {
                 Either::Second(EncoderEvent {dir: Direction::Clockwise, ..}) => {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
-                            cur_menu_state.selected().map(|c| c.unhighlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            if let Some(m) = cur_menu_state.selected() {
+                                m.unhighlight().draw(&mut h.screen, h.font.clone()).await?;
+                            }
                             cur_menu_state.next_component();
-                            cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            if let Some(m) = cur_menu_state.selected() {
+                                m.highlight().draw(&mut h.screen, h.font.clone()).await?;
+                            }
                             None
                         },
-                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.right_handle(h)).transpose()?
+                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.right_handle(h).await?) } else { None }
                     }
                 },
                 Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
-                            cur_menu_state.selected().map(|c| c.unhighlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            if let Some(m) = cur_menu_state.selected() {
+                                m.unhighlight().draw(&mut h.screen, h.font.clone()).await?;
+                            }
                             cur_menu_state.prev_component();
-                            cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
+                            if let Some(m) = cur_menu_state.selected() {
+                                m.highlight().draw(&mut h.screen, h.font.clone()).await?;
+                            }
                             None
                         },
-                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.left_handle(h)).transpose()?
+                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.left_handle(h).await?) } else { None }
                     }
                 },
-                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h)?),
-                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h)?),
+                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h).await?),
+                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h).await?),
                 Either::First(ButtonEvent { button_type: ButtonType::Rotenc, event: ButtonEventKind::Down }) => {
                     let cur_mode = cur_menu_state.mode;
                     match (cur_mode, cur_menu_state.selected().map(|f| f.definition().interaction_type())) {
                         (ComponentMenuMode::Browse, Some(InteractionType::Editable)) => {
                             cur_menu_state.mode = ComponentMenuMode::Edit;
-                            cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?;
-                            None
+                            if let Some(f) = cur_menu_state.selected() {
+                                Some(f.click_handle(h).await?)
+                            } else {
+                                None
+                            }
+                            // None
                         },
-                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?,
-                        (ComponentMenuMode::Edit, _) => cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?,
+                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
+                        (ComponentMenuMode::Edit, _) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
                         _ => None
                     }
                 },
