@@ -199,13 +199,13 @@ impl MenuStateBehaviour for ComponentMenu {
             mode: ComponentMenuMode::Browse,
         };
         cur_menu_state.selected().map(|c| c.highlight());
-        cur_menu_state.component_states.iter().try_for_each(|f| f.draw(&mut h.screen, h.font.clone()))?;
+        cur_menu_state.component_states.iter_mut().try_for_each(|f| f.draw(&mut h.screen, h.font.clone()))?;
         loop {
             let inp = select(
                 h.button.receive(),
                 h.rotenc.receive(),
             ).await;
-            let signal = match inp {
+            let signal: Option<HandlerResult> = match inp {
                 Either::Second(EncoderEvent {dir: Direction::Clockwise, ..}) => {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
@@ -214,7 +214,7 @@ impl MenuStateBehaviour for ComponentMenu {
                             cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
                             None
                         },
-                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.right_handle(h))
+                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.right_handle(h)).transpose()?
                     }
                 },
                 Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
@@ -225,20 +225,21 @@ impl MenuStateBehaviour for ComponentMenu {
                             cur_menu_state.selected().map(|c| c.highlight().draw(&mut h.screen, h.font.clone())).transpose()?;
                             None
                         },
-                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.left_handle(h))
+                        ComponentMenuMode::Edit => cur_menu_state.selected().map(|f| f.left_handle(h)).transpose()?
                     }
                 },
-                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h)),
-                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h)),
+                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h)?),
+                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h)?),
                 Either::First(ButtonEvent { button_type: ButtonType::Rotenc, event: ButtonEventKind::Down }) => {
                     let cur_mode = cur_menu_state.mode;
                     match (cur_mode, cur_menu_state.selected().map(|f| f.definition().interaction_type())) {
                         (ComponentMenuMode::Browse, Some(InteractionType::Editable)) => {
                             cur_menu_state.mode = ComponentMenuMode::Edit;
+                            cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?;
                             None
                         },
-                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => cur_menu_state.selected().map(|f| f.click_handle(h)),
-                        (ComponentMenuMode::Edit, _) => cur_menu_state.selected().map(|f| f.click_handle(h)),
+                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?,
+                        (ComponentMenuMode::Edit, _) => cur_menu_state.selected().map(|f| f.click_handle(h)).transpose()?,
                         _ => None
                     }
                 },
@@ -332,29 +333,6 @@ pub async fn run_menu_loop(spawner: Spawner, start_menu: Menu, io_handles: &mut 
         // PROFILER.lock().unwrap().dump();
         // SpanGuard::dump();
     }
-
-
-    // let mut layout = MenuSignal::Transition(start_menu);
-    // loop {
-    //     match layout {
-    //         MenuSignal::Transition(l) => { 
-    //             if l.menu_type == Menu::Unimplemented {
-    //                 warn!("transition to unimplemented menu! Returning now.");
-    //                 return Err(MenuError::UnimplementedMenu)?;
-    //             }
-    //             io_handles.screen.clear(Rgb565::BLACK)?;
-    //             let mut m: MenuState = l.into();
-    //             layout = m.run(io_handles).await?;
-    //             // cur_menu = m.into();
-    //             // cur_menu.init(spawner, io_handles).await?;
-    //         },
-    //         MenuSignal::Return => { return Ok(()); },
-    //         _ => {}
-    //     }
-
-    //     // PROFILER.lock().unwrap().dump();
-    //     // SpanGuard::dump();
-    // }
 }
 
 

@@ -32,8 +32,8 @@ use profiler::{SpanGuard, timed};
 pub struct PbFontRenderer {
     // need a cell or something
     pub font: Rc<RefCell<PbFont>>,
-    bgcol: RGB,
-    fgcol: RGB,
+    pub bgcol: RGB,
+    pub fgcol: RGB,
 }
 
 impl PbFontRenderer {

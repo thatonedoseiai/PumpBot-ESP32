@@ -1,5 +1,6 @@
-use crate::{ComponentMenuDefinition, ComponentDefinition, ButtonHandler, GenericHandler, Menu, ComponentMenu, MenuHandler, ButtonDefinition};
-use crate::handlers::HandlerResult;
+use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler};
 use embedded_graphics::prelude::*;
 
 pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
@@ -30,6 +31,14 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[third button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[third button right]")),
                 text: "click me!",
+            }),
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 70),
+                click: OptionSwitchHandler::ToggleFocus,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                options: &["first", "second", "third"],
             }),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Print("title left btn")),

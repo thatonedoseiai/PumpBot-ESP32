@@ -1,7 +1,7 @@
 use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler};
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
+use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, RGB, rgb};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -24,63 +24,71 @@ pub enum InteractionType {
 }
 
 pub enum ComponentDefinition {
-    Button(&'static ButtonDefinition)
+    Button(&'static ButtonDefinition),
+    OptionSwitch(&'static OptionSwitchDefinition),
 }
 
 pub enum ComponentState {
-    Button(ButtonState)
+    Button(ButtonState),
+    OptionSwitch(OptionSwitchState),
 }
 
 pub trait RunHandlers {
-    fn left_handle(&mut self, h: &mut IOHandles) -> HandlerResult;
-    fn right_handle(&mut self, h: &mut IOHandles) -> HandlerResult;
-    fn click_handle(&mut self, h: &mut IOHandles) -> HandlerResult;
+    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
+    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
+    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult>;
 }
 
 pub trait ComponentBehaviour {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error>;
+    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error>;
     fn highlight(&mut self) -> &mut Self;
     fn unhighlight(&mut self) -> &mut Self;
 }
 
 impl ComponentBehaviour for ComponentState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
         match self {
             Self::Button(b) => b.draw(s, f),
+            Self::OptionSwitch(b) => b.draw(s, f),
         }
     }
 
     fn highlight(&mut self) -> &mut Self {
         match self {
-            Self::Button(b) => b.highlight(),
-        };
+            Self::Button(b) => { b.highlight(); },
+            Self::OptionSwitch(b) => { b.highlight(); },
+        }
         self
     }
 
     fn unhighlight(&mut self) -> &mut Self {
         match self {
-            Self::Button(b) => b.unhighlight(),
-        };
+            Self::Button(b) => { b.unhighlight(); },
+            Self::OptionSwitch(b) => { b.unhighlight(); },
+        }
         self
     }
 }
 
 impl RunHandlers for ComponentState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Button(b) => b.left_handle(h),
+            Self::OptionSwitch(b) => b.left_handle(h),
         }
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Button(b) => b.right_handle(h),
+            Self::OptionSwitch(b) => b.right_handle(h),
         }
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Button(b) => b.click_handle(h),
+            Self::OptionSwitch(b) => b.click_handle(h),
         }
     }
 }
@@ -88,23 +96,24 @@ impl RunHandlers for ComponentState {
 impl ComponentState {
     pub const fn definition(&self) -> ComponentDefinition {
         match self {
-            Self::Button(b) => ComponentDefinition::Button(b.definition)
+            Self::Button(b) => ComponentDefinition::Button(b.definition),
+            Self::OptionSwitch(b) => ComponentDefinition::OptionSwitch(b.definition),
         }
     }
 }
 
 impl ComponentDefinition {
     pub fn construct(&self) -> ComponentState {
-        static mut ID: u8 = 0;
-        unsafe { ID = ID + 1 };
         match self {
-            Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false, id: unsafe {ID} }),
+            Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false }),
+            Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { definition, mode: OptionSwitchMode::Unhighlighted, selection: 0, undraws: None, }),
         }
     }
 
     pub const fn interaction_type(&self) -> InteractionType {
         match self {
             Self::Button(_) => InteractionType::NonEditable,
+            Self::OptionSwitch(_) => InteractionType::Editable,
         }
     }
 }
@@ -114,7 +123,6 @@ impl ComponentDefinition {
 pub struct ButtonState {
     definition: &'static ButtonDefinition,
     highlighted: bool,
-    id: u8,
 }
 
 const BUTTON_RADIUS: u32 = 10;
@@ -133,7 +141,7 @@ const BUTTON_HIGHLIGHTED_GRAPHIC_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleB
     .build();
 
 impl ComponentBehaviour for ButtonState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
         // println!("DRAWING COMPONENT [{}]", self.id);
         let button_text = Text::with_alignment(self.definition.text, self.definition.pos, f, Alignment::Left);
         let text_bb = button_text.bounding_box();
@@ -177,52 +185,52 @@ pub struct ButtonDefinition {
 }
 
 impl RunHandlers for ButtonState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, h)
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, h)
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.click.handle(self, h)
     }
 }
 // }}}
 // OPTION SWITCH {{{
-#[derive(PartialEq)]
-enum OptionSwitchMode {
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum OptionSwitchMode {
     Unhighlighted,
     Highlighted,
     Selected
 }
 
 pub struct OptionSwitchState {
-    definition: &'static OptionSwitchDefinition,
-    mode: OptionSwitchMode,
-    selection: usize,
+    pub definition: &'static OptionSwitchDefinition,
+    pub mode: OptionSwitchMode,
+    pub selection: usize,
+    undraws: Option<[Rectangle; 3]>,
 }
 
 pub struct OptionSwitchDefinition {
     pub pos: Point,
-    pub size: Size,
     pub click: OptionSwitchHandler,
     pub left: OptionSwitchHandler,
     pub right: OptionSwitchHandler,
-    pub text: &'static [&'static str],
+    pub options: &'static [&'static str],
 }
 
 impl RunHandlers for OptionSwitchState {
-    fn left_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn left_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, h)
     }
 
-    fn right_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn right_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, h)
     }
 
-    fn click_handle(&mut self, h: &mut IOHandles) -> HandlerResult {
+    fn click_handle(&mut self, h: &mut IOHandles) -> anyhow::Result<HandlerResult> {
         self.definition.click.handle(self, h)
     }
 }
@@ -232,32 +240,70 @@ const OPTION_SWITCH_CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder
     .stroke_color(Rgb565::RED)
     .build();
 
+const OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR: RGB = rgb![255, 0, 0];
+const OPTION_SWITCH_DEFAULT_TEXT_COLOR: RGB = rgb![255, 255, 255];
+
+const OPTION_SWITCH_LEFT_CURSOR: Triangle = Triangle::new(
+                    Point::new(-10, 5),
+                    Point::new(-5, 10),
+                    Point::new(-5, 0),
+                );
+
+const OPTION_SWITCH_RIGHT_CURSOR: Triangle = Triangle::new(
+                    Point::new(10, 5),
+                    Point::new(5, 10),
+                    Point::new(5, 0),
+                );
+
+const OPTION_SWITCH_UNDRAW_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
+    .fill_color(Rgb565::BLUE)
+    .build();
+ 
 
 impl ComponentBehaviour for OptionSwitchState {
-    fn draw<D: DrawTarget<Color = Rgb565>>(&self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+        if let Some(boxes) = self.undraws {
+            boxes.iter().try_for_each(|k| k.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s))?;
+            self.undraws = None;
+        }
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
-                todo!();
+                let old_fgcol = f.fgcol;
+                f.fgcol = OPTION_SWITCH_DEFAULT_TEXT_COLOR;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
+                // OPTION_SWITCH_LEFT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+                // OPTION_SWITCH_RIGHT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+                f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Highlighted => {
-                todo!();
+                let old_fgcol = f.fgcol;
+                f.fgcol = OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
+                // OPTION_SWITCH_LEFT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+                // OPTION_SWITCH_RIGHT_CURSOR.bounding_box().into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+                f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Selected => {
-                let left_cursor = Triangle::new(
-                    Point::new(-10, 5) + self.definition.pos,
-                    Point::new(-5, 10) + self.definition.pos,
-                    Point::new(-5, 0) + self.definition.pos,
-                );
-                let right_cursor = Triangle::new(
-                    Point::new(10, 5) + self.definition.size + self.definition.pos,
-                    Point::new(5, 10) + self.definition.size + self.definition.pos,
-                    Point::new(5, 0) + self.definition.size + self.definition.pos,
-                );
+                let old_fgcol = f.fgcol;
+                f.fgcol = OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR;
+                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left);
+                let text_bb = text.bounding_box();
+                let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
+                let right_coord = left_coord + Size::new(text_bb.size.width, 0);
+                let left_cursor = OPTION_SWITCH_LEFT_CURSOR.translate(left_coord);
+                let right_cursor = OPTION_SWITCH_RIGHT_CURSOR.translate(right_coord);
                 left_cursor.into_styled(OPTION_SWITCH_CURSOR_STYLE).draw(s)?;
                 right_cursor.into_styled(OPTION_SWITCH_CURSOR_STYLE).draw(s)?;
-                todo!();
+                text.draw(s)?;
+                f.fgcol = old_fgcol;
+                self.undraws = Some([
+                    left_cursor.bounding_box(),
+                    right_cursor.bounding_box(),
+                    text_bb
+                ]);
             },
         }
+        Ok(())
     }
 
     fn highlight(&mut self) -> &mut Self {
