@@ -1224,6 +1224,7 @@ dependencies = [
  "esp-hal",
  "esp-storage",
  "flash_storage",
+ "global_settings",
  "littlefs2",
  "log",
  "profiler",
@@ -1309,6 +1310,7 @@ name = "global_settings"
 version = "0.1.0"
 dependencies = [
  "embassy-sync 0.8.0",
+ "embedded-graphics",
 ]
 
 [[package]]
@@ -1386,6 +1388,7 @@ dependencies = [
  "embedded-hal-bus",
  "esp-hal",
  "fontfile",
+ "global_settings",
  "log",
 ]
 
@@ -1465,6 +1468,7 @@ dependencies = [
  "embedded-hal 1.0.0",
  "esp-hal",
  "fontfile",
+ "global_settings",
  "ilidriver",
  "log",
 ]

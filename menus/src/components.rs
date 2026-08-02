@@ -2,7 +2,7 @@ use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
-use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS};
+use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -132,36 +132,45 @@ pub struct ButtonState {
     highlighted: bool,
 }
 
-const BUTTON_RADIUS: u32 = 10;
-const BUTTON_BORDER_SIZE: u32 = 5;
+impl ButtonState {
+    const RADIUS: u32 = 10;
+    const BORDER_SIZE: u32 = 5;
 
-const BUTTON_GRAPHIC_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-    .stroke_width(5)
-    .stroke_color(Rgb565::RED)
-    .fill_color(Rgb565::GREEN)
-    .build();
+    fn graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(5)
+            .stroke_color(theme.fg().as_rgb565())
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
 
-const BUTTON_HIGHLIGHTED_GRAPHIC_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-    .stroke_width(5)
-    .stroke_color(Rgb565::GREEN)
-    .fill_color(Rgb565::RED)
-    .build();
+    const fn highlighted_graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(5)
+            .stroke_color(theme.highlight().as_rgb565())
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+}
 
 impl ComponentBehaviour for ButtonState {
     async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
         // println!("DRAWING COMPONENT [{}]", self.id);
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        f.fgcol = theme.fg();
+        f.bgcol = theme.bg();
         let button_text = Text::with_alignment(self.definition.text, self.definition.pos, f, Alignment::Left);
         let text_bb = button_text.bounding_box();
         let backing_rectangle = RoundedRectangle::with_equal_corners(
             // Rectangle::new(self.definition.pos, bounding_box_size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE)),
-            text_bb.resized(text_bb.size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE), AnchorPoint::Center),
-            Size::new(BUTTON_RADIUS, BUTTON_RADIUS),
+            text_bb.resized(text_bb.size + Size::new(Self::BORDER_SIZE, Self::BORDER_SIZE), AnchorPoint::Center),
+            Size::new(Self::RADIUS, Self::RADIUS),
         );
         backing_rectangle.into_styled(
             if self.highlighted {
-                BUTTON_HIGHLIGHTED_GRAPHIC_STYLE
+                Self::highlighted_graphic_style(theme)
             } else {
-                BUTTON_GRAPHIC_STYLE
+                Self::graphic_style(theme)
             }
         ).draw(s)?;
         button_text.draw(s)?;
@@ -243,67 +252,68 @@ impl RunHandlers for OptionSwitchState {
     }
 }
 
-const OPTION_SWITCH_CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-    .stroke_width(1)
-    .stroke_color(Rgb565::RED)
-    .build();
+impl OptionSwitchState {
+    const OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR: RGB = rgb![255, 0, 0];
+    const OPTION_SWITCH_DEFAULT_TEXT_COLOR: RGB = rgb![255, 255, 255];
 
-const OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR: RGB = rgb![255, 0, 0];
-const OPTION_SWITCH_DEFAULT_TEXT_COLOR: RGB = rgb![255, 255, 255];
+    const OPTION_SWITCH_LEFT_CURSOR: Triangle = Triangle::new(
+                        Point::new(-10, 5),
+                        Point::new(-5, 10),
+                        Point::new(-5, 0),
+                    );
 
-const OPTION_SWITCH_LEFT_CURSOR: Triangle = Triangle::new(
-                    Point::new(-10, 5),
-                    Point::new(-5, 10),
-                    Point::new(-5, 0),
-                );
+    const OPTION_SWITCH_RIGHT_CURSOR: Triangle = Triangle::new(
+                        Point::new(10, 5),
+                        Point::new(5, 10),
+                        Point::new(5, 0),
+                    );
 
-const OPTION_SWITCH_RIGHT_CURSOR: Triangle = Triangle::new(
-                    Point::new(10, 5),
-                    Point::new(5, 10),
-                    Point::new(5, 0),
-                );
+    const fn cursor_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(1)
+            .stroke_color(theme.highlight().as_rgb565())
+            .build()
+    }
 
-const OPTION_SWITCH_UNDRAW_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-    .fill_color(Rgb565::BLUE)
-    .build();
- 
+    const fn undraw_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+}
 
 impl ComponentBehaviour for OptionSwitchState {
     async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        f.bgcol = theme.bg();
         if let Some(boxes) = self.text_undraw {
-            boxes.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s)?;
+            boxes.into_styled(Self::undraw_style(theme)).draw(s)?;
             self.text_undraw = None;
         }
         if let Some(c_undraws) = self.cursor_undraws {
-            c_undraws.iter().try_for_each(|k| k.into_styled(OPTION_SWITCH_UNDRAW_STYLE).draw(s))?;
+            c_undraws.iter().try_for_each(|k| k.into_styled(Self::undraw_style(theme)).draw(s))?;
             self.cursor_undraws = None;
         }
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
-                let old_fgcol = f.fgcol;
-                f.fgcol = OPTION_SWITCH_DEFAULT_TEXT_COLOR;
+                f.fgcol = theme.fg();
                 Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
-                f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Highlighted => {
-                let old_fgcol = f.fgcol;
-                f.fgcol = OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR;
+                f.fgcol = theme.highlight();
                 Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
-                f.fgcol = old_fgcol;
             },
             OptionSwitchMode::Selected => {
-                let old_fgcol = f.fgcol;
-                f.fgcol = OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR;
+                f.fgcol = theme.highlight();
                 let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left);
                 let text_bb = text.bounding_box();
                 let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
                 let right_coord = left_coord + Size::new(text_bb.size.width, 0);
-                let left_cursor = OPTION_SWITCH_LEFT_CURSOR.translate(left_coord);
-                let right_cursor = OPTION_SWITCH_RIGHT_CURSOR.translate(right_coord);
-                left_cursor.into_styled(OPTION_SWITCH_CURSOR_STYLE).draw(s)?;
-                right_cursor.into_styled(OPTION_SWITCH_CURSOR_STYLE).draw(s)?;
+                let left_cursor = Self::OPTION_SWITCH_LEFT_CURSOR.translate(left_coord);
+                let right_cursor = Self::OPTION_SWITCH_RIGHT_CURSOR.translate(right_coord);
+                left_cursor.into_styled(Self::cursor_style(theme)).draw(s)?;
+                right_cursor.into_styled(Self::cursor_style(theme)).draw(s)?;
                 text.draw(s)?;
-                f.fgcol = old_fgcol;
                 self.text_undraw = Some(text_bb);
                 self.cursor_undraws = Some([
                     left_cursor.bounding_box(),

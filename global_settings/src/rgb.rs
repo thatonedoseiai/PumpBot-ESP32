@@ -101,6 +101,10 @@ impl RGB {
         (self.g as u16 * 150) + 
         (self.b as u16 * 29)) >> 8
     }
+
+    pub const fn as_rgb565(&self) -> Rgb565 {
+        Rgb565::new(self.r >> 3, self.g >> 2, self.b >> 3)
+    }
 }
 
 /// The macro used to create RGB because I got really fed up with writing it out all the time.
