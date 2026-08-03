@@ -105,12 +105,12 @@ impl ComponentState {
 }
 
 impl ComponentDefinition {
-    pub fn construct(&self) -> ComponentState {
+    pub fn construct(&self, start_focused: bool) -> ComponentState {
         match self {
             Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false }),
             Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 
                 definition, 
-                mode: OptionSwitchMode::Unhighlighted, 
+                mode: if start_focused { OptionSwitchMode::Selected } else { OptionSwitchMode::Unhighlighted },
                 selection: 0, 
                 text_undraw: None,
                 cursor_undraws: None,

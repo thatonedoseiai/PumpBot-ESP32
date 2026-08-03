@@ -48,7 +48,17 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
 };
 
 pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
-    components: &[],
+    components: &[
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 110),
+                click: OptionSwitchHandler::PrintSelection,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                font_size: FontSize::Sz12,
+                options: &["hey", "you", "guuuys"],
+            }),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Print("lang right btn")),
 };

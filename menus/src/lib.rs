@@ -42,6 +42,7 @@ use embedded_graphics::prelude::RgbColor;
 use embedded_graphics::draw_target::DrawTarget;
 use log::info;
 use alloc::borrow::Cow;
+use global_settings::PB_GLOBAL_SETTINGS;
 
 use profiler::SpanGuard;
 
@@ -187,16 +188,17 @@ impl MenuStateBehaviour for Menu {
 
 impl MenuStateBehaviour for ComponentMenu {
     async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+        let num_components = self.definition().components.len();
         let mut cur_menu_state = ComponentMenuInAction {
             layout: self.definition(),
             component_states: self.definition()
                                       .components
                                       .into_iter()
-                                      .map(|f| f.construct())
+                                      .map(|f| f.construct(num_components == 1))
                                       .collect(),
             internal_state: self.initial_state(),
             selected_component: 0,
-            mode: ComponentMenuMode::Browse,
+            mode: if num_components > 1 { ComponentMenuMode::Browse } else { ComponentMenuMode::Edit },
         };
         cur_menu_state.selected().map(|c| c.highlight());
         for m in cur_menu_state.component_states.iter_mut() {
@@ -250,7 +252,6 @@ impl MenuStateBehaviour for ComponentMenu {
                             } else {
                                 None
                             }
-                            // None
                         },
                         (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
                         (ComponentMenuMode::Edit, _) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
@@ -265,7 +266,11 @@ impl MenuStateBehaviour for ComponentMenu {
                     // println!("TRANSITIONING TO {:?}", m);
                     return Ok(MenuSignal::Transition(m));
                 }
-                Some(HandlerResult::Unfocus) => {cur_menu_state.mode = ComponentMenuMode::Browse;}
+                Some(HandlerResult::Unfocus) => {
+                    if num_components > 1 {
+                        cur_menu_state.mode = ComponentMenuMode::Browse;
+                    }
+                }
                 Some(HandlerResult::Back) => {
                     // println!("GOING BACK TO PREVIOUS MENU");
                     return Ok(MenuSignal::Back);
@@ -328,6 +333,7 @@ pub async fn run_menu_loop(spawner: Spawner, start_menu: Menu, io_handles: &mut 
     let mut menu_stack = vec![];
     let mut menu = start_menu;
     loop {
+        io_handles.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().into())?;
         let result = menu.run(io_handles).await?;
         match result {
             MenuSignal::Transition(m) => {

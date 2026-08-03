@@ -67,6 +67,7 @@ pub enum OptionSwitchHandler {
     NextElement,
     PrevElement,
     ToggleFocus,
+    PrintSelection,
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
@@ -101,6 +102,10 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     Ok(HandlerResult::None)
                 }
             },
+            Self::PrintSelection => {
+                log::info!("you selected [{}]!", state.definition.options[state.selection]);
+                Ok(HandlerResult::None)
+            }
         }
     }
 }
