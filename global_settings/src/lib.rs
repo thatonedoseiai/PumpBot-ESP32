@@ -75,6 +75,20 @@ impl Theme {
         }
     }
 
+    pub const fn bg_secondary(&self) -> RGB {
+        match self {
+            Theme::Dark => rgb![20, 20, 20],
+            Theme::Light => rgb![230, 230, 230],
+            Theme::Custom(r) => {
+                if r.luminance() > 100 {
+                    rgb![30, 30, 30]
+                } else {
+                    rgb![172, 172, 172]
+                }
+            }
+        }
+    }
+
     pub const fn fg(&self) -> RGB {
         match self {
             Theme::Dark => rgb![255, 255, 255],

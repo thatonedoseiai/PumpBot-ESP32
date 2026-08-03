@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler};
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -28,11 +28,13 @@ pub enum InteractionType {
 pub enum ComponentDefinition {
     Button(&'static ButtonDefinition),
     OptionSwitch(&'static OptionSwitchDefinition),
+    OptionScroller(&'static OptionScrollerDefinition),
 }
 
 pub enum ComponentState {
     Button(ButtonState),
     OptionSwitch(OptionSwitchState),
+    OptionScroller(OptionScrollerState),
 }
 
 pub trait RunHandlers {
@@ -52,6 +54,7 @@ impl ComponentBehaviour for ComponentState {
         match self {
             Self::Button(b) => b.draw(s, f).await,
             Self::OptionSwitch(b) => b.draw(s, f).await,
+            Self::OptionScroller(b) => b.draw(s, f).await,
         }
     }
 
@@ -59,6 +62,7 @@ impl ComponentBehaviour for ComponentState {
         match self {
             Self::Button(b) => { b.highlight(); },
             Self::OptionSwitch(b) => { b.highlight(); },
+            Self::OptionScroller(b) => { b.highlight(); },
         }
         self
     }
@@ -67,6 +71,7 @@ impl ComponentBehaviour for ComponentState {
         match self {
             Self::Button(b) => { b.unhighlight(); },
             Self::OptionSwitch(b) => { b.unhighlight(); },
+            Self::OptionScroller(b) => { b.unhighlight(); },
         }
         self
     }
@@ -77,6 +82,7 @@ impl RunHandlers for ComponentState {
         match self {
             Self::Button(b) => b.left_handle(h).await,
             Self::OptionSwitch(b) => b.left_handle(h).await,
+            Self::OptionScroller(b) => b.left_handle(h).await,
         }
     }
 
@@ -84,6 +90,7 @@ impl RunHandlers for ComponentState {
         match self {
             Self::Button(b) => b.right_handle(h).await,
             Self::OptionSwitch(b) => b.right_handle(h).await,
+            Self::OptionScroller(b) => b.right_handle(h).await,
         }
     }
 
@@ -91,6 +98,7 @@ impl RunHandlers for ComponentState {
         match self {
             Self::Button(b) => b.click_handle(h).await,
             Self::OptionSwitch(b) => b.click_handle(h).await,
+            Self::OptionScroller(b) => b.click_handle(h).await,
         }
     }
 }
@@ -100,6 +108,7 @@ impl ComponentState {
         match self {
             Self::Button(b) => ComponentDefinition::Button(b.definition),
             Self::OptionSwitch(b) => ComponentDefinition::OptionSwitch(b.definition),
+            Self::OptionScroller(b) => ComponentDefinition::OptionScroller(b.definition),
         }
     }
 }
@@ -115,6 +124,12 @@ impl ComponentDefinition {
                 text_undraw: None,
                 cursor_undraws: None,
             }),
+            Self::OptionScroller(definition) => ComponentState::OptionScroller(OptionScrollerState {
+                definition,
+                selection: 0,
+                page_start: 0,
+                redraw_scrollbar: true,
+            }),
         }
     }
 
@@ -122,6 +137,7 @@ impl ComponentDefinition {
         match self {
             Self::Button(_) => InteractionType::NonEditable,
             Self::OptionSwitch(_) => InteractionType::Editable,
+            Self::OptionScroller(_) => InteractionType::Editable,
         }
     }
 }
@@ -338,6 +354,122 @@ impl ComponentBehaviour for OptionSwitchState {
         if self.mode == OptionSwitchMode::Highlighted {
             self.mode = OptionSwitchMode::Unhighlighted;
         }
+        self
+    }
+}
+// }}}
+// SCROLLING MENU THING {{{
+pub struct OptionScrollerState {
+    pub definition: &'static OptionScrollerDefinition,
+    pub selection: usize,
+    pub page_start: usize,
+    pub redraw_scrollbar: bool,
+}
+
+pub struct OptionScrollerDefinition {
+    pub pos: Point,
+    pub click: OptionScrollerHandler,
+    pub left: OptionScrollerHandler,
+    pub right: OptionScrollerHandler,
+    pub num_visible_elements: usize,
+    pub width: u32,
+    pub font_size: FontSize,
+    pub options: &'static [&'static str],
+}
+
+impl RunHandlers for OptionScrollerState {
+    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, h).await
+    }
+
+    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, h).await
+    }
+
+    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, h).await
+    }
+}
+
+impl OptionScrollerState {
+    const OPTION_HEIGHT: i32 = 20;
+    const TEXT_OFFSET: i32 = 5;
+    const SCROLLBAR_WIDTH: u32 = 5;
+
+    const fn even_bg_rect_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.bg_secondary().as_rgb565())
+            .build()
+    }
+
+    const fn odd_bg_rect_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+
+    const fn pill_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.fg().as_rgb565())
+            .build()
+    }
+}
+
+impl ComponentBehaviour for OptionScrollerState {
+    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        f.bgcol = theme.bg();
+        f.font.borrow_mut().set_size(self.definition.font_size)?;
+        for i in 0..self.definition.num_visible_elements {
+            let option_index = i + self.page_start;
+            let rect_pos = self.definition.pos + Point::new(0, i32::try_from(i)? * Self::OPTION_HEIGHT);
+            let rect = Rectangle::new(rect_pos, Size::new(self.definition.width, Self::OPTION_HEIGHT as u32));
+            rect.into_styled(
+            if option_index % 2 == 0 {
+                Self::even_bg_rect_style(&theme)
+            } else {
+                Self::odd_bg_rect_style(&theme)
+            }
+            ).draw(s)?;
+
+            f.fgcol = if option_index == self.selection {
+                theme.highlight()
+            } else {
+                theme.fg()
+            };
+
+            f.bgcol = if option_index % 2 == 0 {
+                theme.bg_secondary()
+            } else {
+                theme.bg()
+            };
+            let option_text = Text::with_alignment(self.definition.options[option_index], rect_pos + Point::new(0, Self::OPTION_HEIGHT - Self::TEXT_OFFSET), &*f, Alignment::Left);
+            option_text.draw(s)?;
+        }
+
+        if self.redraw_scrollbar {
+            let bg = Rectangle::new(Point::new((s.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 0), Size::new(Self::SCROLLBAR_WIDTH, s.size().height));
+            let scrollbar_unit_length = (s.size().height as usize) / self.definition.options.len();
+            let pill_top_left = Point::new(
+                (s.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 
+                (scrollbar_unit_length * self.page_start).try_into()?);
+            let pill = RoundedRectangle::with_equal_corners(
+                Rectangle::new(pill_top_left, 
+                    Size::new(Self::SCROLLBAR_WIDTH, (scrollbar_unit_length * self.definition.num_visible_elements).try_into()?)),
+                Size::new(Self::SCROLLBAR_WIDTH / 2, Self::SCROLLBAR_WIDTH / 2),
+            );
+            bg.into_styled(Self::even_bg_rect_style(&theme)).draw(s)?;
+            pill.into_styled(Self::pill_style(&theme)).draw(s)?;
+            self.redraw_scrollbar = false;
+        }
+        Ok(())
+    }
+
+    fn highlight(&mut self) -> &mut Self {
+        self
+    }
+
+    fn unhighlight(&mut self) -> &mut Self {
         self
     }
 }

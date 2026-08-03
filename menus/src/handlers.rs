@@ -1,4 +1,4 @@
-use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour};
+use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState};
 use crate::{ComponentMenuInAction, Menu, IOHandles};
 
 #[derive(Debug, Clone, Copy)]
@@ -104,6 +104,51 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
             },
             Self::PrintSelection => {
                 log::info!("you selected [{}]!", state.definition.options[state.selection]);
+                Ok(HandlerResult::None)
+            }
+        }
+    }
+}
+
+pub enum OptionScrollerHandler {
+    Generic(GenericHandler),
+    NextOption,
+    PrevOption,
+    PrintSelection,
+}
+
+impl Handler<OptionScrollerState> for OptionScrollerHandler {
+    async fn handle(&self, state: &mut OptionScrollerState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => {
+                g.handle(&mut (), h).await
+            },
+            Self::NextOption => {
+                log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
+                if state.selection < state.definition.options.len() - 1 {
+                    state.selection += 1;
+                    if state.selection >= state.page_start + state.definition.num_visible_elements {
+                        state.page_start += 1;
+                        state.redraw_scrollbar = true;
+                    }
+                    state.draw(&mut h.screen, &mut h.font).await?;
+                }
+                Ok(HandlerResult::None)
+            },
+            Self::PrevOption => {
+                log::info!("prev selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
+                if state.selection > 0 {
+                    state.selection -= 1;
+                    if state.selection < state.page_start {
+                        state.page_start -= 1;
+                        state.redraw_scrollbar = true;
+                    }
+                    state.draw(&mut h.screen, &mut h.font).await?;
+                }
+                Ok(HandlerResult::None)
+            },
+            Self::PrintSelection => {
+                log::info!("scroller menu selection: [{}]", state.definition.options[state.selection]);
                 Ok(HandlerResult::None)
             }
         }

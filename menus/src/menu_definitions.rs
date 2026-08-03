@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler};
 use embedded_graphics::prelude::*;
 use fontfile::FontSize;
 
@@ -49,14 +49,25 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
 
 pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
-        ComponentDefinition::OptionSwitch(
-            &OptionSwitchDefinition {
-                pos: Point::new(20, 110),
-                click: OptionSwitchHandler::PrintSelection,
-                left: OptionSwitchHandler::PrevElement,
-                right: OptionSwitchHandler::NextElement,
+        // ComponentDefinition::OptionSwitch(
+        //     &OptionSwitchDefinition {
+        //         pos: Point::new(20, 110),
+        //         click: OptionSwitchHandler::PrintSelection,
+        //         left: OptionSwitchHandler::PrevElement,
+        //         right: OptionSwitchHandler::NextElement,
+        //         font_size: FontSize::Sz12,
+        //         options: &["hey", "you", "guuuys"],
+        //     }),
+        ComponentDefinition::OptionScroller(
+            &OptionScrollerDefinition{
+                pos: Point::new(20, 20),
+                click: OptionScrollerHandler::PrintSelection,
+                left: OptionScrollerHandler::PrevOption,
+                right: OptionScrollerHandler::NextOption,
+                num_visible_elements: 5,
+                width: 100,
                 font_size: FontSize::Sz12,
-                options: &["hey", "you", "guuuys"],
+                options: &["first", "second", "third", "fourth", "secret fifth" , "last"],
             }),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
