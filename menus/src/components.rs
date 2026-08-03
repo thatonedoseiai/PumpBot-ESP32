@@ -1,7 +1,7 @@
 use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler};
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
+use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
 use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
 use embedded_graphics::{
     prelude::*,
@@ -16,6 +16,7 @@ use embedded_graphics::{
     },
     geometry::AnchorPoint,
 };
+use core::fmt;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -41,13 +42,13 @@ pub trait RunHandlers {
 }
 
 pub trait ComponentBehaviour {
-    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error>;
+    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()>;
     fn highlight(&mut self) -> &mut Self;
     fn unhighlight(&mut self) -> &mut Self;
 }
 
 impl ComponentBehaviour for ComponentState {
-    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
         match self {
             Self::Button(b) => b.draw(s, f).await,
             Self::OptionSwitch(b) => b.draw(s, f).await,
@@ -133,12 +134,12 @@ pub struct ButtonState {
 }
 
 impl ButtonState {
-    const RADIUS: u32 = 10;
-    const BORDER_SIZE: u32 = 5;
+    const RADIUS: u32 = 5;
+    const BORDER_SIZE: u32 = 10;
 
     fn graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
-            .stroke_width(5)
+            .stroke_width(3)
             .stroke_color(theme.fg().as_rgb565())
             .fill_color(theme.bg().as_rgb565())
             .build()
@@ -146,7 +147,7 @@ impl ButtonState {
 
     const fn highlighted_graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
-            .stroke_width(5)
+            .stroke_width(3)
             .stroke_color(theme.highlight().as_rgb565())
             .fill_color(theme.bg().as_rgb565())
             .build()
@@ -154,12 +155,13 @@ impl ButtonState {
 }
 
 impl ComponentBehaviour for ButtonState {
-    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
         // println!("DRAWING COMPONENT [{}]", self.id);
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.fgcol = theme.fg();
         f.bgcol = theme.bg();
-        let button_text = Text::with_alignment(self.definition.text, self.definition.pos, f, Alignment::Left);
+        f.font.borrow_mut().set_size(self.definition.font_size).unwrap();
+        let button_text = Text::with_alignment(self.definition.text, self.definition.pos, &*f, Alignment::Left);
         let text_bb = button_text.bounding_box();
         let backing_rectangle = RoundedRectangle::with_equal_corners(
             // Rectangle::new(self.definition.pos, bounding_box_size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE)),
@@ -174,7 +176,6 @@ impl ComponentBehaviour for ButtonState {
             }
         ).draw(s)?;
         button_text.draw(s)?;
-        // todo!("make button width calculated based on text width");
         Ok(())
     }
 
@@ -193,10 +194,10 @@ impl ComponentBehaviour for ButtonState {
 
 pub struct ButtonDefinition {
     pub pos: Point,
-    // pub size: Size,
     pub click: ButtonHandler,
     pub left: ButtonHandler,
     pub right: ButtonHandler,
+    pub font_size: FontSize,
     pub text: &'static str,
 }
 
@@ -235,6 +236,7 @@ pub struct OptionSwitchDefinition {
     pub click: OptionSwitchHandler,
     pub left: OptionSwitchHandler,
     pub right: OptionSwitchHandler,
+    pub font_size: FontSize,
     pub options: &'static [&'static str],
 }
 
@@ -283,9 +285,10 @@ impl OptionSwitchState {
 }
 
 impl ComponentBehaviour for OptionSwitchState {
-    async fn draw<D: DrawTarget<Color = Rgb565>>(&mut self, s: &mut D, mut f: PbFontRenderer) -> Result<(), <D as DrawTarget>::Error> {
+    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.bgcol = theme.bg();
+        f.font.borrow_mut().set_size(self.definition.font_size)?;
         if let Some(boxes) = self.text_undraw {
             boxes.into_styled(Self::undraw_style(theme)).draw(s)?;
             self.text_undraw = None;
@@ -297,15 +300,15 @@ impl ComponentBehaviour for OptionSwitchState {
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
                 f.fgcol = theme.fg();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Highlighted => {
                 f.fgcol = theme.highlight();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Selected => {
                 f.fgcol = theme.highlight();
-                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, f.clone(), Alignment::Left);
+                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left);
                 let text_bb = text.bounding_box();
                 let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
                 let right_coord = left_coord + Size::new(text_bb.size.width, 0);

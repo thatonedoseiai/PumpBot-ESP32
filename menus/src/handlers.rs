@@ -77,13 +77,13 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
             },
             Self::NextElement => {
                 state.selection = (state.selection + 1) % state.definition.options.len();
-                state.draw(&mut h.screen, h.font.clone()).await?;
+                state.draw(&mut h.screen, &mut h.font).await?;
                 Ok(HandlerResult::None)
             },
             Self::PrevElement => {
                 let num_options = state.definition.options.len();
                 state.selection = (state.selection + num_options - 1) % num_options;
-                state.draw(&mut h.screen, h.font.clone()).await?;
+                state.draw(&mut h.screen, &mut h.font).await?;
                 Ok(HandlerResult::None)
             },
             Self::ToggleFocus => {
@@ -94,7 +94,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
                 };
                 log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
-                state.draw(&mut h.screen, h.font.clone()).await?;
+                state.draw(&mut h.screen, &mut h.font).await?;
                 if state.mode == OptionSwitchMode::Highlighted {
                     Ok(HandlerResult::Unfocus)
                 } else {

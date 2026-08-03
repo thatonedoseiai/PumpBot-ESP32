@@ -49,7 +49,7 @@ impl PbFontRenderer {
     }
 }
 
-impl TextRenderer for PbFontRenderer {
+impl TextRenderer for &PbFontRenderer {
     type Color = Rgb565;
 
     fn draw_string<D>(

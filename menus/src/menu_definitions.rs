@@ -2,34 +2,35 @@ use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, 
 use crate::components::{ButtonDefinition, OptionSwitchDefinition};
 use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler};
 use embedded_graphics::prelude::*;
+use fontfile::FontSize;
 
 pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(10, 20),
-                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[first button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[first button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[first button right]")),
+                font_size: FontSize::Sz7,
                 text: "hello",
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(10, 50),
-                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[second button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
+                font_size: FontSize::Sz7,
                 text: "blue!",
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(10, 80),
-                // size: Size::new(10, 10),
                 click: ButtonHandler::Generic(GenericHandler::Print("[third button clicked]")),
                 left: ButtonHandler::Generic(GenericHandler::Print("[third button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[third button right]")),
+                font_size: FontSize::Sz7,
                 text: "click me!",
             }),
         ComponentDefinition::OptionSwitch(
@@ -38,6 +39,7 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
                 click: OptionSwitchHandler::ToggleFocus,
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
+                font_size: FontSize::Sz12,
                 options: &["first", "second", "third"],
             }),
     ],
