@@ -124,10 +124,12 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 g.handle(&mut (), h).await
             },
             Self::NextOption => {
-                log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
+                // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
                 if state.selection < state.definition.options.len() - 1 {
                     state.selection += 1;
-                    if state.selection >= state.page_start + state.definition.num_visible_elements {
+                    // if state.selection >= state.page_start + state.definition.num_visible_elements {
+                    if state.selection - state.page_start > state.definition.num_visible_elements / 2 &&
+                        state.page_start + state.definition.num_visible_elements < state.definition.options.len() {
                         state.page_start += 1;
                         state.redraw_scrollbar = true;
                     }
@@ -136,10 +138,12 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 Ok(HandlerResult::None)
             },
             Self::PrevOption => {
-                log::info!("prev selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
+                // log::info!("prev selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
                 if state.selection > 0 {
                     state.selection -= 1;
-                    if state.selection < state.page_start {
+                    // if state.selection < state.page_start {
+                    if state.selection - state.page_start < state.definition.num_visible_elements / 2 &&
+                        state.page_start > 0 {
                         state.page_start -= 1;
                         state.redraw_scrollbar = true;
                     }

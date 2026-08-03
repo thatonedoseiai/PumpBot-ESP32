@@ -447,7 +447,7 @@ impl ComponentBehaviour for OptionScrollerState {
             option_text.draw(s)?;
         }
 
-        if self.redraw_scrollbar {
+        if self.redraw_scrollbar && (self.definition.num_visible_elements < self.definition.options.len()) {
             let bg = Rectangle::new(Point::new((s.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 0), Size::new(Self::SCROLLBAR_WIDTH, s.size().height));
             let scrollbar_unit_length = (s.size().height as usize) / self.definition.options.len();
             let pill_top_left = Point::new(

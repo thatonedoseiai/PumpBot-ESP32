@@ -67,7 +67,7 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 num_visible_elements: 5,
                 width: 100,
                 font_size: FontSize::Sz12,
-                options: &["first", "second", "third", "fourth", "secret fifth" , "last"],
+                options: &["first", "second", "third", "fourth", "secret fifth" , "last", "stupid", "you", "belly", "pick me!", "gwargh"],
             }),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
