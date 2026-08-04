@@ -185,9 +185,13 @@ async fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: 
     let mut delay = Delay::new();
     let res = s.init(&mut delay)?;
     s.set_orientation(&STOrientation::PortraitSwapped)?;
-    s.set_offset(1, 2);
+    s.set_offset(1, 1);
     // info!("clearing screen!");
     s.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().into())?;
+    // embedded_graphics::primitives::Line::new(Point::zero(), Point::zero())
+    //     .into_styled(PrimitiveStyle::with_stroke(Rgb565::RED, 1))
+    //     .draw(&mut s)?;
+
     // info!("screen result!");
     Ok(Screen::ST(s))
 }

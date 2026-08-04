@@ -1,5 +1,5 @@
 use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator};
-use crate::IOHandles;
+use crate::{IOHandles, MenuInternalState};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
 use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
@@ -42,9 +42,9 @@ pub enum ComponentState {
 }
 
 pub trait RunHandlers {
-    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
-    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
-    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
 pub trait ComponentBehaviour {
@@ -82,27 +82,27 @@ impl ComponentBehaviour for ComponentState {
 }
 
 impl RunHandlers for ComponentState {
-    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.left_handle(h).await,
-            Self::OptionSwitch(b) => b.left_handle(h).await,
-            Self::OptionScroller(b) => b.left_handle(h).await,
+            Self::Button(b) => b.left_handle(menu_state, h).await,
+            Self::OptionSwitch(b) => b.left_handle(menu_state, h).await,
+            Self::OptionScroller(b) => b.left_handle(menu_state, h).await,
         }
     }
 
-    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.right_handle(h).await,
-            Self::OptionSwitch(b) => b.right_handle(h).await,
-            Self::OptionScroller(b) => b.right_handle(h).await,
+            Self::Button(b) => b.right_handle(menu_state, h).await,
+            Self::OptionSwitch(b) => b.right_handle(menu_state, h).await,
+            Self::OptionScroller(b) => b.right_handle(menu_state, h).await,
         }
     }
 
-    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
-            Self::Button(b) => b.click_handle(h).await,
-            Self::OptionSwitch(b) => b.click_handle(h).await,
-            Self::OptionScroller(b) => b.click_handle(h).await,
+            Self::Button(b) => b.click_handle(menu_state, h).await,
+            Self::OptionSwitch(b) => b.click_handle(menu_state, h).await,
+            Self::OptionScroller(b) => b.click_handle(menu_state, h).await,
         }
     }
 }
@@ -225,16 +225,16 @@ pub struct ButtonDefinition {
 }
 
 impl RunHandlers for ButtonState {
-    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.left.handle(self, h).await
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.right.handle(self, h).await
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, menu_state, h).await
     }
 
-    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, h).await
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, menu_state, h).await
     }
 }
 // }}}
@@ -264,16 +264,16 @@ pub struct OptionSwitchDefinition {
 }
 
 impl RunHandlers for OptionSwitchState {
-    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.left.handle(self, h).await
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.right.handle(self, h).await
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, menu_state, h).await
     }
 
-    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, h).await
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, menu_state, h).await
     }
 }
 
@@ -385,16 +385,16 @@ pub struct OptionScrollerDefinition {
 }
 
 impl RunHandlers for OptionScrollerState {
-    async fn left_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.left.handle(self, h).await
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.right.handle(self, h).await
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, menu_state, h).await
     }
 
-    async fn click_handle(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, h).await
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, menu_state, h).await
     }
 }
 

@@ -43,6 +43,7 @@ use embedded_graphics::draw_target::DrawTarget;
 use log::info;
 use alloc::borrow::Cow;
 use global_settings::PB_GLOBAL_SETTINGS;
+use core::cell::RefCell;
 
 use profiler::SpanGuard;
 
@@ -105,7 +106,6 @@ enum ComponentMenuMode {
 struct ComponentMenuInAction {
     layout: &'static ComponentMenuDefinition,
     component_states: Vec<ComponentState>,
-    internal_state: MenuInternalState,
     selected_component: usize,
     mode: ComponentMenuMode
 }
@@ -196,10 +196,10 @@ impl MenuStateBehaviour for ComponentMenu {
                                       .into_iter()
                                       .map(|f| f.construct(num_components == 1))
                                       .collect(),
-            internal_state: self.initial_state(),
             selected_component: 0,
             mode: if num_components > 1 { ComponentMenuMode::Browse } else { ComponentMenuMode::Edit },
         };
+        let mut internal_state = self.initial_state();
         cur_menu_state.selected().map(|c| c.highlight());
         for m in cur_menu_state.component_states.iter_mut() {
             m.draw(h).await?;
@@ -222,7 +222,7 @@ impl MenuStateBehaviour for ComponentMenu {
                             }
                             None
                         },
-                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.right_handle(h).await?) } else { None }
+                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.right_handle(&mut internal_state, h).await?) } else { None }
                     }
                 },
                 Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
@@ -237,24 +237,24 @@ impl MenuStateBehaviour for ComponentMenu {
                             }
                             None
                         },
-                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.left_handle(h).await?) } else { None }
+                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.left_handle(&mut internal_state, h).await?) } else { None }
                     }
                 },
-                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, h).await?),
-                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, h).await?),
+                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
+                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
                 Either::First(ButtonEvent { button_type: ButtonType::Rotenc, event: ButtonEventKind::Down }) => {
                     let cur_mode = cur_menu_state.mode;
                     match (cur_mode, cur_menu_state.selected().map(|f| f.definition().interaction_type())) {
                         (ComponentMenuMode::Browse, Some(InteractionType::Editable)) => {
                             cur_menu_state.mode = ComponentMenuMode::Edit;
                             if let Some(f) = cur_menu_state.selected() {
-                                Some(f.click_handle(h).await?)
+                                Some(f.click_handle(&mut internal_state, h).await?)
                             } else {
                                 None
                             }
                         },
-                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
-                        (ComponentMenuMode::Edit, _) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(h).await?) } else { None },
+                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(&mut internal_state, h).await?) } else { None },
+                        (ComponentMenuMode::Edit, _) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(&mut internal_state, h).await?) } else { None },
                         _ => None
                     }
                 },

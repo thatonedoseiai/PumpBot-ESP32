@@ -1,5 +1,5 @@
 use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState};
-use crate::{ComponentMenuInAction, Menu, IOHandles};
+use crate::{ComponentMenuInAction, Menu, IOHandles, MenuInternalState};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
@@ -14,7 +14,7 @@ pub enum HandlerResult {
 }
 
 pub trait Handler<S> {
-    async fn handle(&self, state: &mut S, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn handle(&self, state: &mut S, menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
 pub enum GenericHandler {
@@ -23,7 +23,7 @@ pub enum GenericHandler {
 }
 
 impl Handler<()> for GenericHandler {
-    async fn handle(&self, state: &mut (), h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut (), menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Print(s) => {
                 // println!("{s}");
@@ -43,10 +43,10 @@ pub enum MenuHandler {
 }
 
 impl Handler<ComponentMenuInAction> for MenuHandler {
-    async fn handle(&self, state: &mut ComponentMenuInAction, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut ComponentMenuInAction, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h).await
+                g.handle(&mut (), menu_state, h).await
             }
         }
     }
@@ -57,10 +57,10 @@ pub enum ButtonHandler {
 }
 
 impl Handler<ButtonState> for ButtonHandler {
-    async fn handle(&self, state: &mut ButtonState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut ButtonState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h).await
+                g.handle(&mut (), menu_state, h).await
             }
         }
     }
@@ -75,10 +75,10 @@ pub enum OptionSwitchHandler {
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
-    async fn handle(&self, state: &mut OptionSwitchState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut OptionSwitchState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h).await
+                g.handle(&mut (), menu_state, h).await
             },
             Self::NextElement => {
                 state.selection = (state.selection + 1) % state.definition.options.len();
@@ -122,10 +122,10 @@ pub enum OptionScrollerHandler {
 }
 
 impl Handler<OptionScrollerState> for OptionScrollerHandler {
-    async fn handle(&self, state: &mut OptionScrollerState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut OptionScrollerState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
-                g.handle(&mut (), h).await
+                g.handle(&mut (), menu_state, h).await
             },
             Self::NextOption => {
                 // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
