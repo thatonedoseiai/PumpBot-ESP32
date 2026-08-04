@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator};
 use embedded_graphics::prelude::*;
 use fontfile::FontSize;
 
@@ -67,7 +67,8 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 num_visible_elements: 5,
                 width: 100,
                 font_size: FontSize::Sz12,
-                options: &["first", "second", "third", "fourth", "secret fifth" , "last", "stupid", "you", "belly", "pick me!", "gwargh"],
+                // options: OptionsGenerator::Const(&["first", "second", "third", "fourth", "secret fifth" , "last", "stupid", "you", "belly", "pick me!", "gwargh"]),
+                options: OptionsGenerator::WifiGenerator,
             }),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),

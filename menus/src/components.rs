@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator};
 use crate::IOHandles;
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -17,6 +17,10 @@ use embedded_graphics::{
     geometry::AnchorPoint,
 };
 use core::fmt;
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+use core::borrow::Borrow;
+use async_once_cell::OnceCell;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -44,17 +48,17 @@ pub trait RunHandlers {
 }
 
 pub trait ComponentBehaviour {
-    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()>;
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()>;
     fn highlight(&mut self) -> &mut Self;
     fn unhighlight(&mut self) -> &mut Self;
 }
 
 impl ComponentBehaviour for ComponentState {
-    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         match self {
-            Self::Button(b) => b.draw(s, f).await,
-            Self::OptionSwitch(b) => b.draw(s, f).await,
-            Self::OptionScroller(b) => b.draw(s, f).await,
+            Self::Button(b) => b.draw(h).await,
+            Self::OptionSwitch(b) => b.draw(h).await,
+            Self::OptionScroller(b) => b.draw(h).await,
         }
     }
 
@@ -129,6 +133,7 @@ impl ComponentDefinition {
                 selection: 0,
                 page_start: 0,
                 redraw_scrollbar: true,
+                generated_options: OnceCell::new(),
             }),
         }
     }
@@ -171,13 +176,15 @@ impl ButtonState {
 }
 
 impl ComponentBehaviour for ButtonState {
-    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         // println!("DRAWING COMPONENT [{}]", self.id);
+        let s = &mut h.screen;
+        let f = &mut h.font;
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.fgcol = theme.fg();
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size).unwrap();
-        let button_text = Text::with_alignment(self.definition.text, self.definition.pos, &*f, Alignment::Left);
+        let button_text = Text::with_alignment(self.definition.text, self.definition.pos, &h.font, Alignment::Left);
         let text_bb = button_text.bounding_box();
         let backing_rectangle = RoundedRectangle::with_equal_corners(
             // Rectangle::new(self.definition.pos, bounding_box_size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE)),
@@ -271,9 +278,6 @@ impl RunHandlers for OptionSwitchState {
 }
 
 impl OptionSwitchState {
-    const OPTION_SWITCH_HIGHLIGHTED_TEXT_COLOR: RGB = rgb![255, 0, 0];
-    const OPTION_SWITCH_DEFAULT_TEXT_COLOR: RGB = rgb![255, 255, 255];
-
     const OPTION_SWITCH_LEFT_CURSOR: Triangle = Triangle::new(
                         Point::new(-10, 5),
                         Point::new(-5, 10),
@@ -301,7 +305,9 @@ impl OptionSwitchState {
 }
 
 impl ComponentBehaviour for OptionSwitchState {
-    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        let s = &mut h.screen;
+        let f = &mut h.font;
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size)?;
@@ -316,15 +322,15 @@ impl ComponentBehaviour for OptionSwitchState {
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
                 f.fgcol = theme.fg();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Highlighted => {
                 f.fgcol = theme.highlight();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Selected => {
                 f.fgcol = theme.highlight();
-                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &*f, Alignment::Left);
+                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left);
                 let text_bb = text.bounding_box();
                 let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
                 let right_coord = left_coord + Size::new(text_bb.size.width, 0);
@@ -364,6 +370,7 @@ pub struct OptionScrollerState {
     pub selection: usize,
     pub page_start: usize,
     pub redraw_scrollbar: bool,
+    pub generated_options: OnceCell<Vec<Cow<'static, str>>>,
 }
 
 pub struct OptionScrollerDefinition {
@@ -374,7 +381,7 @@ pub struct OptionScrollerDefinition {
     pub num_visible_elements: usize,
     pub width: u32,
     pub font_size: FontSize,
-    pub options: &'static [&'static str],
+    pub options: OptionsGenerator,
 }
 
 impl RunHandlers for OptionScrollerState {
@@ -416,11 +423,16 @@ impl OptionScrollerState {
 }
 
 impl ComponentBehaviour for OptionScrollerState {
-    async fn draw(&mut self, s: &mut Screen<'_>, f: &mut PbFontRenderer) -> anyhow::Result<()> {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        // let options = self.generated_options.get_or_insert_with(|| self.definition.options.generate(lang, h));
+        let options = self.generated_options.get_or_try_init(async {
+            self.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
+        }).await?;
+        let f = &mut h.font;
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size)?;
-        for i in 0..self.definition.num_visible_elements {
+        for i in 0..(core::cmp::min(self.definition.num_visible_elements, options.len())) {
             let option_index = i + self.page_start;
             let rect_pos = self.definition.pos + Point::new(0, i32::try_from(i)? * Self::OPTION_HEIGHT);
             let rect = Rectangle::new(rect_pos, Size::new(self.definition.width, Self::OPTION_HEIGHT as u32));
@@ -430,7 +442,7 @@ impl ComponentBehaviour for OptionScrollerState {
             } else {
                 Self::odd_bg_rect_style(&theme)
             }
-            ).draw(s)?;
+            ).draw(&mut h.screen)?;
 
             f.fgcol = if option_index == self.selection {
                 theme.highlight()
@@ -443,23 +455,23 @@ impl ComponentBehaviour for OptionScrollerState {
             } else {
                 theme.bg()
             };
-            let option_text = Text::with_alignment(self.definition.options[option_index], rect_pos + Point::new(0, Self::OPTION_HEIGHT - Self::TEXT_OFFSET), &*f, Alignment::Left);
-            option_text.draw(s)?;
+            let option_text = Text::with_alignment(&options[option_index], rect_pos + Point::new(0, Self::OPTION_HEIGHT - Self::TEXT_OFFSET), &*f, Alignment::Left);
+            option_text.draw(&mut h.screen)?;
         }
 
-        if self.redraw_scrollbar && (self.definition.num_visible_elements < self.definition.options.len()) {
-            let bg = Rectangle::new(Point::new((s.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 0), Size::new(Self::SCROLLBAR_WIDTH, s.size().height));
-            let scrollbar_unit_length = (s.size().height as usize) / self.definition.options.len();
+        if self.redraw_scrollbar && (self.definition.num_visible_elements < options.len()) {
+            let bg = Rectangle::new(Point::new((h.screen.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 0), Size::new(Self::SCROLLBAR_WIDTH, h.screen.size().height));
+            let scrollbar_unit_length = (h.screen.size().height as usize) / options.len();
             let pill_top_left = Point::new(
-                (s.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 
+                (h.screen.size().width - Self::SCROLLBAR_WIDTH).try_into()?, 
                 (scrollbar_unit_length * self.page_start).try_into()?);
             let pill = RoundedRectangle::with_equal_corners(
                 Rectangle::new(pill_top_left, 
                     Size::new(Self::SCROLLBAR_WIDTH, (scrollbar_unit_length * self.definition.num_visible_elements).try_into()?)),
                 Size::new(Self::SCROLLBAR_WIDTH / 2, Self::SCROLLBAR_WIDTH / 2),
             );
-            bg.into_styled(Self::even_bg_rect_style(&theme)).draw(s)?;
-            pill.into_styled(Self::pill_style(&theme)).draw(s)?;
+            bg.into_styled(Self::even_bg_rect_style(&theme)).draw(&mut h.screen)?;
+            pill.into_styled(Self::pill_style(&theme)).draw(&mut h.screen)?;
             self.redraw_scrollbar = false;
         }
         Ok(())

@@ -1,5 +1,9 @@
 use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState};
 use crate::{ComponentMenuInAction, Menu, IOHandles};
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
+use alloc::string::ToString;
 
 #[derive(Debug, Clone, Copy)]
 pub enum HandlerResult {
@@ -78,13 +82,13 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
             },
             Self::NextElement => {
                 state.selection = (state.selection + 1) % state.definition.options.len();
-                state.draw(&mut h.screen, &mut h.font).await?;
+                state.draw(h).await?;
                 Ok(HandlerResult::None)
             },
             Self::PrevElement => {
                 let num_options = state.definition.options.len();
                 state.selection = (state.selection + num_options - 1) % num_options;
-                state.draw(&mut h.screen, &mut h.font).await?;
+                state.draw(h).await?;
                 Ok(HandlerResult::None)
             },
             Self::ToggleFocus => {
@@ -95,7 +99,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
                 };
                 log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
-                state.draw(&mut h.screen, &mut h.font).await?;
+                state.draw(h).await?;
                 if state.mode == OptionSwitchMode::Highlighted {
                     Ok(HandlerResult::Unfocus)
                 } else {
@@ -125,15 +129,19 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
             },
             Self::NextOption => {
                 // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
-                if state.selection < state.definition.options.len() - 1 {
+                let lang = &PB_GLOBAL_SETTINGS.read().await.lang;
+                let options = state.generated_options.get_or_try_init(async {
+                    state.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
+                }).await?;
+                if state.selection < options.len() - 1 {
                     state.selection += 1;
                     // if state.selection >= state.page_start + state.definition.num_visible_elements {
                     if state.selection - state.page_start > state.definition.num_visible_elements / 2 &&
-                        state.page_start + state.definition.num_visible_elements < state.definition.options.len() {
+                        state.page_start + state.definition.num_visible_elements < options.len() {
                         state.page_start += 1;
                         state.redraw_scrollbar = true;
                     }
-                    state.draw(&mut h.screen, &mut h.font).await?;
+                    state.draw(h).await?;
                 }
                 Ok(HandlerResult::None)
             },
@@ -147,14 +155,33 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                         state.page_start -= 1;
                         state.redraw_scrollbar = true;
                     }
-                    state.draw(&mut h.screen, &mut h.font).await?;
+                    state.draw(h).await?;
                 }
                 Ok(HandlerResult::None)
             },
             Self::PrintSelection => {
-                log::info!("scroller menu selection: [{}]", state.definition.options[state.selection]);
+                let options = state.generated_options.get_or_try_init(async {
+                    state.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
+                }).await?;
+                log::info!("scroller menu selection: [{}]", options[state.selection]);
                 Ok(HandlerResult::None)
             }
+        }
+    }
+}
+
+pub enum OptionsGenerator {
+    Const(&'static [&'static str]),
+    WifiGenerator
+}
+
+impl OptionsGenerator {
+    pub async fn generate(&self, _: &Lang, h: &mut IOHandles<'_>) -> anyhow::Result<Vec<Cow<'static, str>>> {
+        match self {
+            Self::Const(s) => Ok(s.iter().map(|f| Cow::Borrowed(*f)).collect()),
+            Self::WifiGenerator => {
+                Ok(h.wifi.get_wifis().await?.into_iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect())
+            },
         }
     }
 }

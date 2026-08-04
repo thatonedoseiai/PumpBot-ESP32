@@ -202,7 +202,7 @@ impl MenuStateBehaviour for ComponentMenu {
         };
         cur_menu_state.selected().map(|c| c.highlight());
         for m in cur_menu_state.component_states.iter_mut() {
-            m.draw(&mut h.screen, &mut h.font).await?;
+            m.draw(h).await?;
         }
         loop {
             let inp = select(
@@ -214,11 +214,11 @@ impl MenuStateBehaviour for ComponentMenu {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
                             if let Some(m) = cur_menu_state.selected() {
-                                m.unhighlight().draw(&mut h.screen, &mut h.font).await?;
+                                m.unhighlight().draw(h).await?;
                             }
                             cur_menu_state.next_component();
                             if let Some(m) = cur_menu_state.selected() {
-                                m.highlight().draw(&mut h.screen, &mut h.font).await?;
+                                m.highlight().draw(h).await?;
                             }
                             None
                         },
@@ -229,11 +229,11 @@ impl MenuStateBehaviour for ComponentMenu {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
                             if let Some(m) = cur_menu_state.selected() {
-                                m.unhighlight().draw(&mut h.screen, &mut h.font).await?;
+                                m.unhighlight().draw(h).await?;
                             }
                             cur_menu_state.prev_component();
                             if let Some(m) = cur_menu_state.selected() {
-                                m.highlight().draw(&mut h.screen, &mut h.font).await?;
+                                m.highlight().draw(h).await?;
                             }
                             None
                         },
