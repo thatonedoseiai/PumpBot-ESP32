@@ -6,7 +6,7 @@
 
 extern crate alloc;
 
-// pub mod menus;
+pub mod menus;
 // pub mod components;
 // mod event;
 mod screen;
@@ -20,7 +20,7 @@ use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHan
 use crate::menu_definitions::{TITLE, LANG};
 
 // pub use crate::event::event::Event;
-// use crate::menus::titlescreen::TitleState;
+use crate::menus::titlescreen::TitleState;
 // use crate::menus::language_selection::LanguageState;
 // use crate::menus::setup_method::SetupMethodState;
 // use crate::menus::test_component_menu::TestComponentMenu;
@@ -103,7 +103,7 @@ enum ComponentMenuMode {
     Edit,
 }
 
-struct ComponentMenuInAction {
+pub struct ComponentMenuInAction {
     layout: &'static ComponentMenuDefinition,
     component_states: Vec<ComponentState>,
     selected_component: usize,
@@ -147,7 +147,7 @@ pub enum ComponentMenu {
 
 #[derive(Debug, Clone, Copy)]
 pub enum CustomMenu {
-    CustomTitle,
+    Title,
     CustomSetup,
 }
 
@@ -284,7 +284,11 @@ impl MenuStateBehaviour for ComponentMenu {
 impl MenuStateBehaviour for CustomMenu {
     async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         // Do custom things here
-        Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomTitle)))
+        // Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomTitle)))
+        match self {
+            Self::Title => TitleState::new().run(h).await,
+            Self::CustomSetup => Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomSetup))),
+        }
     }
 }
 

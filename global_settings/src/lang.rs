@@ -34,10 +34,8 @@ pub struct LanguageString {
     de: &'static str,
 }
 
-impl Index<Lang> for LanguageString {
-    type Output = &'static str;
-
-    fn index(&self, lang: Lang) -> &&'static str {
+impl LanguageString {
+    pub const fn const_index(&self, lang: Lang) -> &&'static str {
         match lang {
             Lang::En => &self.en,
             Lang::Jp => &self.jp,
@@ -49,6 +47,14 @@ impl Index<Lang> for LanguageString {
             Lang::Ru => &self.ru,
             Lang::De => &self.de,
         }
+    }
+}
+
+impl Index<Lang> for LanguageString {
+    type Output = &'static str;
+
+    fn index(&self, lang: Lang) -> &&'static str {
+        self.const_index(lang)
     }
 }
 

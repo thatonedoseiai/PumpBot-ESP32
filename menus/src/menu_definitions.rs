@@ -3,6 +3,7 @@ use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScroller
 use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator};
 use embedded_graphics::prelude::*;
 use fontfile::FontSize;
+use global_settings::lang::{TEXT_LANGUAGE_NAME, Lang};
 
 pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
@@ -42,13 +43,6 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
                 font_size: FontSize::Sz12,
                 options: &["first", "second", "third"],
             }),
-    ],
-    left_btn: MenuHandler::Generic(GenericHandler::Print("title left btn")),
-    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::Lang(5))))),
-};
-
-pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
-    components: &[
         // ComponentDefinition::OptionSwitch(
         //     &OptionSwitchDefinition {
         //         pos: Point::new(20, 110),
@@ -69,6 +63,32 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 font_size: FontSize::Sz12,
                 // options: OptionsGenerator::Const(&["first", "second", "third", "fourth", "secret fifth" , "last", "stupid", "you", "belly", "pick me!", "gwargh"]),
                 options: OptionsGenerator::WifiGenerator,
+            }),
+    ],
+    left_btn: MenuHandler::Generic(GenericHandler::Print("title left btn")),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::Lang(0))))),
+};
+
+pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 110),
+                click: OptionSwitchHandler::ToggleFocus,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                font_size: FontSize::Sz12,
+                options: &[
+                    TEXT_LANGUAGE_NAME.const_index(Lang::En),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Jp),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Fr),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Es),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Pt),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Zh),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Cn),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::Ru),
+                    TEXT_LANGUAGE_NAME.const_index(Lang::De),
+                ],
             }),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),

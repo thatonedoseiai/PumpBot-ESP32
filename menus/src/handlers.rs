@@ -5,6 +5,10 @@ use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
 use alloc::string::ToString;
 
+pub enum MenuInternalStateAction {
+    SetLang,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum HandlerResult {
     None,
@@ -119,6 +123,7 @@ pub enum OptionScrollerHandler {
     NextOption,
     PrevOption,
     PrintSelection,
+    SetMenuState(MenuInternalStateAction)
 }
 
 impl Handler<OptionScrollerState> for OptionScrollerHandler {
@@ -165,6 +170,15 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 }).await?;
                 log::info!("scroller menu selection: [{}]", options[state.selection]);
                 Ok(HandlerResult::None)
+            },
+            Self::SetMenuState(a) => {
+                match (a, menu_state) {
+                    (MenuInternalStateAction::SetLang, MenuInternalState::Lang { language: l, .. }) => {
+                        *l = (state.selection % 256) as u8;
+                        Ok(HandlerResult::None)
+                    },
+                    _ => { Ok(HandlerResult::None) }
+                }
             }
         }
     }
