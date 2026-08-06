@@ -5,7 +5,7 @@ use embedded_graphics::prelude::*;
 use fontfile::FontSize;
 use global_settings::lang::{TEXT_LANGUAGE_NAME, Lang};
 
-pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
+pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::Button(
             &ButtonDefinition {

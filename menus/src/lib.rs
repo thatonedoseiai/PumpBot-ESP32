@@ -18,7 +18,7 @@ mod menu_definitions;
 
 use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
 use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
-use crate::menu_definitions::{TITLE, LANG};
+use crate::menu_definitions::{COMPONENT_TESTING, LANG};
 use crate::static_element::StaticElement;
 
 // pub use crate::event::event::Event;
@@ -72,20 +72,20 @@ mod cond_deps {
 
 use crate::cond_deps::*;
 
-#[derive(Debug)]
-pub enum MenuError {
-    UnimplementedMenu,
-}
+// #[derive(Debug)]
+// pub enum MenuError {
+//     UnimplementedMenu,
+// }
 
-impl fmt::Display for MenuError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            MenuError::UnimplementedMenu => write!(f, "UnimplementedMenu")
-        }
-    }
-}
+// impl fmt::Display for MenuError {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         match self {
+//             MenuError::UnimplementedMenu => write!(f, "UnimplementedMenu")
+//         }
+//     }
+// }
 
-impl core::error::Error for MenuError { }
+// impl core::error::Error for MenuError { }
 
 enum MenuSignal {
     Back,
@@ -136,7 +136,7 @@ impl ComponentMenuInAction {
 }
 
 enum MenuInternalState {
-    Title { },
+    ComponentTesting { },
     Lang {
         language: u8,
     }
@@ -144,7 +144,7 @@ enum MenuInternalState {
 
 #[derive(Debug, Clone, Copy)]
 pub enum ComponentMenu {
-    Title,
+    ComponentTesting,
     Lang(u8),
 }
 
@@ -167,14 +167,14 @@ trait MenuStateBehaviour {
 impl ComponentMenu {
     const fn definition(&self) -> &'static ComponentMenuDefinition {
         match self {
-            Self::Title => &TITLE,
+            Self::ComponentTesting => &COMPONENT_TESTING,
             Self::Lang(_) => &LANG,
         }
     }
 
     const fn initial_state(&self) -> MenuInternalState {
         match self {
-            Self::Title => MenuInternalState::Title { },
+            Self::ComponentTesting => MenuInternalState::ComponentTesting { },
             Self::Lang(s) => MenuInternalState::Lang { language: *s },
         }
     }
@@ -229,7 +229,12 @@ impl MenuStateBehaviour for ComponentMenu {
                             }
                             None
                         },
-                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.right_handle(&mut internal_state, h).await?) } else { None }
+                        ComponentMenuMode::Edit => 
+                            if let Some(f) = cur_menu_state.selected() {
+                                Some(f.right_handle(&mut internal_state, h).await?)
+                            } else {
+                                None
+                            }
                     }
                 },
                 Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
@@ -244,12 +249,26 @@ impl MenuStateBehaviour for ComponentMenu {
                             }
                             None
                         },
-                        ComponentMenuMode::Edit => if let Some(f) = cur_menu_state.selected() { Some(f.left_handle(&mut internal_state, h).await?) } else { None }
+                        ComponentMenuMode::Edit =>
+                            if let Some(f) = cur_menu_state.selected() {
+                                Some(f.left_handle(&mut internal_state, h).await?)
+                            } else {
+                                None
+                            }
                     }
                 },
-                Either::First(ButtonEvent { button_type: ButtonType::Left, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
-                Either::First(ButtonEvent { button_type: ButtonType::Right, event: ButtonEventKind::Down }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
-                Either::First(ButtonEvent { button_type: ButtonType::Rotenc, event: ButtonEventKind::Down }) => {
+                Either::First(ButtonEvent {
+                    button_type: ButtonType::Left,
+                    event: ButtonEventKind::Down
+                }) => Some(cur_menu_state.layout.left_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
+                Either::First(ButtonEvent {
+                    button_type: ButtonType::Right,
+                    event: ButtonEventKind::Down
+                }) => Some(cur_menu_state.layout.right_btn.handle(&mut cur_menu_state, &mut internal_state, h).await?),
+                Either::First(ButtonEvent {
+                    button_type: ButtonType::Rotenc,
+                    event: ButtonEventKind::Down
+                }) => {
                     let cur_mode = cur_menu_state.mode;
                     match (cur_mode, cur_menu_state.selected().map(|f| f.definition().interaction_type())) {
                         (ComponentMenuMode::Browse, Some(InteractionType::Editable)) => {
@@ -260,8 +279,18 @@ impl MenuStateBehaviour for ComponentMenu {
                                 None
                             }
                         },
-                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(&mut internal_state, h).await?) } else { None },
-                        (ComponentMenuMode::Edit, _) => if let Some(f) = cur_menu_state.selected() { Some(f.click_handle(&mut internal_state, h).await?) } else { None },
+                        (ComponentMenuMode::Browse, Some(InteractionType::NonEditable)) => 
+                            if let Some(f) = cur_menu_state.selected() {
+                                Some(f.click_handle(&mut internal_state, h).await?)
+                            } else {
+                                None
+                            },
+                        (ComponentMenuMode::Edit, _) => 
+                            if let Some(f) = cur_menu_state.selected() {
+                                Some(f.click_handle(&mut internal_state, h).await?)
+                            } else {
+                                None
+                            },
                         _ => None
                     }
                 },
@@ -272,17 +301,18 @@ impl MenuStateBehaviour for ComponentMenu {
                 Some(HandlerResult::Transition(m)) => {
                     // println!("TRANSITIONING TO {:?}", m);
                     return Ok(MenuSignal::Transition(m));
-                }
+                },
                 Some(HandlerResult::Unfocus) => {
                     if num_components > 1 {
                         cur_menu_state.mode = ComponentMenuMode::Browse;
                     }
-                }
+                },
                 Some(HandlerResult::Back) => {
                     // println!("GOING BACK TO PREVIOUS MENU");
                     return Ok(MenuSignal::Back);
-                }
-                _ => {}
+                },
+                Some(HandlerResult::None) => {},
+                None => {},
             }
         }
     }
