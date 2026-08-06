@@ -65,6 +65,7 @@ pub const TITLE: ComponentMenuDefinition = ComponentMenuDefinition {
                 options: OptionsGenerator::WifiGenerator,
             }),
     ],
+    static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Print("title left btn")),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::Lang(0))))),
 };
@@ -91,6 +92,7 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 ],
             }),
     ],
+    static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Print("lang right btn")),
 };

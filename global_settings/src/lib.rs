@@ -105,3 +105,22 @@ impl Theme {
         rgb![255, 0, 0] // TODO: make this an appropriate colour
     }
 }
+
+pub enum ThemedColor {
+    Bg,
+    SecondaryBg,
+    Fg,
+    Highlight,
+}
+
+impl ThemedColor {
+    pub async fn get(&self) -> RGB {
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        match self {
+            Self::Bg => theme.bg(),
+            Self::Fg => theme.fg(),
+            Self::SecondaryBg => theme.bg_secondary(),
+            Self::Highlight => theme.highlight(),
+        }
+    }
+}

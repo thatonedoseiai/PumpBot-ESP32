@@ -10,6 +10,7 @@ pub mod menus;
 // pub mod components;
 // mod event;
 mod screen;
+mod static_element;
 // mod menu_define;
 mod handlers;
 mod components;
@@ -18,6 +19,7 @@ mod menu_definitions;
 use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
 use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
 use crate::menu_definitions::{TITLE, LANG};
+use crate::static_element::StaticElement;
 
 // pub use crate::event::event::Event;
 use crate::menus::titlescreen::TitleState;
@@ -93,6 +95,7 @@ enum MenuSignal {
 
 struct ComponentMenuDefinition {
     components: &'static [ComponentDefinition],
+    static_elements: &'static [StaticElement],
     left_btn: MenuHandler,
     right_btn: MenuHandler,
 }
@@ -201,6 +204,10 @@ impl MenuStateBehaviour for ComponentMenu {
         };
         let mut internal_state = self.initial_state();
         cur_menu_state.selected().map(|c| c.highlight());
+
+        for c in cur_menu_state.layout.static_elements {
+            c.draw(&mut h.font, &mut h.screen).await?;
+        }
         for m in cur_menu_state.component_states.iter_mut() {
             m.draw(h).await?;
         }
