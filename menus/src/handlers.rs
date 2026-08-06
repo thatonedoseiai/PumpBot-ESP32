@@ -135,9 +135,7 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
             Self::NextOption => {
                 // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
                 let lang = &PB_GLOBAL_SETTINGS.read().await.lang;
-                let options = state.generated_options.get_or_try_init(async {
-                    state.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
-                }).await?;
+                let options = state.generated_options(h).await?;
                 if state.selection < options.len() - 1 {
                     state.selection += 1;
                     // if state.selection >= state.page_start + state.definition.num_visible_elements {
@@ -165,9 +163,7 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 Ok(HandlerResult::None)
             },
             Self::PrintSelection => {
-                let options = state.generated_options.get_or_try_init(async {
-                    state.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
-                }).await?;
+                let options = state.generated_options(h).await?;
                 log::info!("scroller menu selection: [{}]", options[state.selection]);
                 Ok(HandlerResult::None)
             },

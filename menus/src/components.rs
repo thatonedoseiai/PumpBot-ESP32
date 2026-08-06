@@ -20,7 +20,8 @@ use core::fmt;
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use core::borrow::Borrow;
-use async_once_cell::OnceCell;
+use core::cell::{RefCell, Ref, Cell};
+use alloc::rc::Rc;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -133,7 +134,7 @@ impl ComponentDefinition {
                 selection: 0,
                 page_start: 0,
                 redraw_scrollbar: true,
-                generated_options: OnceCell::new(),
+                generated_options: RefCell::new(None),
             }),
         }
     }
@@ -364,13 +365,13 @@ impl ComponentBehaviour for OptionSwitchState {
     }
 }
 // }}}
-// SCROLLING MENU THING {{{
+// OPTION SCROLLER {{{
 pub struct OptionScrollerState {
     pub definition: &'static OptionScrollerDefinition,
     pub selection: usize,
     pub page_start: usize,
     pub redraw_scrollbar: bool,
-    pub generated_options: OnceCell<Vec<Cow<'static, str>>>,
+    pub generated_options: RefCell<Option<Rc<Vec<Cow<'static, str>>>>>,
 }
 
 pub struct OptionScrollerDefinition {
@@ -420,14 +421,31 @@ impl OptionScrollerState {
             .fill_color(theme.fg().as_rgb565())
             .build()
     }
+
+    pub async fn generated_options(&self, h: &mut IOHandles<'_>) -> anyhow::Result<Rc<Vec<Cow<'static, str>>>> {
+        let is_uninitialized = {
+            self.generated_options.borrow().is_none()
+        };
+        if is_uninitialized {
+            let res = self.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await?;
+            self.generated_options.replace(Some(Rc::new(res)));
+        }
+
+        Ok(self.generated_options.borrow().clone().expect("Menu contents should have been generated!"))
+
+        // Ok(Ref::map(self.generated_options.borrow(), |f| {
+        //     f.as_ref().expect("Menu contents should have been generated!")
+        // }))
+    }
 }
 
 impl ComponentBehaviour for OptionScrollerState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         // let options = self.generated_options.get_or_insert_with(|| self.definition.options.generate(lang, h));
-        let options = self.generated_options.get_or_try_init(async {
-            self.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
-        }).await?;
+        // let options = self.generated_options.get_or_try_init(async {
+        //     self.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
+        // }).await?;
+        let options = self.generated_options(h).await?;
         let f = &mut h.font;
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         f.bgcol = theme.bg();
