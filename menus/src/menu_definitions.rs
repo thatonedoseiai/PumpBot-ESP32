@@ -1,4 +1,4 @@
-use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler};
+use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition};
 use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator};
 use embedded_graphics::prelude::*;
@@ -94,6 +94,6 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
-    right_btn: MenuHandler::Generic(GenericHandler::Print("lang right btn")),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::SetupMethod)))),
 };
 
