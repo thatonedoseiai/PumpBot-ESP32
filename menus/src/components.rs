@@ -792,17 +792,14 @@ impl RunHandlers for TextBoxState {
             self.text_preview_state.borrow_mut().draw(&self.current_entry.as_ref().borrow(), h).await?;
             self.text_selector_state.draw(h).await?;
             self.sub_menu_open = true;
-            // TODO: draw the editing menu
             Ok(HandlerResult::None)
         } else {
             match self.text_selector_state.selection() {
                 Action::Left => {
-                    log::info!("[TEXT]: left");
-                    Ok(HandlerResult::None)
+                    unimplemented!()
                 },
                 Action::Right => {
-                    log::info!("[TEXT]: right");
-                    Ok(HandlerResult::None)
+                    unimplemented!()
                 },
                 Action::Confirm => {
                     let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
