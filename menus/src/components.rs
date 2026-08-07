@@ -762,6 +762,36 @@ pub struct TextBoxDefinition {
     pub font_size: FontSize,
 }
 
+impl TextBoxState {
+    const RADIUS: u32 = 5;
+    const BORDER_SIZE: u32 = 10;
+
+    fn graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(3)
+            .stroke_color(theme.fg().as_rgb565())
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+
+    const fn highlighted_graphic_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(3)
+            .stroke_color(theme.highlight().as_rgb565())
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+
+    fn get_preview(&self) -> String {
+        let text = self.current_entry.as_ref().borrow();
+        if text.len() < self.definition.preview_chars {
+            text.clone()
+        } else {
+            text[0..self.definition.preview_chars].to_string() + "..."
+        }
+    }
+}
+
 impl RunHandlers for TextBoxState {
     async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         if self.sub_menu_open {
@@ -788,6 +818,7 @@ impl RunHandlers for TextBoxState {
 
             // let preview_text = Text::with_alignment(&self.current_entry.as_ref().borrow(), self.definition.pos, &h.font, Alignment::Left);
             h.screen.clear(theme.bg().as_rgb565())?;
+            self.text_preview_state.borrow_mut().cursor_pos = TextPreviewState::START_CURSOR_POS;
 
             self.text_preview_state.borrow_mut().draw(&self.current_entry.as_ref().borrow(), h).await?;
             self.text_selector_state.draw(h).await?;
@@ -804,6 +835,7 @@ impl RunHandlers for TextBoxState {
                 Action::Confirm => {
                     let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
                     h.screen.clear(theme.bg().as_rgb565())?;
+                    self.sub_menu_open = false;
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 },
                 Action::Backspace => {
@@ -828,14 +860,28 @@ impl RunHandlers for TextBoxState {
 impl ComponentBehaviour for TextBoxState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
-        h.font.fgcol = if self.highlighted {
-            theme.fg()
-        } else {
-            theme.highlight()
-        };
+        h.font.fgcol = theme.fg();
         h.font.bgcol = theme.bg();
         h.font.font.borrow_mut().set_size(self.definition.font_size)?;
-        Text::with_alignment(&self.current_entry.as_ref().borrow(), self.definition.pos, &h.font, Alignment::Left).draw(&mut h.screen)?;
+
+        let text = self.get_preview();
+        let entry_text = Text::with_alignment(&text, self.definition.pos, &h.font, Alignment::Left);
+        let text_bb = entry_text.bounding_box();
+
+        let backing_box = RoundedRectangle::with_equal_corners(
+            text_bb.resized(Size::new(text_bb.size.width + Self::BORDER_SIZE, self.definition.width + Self::BORDER_SIZE), AnchorPoint::Center),
+            Size::new(Self::RADIUS, Self::RADIUS),
+        );
+
+        backing_box.into_styled(
+            if self.highlighted {
+                Self::highlighted_graphic_style(theme)
+            } else {
+                Self::graphic_style(theme)
+            }
+        ).draw(&mut h.screen)?;
+
+        entry_text.draw(&mut h.screen)?;
         // log::info!("drawing text box with entry: {} at {}, fgcol {:?} bgcol {:?}", &self.current_entry.as_ref().borrow(), self.definition.pos, h.font.fgcol, h.font.bgcol);
         Ok(())
     }
