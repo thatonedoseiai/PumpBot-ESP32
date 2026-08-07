@@ -122,7 +122,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             &TextBoxDefinition {
                 pos: Point::new(10, 50),
                 max_length: 30,
-                width: 10,
+                width: 120,
                 preview_chars: 10,
                 font_size: FontSize::Sz12,
             }),

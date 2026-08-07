@@ -869,7 +869,10 @@ impl ComponentBehaviour for TextBoxState {
         let text_bb = entry_text.bounding_box();
 
         let backing_box = RoundedRectangle::with_equal_corners(
-            text_bb.resized(Size::new(text_bb.size.width + Self::BORDER_SIZE, self.definition.width + Self::BORDER_SIZE), AnchorPoint::Center),
+            Rectangle::new(
+                text_bb.top_left - Point::new(Self::BORDER_SIZE as i32 / 2, Self::BORDER_SIZE as i32 / 2),
+                Size::new(self.definition.width, text_bb.size.height + Self::BORDER_SIZE)
+            ),
             Size::new(Self::RADIUS, Self::RADIUS),
         );
 
