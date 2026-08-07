@@ -1,5 +1,5 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition};
 use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction};
 use embedded_graphics::prelude::*;
 use fontfile::FontSize;
@@ -117,7 +117,25 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
 };
 
 pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
-    components: &[],
+    components: &[
+        ComponentDefinition::TextBox(
+            &TextBoxDefinition {
+                pos: Point::new(50, 50),
+                max_length: 30,
+                width: 10,
+                preview_chars: 10,
+                font_size: FontSize::Sz12,
+            }),
+        ComponentDefinition::Button(
+            &ButtonDefinition {
+                pos: Point::new(10, 100),
+                click: ButtonHandler::Generic(GenericHandler::Print("[second button clicked]")),
+                left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
+                right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
+                font_size: FontSize::Sz7,
+                text: "garbage placeholder button",
+            }),
+    ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Print("right button!")),

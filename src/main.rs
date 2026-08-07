@@ -343,7 +343,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
-    run_menu_loop(spawner, Menu::CustomMenu(CustomMenu::Title), &mut IOHandles::new(
+    run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::Wifi), &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,

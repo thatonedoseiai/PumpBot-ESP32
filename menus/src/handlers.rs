@@ -16,6 +16,7 @@ pub enum HandlerResult {
     Transition(Menu),
     Back,
     Unfocus,
+    ForceRedrawAndUnfocus,
 }
 
 pub trait Handler<S> {
@@ -137,6 +138,9 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
                 let lang = &PB_GLOBAL_SETTINGS.read().await.lang;
                 let options = state.generated_options(h).await?;
+                if options.len() == 0 {
+                    return Ok(HandlerResult::None); // TODO: handle this properly!
+                }
                 if state.selection < options.len() - 1 {
                     state.selection += 1;
                     // if state.selection >= state.page_start + state.definition.num_visible_elements {

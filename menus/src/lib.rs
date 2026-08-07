@@ -133,6 +133,16 @@ impl ComponentMenuInAction {
             Some(&mut self.component_states[self.selected_component])
         }
     }
+
+    async fn draw_all_components(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        for c in self.layout.static_elements {
+            c.draw(&mut h.font, &mut h.screen).await?;
+        }
+        for m in self.component_states.iter_mut() {
+            m.draw(h).await?;
+        }
+        Ok(())
+    }
 }
 
 enum MenuInternalState {
@@ -215,12 +225,7 @@ impl MenuStateBehaviour for ComponentMenu {
         let mut internal_state = self.initial_state();
         cur_menu_state.selected().map(|c| c.highlight());
 
-        for c in cur_menu_state.layout.static_elements {
-            c.draw(&mut h.font, &mut h.screen).await?;
-        }
-        for m in cur_menu_state.component_states.iter_mut() {
-            m.draw(h).await?;
-        }
+        cur_menu_state.draw_all_components(h).await?;
         loop {
             let inp = select(
                 h.button.receive(),
@@ -313,6 +318,12 @@ impl MenuStateBehaviour for ComponentMenu {
                     return Ok(MenuSignal::Transition(m));
                 },
                 Some(HandlerResult::Unfocus) => {
+                    if num_components > 1 {
+                        cur_menu_state.mode = ComponentMenuMode::Browse;
+                    }
+                },
+                Some(HandlerResult::ForceRedrawAndUnfocus) => {
+                    cur_menu_state.draw_all_components(h).await?;
                     if num_components > 1 {
                         cur_menu_state.mode = ComponentMenuMode::Browse;
                     }
