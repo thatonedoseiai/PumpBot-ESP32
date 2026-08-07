@@ -432,19 +432,11 @@ impl OptionScrollerState {
         }
 
         Ok(self.generated_options.borrow().clone().expect("Menu contents should have been generated!"))
-
-        // Ok(Ref::map(self.generated_options.borrow(), |f| {
-        //     f.as_ref().expect("Menu contents should have been generated!")
-        // }))
     }
 }
 
 impl ComponentBehaviour for OptionScrollerState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        // let options = self.generated_options.get_or_insert_with(|| self.definition.options.generate(lang, h));
-        // let options = self.generated_options.get_or_try_init(async {
-        //     self.definition.options.generate(&PB_GLOBAL_SETTINGS.read().await.lang, h).await
-        // }).await?;
         let options = self.generated_options(h).await?;
         let f = &mut h.font;
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;

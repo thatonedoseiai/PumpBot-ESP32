@@ -1,4 +1,4 @@
-use crate::{MenuSignal, IOHandles};
+use crate::{MenuSignal, IOHandles, Menu, ComponentMenu};
 use rotenc::Direction;
 use button_idf::{ButtonType, ButtonEventKind};
 use fontfile::FontSize;
@@ -132,7 +132,7 @@ impl SetupMethodState {
                 },
                 Either::Second(b) => {
                     match (&b.button_type, &b.event) {
-                        (ButtonType::Right, ButtonEventKind::Down) => return Ok(MenuSignal::Return),
+                        (ButtonType::Right, ButtonEventKind::Down) => return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Wifi))),
                         (ButtonType::Left, ButtonEventKind::Down) => return Ok(MenuSignal::Back),
                         _ => {}
                     }

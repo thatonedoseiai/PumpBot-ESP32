@@ -1589,6 +1589,7 @@ dependencies = [
  "embedded-graphics-simulator",
  "embedded-hal-bus",
  "esp-hal",
+ "esp-radio",
  "fontfile",
  "global_settings",
  "ili9341",

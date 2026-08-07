@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction};
 use embedded_graphics::prelude::*;
 use fontfile::FontSize;
 use global_settings::lang::{TEXT_LANGUAGE_NAME, Lang};
@@ -97,3 +97,28 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::SetupMethod)))),
 };
 
+pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionScroller(
+            &OptionScrollerDefinition {
+                pos: Point::new(0, 0),
+                click: OptionScrollerHandler::SetMenuState(MenuInternalStateAction::SetWifi),
+                left: OptionScrollerHandler::PrevOption,
+                right: OptionScrollerHandler::NextOption,
+                num_visible_elements: 5,
+                width: 123,
+                font_size: FontSize::Sz12,
+                options: OptionsGenerator::WifiGenerator,
+            }),
+    ],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Print("right button pressed!")),
+};
+
+pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Print("right button!")),
+};

@@ -30,6 +30,8 @@ use esp_hal::peripherals::WIFI;
 use log::info;
 use alloc::string::{ToString, String};
 use alloc::vec::Vec;
+use core::cell::{RefCell, Ref};
+use alloc::rc::Rc;
 // use std::cell::RefCell;
 
 // When you are okay with using a nightly compiler it's better to use https://docs.rs/static_cell/2.1.0/static_cell/macro.make_static.html
@@ -49,7 +51,7 @@ pub struct PbWifi<'a> {
     wifi_mod: WifiController<'a>,
     netstack: Stack<'a>, // Runner<'a, Interface<'a>>,
     connected_info: Option<ConnectedInfo>,
-    prev_pass: Option<String>
+    ap_cache: Rc<RefCell<Vec<AccessPointInfo>>>,
 }
 
 impl<'a> PbWifi<'a> {
@@ -75,26 +77,20 @@ impl<'a> PbWifi<'a> {
             wifi_mod,
             netstack,
             connected_info: None,
-            prev_pass: None
+            ap_cache: Rc::new(RefCell::new(Vec::new())),
         })
     }
 
     /// Connect the ESP radio to an existing wifi network. The network name is given by `ssid` and
     /// the password is given by `pass`. Currently does not support different authentication
     /// methods.
-    pub async fn connect(&mut self, ssid: &str, pass: &str) -> Result<(), WifiError> {
-        info!("Attempting to connect to {} with password {}.", &ssid, &pass);
-
-        let auth_method = if pass.len() == 0 {
-            AuthenticationMethod::None
-        } else {
-            AuthenticationMethod::Wpa2Personal
-        };
+    pub async fn connect(&mut self, ap: &AccessPointInfo, pass: &str) -> Result<(), WifiError> {
+        info!("Attempting to connect to {} with password {}.", &ap.ssid.as_str(), &pass);
 
         let wifi_configuration = Config::Station(StationConfig::default()
-            .with_ssid(ssid)
+            .with_ssid(ap.ssid)
             .with_password(pass.to_string())
-            .with_auth_method(auth_method));
+            .with_auth_method(ap.auth_method.unwrap_or(AuthenticationMethod::None)));
 
         self.wifi_mod.set_config(&wifi_configuration)?;
         self.connected_info = Some(self.wifi_mod.connect_async().await?);
@@ -104,47 +100,18 @@ impl<'a> PbWifi<'a> {
             info!("Wifi netif up at IP {}", config.address);
         }
 
-        self.prev_pass = Some(pass.to_string());
-
-        // let wifi_configuration: wifi::Configuration = wifi::Configuration::Client(ClientConfiguration {
-        //     ssid: ssid,
-        //     bssid: None,
-        //     auth_method: if pass.len() == 0 { AuthMethod::None } else { AuthMethod::WPA2Personal },
-        //     password: pass,
-        //     channel: None,
-        //     ..Default::default()
-        // });
-
-        // self.wifi_mod.set_configuration(&wifi_configuration)?;
-
-        // self.wifi_mod.start()?;
-        // info!("Wifi started.");
-
-        // self.wifi_mod.connect()?;
-        // info!("Wifi connected");
-
-        // self.wifi_mod.wait_netif_up()?;
-        // info!("Wifi netif up at IP {}.", self.wifi_mod.wifi().sta_netif().get_ip_info()?.ip);
-
         Ok(())
     }
 
-    pub async fn get_wifis(&mut self) -> Result<Vec<AccessPointInfo>, WifiError> {
+    pub fn get_wifis(&self) -> Ref<'_, Vec<AccessPointInfo>> {
+        self.ap_cache.borrow()
         // Ok(self.wifi_mod.scan_n::<10>()?.0.to_vec())
-        let scan_config = ScanConfig::default().with_max(10);
-        self.wifi_mod.scan_async(&scan_config).await
     }
 
-    pub fn currently_connected(&self) -> Result<(Ssid, String), WifiError> {
-        if let Some(config) = &self.connected_info {
-            Ok((config.ssid, self.prev_pass.clone().unwrap_or("".to_string())))
-        } else {
-            Ok(("".into(), "".to_string())) // TODO: replace this with an error of some kind!
-        }
-        // if let wifi::Configuration::Client(k) = self.wifi_mod.get_configuration()? {
-        //     return Ok((k.ssid.to_string(), k.password.to_string()));
-        // }
-        // Ok(("".to_string(), "".to_string())) // TODO: replace this with an error of some kind!
+    pub async fn scan(&mut self) -> Result<(), WifiError> {
+        let scan_config = ScanConfig::default().with_max(10);
+        self.ap_cache.replace(self.wifi_mod.scan_async(&scan_config).await?);
+        Ok(())
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState};
-use crate::{ComponentMenuInAction, Menu, IOHandles, MenuInternalState};
+use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
@@ -7,9 +7,10 @@ use alloc::string::ToString;
 
 pub enum MenuInternalStateAction {
     SetLang,
+    SetWifi,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum HandlerResult {
     None,
     Transition(Menu),
@@ -36,7 +37,7 @@ impl Handler<()> for GenericHandler {
             },
             Self::Signal(s) => {
                 // println!("sending {:?}", s);
-                Ok(*s)
+                Ok(s.clone())
             }
         }
     }
@@ -152,7 +153,6 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                 // log::info!("prev selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
                 if state.selection > 0 {
                     state.selection -= 1;
-                    // if state.selection < state.page_start {
                     if state.selection - state.page_start < state.definition.num_visible_elements / 2 &&
                         state.page_start > 0 {
                         state.page_start -= 1;
@@ -173,6 +173,10 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                         *l = (state.selection % 256) as u8;
                         Ok(HandlerResult::None)
                     },
+                    (MenuInternalStateAction::SetWifi, MenuInternalState::Wifi) => {
+                        log::info!("wifi selection set to {}!", state.selection);
+                        Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::WifiDetails(state.selection))))
+                    },
                     _ => { Ok(HandlerResult::None) }
                 }
             }
@@ -190,7 +194,8 @@ impl OptionsGenerator {
         match self {
             Self::Const(s) => Ok(s.iter().map(|f| Cow::Borrowed(*f)).collect()),
             Self::WifiGenerator => {
-                Ok(h.wifi.get_wifis().await?.into_iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect())
+                h.wifi.scan().await?;
+                Ok(h.wifi.get_wifis().iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect())
             },
         }
     }

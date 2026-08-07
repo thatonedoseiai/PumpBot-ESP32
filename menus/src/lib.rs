@@ -18,7 +18,7 @@ mod menu_definitions;
 
 use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
 use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
-use crate::menu_definitions::{COMPONENT_TESTING, LANG};
+use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS};
 use crate::static_element::StaticElement;
 
 // pub use crate::event::event::Event;
@@ -139,6 +139,10 @@ enum MenuInternalState {
     ComponentTesting { },
     Lang {
         language: u8,
+    },
+    Wifi,
+    WifiDetails {
+        ap: usize,
     }
 }
 
@@ -146,6 +150,8 @@ enum MenuInternalState {
 pub enum ComponentMenu {
     ComponentTesting,
     Lang(u8),
+    Wifi,
+    WifiDetails(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -161,7 +167,7 @@ pub enum Menu {
 }
 
 trait MenuStateBehaviour {
-    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal>;
+    async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal>;
 }
 
 impl ComponentMenu {
@@ -169,19 +175,23 @@ impl ComponentMenu {
         match self {
             Self::ComponentTesting => &COMPONENT_TESTING,
             Self::Lang(_) => &LANG,
+            Self::Wifi => &WIFI,
+            Self::WifiDetails(_) => &WIFI_DETAILS,
         }
     }
 
-    const fn initial_state(&self) -> MenuInternalState {
+    const fn initial_state(self) -> MenuInternalState {
         match self {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
-            Self::Lang(s) => MenuInternalState::Lang { language: *s },
+            Self::Lang(s) => MenuInternalState::Lang { language: s },
+            Self::Wifi => MenuInternalState::Wifi,
+            Self::WifiDetails(a) => MenuInternalState::WifiDetails { ap: a },
         }
     }
 }
 
 impl MenuStateBehaviour for Menu {
-    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         match self {
             Self::CustomMenu(m) => m.run(h).await,
             Self::ComponentMenu(m) => m.run(h).await,
@@ -190,7 +200,7 @@ impl MenuStateBehaviour for Menu {
 }
 
 impl MenuStateBehaviour for ComponentMenu {
-    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let num_components = self.definition().components.len();
         let mut cur_menu_state = ComponentMenuInAction {
             layout: self.definition(),
@@ -319,7 +329,7 @@ impl MenuStateBehaviour for ComponentMenu {
 }
 
 impl MenuStateBehaviour for CustomMenu {
-    async fn run(&self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         // Do custom things here
         // Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomTitle)))
         match self {
