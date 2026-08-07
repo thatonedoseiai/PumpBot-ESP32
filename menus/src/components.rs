@@ -160,7 +160,7 @@ impl ComponentDefinition {
                 text_preview_state: RefCell::new(TextPreviewState {
                     undraws: Vec::new(),
                     cursor_pos: TextPreviewState::START_CURSOR_POS,
-                    previous_newline_cursor_positions: Vec::new(),
+                    previous_cursor_positions: Vec::new(),
                     cursor_undraw: Rectangle::zero(),
                 }),
             }),
@@ -663,7 +663,7 @@ impl TextSelectorState {
 struct TextPreviewState {
     undraws: Vec<Rectangle>,
     cursor_pos: Point,
-    previous_newline_cursor_positions: Vec<Point>,
+    previous_cursor_positions: Vec<Point>,
     cursor_undraw: Rectangle,
 }
 
@@ -716,8 +716,8 @@ impl TextPreviewState {
             let char_bb = char_as_text.bounding_box();
             if char_bb.size.width.checked_add_signed(char_bb.top_left.x) > Some(h.screen.size().width) {
                 char_as_text.translate_mut(Point::new(Self::START_CURSOR_POS.x - char_bb.top_left.x, Self::NEWLINE_HEIGHT));
-                self.previous_newline_cursor_positions.push(self.cursor_pos);
             }
+            self.previous_cursor_positions.push(self.cursor_pos);
             self.undraws.push(char_bb);
             self.cursor_pos = char_as_text.draw(&mut h.screen)?;
         }
@@ -734,10 +734,8 @@ impl TextPreviewState {
 
         if let Some(rect) = self.undraws.pop() {
             rect.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
-            if rect.top_left.x == Self::START_CURSOR_POS.x {
-                if let Some(prev_pos) = self.previous_newline_cursor_positions.pop() {
-                    self.cursor_pos = prev_pos;
-                }
+            if let Some(prev_pos) = self.previous_cursor_positions.pop() {
+                self.cursor_pos = prev_pos;
             }
         }
 
@@ -807,6 +805,8 @@ impl RunHandlers for TextBoxState {
                     Ok(HandlerResult::None)
                 },
                 Action::Confirm => {
+                    let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+                    h.screen.clear(theme.bg().as_rgb565())?;
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 },
                 Action::Backspace => {
