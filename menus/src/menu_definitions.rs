@@ -125,6 +125,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
                 width: 120,
                 preview_chars: 10,
                 font_size: FontSize::Sz12,
+                empty_text: "enter text...",
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {

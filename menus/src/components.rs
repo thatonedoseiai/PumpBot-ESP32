@@ -150,7 +150,7 @@ impl ComponentDefinition {
             Self::TextBox(definition) => ComponentState::TextBox(TextBoxState {
                 definition,
                 highlighted: false,
-                current_entry: Rc::new(RefCell::new(String::from("abc"))),
+                current_entry: Rc::new(RefCell::new(String::new())),
                 sub_menu_open: false,
                 text_selector_state: TextSelectorState {
                     selection: 0,
@@ -760,6 +760,7 @@ pub struct TextBoxDefinition {
     pub width: u32,
     pub preview_chars: usize,
     pub font_size: FontSize,
+    pub empty_text: &'static str,
 }
 
 impl TextBoxState {
@@ -784,7 +785,9 @@ impl TextBoxState {
 
     fn get_preview(&self) -> String {
         let text = self.current_entry.as_ref().borrow();
-        if text.len() < self.definition.preview_chars {
+        if text.is_empty() {
+            self.definition.empty_text.to_string()
+        } else if text.len() < self.definition.preview_chars {
             text.clone()
         } else {
             text[0..self.definition.preview_chars].to_string() + "..."
@@ -860,7 +863,7 @@ impl RunHandlers for TextBoxState {
 impl ComponentBehaviour for TextBoxState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
-        h.font.fgcol = theme.fg();
+        h.font.fgcol = if self.current_entry.as_ref().borrow().is_empty() { theme.bg_secondary() } else { theme.fg() };
         h.font.bgcol = theme.bg();
         h.font.font.borrow_mut().set_size(self.definition.font_size)?;
 
