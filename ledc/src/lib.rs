@@ -11,7 +11,7 @@ extern crate alloc;
 // use esp_idf_hal::gpio::{AnyIOPin};
 use esp_hal::gpio::{AnyPin, Output, OutputConfig, Level};
 use esp_hal::ledc::{timer::Timer, LowSpeed, channel::{Channel, Number}, Ledc};
-use esp_hal::peripherals::LEDC;
+// use esp_hal::peripherals::LEDC;
 use esp_hal::delay::Delay;
 use global_settings::rgb::RGB;
 use alloc::sync::Arc;
@@ -72,13 +72,13 @@ impl LedPeripherals<'_> {
         led_r: AnyPin<'a>,
         led_g: AnyPin<'a>,
         led_b: AnyPin<'a>,
-        ledc: LEDC<'a>,
+        ledc_driver: &Ledc<'a>,
         // channel_r: Channel<'a, LowSpeed>,
         // channel_g: Channel<'a, LowSpeed>,
         // channel_b: Channel<'a, LowSpeed>,
         // timer: Timer<'a, LowSpeed>
     ) -> LedPeripherals<'a> {
-        let ledc_driver = Ledc::new(ledc);
+        // let ledc_driver = Ledc::new(ledc);
         let config = OutputConfig::default();
         let channel_r = ledc_driver.channel(Number::Channel0, Output::new(led_r, Level::Low, config));
         let channel_g = ledc_driver.channel(Number::Channel1, Output::new(led_g, Level::Low, config));

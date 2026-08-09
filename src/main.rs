@@ -48,7 +48,7 @@ extern crate alloc;
 
 use esp_backtrace as _;
 
-use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull};
+use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull, DriveMode};
 use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, GPIO46, SPI2, FLASH, Peripherals, SW_INTERRUPT, TIMG0};
 use esp_hal::delay::Delay;
 use esp_alloc::psram_allocator;
@@ -60,6 +60,7 @@ use esp_hal::timer::timg::TimerGroup;
 use esp_hal::spi::master::{Spi, Config};
 use esp_hal::time::Rate;
 use esp_hal::clock::CpuClock;
+use esp_hal::ledc::{Ledc, LSGlobalClkSource, timer, LowSpeed, timer::TimerIFace, channel, channel::ChannelIFace};
 // use esp_alloc::HEAP;
 
 use littlefs2::io;
@@ -270,11 +271,14 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         (peripherals.GPIO18.into(), ButtonType::Rotenc)]);
     let rotenc_receiver = start_rotenc_thread(spawner, peripherals.GPIO17.into(), peripherals.GPIO8.into());
 
+    let mut ledc = Ledc::new(peripherals.LEDC);
+    ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
+
     let ledperipherals = LedPeripherals::new(
         peripherals.GPIO14.into(),
         peripherals.GPIO21.into(),
         peripherals.GPIO47.into(),
-        peripherals.LEDC,
+        &ledc,
     );
     let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off);
     leddriver.set_brightness(128);
@@ -318,9 +322,23 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     let pb_font_style = PbFontRenderer::new(font);
     let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
 
+    let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
+    lstimer0.configure(timer::config::Config {
+        duty: timer::config::Duty::Duty5Bit,
+        clock_source: timer::LSClockSource::APBClk,
+        frequency: Rate::from_khz(24),
+    }).unwrap();
     // let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
     let mut backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
-    backlight.set_high();
+    let mut backlight_channel = ledc.channel(channel::Number::Channel7, backlight);
+    backlight_channel.configure(channel::config::Config {
+        timer: &lstimer0,
+        duty_pct: 10,
+        drive_mode: DriveMode::PushPull,
+        // pin_config: channel::config::PinConfig::PushPull,
+    }).unwrap(); // TODO: fix this
+    backlight_channel.set_duty(10).unwrap();
+
 
     let yoffset = 10;
     let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
