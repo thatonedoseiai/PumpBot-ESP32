@@ -335,6 +335,9 @@ impl MenuStateBehaviour for ComponentMenu {
                     // println!("GOING BACK TO PREVIOUS MENU");
                     return Ok(MenuSignal::Back);
                 },
+                Some(HandlerResult::WifiConnectionFailure(e)) => {
+                    // return Ok(MenuSignal::None);
+                },
                 Some(HandlerResult::None) => {},
                 None => {},
             }

@@ -23,15 +23,16 @@ use embassy_executor::Spawner;
 use embassy_net::{Config as EConfig, StackResources, DhcpConfig, Stack, Runner};
 // use static_cell::make_static;
 // use embassy_futures::block_on;
-use esp_radio::wifi::{ControllerConfig, WifiController, Config, sta::{StationConfig, ConnectedInfo}, AuthenticationMethod, WifiError, Interface, ap::AccessPointInfo, scan::ScanConfig, Ssid};
+use esp_radio::wifi::{ControllerConfig, WifiController, Config, sta::{StationConfig, ConnectedInfo}, AuthenticationMethod, WifiError, Interface, ap::AccessPointInfo, scan::{ScanConfig, ScanTypeConfig}, Ssid};
 use esp_hal::rng::Rng;
 use esp_hal::peripherals::WIFI;
 // pub use crate::http_server::{PbHttpServer, PbHttpServerError};
-use log::info;
+use log::{info, warn};
 use alloc::string::{ToString, String};
 use alloc::vec::Vec;
 use core::cell::{RefCell, Ref};
 use alloc::rc::Rc;
+use esp_hal::time::Duration;
 // use std::cell::RefCell;
 
 // When you are okay with using a nightly compiler it's better to use https://docs.rs/static_cell/2.1.0/static_cell/macro.make_static.html
@@ -87,13 +88,21 @@ impl<'a> PbWifi<'a> {
     pub async fn connect(&mut self, ap: &AccessPointInfo, pass: &str) -> Result<(), WifiError> {
         info!("Attempting to connect to {} with password {}.", &ap.ssid.as_str(), &pass);
 
-        let wifi_configuration = Config::Station(StationConfig::default()
-            .with_ssid(ap.ssid)
-            .with_password(pass.to_string())
-            .with_auth_method(ap.auth_method.unwrap_or(AuthenticationMethod::None)));
+        let wifi_configuration = if ap.auth_method.unwrap_or(AuthenticationMethod::None) == AuthenticationMethod::None {
+            warn!("ignoring password because there is no auth method");
+            Config::Station(StationConfig::default()
+                .with_ssid(ap.ssid)
+                .with_auth_method(AuthenticationMethod::None))
+        } else {
+            Config::Station(StationConfig::default()
+                .with_ssid(ap.ssid)
+                .with_password(pass.to_string())
+                .with_auth_method(ap.auth_method.unwrap_or(AuthenticationMethod::None)))
+        };
 
         self.wifi_mod.set_config(&wifi_configuration)?;
         self.connected_info = Some(self.wifi_mod.connect_async().await?);
+        info!("connect_async connected!");
 
         self.netstack.wait_config_up().await;
         if let Some(config) = self.netstack.config_v4() {
@@ -109,8 +118,16 @@ impl<'a> PbWifi<'a> {
     }
 
     pub async fn scan(&mut self) -> Result<(), WifiError> {
-        let scan_config = ScanConfig::default().with_max(10);
-        self.ap_cache.replace(self.wifi_mod.scan_async(&scan_config).await?);
+        let scan_config = ScanConfig::default()
+            .with_max(10)
+            .with_scan_type(ScanTypeConfig::Active {
+                min: Duration::from_millis(10), 
+                max: Duration::from_millis(300)
+            });
+        let scan_result = self.wifi_mod.scan_async(&scan_config).await?;
+        if !scan_result.is_empty() {
+            self.ap_cache.replace(scan_result);
+        }
         Ok(())
     }
 }

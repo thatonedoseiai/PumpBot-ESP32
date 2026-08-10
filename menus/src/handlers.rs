@@ -4,7 +4,7 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
 use alloc::string::{ToString, String};
-use esp_radio::wifi::Ssid;
+use esp_radio::wifi::{Ssid, WifiError};
 
 pub enum MenuInternalStateAction {
     SetLang,
@@ -18,6 +18,7 @@ pub enum HandlerResult {
     Back,
     Unfocus,
     ForceRedrawAndUnfocus,
+    WifiConnectionFailure(WifiError),
 }
 
 pub trait Handler<S> {
@@ -80,11 +81,18 @@ impl Handler<ButtonState> for ButtonHandler {
                 } = menu_state {
                     let pw = p.borrow();
                     log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
-                    h.wifi.connect(&a, &pw).await?;
+                    let wifi_res = h.wifi.connect(&a, &pw).await;
+                    match wifi_res {
+                        Ok(()) => {
+                            log::info!("connect returned OK!");
+                            Ok(HandlerResult::None)}
+                        ,
+                        Err(e) => Ok(HandlerResult::WifiConnectionFailure(e))
+                    }
                 } else {
                     unreachable!();
                 }
-                Ok(HandlerResult::None)
+                // Ok(HandlerResult::None)
                 // todo!("ConnectWifi button handler not implemented yet!")
             },
         }

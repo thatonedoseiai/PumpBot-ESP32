@@ -146,7 +146,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(32, 120),
+                pos: Point::new(32, 140),
                 click: ButtonHandler::ConnectWifi,
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
