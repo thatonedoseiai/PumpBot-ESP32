@@ -18,7 +18,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[first button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[first button right]")),
                 font_size: FontSize::Sz7,
-                text: "hello",
+                text: &LanguageString::const_string("hello"),
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
@@ -27,7 +27,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
                 font_size: FontSize::Sz7,
-                text: "blue!",
+                text: &LanguageString::const_string("blue!"),
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
@@ -36,7 +36,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[third button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[third button right]")),
                 font_size: FontSize::Sz7,
-                text: "click me!",
+                text: &LanguageString::const_string("click me!"),
             }),
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
@@ -45,7 +45,11 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
                 font_size: FontSize::Sz12,
-                options: &["first", "second", "third"],
+                options: &[
+                    LanguageString::const_string("first"),
+                    LanguageString::const_string("second"),
+                    LanguageString::const_string("third")
+                ],
             }),
         // ComponentDefinition::OptionSwitch(
         //     &OptionSwitchDefinition {
@@ -84,15 +88,15 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 right: OptionSwitchHandler::NextElement,
                 font_size: FontSize::Sz12,
                 options: &[
-                    TEXT_LANGUAGE_NAME.const_index(Lang::En),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Jp),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Fr),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Es),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Pt),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Zh),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Cn),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::Ru),
-                    TEXT_LANGUAGE_NAME.const_index(Lang::De),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::En)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Jp)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Fr)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Es)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Pt)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Zh)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Cn)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Ru)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::De)),
                 ],
             }),
     ],
@@ -151,7 +155,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 font_size: FontSize::Sz12,
-                text: "Connect",
+                text: &TEXT_CONNECT,
             }),
     ],
     static_elements: &[

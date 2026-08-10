@@ -141,7 +141,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 }
             },
             Self::PrintSelection => {
-                log::info!("you selected [{}]!", state.definition.options[state.selection]);
+                log::info!("you selected [{}]!", state.definition.options[state.selection][Lang::En]);
                 Ok(HandlerResult::None)
             }
         }

@@ -48,6 +48,20 @@ impl LanguageString {
             Lang::De => &self.de,
         }
     }
+
+    pub const fn const_string(s: &'static str) -> Self {
+        LanguageString {
+            en: s,
+            jp: s,
+            fr: s,
+            es: s,
+            pt: s,
+            zh: s,
+            cn: s,
+            ru: s,
+            de: s,
+        }
+    }
 }
 
 impl Index<Lang> for LanguageString {

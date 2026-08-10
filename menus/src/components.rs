@@ -2,7 +2,7 @@ use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
-use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
+use global_settings::{lang::LanguageString, rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -210,11 +210,12 @@ impl ComponentBehaviour for ButtonState {
         // println!("DRAWING COMPONENT [{}]", self.id);
         let s = &mut h.screen;
         let f = &mut h.font;
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        let settings = &PB_GLOBAL_SETTINGS.read().await;
+        let theme = &settings.theme;
         f.fgcol = theme.fg();
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size).unwrap();
-        let button_text = Text::with_alignment(self.definition.text, self.definition.pos, &h.font, Alignment::Left);
+        let button_text = Text::with_alignment(self.definition.text[settings.lang], self.definition.pos, &h.font, Alignment::Left);
         let text_bb = button_text.bounding_box();
         let backing_rectangle = RoundedRectangle::with_equal_corners(
             // Rectangle::new(self.definition.pos, bounding_box_size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE)),
@@ -251,7 +252,7 @@ pub struct ButtonDefinition {
     pub left: ButtonHandler,
     pub right: ButtonHandler,
     pub font_size: FontSize,
-    pub text: &'static str,
+    pub text: &'static LanguageString,
 }
 
 impl RunHandlers for ButtonState {
@@ -290,7 +291,7 @@ pub struct OptionSwitchDefinition {
     pub left: OptionSwitchHandler,
     pub right: OptionSwitchHandler,
     pub font_size: FontSize,
-    pub options: &'static [&'static str],
+    pub options: &'static [LanguageString],
 }
 
 impl RunHandlers for OptionSwitchState {
@@ -338,7 +339,8 @@ impl ComponentBehaviour for OptionSwitchState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         let s = &mut h.screen;
         let f = &mut h.font;
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        let settings = &PB_GLOBAL_SETTINGS.read().await;
+        let theme = &settings.theme;
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size)?;
         if let Some(boxes) = self.text_undraw {
@@ -352,15 +354,15 @@ impl ComponentBehaviour for OptionSwitchState {
         match self.mode {
             OptionSwitchMode::Unhighlighted => {
                 f.fgcol = theme.fg();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection][settings.lang], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Highlighted => {
                 f.fgcol = theme.highlight();
-                Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
+                Text::with_alignment(self.definition.options[self.selection][settings.lang], self.definition.pos, &h.font, Alignment::Left).draw(s)?;
             },
             OptionSwitchMode::Selected => {
                 f.fgcol = theme.highlight();
-                let text = Text::with_alignment(self.definition.options[self.selection], self.definition.pos, &h.font, Alignment::Left);
+                let text = Text::with_alignment(self.definition.options[self.selection][settings.lang], self.definition.pos, &h.font, Alignment::Left);
                 let text_bb = text.bounding_box();
                 let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
                 let right_coord = left_coord + Size::new(text_bb.size.width, 0);
