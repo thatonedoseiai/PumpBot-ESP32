@@ -160,6 +160,13 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
     ],
     static_elements: &[
         StaticElement::Text(
+            Point::new(64, 20),
+            FontSize::Sz12,
+            &TEXT_SETTINGS_NETWORK,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
             Point::new(64, 30),
             FontSize::Sz7,
             &TEXT_NETWORK_NAME,

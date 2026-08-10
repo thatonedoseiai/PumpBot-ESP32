@@ -228,6 +228,7 @@ impl MenuStateBehaviour for ComponentMenu {
         };
         cur_menu_state.selected().map(|c| c.highlight());
 
+        h.font.bgcol = PB_GLOBAL_SETTINGS.read().await.theme.bg();
         cur_menu_state.draw_all_components(h).await?;
         loop {
             let inp = select(

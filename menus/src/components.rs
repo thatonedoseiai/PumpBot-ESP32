@@ -528,6 +528,7 @@ impl ComponentBehaviour for OptionScrollerState {
 }
 // }}}
 // TEXT BOX {{{
+#[derive(Clone, Copy)]
 enum TextSelectorLayer {
     Lowercase,
     Uppercase,
@@ -563,13 +564,83 @@ impl TextSelectorLayer {
         TextSelectorOption { symbol: 'y', action: Action::Type('y') },
         TextSelectorOption { symbol: 'z', action: Action::Type('z') },
         TextSelectorOption { symbol: '_', action: Action::Type(' ') },
-        TextSelectorOption { symbol: 'O', action: Action::Confirm },
-        TextSelectorOption { symbol: 'B', action: Action::Backspace },
-        TextSelectorOption { symbol: 'L', action: Action::Left },
-        TextSelectorOption { symbol: 'R', action: Action::Right },
+        TextSelectorOption { symbol: '✓', action: Action::Confirm },
+        TextSelectorOption { symbol: 'A', action: Action::ToLayer(TextSelectorLayer::Uppercase) },
+        TextSelectorOption { symbol: '@', action: Action::ToLayer(TextSelectorLayer::Symbol) },
+        TextSelectorOption { symbol: '⌫', action: Action::Backspace },
+        // TextSelectorOption { symbol: 'L', action: Action::Left },
+        // TextSelectorOption { symbol: 'R', action: Action::Right },
     ];
-    const UPPERCASE_REEL: &'static [TextSelectorOption] = &[];
-    const SYMBOL_REEL: &'static [TextSelectorOption] = &[];
+    const UPPERCASE_REEL: &'static [TextSelectorOption] = &[
+        TextSelectorOption { symbol: 'A', action: Action::Type('A') },
+        TextSelectorOption { symbol: 'B', action: Action::Type('B') },
+        TextSelectorOption { symbol: 'C', action: Action::Type('C') },
+        TextSelectorOption { symbol: 'D', action: Action::Type('D') },
+        TextSelectorOption { symbol: 'E', action: Action::Type('E') },
+        TextSelectorOption { symbol: 'F', action: Action::Type('F') },
+        TextSelectorOption { symbol: 'G', action: Action::Type('G') },
+        TextSelectorOption { symbol: 'H', action: Action::Type('H') },
+        TextSelectorOption { symbol: 'I', action: Action::Type('I') },
+        TextSelectorOption { symbol: 'J', action: Action::Type('J') },
+        TextSelectorOption { symbol: 'K', action: Action::Type('K') },
+        TextSelectorOption { symbol: 'L', action: Action::Type('L') },
+        TextSelectorOption { symbol: 'M', action: Action::Type('M') },
+        TextSelectorOption { symbol: 'N', action: Action::Type('N') },
+        TextSelectorOption { symbol: 'O', action: Action::Type('O') },
+        TextSelectorOption { symbol: 'P', action: Action::Type('P') },
+        TextSelectorOption { symbol: 'Q', action: Action::Type('Q') },
+        TextSelectorOption { symbol: 'R', action: Action::Type('R') },
+        TextSelectorOption { symbol: 'S', action: Action::Type('S') },
+        TextSelectorOption { symbol: 'T', action: Action::Type('T') },
+        TextSelectorOption { symbol: 'U', action: Action::Type('U') },
+        TextSelectorOption { symbol: 'V', action: Action::Type('V') },
+        TextSelectorOption { symbol: 'W', action: Action::Type('W') },
+        TextSelectorOption { symbol: 'X', action: Action::Type('X') },
+        TextSelectorOption { symbol: 'Y', action: Action::Type('Y') },
+        TextSelectorOption { symbol: 'Z', action: Action::Type('Z') },
+        TextSelectorOption { symbol: '_', action: Action::Type(' ') },
+        TextSelectorOption { symbol: 'a', action: Action::ToLayer(TextSelectorLayer::Lowercase) },
+        TextSelectorOption { symbol: '@', action: Action::ToLayer(TextSelectorLayer::Symbol) },
+        TextSelectorOption { symbol: '✓', action: Action::Confirm },
+        TextSelectorOption { symbol: '⌫', action: Action::Backspace },
+    ];
+    const SYMBOL_REEL: &'static [TextSelectorOption] = &[
+        TextSelectorOption { symbol: '?', action: Action::Type('?') },
+        TextSelectorOption { symbol: '!', action: Action::Type('!') },
+        TextSelectorOption { symbol: '"', action: Action::Type('"') },
+        TextSelectorOption { symbol: '#', action: Action::Type('#') },
+        TextSelectorOption { symbol: '$', action: Action::Type('$') },
+        TextSelectorOption { symbol: '%', action: Action::Type('%') },
+        TextSelectorOption { symbol: '&', action: Action::Type('&') },
+        TextSelectorOption { symbol: '\'',action: Action::Type('\'') },
+        TextSelectorOption { symbol: '(', action: Action::Type('(') },
+        TextSelectorOption { symbol: ')', action: Action::Type(')') },
+        TextSelectorOption { symbol: '*', action: Action::Type('*') },
+        TextSelectorOption { symbol: '+', action: Action::Type('+') },
+        TextSelectorOption { symbol: ',', action: Action::Type(',') },
+        TextSelectorOption { symbol: '-', action: Action::Type('-') },
+        TextSelectorOption { symbol: '.', action: Action::Type('.') },
+        TextSelectorOption { symbol: '/', action: Action::Type('/') },
+        TextSelectorOption { symbol: '0', action: Action::Type('0') },
+        TextSelectorOption { symbol: '1', action: Action::Type('1') },
+        TextSelectorOption { symbol: '2', action: Action::Type('2') },
+        TextSelectorOption { symbol: '3', action: Action::Type('3') },
+        TextSelectorOption { symbol: '4', action: Action::Type('4') },
+        TextSelectorOption { symbol: '5', action: Action::Type('5') },
+        TextSelectorOption { symbol: '6', action: Action::Type('6') },
+        TextSelectorOption { symbol: '7', action: Action::Type('7') },
+        TextSelectorOption { symbol: '8', action: Action::Type('8') },
+        TextSelectorOption { symbol: '9', action: Action::Type('9') },
+        TextSelectorOption { symbol: ':', action: Action::Type(':') },
+        TextSelectorOption { symbol: ';', action: Action::Type(';') },
+        TextSelectorOption { symbol: '<', action: Action::Type('<') },
+        TextSelectorOption { symbol: '=', action: Action::Type('=') },
+        TextSelectorOption { symbol: '>', action: Action::Type('>') },
+        TextSelectorOption { symbol: 'a', action: Action::ToLayer(TextSelectorLayer::Lowercase) },
+        TextSelectorOption { symbol: 'A', action: Action::ToLayer(TextSelectorLayer::Uppercase) },
+        TextSelectorOption { symbol: '✓', action: Action::Confirm },
+        TextSelectorOption { symbol: '⌫', action: Action::Backspace },
+    ];
 
     pub const fn as_reel(&self) -> &'static [TextSelectorOption] {
         match self {
@@ -585,6 +656,7 @@ enum Action {
     Right,
     Confirm,
     Backspace,
+    ToLayer(TextSelectorLayer),
     Type(char),
 }
 
@@ -860,6 +932,11 @@ impl RunHandlers for TextBoxState {
                     }
                     Ok(HandlerResult::None)
                 },
+                Action::ToLayer(l) => {
+                    self.text_selector_state.layer = *l;
+                    self.text_selector_state.draw(h).await?;
+                    Ok(HandlerResult::None)
+                }
             }
         }
     }
