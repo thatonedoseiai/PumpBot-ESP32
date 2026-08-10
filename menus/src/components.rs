@@ -1,5 +1,5 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator};
-use crate::{IOHandles, MenuInternalState};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler};
+use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
 use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
@@ -130,7 +130,7 @@ impl ComponentState {
 }
 
 impl ComponentDefinition {
-    pub fn construct(&self, start_focused: bool) -> ComponentState {
+    pub fn construct(&self, start_focused: bool, menu_definition: &ComponentMenuDefinition, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> ComponentState {
         match self {
             Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false }),
             Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 
@@ -150,7 +150,7 @@ impl ComponentDefinition {
             Self::TextBox(definition) => ComponentState::TextBox(TextBoxState {
                 definition,
                 highlighted: false,
-                current_entry: Rc::new(RefCell::new(String::new())),
+                current_entry: Rc::new(RefCell::new(definition.initial_text.get_owned(menu_definition, internal_state, h))),
                 sub_menu_open: false,
                 text_selector_state: TextSelectorState {
                     selection: 0,
@@ -761,6 +761,8 @@ pub struct TextBoxDefinition {
     pub preview_chars: usize,
     pub font_size: FontSize,
     pub empty_text: &'static str,
+    pub initial_text: TextGetterSetter,
+    pub on_submit: TextSubmitHandler,
 }
 
 impl TextBoxState {
@@ -839,6 +841,7 @@ impl RunHandlers for TextBoxState {
                     let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
                     h.screen.clear(theme.bg().as_rgb565())?;
                     self.sub_menu_open = false;
+                    self.definition.on_submit.handle(self, menu_state, h).await?;
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 },
                 Action::Backspace => {

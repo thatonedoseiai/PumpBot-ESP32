@@ -1,9 +1,10 @@
-use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState};
-use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState};
+use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState, TextBoxState};
+use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
-use alloc::string::ToString;
+use alloc::string::{ToString, String};
+use esp_radio::wifi::Ssid;
 
 pub enum MenuInternalStateAction {
     SetLang,
@@ -23,6 +24,7 @@ pub trait Handler<S> {
     async fn handle(&self, state: &mut S, menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
+// GENERIC {{{
 pub enum GenericHandler {
     Print(&'static str),
     Signal(HandlerResult),
@@ -43,7 +45,8 @@ impl Handler<()> for GenericHandler {
         }
     }
 }
-
+// }}}
+// MENU HANDLER {{{
 pub enum MenuHandler {
     Generic(GenericHandler)
 }
@@ -57,9 +60,11 @@ impl Handler<ComponentMenuInAction> for MenuHandler {
         }
     }
 }
-
+// }}}
+// BUTTON HANDLER {{{
 pub enum ButtonHandler {
     Generic(GenericHandler),
+    ConnectWifi,
 }
 
 impl Handler<ButtonState> for ButtonHandler {
@@ -67,11 +72,26 @@ impl Handler<ButtonState> for ButtonHandler {
         match self {
             Self::Generic(g) => {
                 g.handle(&mut (), menu_state, h).await
-            }
+            },
+            Self::ConnectWifi => {
+                if let MenuInternalState::WifiDetails {
+                    ap: a,
+                    pass: p
+                } = menu_state {
+                    let pw = p.borrow();
+                    log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
+                    h.wifi.connect(&a, &pw).await?;
+                } else {
+                    unreachable!();
+                }
+                Ok(HandlerResult::None)
+                // todo!("ConnectWifi button handler not implemented yet!")
+            },
         }
     }
 }
-
+// }}}
+// OPTION SWITCH HANDLER {{{
 pub enum OptionSwitchHandler {
     Generic(GenericHandler),
     NextElement,
@@ -119,7 +139,8 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
         }
     }
 }
-
+// }}}
+// OPTION SCROLLER HANDLER {{{
 pub enum OptionScrollerHandler {
     Generic(GenericHandler),
     NextOption,
@@ -187,7 +208,8 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
         }
     }
 }
-
+// }}}
+// OPTIONS GENERATOR {{{
 pub enum OptionsGenerator {
     Const(&'static [&'static str]),
     WifiGenerator
@@ -204,3 +226,57 @@ impl OptionsGenerator {
         }
     }
 }
+// }}}
+// TEXT GETTER/SETTER (initial owned text for text fields) {{{
+pub enum TextGetterSetter {
+    Const(&'static str),
+    WifiMenuSSIDName,
+    WifiMenuPassword,
+}
+
+impl TextGetterSetter {
+    pub fn get_owned(&self, menu_def: &ComponentMenuDefinition, state: &MenuInternalState, h: &mut IOHandles<'_>) -> String {
+        match (self, menu_def, state) {
+            (Self::Const(s), _, _) => {
+                String::from(*s)
+            },
+            (Self::WifiMenuSSIDName, _, MenuInternalState::WifiDetails {ap: a, ..}) => {
+                String::from(a.ssid.as_str())
+            },
+            (Self::WifiMenuPassword, _, _) => {
+                String::new()
+            },
+            _ => String::from("illegal TextGetterSetter"),
+        }
+    }
+}
+// }}}
+// TEXT SUBMIT HANDLER {{{
+pub enum TextSubmitHandler {
+    SetWifiSSID,
+    SetWifiPassword,
+}
+
+impl Handler<TextBoxState> for TextSubmitHandler {
+    async fn handle(&self, state: &mut TextBoxState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match (self, menu_state) {
+            (Self::SetWifiSSID, MenuInternalState::WifiDetails { ap: a, .. }) => {
+                // set the wifi details
+                a.ssid = Ssid::from(state.current_entry.as_ref().borrow().as_str());
+                Ok(HandlerResult::None)
+            },
+            (Self::SetWifiPassword, MenuInternalState::WifiDetails { pass: p, .. }) => {
+                log::info!("SET PASS: {}", state.current_entry.as_ref().borrow());
+                p.replace(state.current_entry.as_ref().borrow().to_string());
+                Ok(HandlerResult::None)
+            },
+            _ => {
+                log::error!("BAD ACTION");
+                Ok(HandlerResult::None)
+            }
+        }
+    }
+}
+// }}}
+
+// vim:foldmethod=marker

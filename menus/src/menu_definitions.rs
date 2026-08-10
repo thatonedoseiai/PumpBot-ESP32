@@ -1,9 +1,13 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction};
-use embedded_graphics::prelude::*;
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler};
+use embedded_graphics::{
+    prelude::*,
+    text::Alignment,
+};
 use fontfile::FontSize;
-use global_settings::lang::{TEXT_LANGUAGE_NAME, Lang};
+use global_settings::{lang::*, ThemedColor};
+use crate::static_element::StaticElement;
 
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
@@ -125,19 +129,47 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
                 width: 120,
                 preview_chars: 10,
                 font_size: FontSize::Sz12,
-                empty_text: "enter text...",
+                empty_text: "ssid...",
+                initial_text: TextGetterSetter::WifiMenuSSIDName,
+                on_submit: TextSubmitHandler::SetWifiSSID,
+            }),
+        ComponentDefinition::TextBox(
+            &TextBoxDefinition {
+                pos: Point::new(10, 90),
+                max_length: 64,
+                width: 120,
+                preview_chars: 10,
+                font_size: FontSize::Sz12,
+                empty_text: "password...",
+                initial_text: TextGetterSetter::WifiMenuPassword,
+                on_submit: TextSubmitHandler::SetWifiPassword,
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(10, 100),
-                click: ButtonHandler::Generic(GenericHandler::Print("[second button clicked]")),
-                left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
-                right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
-                font_size: FontSize::Sz7,
-                text: "garbage placeholder button",
+                pos: Point::new(32, 120),
+                click: ButtonHandler::ConnectWifi,
+                left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+                right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+                font_size: FontSize::Sz12,
+                text: "Connect",
             }),
     ],
-    static_elements: &[],
+    static_elements: &[
+        StaticElement::Text(
+            Point::new(64, 30),
+            FontSize::Sz7,
+            &TEXT_NETWORK_NAME,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(64, 70),
+            FontSize::Sz7,
+            &TEXT_PASSWORD,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Print("right button!")),
 };

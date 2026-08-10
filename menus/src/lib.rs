@@ -45,7 +45,9 @@ use embedded_graphics::draw_target::DrawTarget;
 use log::info;
 use alloc::borrow::Cow;
 use global_settings::PB_GLOBAL_SETTINGS;
-use core::cell::RefCell;
+use core::cell::{RefCell, Cell};
+use esp_radio::wifi::ap::AccessPointInfo;
+use alloc::string::String;
 
 use profiler::SpanGuard;
 
@@ -152,7 +154,8 @@ enum MenuInternalState {
     },
     Wifi,
     WifiDetails {
-        ap: usize,
+        ap: AccessPointInfo,
+        pass: RefCell<String>,
     }
 }
 
@@ -190,12 +193,12 @@ impl ComponentMenu {
         }
     }
 
-    const fn initial_state(self) -> MenuInternalState {
+    fn initial_state(self, h: &mut IOHandles<'_>) -> MenuInternalState {
         match self {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
             Self::Lang(s) => MenuInternalState::Lang { language: s },
             Self::Wifi => MenuInternalState::Wifi,
-            Self::WifiDetails(a) => MenuInternalState::WifiDetails { ap: a },
+            Self::WifiDetails(a) => MenuInternalState::WifiDetails { ap: h.wifi.get_wifis()[a].clone(), pass: RefCell::new(String::new()) },
         }
     }
 }
@@ -212,17 +215,17 @@ impl MenuStateBehaviour for Menu {
 impl MenuStateBehaviour for ComponentMenu {
     async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let num_components = self.definition().components.len();
+        let mut internal_state = self.initial_state(h);
         let mut cur_menu_state = ComponentMenuInAction {
             layout: self.definition(),
             component_states: self.definition()
                                       .components
                                       .into_iter()
-                                      .map(|f| f.construct(num_components == 1))
+                                      .map(|f| f.construct(num_components == 1, self.definition(), &internal_state, h))
                                       .collect(),
             selected_component: 0,
             mode: if num_components > 1 { ComponentMenuMode::Browse } else { ComponentMenuMode::Edit },
         };
-        let mut internal_state = self.initial_state();
         cur_menu_state.selected().map(|c| c.highlight());
 
         cur_menu_state.draw_all_components(h).await?;
