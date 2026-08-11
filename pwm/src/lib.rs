@@ -6,7 +6,7 @@ extern crate alloc;
 use esp_hal::gpio::{AnyPin, Output, Level, OutputConfig};
 use esp_hal::ledc::{channel::{Channel, Number}, LowSpeed};
 use esp_hal::time::Instant;
-use embassy_futures::select::{select, Either};
+use embassy_futures::{select::{select3, Either3}, block_on};
 use embassy_sync::channel::{Channel as EChannel, Sender};
 use embassy_sync::rwlock::RwLock;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
@@ -15,9 +15,9 @@ use embassy_executor::Spawner;
 use embedded_hal::pwm::SetDutyCycle;
 use core::cmp::{Ord, Ordering, PartialOrd};
 use core::fmt;
-use core::future;
 use alloc::collections::binary_heap::BinaryHeap;
 use alloc::vec::Vec;
+use futures::future::OptionFuture;
 
 type Time = u64;
 const NUM_CHANNELS: usize = 4; // TODO: MAKE THIS MATTER
@@ -91,6 +91,8 @@ pub enum PwmAction {
     Off(PwmNumber),
     SetDuty(PwmNumber, u16),
     UnfreezePin(PwmNumber),
+    Toggle(PwmNumber),
+    FreezePin(PwmNumber, Time),
 }
 
 impl fmt::Display for PwmAction {
@@ -100,6 +102,8 @@ impl fmt::Display for PwmAction {
             PwmAction::Off(x) => { write!(f, "CHANNEL {} OFF", x) },
             PwmAction::SetDuty(x, v) => { write!(f, "CHANNEL {} => DUTY {}", x, v) },
             PwmAction::UnfreezePin(x) => { write!(f, "UNFREEZE CHANNEL {}", x) },
+            PwmAction::Toggle(x) => { write!(f, "TOGGLE CHANNEL {}", x) },
+            PwmAction::FreezePin(x, t) => { write!(f, "FREEZE CHANNEL {} FOR {} MS", x, t) }
         }
     }
 }
@@ -121,8 +125,8 @@ impl Pwm<'_> {
         }
     }
 
-    pub fn send(&self, c: Command) {
-        let _ = self.command_sender.try_send(c);
+    pub async fn send(&self, c: Command) {
+        self.command_sender.send(c).await;
     }
 }
 
@@ -130,13 +134,14 @@ impl Pwm<'_> {
 enum PwmPinState {
     Off,
     On,
-    Frozen,
 }
 
 #[derive(Copy, Clone, Debug)]
 struct PwmPinInfo {
     state: PwmPinState,
     duty: u16,
+    freeze_timer: Time,
+    frozen: bool,
 }
 
 impl PwmPinInfo {
@@ -144,6 +149,8 @@ impl PwmPinInfo {
         PwmPinInfo {
             state: PwmPinState::Off,
             duty: 0,
+            freeze_timer: 0,
+            frozen: false,
         }
     }
 }
@@ -160,19 +167,36 @@ async fn pwm_runner(pins: [AnyPin<'static>; NUM_CHANNELS]) {
     let mut channels: Vec<Channel<LowSpeed>> = pins.into_iter().zip(CHANNEL_NUMBERS).map(|(pin, cnum)| Channel::new(cnum, Output::new(pin, Level::Low, config))).collect();
 
     loop {
+        // let mut state = PIN_STATES[usize::from(c)].write().await;
         let next_delay = command_queue.peek().map(|e| e.time - now.duration_since_epoch().as_millis());
-        let next_action = match next_delay {
-            Some(delay) => select(COMMAND_CHANNEL.receive(), ETimer::after(Duration::from_millis(delay))).await,
-            None => select(COMMAND_CHANNEL.receive(), future::pending::<()>()).await,
-        };
+        let delay_event: OptionFuture<_> = match next_delay {
+            Some(d) => Some(ETimer::after(Duration::from_millis(d))),
+            None => None,
+        }.into();
+        let next_unfreeze = PIN_STATES.iter().map(|f| block_on(f.read()).freeze_timer).min().unwrap();
+        let unfreeze_event: OptionFuture<_> = if next_unfreeze > 0 {
+            Some(ETimer::after(Duration::from_millis(next_unfreeze)))
+        } else {
+            None
+        }.into();
+        let next_action = select3(COMMAND_CHANNEL.receive(), delay_event, unfreeze_event).await;
 
         match next_action {
-            Either::First(c) => {
+            Either3::First(c) => {
                 command_queue.push(c);
-            }
-            Either::Second(_) => {
+            },
+            Either3::Second(_) => {
                 let command = command_queue.pop().unwrap();
                 execute_command(&mut channels, command.action).await;
+            },
+            Either3::Third(_) => {
+                PIN_STATES.iter().for_each(|f| {
+                    let mut pin_state = block_on(f.write());
+                    pin_state.freeze_timer -= next_unfreeze;
+                    if pin_state.freeze_timer == 0 {
+                        pin_state.frozen = false;
+                    }
+                })
             }
         }
     }
@@ -188,7 +212,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
         PwmAction::Off(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
             channels[usize::from(c)].set_duty_cycle(0).unwrap();
-            state.state = PwmPinState::On;
+            state.state = PwmPinState::Off;
         },
         PwmAction::SetDuty(c, duty) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
@@ -197,8 +221,35 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
         },
         PwmAction::UnfreezePin(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
-            state.state = PwmPinState::On;
+            if state.frozen {
+                state.frozen = false;
+                channels[usize::from(c)].set_duty_cycle(
+                    match state.state {
+                        PwmPinState::On => state.duty,
+                        PwmPinState::Off => 0,
+                    }
+                ).unwrap();
+            }
+            // state.state = PwmPinState::On;
+        },
+        PwmAction::Toggle(c) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            match state.state {
+                PwmPinState::On => {
+                    channels[usize::from(c)].set_duty_cycle(0).unwrap();
+                    state.state = PwmPinState::Off;
+                },
+                PwmPinState::Off => {
+                    channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
+                    state.state = PwmPinState::On;
+                },
+            }
+        },
+        PwmAction::FreezePin(c, t) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            // channels[usize::from(c)].set_duty_cycle(0).unwrap();
+            state.frozen = true;
+            state.freeze_timer = t;
         }
     }
 }

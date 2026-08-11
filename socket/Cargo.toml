@@ -7,4 +7,5 @@ edition = "2024"
 embassy-executor = "0.10.0"
 embassy-net = { version = "0.9.1", features = ["alloc", "medium-ip", "proto-ipv4", "proto-ipv6", "tcp"] }
 embassy-sync = "0.8.0"
+pwm = { path = "../pwm" }
 # esp-idf-hal = "0.45.2"

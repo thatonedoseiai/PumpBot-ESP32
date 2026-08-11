@@ -29,12 +29,12 @@ pub enum ServerCommand {
 pub enum ServerResponse {
     BlockHid(u16),          // centiseconds
     BlockHidRelative(i16),
-    ToggleChannel(u8),
-    ChannelOff(u8),
-    ChannelOn(u8),
-    GetState,
-    SetPwmValue(u16, u8),   // pwm value, channel num
-    SetPwmValueRelative(i16, u8),
+    ToggleChannel(PwmNumber),
+    ChannelOff(PwmNumber),
+    ChannelOn(PwmNumber),
+    SetPwmValue(u16, PwmNumber),   // pwm value, channel num
+    SetPwmValueRelative(i16, PwmNumber),
+    GetState(PwmNumber),
     None
 }
 
