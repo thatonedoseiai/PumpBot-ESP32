@@ -1,74 +1,113 @@
-use esp_idf_hal::net::TcpSocket;
-use esp_idf_hal::sys::EspError;
-use esp_idf_hal::task::block_on;
-use esp_idf_hal::timer::Timer;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+#![no_std]
+#![no_main]
 
-static PING_FLAG: AtomicBool = AtomicBool::new(false);
-static RUN_MANUAL_HEARTBEAT: AtomicBool = AtomicBool::new(false);
+extern crate alloc;
 
-fn connect_to_server(ip: u32, port: u16) -> Result<(), EspError> {
-    let socket = TcpSocket::new()?;
-    let addr = format!("{}:{}", ip, port);
-    socket.connect(&addr)?;
-    PING_FLAG.store(true, Ordering::Relaxed);
-    RUN_MANUAL_HEARTBEAT.store(true, Ordering::Relaxed);
-    Ok(())
+use embassy_net::{
+    tcp::{TcpSocket, ConnectError},
+    IpEndpoint,
+    IpAddress,
+    Ipv4Address,
+    Stack
+};
+use embassy_executor::Spawner;
+use embassy_sync::{
+    channel::{Channel, Sender, Receiver},
+    blocking_mutex::raw::CriticalSectionRawMutex,
+};
+use core::fmt;
+use core::write;
+use core::convert::From;
+
+#[derive(Clone, Copy)]
+pub enum ServerCommand {
+    Connect(IpAddress, u16),
+    Disconnect,
 }
 
-fn get_message(buffer: &mut [u8]) -> Result<usize, EspError> {
-    if !PING_FLAG.load(Ordering::Relaxed) {
-        return Err(EspError::from(1).unwrap()); // Not connected
+#[derive(Debug, Clone, Copy)]
+pub enum ServerResponse {
+    BlockHid(u16),          // centiseconds
+    BlockHidRelative(i16),
+    ToggleChannel(u8),
+    ChannelOff(u8),
+    ChannelOn(u8),
+    GetState,
+    SetPwmValue(u16, u8),   // pwm value, channel num
+    SetPwmValueRelative(i16, u8),
+    None
+}
+
+pub struct ServerConnection {
+    server_ip: IpAddress,
+    server_port: u16,
+}
+
+#[derive(Debug)]
+pub enum ServerError {
+    ConnectError(ConnectError)
+}
+impl core::error::Error for ServerError { }
+impl fmt::Display for ServerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::ConnectError(c) => write!(f, "SERVER ERROR: ConnectError {}", c)
+        }
     }
-    // Assume socket is already connected
-    // This is a simplified placeholder for actual socket read
-    // In real code, use socket.read() or similar
-    Ok(0)
 }
 
-fn send_message(buffer: &[u8]) -> Result<usize, EspError> {
-    // Placeholder for actual send logic
-    Ok(0)
+impl From<ConnectError> for ServerError {
+    fn from(val: ConnectError) -> ServerError {
+        Self::ConnectError(val)
+    }
 }
 
-fn disconnect_from_server() -> Result<(), EspError> {
-    PING_FLAG.store(false, Ordering::Relaxed);
-    // Cleanup socket
-    Ok(())
+static COMMAND_CHANNEL: Channel<CriticalSectionRawMutex, ServerCommand, 8> = Channel::new();
+static RESPONSE_CHANNEL: Channel<CriticalSectionRawMutex, Result<ServerResponse, ServerError>, 8> = Channel::new();
+
+impl ServerConnection {
+    const RX_BUF_LEN: usize = 256;
+    const TX_BUF_LEN: usize = 256;
+
+    pub fn new(spawner: Spawner, netstack: Stack<'static>) -> Self {
+        spawner.spawn(socket_runner_task(COMMAND_CHANNEL.receiver(), RESPONSE_CHANNEL.sender(), netstack).unwrap());
+
+        ServerConnection {
+            server_ip: IpAddress::Ipv4(Ipv4Address::new(0,0,0,0)),
+            server_port: 0,
+        }
+    }
+
+    pub async fn connect(&mut self) -> Result<ServerResponse, ServerError> {
+        COMMAND_CHANNEL.send(ServerCommand::Connect(self.server_ip, self.server_port)).await;
+        RESPONSE_CHANNEL.receive().await
+    }
+
+    pub async fn disconnect(&mut self) {
+        COMMAND_CHANNEL.send(ServerCommand::Disconnect).await;
+    }
 }
 
-fn ping_loop() {
+#[embassy_executor::task]
+async fn socket_runner_task(commands: Receiver<'static, CriticalSectionRawMutex, ServerCommand, 8>, responses: Sender<'static, CriticalSectionRawMutex, Result<ServerResponse, ServerError>, 8>, netstack: Stack<'static>) {
+    let mut rx_buffer = [0u8; ServerConnection::RX_BUF_LEN];
+    let mut tx_buffer = [0u8; ServerConnection::TX_BUF_LEN];
+    let mut conn = TcpSocket::new(
+        netstack, &mut rx_buffer, &mut tx_buffer,
+    );
     loop {
-        if !PING_FLAG.load(Ordering::Relaxed) {
-            break;
-        }
-        // Send ping
-        let _ = send_message(b"p\n");
-        // Delay for 10 seconds
-        thread::sleep(Duration::from_secs(10));
-        if RUN_MANUAL_HEARTBEAT.load(Ordering::Relaxed) {
-            let mut buffer = [0u8; 8];
-            let _ = get_message(&mut buffer);
+        match commands.receive().await {
+            ServerCommand::Connect(addr, port) => {
+                let res = conn.connect(IpEndpoint::new(addr, port)).await;
+                let response = match res {
+                    Ok(_) => Ok(ServerResponse::None),
+                    Err(e) => Err(e.into()),
+                };
+                responses.send(response).await;
+            },
+            ServerCommand::Disconnect => {
+                conn.close();
+            }
         }
     }
-}
-
-fn main() -> Result<(), EspError> {
-    // Connect to server
-    connect_to_server(0xC0A80101, 8080)?; // Example IP and port
-
-    // Spawn ping thread
-    let ping_handle = thread::spawn(|| {
-        ping_loop();
-    });
-
-    // Wait for ping thread to finish
-    ping_handle.join().unwrap();
-
-    // Disconnect
-    disconnect_from_server()?;
-    Ok(())
 }

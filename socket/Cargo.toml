@@ -4,4 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-esp-idf-hal = "0.45.2"
+embassy-executor = "0.10.0"
+embassy-net = { version = "0.9.1", features = ["alloc", "medium-ip", "proto-ipv4", "proto-ipv6", "tcp"] }
+embassy-sync = "0.8.0"
+# esp-idf-hal = "0.45.2"
