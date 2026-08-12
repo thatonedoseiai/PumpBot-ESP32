@@ -1,8 +1,8 @@
-use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState, TextBoxState, ValueSelectorState, ValueSelectorNumType, ValueSelectorMode};
+use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState, TextBoxState, ValueSelectorState, ValueSelectorNumType, ValueSelectorMode, ColorSelectorState};
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
+use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb, rgb::RGB};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -311,6 +311,19 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
     }
 }
 // }}}
+// COLOR SELECTOR HANDLER {{{
+pub enum ColorSelectorHandler {
+    Generic(GenericHandler),
+}
+
+impl Handler<ColorSelectorState> for ColorSelectorHandler {
+    async fn handle(&self, state: &mut ColorSelectorState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => g.handle(&mut (), menu_state, h).await,
+        }
+    }
+}
+// }}}
 // OPTIONS GENERATOR {{{
 pub enum OptionsGenerator {
     Const(&'static [&'static str]),
@@ -417,6 +430,19 @@ impl InitialValueGenerator {
         match self {
             Self::Const(s) => *s,
             Self::BacklightBrightness => h.backlight_brightness_pct.into(),
+        }
+    }
+}
+// }}}
+// COLOR GETTER {{{
+pub enum ColorGetter {
+    Const(RGB),
+}
+
+impl ColorGetter {
+    pub fn get(&self, h: &mut IOHandles<'_>) -> RGB {
+        match self {
+            Self::Const(r) => *r,
         }
     }
 }

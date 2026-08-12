@@ -1,12 +1,13 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
+    primitives::rectangle::Rectangle,
 };
 use fontfile::FontSize;
-use global_settings::{lang::*, ThemedColor};
+use global_settings::{lang::*, ThemedColor, rgb, rgb::RGB};
 use crate::static_element::StaticElement;
 
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
@@ -272,6 +273,13 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                 low_limit: 0,
                 high_limit: 100,
                 initial_value: InitialValueGenerator::BacklightBrightness,
+            }),
+        ComponentDefinition::ColorSelector(
+            &ColorSelectorDefinition {
+                preview_rect: Rectangle::new(Point::new(64, 100), Size::new(30, 30)),
+                left: ColorSelectorHandler::Generic(GenericHandler::Print("left btn!")),
+                right: ColorSelectorHandler::Generic(GenericHandler::Print("right btn!")),
+                initial_color: ColorGetter::Const(rgb![0, 255, 0]),
             }),
     ],
     static_elements: &[],
