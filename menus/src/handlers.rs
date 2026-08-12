@@ -1,4 +1,4 @@
-use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState, TextBoxState};
+use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, ComponentBehaviour, OptionScrollerState, TextBoxState, ValueSelectorState, ValueSelectorNumType, ValueSelectorMode};
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
@@ -104,7 +104,7 @@ impl Handler<ButtonState> for ButtonHandler {
                 match res {
                     Ok(h) => {
                         log::info!("pb connected to server!");
-                        Ok(HandlerResult::None)
+                        Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))
                     },
                     Err(e) => {
                         log::info!("pb failed to connect!");
@@ -234,6 +234,52 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
     }
 }
 // }}}
+// VALUE SELECTOR HANDLER {{{
+pub enum ValueSelectorHandler {
+    Generic(GenericHandler),
+    ToggleFocus,
+    Increment(ValueSelectorNumType),
+    Decrement(ValueSelectorNumType),
+}
+
+
+impl Handler<ValueSelectorState> for ValueSelectorHandler {
+    async fn handle(&self, state: &mut ValueSelectorState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => g.handle(&mut (), menu_state, h).await,
+            Self::ToggleFocus => {
+                let old_state_mode = state.mode;
+                state.mode = match state.mode {
+                    ValueSelectorMode::Unhighlighted => ValueSelectorMode::Unhighlighted,
+                    ValueSelectorMode::Highlighted => ValueSelectorMode::Selected,
+                    ValueSelectorMode::Selected => ValueSelectorMode::Highlighted,
+                };
+                log::info!("toggling value selector mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
+                state.draw(h).await?;
+                if state.mode == ValueSelectorMode::Highlighted {
+                    Ok(HandlerResult::Unfocus)
+                } else {
+                    Ok(HandlerResult::None)
+                }
+            },
+            Self::Increment(u) => {
+                if state.selection < state.definition.high_limit {
+                    state.selection = state.selection.saturating_add(*u);
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            },
+            Self::Decrement(u) => {
+                if state.selection > state.definition.low_limit {
+                    state.selection = state.selection.saturating_sub(*u);
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            }
+        }
+    }
+}
+// }}}
 // OPTIONS GENERATOR {{{
 pub enum OptionsGenerator {
     Const(&'static [&'static str]),
@@ -325,6 +371,19 @@ impl Handler<TextBoxState> for TextSubmitHandler {
                 log::error!("BAD ACTION");
                 Ok(HandlerResult::None)
             }
+        }
+    }
+}
+// }}}
+// INITIAL VALUE GENERATOR {{{
+pub enum InitialValueGenerator {
+    Const(ValueSelectorNumType),
+}
+
+impl InitialValueGenerator {
+    pub fn get(&self, h: &mut IOHandles<'_>) -> ValueSelectorNumType {
+        match self {
+            Self::Const(s) => *s,
         }
     }
 }

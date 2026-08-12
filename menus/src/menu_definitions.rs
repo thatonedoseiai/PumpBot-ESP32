@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -242,6 +242,39 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             Alignment::Center,
         ),
     ],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))),
+};
+
+pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 30),
+                click: OptionSwitchHandler::ToggleFocus,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                font_size: FontSize::Sz12,
+                options: &[
+                    TEXT_DARK_MODE,
+                    TEXT_LIGHT_MODE,
+                    TEXT_CUSTOM,
+                ],
+            }),
+        ComponentDefinition::ValueSelector(
+            &ValueSelectorDefinition {
+                pos: Point::new(64, 80),
+                click: ValueSelectorHandler::ToggleFocus,
+                left: ValueSelectorHandler::Decrement(1),
+                right: ValueSelectorHandler::Increment(1),
+                suffix: "",
+                font_size: FontSize::Sz12,
+                low_limit: 0,
+                high_limit: 100,
+                initial_value: InitialValueGenerator::Const(0),
+            }),
+    ],
+    static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Print("right button!")),
 };

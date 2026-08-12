@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -37,6 +37,7 @@ pub enum ComponentDefinition {
     OptionSwitch(&'static OptionSwitchDefinition),
     OptionScroller(&'static OptionScrollerDefinition),
     TextBox(&'static TextBoxDefinition),
+    ValueSelector(&'static ValueSelectorDefinition),
 }
 
 pub enum ComponentState {
@@ -44,6 +45,7 @@ pub enum ComponentState {
     OptionSwitch(OptionSwitchState),
     OptionScroller(OptionScrollerState),
     TextBox(TextBoxState),
+    ValueSelector(ValueSelectorState),
 }
 
 pub trait RunHandlers {
@@ -65,6 +67,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionSwitch(b) => b.draw(h).await,
             Self::OptionScroller(b) => b.draw(h).await,
             Self::TextBox(b) => b.draw(h).await,
+            Self::ValueSelector(b) => b.draw(h).await,
         }
     }
 
@@ -74,6 +77,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionSwitch(b) => { b.highlight(); },
             Self::OptionScroller(b) => { b.highlight(); },
             Self::TextBox(b) => { b.highlight(); },
+            Self::ValueSelector(b) => { b.highlight(); },
         }
         self
     }
@@ -84,6 +88,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionSwitch(b) => { b.unhighlight(); },
             Self::OptionScroller(b) => { b.unhighlight(); },
             Self::TextBox(b) => { b.unhighlight(); },
+            Self::ValueSelector(b) => { b.unhighlight(); }
         }
         self
     }
@@ -96,6 +101,7 @@ impl RunHandlers for ComponentState {
             Self::OptionSwitch(b) => b.left_handle(menu_state, h).await,
             Self::OptionScroller(b) => b.left_handle(menu_state, h).await,
             Self::TextBox(b) => b.left_handle(menu_state, h).await,
+            Self::ValueSelector(b) => b.left_handle(menu_state, h).await,
         }
     }
 
@@ -105,6 +111,7 @@ impl RunHandlers for ComponentState {
             Self::OptionSwitch(b) => b.right_handle(menu_state, h).await,
             Self::OptionScroller(b) => b.right_handle(menu_state, h).await,
             Self::TextBox(b) => b.right_handle(menu_state, h).await,
+            Self::ValueSelector(b) => b.right_handle(menu_state, h).await,
         }
     }
 
@@ -114,6 +121,7 @@ impl RunHandlers for ComponentState {
             Self::OptionSwitch(b) => b.click_handle(menu_state, h).await,
             Self::OptionScroller(b) => b.click_handle(menu_state, h).await,
             Self::TextBox(b) => b.click_handle(menu_state, h).await,
+            Self::ValueSelector(b) => b.click_handle(menu_state, h).await,
         }
     }
 }
@@ -125,6 +133,7 @@ impl ComponentState {
             Self::OptionSwitch(b) => ComponentDefinition::OptionSwitch(b.definition),
             Self::OptionScroller(b) => ComponentDefinition::OptionScroller(b.definition),
             Self::TextBox(b) => ComponentDefinition::TextBox(b.definition),
+            Self::ValueSelector(b) => ComponentDefinition::ValueSelector(b.definition),
         }
     }
 }
@@ -164,6 +173,12 @@ impl ComponentDefinition {
                     cursor_undraw: Rectangle::zero(),
                 }),
             }),
+            Self::ValueSelector(definition) => ComponentState::ValueSelector(ValueSelectorState {
+                definition,
+                selection: definition.initial_value.get(h),
+                undraw: Rectangle::zero(),
+                mode: if start_focused { ValueSelectorMode::Selected } else { ValueSelectorMode::Unhighlighted },
+            }),
         }
     }
 
@@ -173,6 +188,7 @@ impl ComponentDefinition {
             Self::OptionSwitch(_) => InteractionType::Editable,
             Self::OptionScroller(_) => InteractionType::Editable,
             Self::TextBox(_) => InteractionType::Editable,
+            Self::ValueSelector(_) => InteractionType::Editable,
         }
     }
 }
@@ -985,6 +1001,86 @@ impl ComponentBehaviour for TextBoxState {
     }
 }
 
+// }}}
+// VALUE SELECTOR {{{
+pub type ValueSelectorNumType = u32;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum ValueSelectorMode {
+    Highlighted,
+    Unhighlighted,
+    Selected,
+}
+
+pub struct ValueSelectorState {
+    pub definition: &'static ValueSelectorDefinition,
+    pub selection: ValueSelectorNumType,
+    pub undraw: Rectangle,
+    pub mode: ValueSelectorMode,
+}
+
+pub struct ValueSelectorDefinition {
+    pub pos: Point,
+    pub click: ValueSelectorHandler,
+    pub left: ValueSelectorHandler,
+    pub right: ValueSelectorHandler,
+    pub suffix: &'static str,
+    pub font_size: FontSize,
+    pub low_limit: ValueSelectorNumType,
+    pub high_limit: ValueSelectorNumType,
+    pub initial_value: InitialValueGenerator,
+}
+
+impl RunHandlers for ValueSelectorState {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.left.handle(self, menu_state, h).await
+    }
+
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.right.handle(self, menu_state, h).await
+    }
+
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        self.definition.click.handle(self, menu_state, h).await
+    }
+}
+
+impl ValueSelectorState {
+    const fn undraw_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
+}
+
+impl ComponentBehaviour for ValueSelectorState {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        h.font.fgcol = if self.mode == ValueSelectorMode::Highlighted {
+            theme.highlight()
+        } else {
+            theme.fg()
+        };
+        h.font.bgcol = theme.bg();
+        h.font.font.borrow_mut().set_size(self.definition.font_size)?;
+        let preview = self.selection.to_string() + self.definition.suffix;
+        let item_text = Text::with_alignment(&preview, self.definition.pos, &h.font, Alignment::Left);
+        self.undraw.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
+        self.undraw = item_text.bounding_box();
+        item_text.draw(&mut h.screen)?;
+        Ok(())
+    }
+
+    fn highlight(&mut self) -> &mut Self {
+        self.mode = ValueSelectorMode::Highlighted;
+        self
+    }
+
+    fn unhighlight(&mut self) -> &mut Self {
+        self.mode = ValueSelectorMode::Unhighlighted;
+        self
+    }
+}
 // }}}
 
 // vim:foldmethod=marker

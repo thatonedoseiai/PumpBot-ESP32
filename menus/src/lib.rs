@@ -18,7 +18,7 @@ mod menu_definitions;
 
 use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
 use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
-use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS, SERVER_DETAILS};
+use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS, SERVER_DETAILS, DISPLAY_SETTINGS};
 use crate::static_element::StaticElement;
 
 // pub use crate::event::event::Event;
@@ -162,7 +162,8 @@ enum MenuInternalState {
     ServerDetails {
         ip: IpAddress,
         port: u16,
-    }
+    },
+    DisplaySettings,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -172,6 +173,7 @@ pub enum ComponentMenu {
     Wifi,
     WifiDetails(usize),
     ServerDetails,
+    DisplaySettings,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -198,6 +200,7 @@ impl ComponentMenu {
             Self::Wifi => &WIFI,
             Self::WifiDetails(_) => &WIFI_DETAILS,
             Self::ServerDetails => &SERVER_DETAILS,
+            Self::DisplaySettings => &DISPLAY_SETTINGS,
         }
     }
 
@@ -214,6 +217,7 @@ impl ComponentMenu {
                 ip: h.server.server_ip,
                 port: h.server.server_port,
             },
+            Self::DisplaySettings => MenuInternalState::DisplaySettings,
         }
     }
 }
