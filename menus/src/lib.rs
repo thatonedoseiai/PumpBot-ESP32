@@ -50,6 +50,8 @@ use esp_radio::wifi::ap::AccessPointInfo;
 use alloc::string::String;
 use embassy_net::{IpAddress, Ipv4Address};
 use socket::ServerConnection;
+use esp_hal::ledc::{channel::{Channel, ChannelIFace}, LowSpeed};
+use embedded_hal::pwm::SetDutyCycle;
 
 use profiler::SpanGuard;
 
@@ -393,6 +395,8 @@ pub struct IOHandles<'a> {
     pub rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
     pub wifi: PbWifi<'a>,
     pub server: ServerConnection,
+    pub backlight: Channel<'a, LowSpeed>,
+    pub backlight_brightness_pct: u8,
 }
 
 impl<'a> IOHandles<'a> {
@@ -405,8 +409,16 @@ impl<'a> IOHandles<'a> {
         rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
         wifi: PbWifi<'a>,
         server: ServerConnection,
+        backlight: Channel<'a, LowSpeed>,
+        backlight_brightness_pct: u8,
     ) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font, button, rotenc, wifi, server }
+        Self { screen, leddriver, pwm_output, font, button, rotenc, wifi, server, backlight, backlight_brightness_pct }
+    }
+
+    pub fn set_brightness_pct(&mut self, pct: u8) -> Result<(), esp_hal::ledc::channel::Error> {
+        self.backlight.set_duty(pct)?;
+        self.backlight_brightness_pct = pct;
+        Ok(())
     }
 }
 

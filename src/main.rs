@@ -309,14 +309,6 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         peripherals.GPIO11,
         peripherals.GPIO12).await?;
 
-
-    // let mut screen = if cfg!(feature = "ILI") {
-    // } else if cfg!(feature = "ST") {
-    // } else if cfg!(feature = "sim") {
-    // } else {
-    //     panic!("enable a screen feature")
-    // };
-
     let mut font = PbFont::new(fs.clone());
     font.set_size(FontSize::Sz14)?;
 
@@ -329,38 +321,15 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         clock_source: timer::LSClockSource::APBClk,
         frequency: Rate::from_khz(24),
     }).unwrap();
-    // let mut backlight = PinDriver::output(peripherals.pins.gpio13.downgrade())?;
     let mut backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
     let mut backlight_channel = ledc.channel(channel::Number::Channel7, backlight);
     backlight_channel.configure(channel::config::Config {
         timer: &lstimer0,
         duty_pct: 10,
         drive_mode: DriveMode::PushPull,
-        // pin_config: channel::config::PinConfig::PushPull,
     }).unwrap(); // TODO: fix this
+
     backlight_channel.set_duty(10).unwrap();
-
-
-    let yoffset = 10;
-    let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
-    // let res = Triangle::new(
-    //     Point::new(16, 16 + yoffset),
-    //     Point::new(16 + 16, 16 + yoffset),
-    //     Point::new(16 + 8, yoffset),
-    // )
-    // .into_styled(thin_stroke)
-    // .draw(&mut screen);
-
-    let style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
-    // let _ = Text::new("Hello Rust!", Point::new(20, 30), pb_font_style)
-    //     .draw(&mut screen);
-
-    // match res {
-    //     Err(x) => panic!("error in drawing triangle: {:?}", x),
-    //     _ => {}
-    // };
-
-    // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
@@ -373,23 +342,9 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
                 rotenc_receiver,
                 pb_wifi,
                 pb_server_connection,
+                backlight_channel,
+                10, // brightness
             )).await?;
-
-    // loop {
-    //     if let Some((ev, _)) = button_queue.recv_front(10) {
-    //         match ev {
-// Event::Button(x) => info!("Button Event! {}", x),
-    //             Event::Rotenc(x) => info!("Rotenc Event! {}", x),
-    //         }
-    //     }
-    //     // let mut info = grab()?;
-    //     // info.pin_a.enable_interrupt()?;
-    //     // info.pin_b.enable_interrupt()?;
-        // info!("looping...");
-        // http_server.update(&mut settings, &mut pb_wifi)?;
-        // esp_idf_hal::delay::FreeRtos::delay_ms(5000);
-    // }
-
     Ok(())
 }
 

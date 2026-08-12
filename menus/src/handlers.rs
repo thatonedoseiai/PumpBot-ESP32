@@ -9,6 +9,19 @@ use core::str::FromStr;
 use embassy_net::IpAddress;
 use socket::ServerConnection;
 
+#[derive(Debug, Copy, Clone)]
+pub enum HandlerError {
+    BacklightSetError(esp_hal::ledc::channel::Error),
+}
+impl core::error::Error for HandlerError { }
+impl core::fmt::Display for HandlerError {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        match self {
+            Self::BacklightSetError(e) => write!(f, "Backlight failed to set properly: {:?}", e)
+        }
+    }
+}
+
 pub enum MenuInternalStateAction {
     SetLang,
     SetWifi,
@@ -240,6 +253,8 @@ pub enum ValueSelectorHandler {
     ToggleFocus,
     Increment(ValueSelectorNumType),
     Decrement(ValueSelectorNumType),
+    IncrementBrightness,
+    DecrementBrightness,
 }
 
 
@@ -275,7 +290,23 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
                     state.draw(h).await?;
                 }
                 Ok(HandlerResult::None)
-            }
+            },
+            Self::IncrementBrightness => {
+                if state.selection < state.definition.high_limit {
+                    state.selection = state.selection.saturating_add(1);
+                    h.set_brightness_pct((state.selection & 0xff) as u8).map_err(|f| HandlerError::BacklightSetError(f))?;
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            },
+            Self::DecrementBrightness => {
+                if state.selection > state.definition.low_limit {
+                    state.selection = state.selection.saturating_sub(1);
+                    h.set_brightness_pct((state.selection & 0xff) as u8).map_err(|f| HandlerError::BacklightSetError(f))?;
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            },
         }
     }
 }
@@ -378,12 +409,14 @@ impl Handler<TextBoxState> for TextSubmitHandler {
 // INITIAL VALUE GENERATOR {{{
 pub enum InitialValueGenerator {
     Const(ValueSelectorNumType),
+    BacklightBrightness,
 }
 
 impl InitialValueGenerator {
     pub fn get(&self, h: &mut IOHandles<'_>) -> ValueSelectorNumType {
         match self {
             Self::Const(s) => *s,
+            Self::BacklightBrightness => h.backlight_brightness_pct.into(),
         }
     }
 }
