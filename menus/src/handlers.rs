@@ -5,6 +5,9 @@ use alloc::vec::Vec;
 use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
+use core::str::FromStr;
+use embassy_net::IpAddress;
+use socket::ServerConnection;
 
 pub enum MenuInternalStateAction {
     SetLang,
@@ -66,6 +69,7 @@ impl Handler<ComponentMenuInAction> for MenuHandler {
 pub enum ButtonHandler {
     Generic(GenericHandler),
     ConnectWifi,
+    ConnectServer,
 }
 
 impl Handler<ButtonState> for ButtonHandler {
@@ -85,8 +89,8 @@ impl Handler<ButtonState> for ButtonHandler {
                     match wifi_res {
                         Ok(()) => {
                             log::info!("connect returned OK!");
-                            Ok(HandlerResult::None)}
-                        ,
+                            Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
+                        },
                         Err(e) => Ok(HandlerResult::WifiConnectionFailure(e))
                     }
                 } else {
@@ -95,6 +99,19 @@ impl Handler<ButtonState> for ButtonHandler {
                 // Ok(HandlerResult::None)
                 // todo!("ConnectWifi button handler not implemented yet!")
             },
+            Self::ConnectServer => {
+                let res = h.server.connect().await;
+                match res {
+                    Ok(h) => {
+                        log::info!("pb connected to server!");
+                        Ok(HandlerResult::None)
+                    },
+                    Err(e) => {
+                        log::info!("pb failed to connect!");
+                        Ok(HandlerResult::None)
+                    }
+                }
+            }
         }
     }
 }
@@ -240,6 +257,8 @@ pub enum TextGetterSetter {
     Const(&'static str),
     WifiMenuSSIDName,
     WifiMenuPassword,
+    ServerIP,
+    ServerPort,
 }
 
 impl TextGetterSetter {
@@ -254,6 +273,12 @@ impl TextGetterSetter {
             (Self::WifiMenuPassword, _, _) => {
                 String::new()
             },
+            (Self::ServerIP, _, _) => {
+                ServerConnection::string_from_ip(&h.server.server_ip)
+            },
+            (Self::ServerPort, _, _) => {
+                h.server.server_port.to_string()
+            },
             _ => String::from("illegal TextGetterSetter"),
         }
     }
@@ -263,6 +288,8 @@ impl TextGetterSetter {
 pub enum TextSubmitHandler {
     SetWifiSSID,
     SetWifiPassword,
+    SetServerIP,
+    SetServerPort,
 }
 
 impl Handler<TextBoxState> for TextSubmitHandler {
@@ -276,6 +303,22 @@ impl Handler<TextBoxState> for TextSubmitHandler {
             (Self::SetWifiPassword, MenuInternalState::WifiDetails { pass: p, .. }) => {
                 log::info!("SET PASS: {}", state.current_entry.as_ref().borrow());
                 p.replace(state.current_entry.as_ref().borrow().to_string());
+                Ok(HandlerResult::None)
+            },
+            (Self::SetServerIP, MenuInternalState::ServerDetails { ip, .. }) => {
+                if let Ok(new_ip) = IpAddress::from_str(&state.current_entry.as_ref().borrow()) {
+                    *ip = new_ip;
+                } else {
+                    *state.current_entry.as_ref().borrow_mut() = ServerConnection::string_from_ip(ip);
+                }
+                Ok(HandlerResult::None)
+            },
+            (Self::SetServerPort, MenuInternalState::ServerDetails { port, .. }) => {
+                if let Ok(new_port) = u16::from_str(&state.current_entry.as_ref().borrow()) {
+                    *port = new_port;
+                } else {
+                    *state.current_entry.as_ref().borrow_mut() = port.to_string();
+                }
                 Ok(HandlerResult::None)
             },
             _ => {

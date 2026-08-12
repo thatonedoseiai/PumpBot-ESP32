@@ -105,6 +105,7 @@ use core::convert::Infallible;
 use core::fmt;
 use embedded_hal::delay::DelayNs;
 use embassy_time::{Timer, Duration};
+use socket::ServerConnection;
 
 #[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
 compile_error!("Declare a screen to compile!");
@@ -361,6 +362,8 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     // let outputctl = OutputCtl::new(outputperipherals, peripherals.timer10)?;
 
+    let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
+
     run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::Wifi), &mut IOHandles::new(
                 screen,
                 leddriver,
@@ -369,6 +372,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
                 button_receiver,
                 rotenc_receiver,
                 pb_wifi,
+                pb_server_connection,
             )).await?;
 
     // loop {

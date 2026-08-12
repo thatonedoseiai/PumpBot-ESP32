@@ -121,7 +121,7 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
-    right_btn: MenuHandler::Generic(GenericHandler::Print("right button pressed!")),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))),
 };
 
 pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
@@ -177,6 +177,67 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             Point::new(64, 70),
             FontSize::Sz7,
             &TEXT_PASSWORD,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+    ],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))),
+};
+
+pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::TextBox(
+            &TextBoxDefinition {
+                pos: Point::new(10, 50),
+                max_length: 16,
+                width: 120,
+                preview_chars: 10,
+                font_size: FontSize::Sz12,
+                empty_text: "ip address...",
+                initial_text: TextGetterSetter::ServerIP,
+                on_submit: TextSubmitHandler::SetServerIP,
+            }),
+        ComponentDefinition::TextBox(
+            &TextBoxDefinition {
+                pos: Point::new(10, 90),
+                max_length: 5,
+                width: 120,
+                preview_chars: 10,
+                font_size: FontSize::Sz12,
+                empty_text: "port...",
+                initial_text: TextGetterSetter::ServerPort,
+                on_submit: TextSubmitHandler::SetServerPort,
+            }),
+        ComponentDefinition::Button(
+            &ButtonDefinition {
+                pos: Point::new(32, 140),
+                click: ButtonHandler::ConnectServer,
+                left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+                right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+                font_size: FontSize::Sz12,
+                text: &TEXT_CONNECT,
+            }),
+    ],
+    static_elements: &[
+        StaticElement::Text(
+            Point::new(64, 20),
+            FontSize::Sz12,
+            &TEXT_SERVER_SETTINGS,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(64, 30),
+            FontSize::Sz7,
+            &TEXT_SERVER_ADDR,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(64, 70),
+            FontSize::Sz7,
+            &TEXT_PORT,
             ThemedColor::Fg,
             Alignment::Center,
         ),

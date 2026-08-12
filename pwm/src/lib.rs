@@ -17,7 +17,7 @@ use core::cmp::{Ord, Ordering, PartialOrd};
 use core::fmt;
 use alloc::collections::binary_heap::BinaryHeap;
 use alloc::vec::Vec;
-use futures::future::OptionFuture;
+use core::future;
 
 type Time = u64;
 const NUM_CHANNELS: usize = 4; // TODO: MAKE THIS MATTER
@@ -155,6 +155,13 @@ impl PwmPinInfo {
     }
 }
 
+async fn maybe_run<T>(t: Option<impl Future<Output = T>>) -> T {
+    match t {
+        Some(f) => f.await,
+        None => future::pending().await
+    }
+}
+
 static PIN_STATES: [RwLock<CriticalSectionRawMutex, PwmPinInfo>; NUM_CHANNELS] = [const { RwLock::new(PwmPinInfo::new()) }; NUM_CHANNELS];
 static COMMAND_CHANNEL: EChannel<CriticalSectionRawMutex, Command, 8> = EChannel::new();
 
@@ -169,17 +176,17 @@ async fn pwm_runner(pins: [AnyPin<'static>; NUM_CHANNELS]) {
     loop {
         // let mut state = PIN_STATES[usize::from(c)].write().await;
         let next_delay = command_queue.peek().map(|e| e.time - now.duration_since_epoch().as_millis());
-        let delay_event: OptionFuture<_> = match next_delay {
+        let delay_event = match next_delay {
             Some(d) => Some(ETimer::after(Duration::from_millis(d))),
             None => None,
-        }.into();
+        };
         let next_unfreeze = PIN_STATES.iter().map(|f| block_on(f.read()).freeze_timer).min().unwrap();
-        let unfreeze_event: OptionFuture<_> = if next_unfreeze > 0 {
+        let unfreeze_event = if next_unfreeze > 0 {
             Some(ETimer::after(Duration::from_millis(next_unfreeze)))
         } else {
             None
-        }.into();
-        let next_action = select3(COMMAND_CHANNEL.receive(), delay_event, unfreeze_event).await;
+        };
+        let next_action = select3(COMMAND_CHANNEL.receive(), maybe_run(delay_event), maybe_run(unfreeze_event)).await;
 
         match next_action {
             Either3::First(c) => {

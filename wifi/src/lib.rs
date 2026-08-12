@@ -50,7 +50,7 @@ pub struct PbWifi<'a> {
     // wifi_mod: BlockingWifi<EspWifi<'a>>, // NOTE: Does this need to be blocking? Might need interior mutability
     // http_config: server::Configuration,
     wifi_mod: WifiController<'a>,
-    netstack: Stack<'a>, // Runner<'a, Interface<'a>>,
+    pub netstack: Stack<'a>, // Runner<'a, Interface<'a>>,
     connected_info: Option<ConnectedInfo>,
     ap_cache: Rc<RefCell<Vec<AccessPointInfo>>>,
 }

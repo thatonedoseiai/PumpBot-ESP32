@@ -18,7 +18,7 @@ mod menu_definitions;
 
 use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
 use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
-use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS};
+use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS, SERVER_DETAILS};
 use crate::static_element::StaticElement;
 
 // pub use crate::event::event::Event;
@@ -48,6 +48,8 @@ use global_settings::PB_GLOBAL_SETTINGS;
 use core::cell::{RefCell, Cell};
 use esp_radio::wifi::ap::AccessPointInfo;
 use alloc::string::String;
+use embassy_net::{IpAddress, Ipv4Address};
+use socket::ServerConnection;
 
 use profiler::SpanGuard;
 
@@ -156,6 +158,10 @@ enum MenuInternalState {
     WifiDetails {
         ap: AccessPointInfo,
         pass: RefCell<String>,
+    },
+    ServerDetails {
+        ip: IpAddress,
+        port: u16,
     }
 }
 
@@ -165,6 +171,7 @@ pub enum ComponentMenu {
     Lang(u8),
     Wifi,
     WifiDetails(usize),
+    ServerDetails,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -190,6 +197,7 @@ impl ComponentMenu {
             Self::Lang(_) => &LANG,
             Self::Wifi => &WIFI,
             Self::WifiDetails(_) => &WIFI_DETAILS,
+            Self::ServerDetails => &SERVER_DETAILS,
         }
     }
 
@@ -198,7 +206,14 @@ impl ComponentMenu {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
             Self::Lang(s) => MenuInternalState::Lang { language: s },
             Self::Wifi => MenuInternalState::Wifi,
-            Self::WifiDetails(a) => MenuInternalState::WifiDetails { ap: h.wifi.get_wifis()[a].clone(), pass: RefCell::new(String::new()) },
+            Self::WifiDetails(a) => MenuInternalState::WifiDetails { 
+                ap: h.wifi.get_wifis()[a].clone(),
+                pass: RefCell::new(String::new())
+            },
+            Self::ServerDetails => MenuInternalState::ServerDetails {
+                ip: h.server.server_ip,
+                port: h.server.server_port,
+            },
         }
     }
 }
@@ -373,6 +388,7 @@ pub struct IOHandles<'a> {
     pub button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
     pub rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
     pub wifi: PbWifi<'a>,
+    pub server: ServerConnection,
 }
 
 impl<'a> IOHandles<'a> {
@@ -384,8 +400,9 @@ impl<'a> IOHandles<'a> {
         button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
         rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10>,
         wifi: PbWifi<'a>,
+        server: ServerConnection,
     ) -> IOHandles<'a> {
-        Self { screen, leddriver, pwm_output, font, button, rotenc, wifi }
+        Self { screen, leddriver, pwm_output, font, button, rotenc, wifi, server }
     }
 }
 

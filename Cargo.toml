@@ -39,6 +39,7 @@ wifi = { path = "./wifi" }
 global_settings = { path = "./global_settings" }
 fontfile = { path = "./fontfile" }
 flash_storage = { path = "./flash_storage" }
+socket = { path = "./socket" }
 # ilidriver = { path = "./ilidriver" }
 embedded-graphics = "0.8.2"
 ili9341 = "0.6.0"

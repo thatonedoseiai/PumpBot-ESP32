@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![feature(iter_intersperse)]
 
 extern crate alloc;
 
@@ -7,7 +8,6 @@ use embassy_net::{
     tcp::{TcpSocket, ConnectError},
     IpEndpoint,
     IpAddress,
-    Ipv4Address,
     Stack
 };
 use embassy_executor::Spawner;
@@ -18,6 +18,8 @@ use embassy_sync::{
 use core::fmt;
 use core::write;
 use core::convert::From;
+use pwm::PwmNumber;
+use alloc::string::{ToString, String};
 
 #[derive(Clone, Copy)]
 pub enum ServerCommand {
@@ -39,8 +41,8 @@ pub enum ServerResponse {
 }
 
 pub struct ServerConnection {
-    server_ip: IpAddress,
-    server_port: u16,
+    pub server_ip: IpAddress,
+    pub server_port: u16,
 }
 
 #[derive(Debug)]
@@ -73,7 +75,7 @@ impl ServerConnection {
         spawner.spawn(socket_runner_task(COMMAND_CHANNEL.receiver(), RESPONSE_CHANNEL.sender(), netstack).unwrap());
 
         ServerConnection {
-            server_ip: IpAddress::Ipv4(Ipv4Address::new(0,0,0,0)),
+            server_ip: IpAddress::v4(0,0,0,0),
             server_port: 0,
         }
     }
@@ -85,6 +87,45 @@ impl ServerConnection {
 
     pub async fn disconnect(&mut self) {
         COMMAND_CHANNEL.send(ServerCommand::Disconnect).await;
+    }
+
+    pub fn string_from_ip(ip: &IpAddress) -> String {
+        match ip {
+            IpAddress::Ipv4(i) => {
+                i.octets().iter().map(|f| f.to_string()).intersperse(".".to_string()).collect()
+            },
+            IpAddress::Ipv6(k) => {
+                let octets = k.octets();
+                let mut s = String::new();
+                const HEX_CHARS: &[u8; 16] = b"0123456789abcdef";
+                
+                let mut i = 0;
+                while i < 8 {
+                    if i > 0 {
+                        // If push fails (which shouldn't happen for a valid IPv6 size), we ignore or handle it
+                        let _ = s.push(':');
+                    }
+                    
+                    let hextet = ((octets[i * 2] as u16) << 8) | (octets[i * 2 + 1] as u16);
+                    
+                    let mut shift = 12;
+                    let mut leading_zero = true;
+                    
+                    while shift >= 0 {
+                        let digit = ((hextet >> shift) & 0xf) as usize;
+                        if digit != 0 || shift == 0 || !leading_zero {
+                            leading_zero = false;
+                            let _ = s.push(HEX_CHARS[digit] as char);
+                        }
+                        shift -= 4;
+                    }
+                    
+                    i += 1;
+                }
+                
+                s
+            },
+        }
     }
 }
 
