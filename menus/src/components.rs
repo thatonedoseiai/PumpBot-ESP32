@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -25,6 +25,7 @@ use core::borrow::Borrow;
 use core::cell::{RefCell, Ref, Cell};
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
+use alloc::boxed::Box;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -203,16 +204,37 @@ impl ComponentDefinition {
                 cur_value: definition.initial_value.get(h),
                 mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
             }),
-            Self::ColorSelector(definition) => ComponentState::ColorSelector(ColorSelectorState {
-                definition,
-                current_color: definition.initial_color.get(h),
-                mode: if start_focused { ColorSelectorMode::Selected } else { ColorSelectorMode::Unhighlighted },
-                selection_undraw: Rectangle::zero(),
-                slider_state: ColorSliderState {
-                    mode: SliderSetMode::ChangeChannel,
-                    channel: ColorSelectorChannel::Red,
-                },
-            }),
+            Self::ColorSelector(definition) => {
+                let start_col = definition.initial_color.get(h);
+                ComponentState::ColorSelector(ColorSelectorState {
+                    definition,
+                    current_color: start_col,
+                    mode: if start_focused { ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) } else { ColorSelectorMode::Unhighlighted },
+                    selection_undraw: Rectangle::zero(),
+                    slider_states: [
+                        SliderState { 
+                            definition: &ColorSelectorState::SLIDER_R_DEFINITION,
+                            cur_value: start_col.r,
+                            mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                        },
+                        SliderState { 
+                            definition: &ColorSelectorState::SLIDER_G_DEFINITION,
+                            cur_value: start_col.g,
+                            mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                        },
+                        SliderState { 
+                            definition: &ColorSelectorState::SLIDER_B_DEFINITION,
+                            cur_value: start_col.b,
+                            mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                        },
+                    ],
+                    button_state: ButtonState {
+                        definition: &ColorSelectorState::DONE_BUTTON_DEFINITION,
+                        highlighted: false
+                    },
+                    current_selected_component: ColorSelectorSubmenuSelection::ChannelR,
+                })
+            },
         }
     }
 
@@ -1205,39 +1227,45 @@ impl ComponentBehaviour for SliderState {
 }
 // }}}
 // COLOR SELECTOR {{{
-enum SliderSetMode {
-    ChangeChannel,
-    ModifyChannel,
-}
-
-enum ColorSelectorMode {
-    Highlighted,
-    Unhighlighted,
-    Selected,
-}
-
-struct ColorSliderState {
-    mode: SliderSetMode,
-    channel: ColorSelectorChannel,
-}
-
-#[derive(Eq, PartialEq)]
-enum ColorSelectorChannel {
-    Red,
-    Green,
-    Blue,
+#[derive(PartialEq, Eq)]
+enum ColorSelectorSubmenuSelection {
+    ChannelR,
+    ChannelG,
+    ChannelB,
     Done,
 }
 
-impl ColorSelectorChannel {
-    const fn slider_x_pos(&self) -> i32 {
+impl ColorSelectorSubmenuSelection {
+    const fn next(&self) -> Self {
         match self {
-            Self::Red => 19,
-            Self::Green => 49,
-            Self::Blue => 79,
-            Self::Done => unreachable!(),
+            Self::ChannelR => Self::ChannelG,
+            Self::ChannelG => Self::ChannelB,
+            Self::ChannelB => Self::Done,
+            Self::Done => Self::ChannelR,
         }
     }
+
+    const fn prev(&self) -> Self {
+        match self {
+            Self::ChannelR => Self::Done,
+            Self::ChannelG => Self::ChannelR,
+            Self::ChannelB => Self::ChannelG,
+            Self::Done => Self::ChannelB,
+        }
+    }
+}
+
+#[derive(Eq, PartialEq)]
+enum ColorSelectorSubmenuMode {
+    Browse,
+    Edit,
+}
+
+#[derive(Eq, PartialEq)]
+enum ColorSelectorMode {
+    Highlighted,
+    Unhighlighted,
+    Selected(ColorSelectorSubmenuMode),
 }
 
 pub struct ColorSelectorState {
@@ -1245,47 +1273,32 @@ pub struct ColorSelectorState {
     pub current_color: RGB,
     pub mode: ColorSelectorMode,
     selection_undraw: Rectangle,
-    slider_state: ColorSliderState,
+    slider_states: [SliderState;3],
+    button_state: ButtonState,
+    current_selected_component: ColorSelectorSubmenuSelection,
+    // slider_state: ColorSliderState,
 }
 
 pub struct ColorSelectorDefinition {
     pub preview_rect: Rectangle,
     pub left: ColorSelectorHandler,
     pub right: ColorSelectorHandler,
-    // pub click: ColorSelectorHandler,
     pub initial_color: ColorGetter,
 }
 
 impl RunHandlers for ColorSelectorState {
     async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
-        match self.slider_state.mode {
-            SliderSetMode::ChangeChannel => {
-                self.slider_state.channel = match self.slider_state.channel {
-                    ColorSelectorChannel::Red => ColorSelectorChannel::Done,
-                    ColorSelectorChannel::Green => ColorSelectorChannel::Red,
-                    ColorSelectorChannel::Blue => ColorSelectorChannel::Green,
-                    ColorSelectorChannel::Done => ColorSelectorChannel::Blue,
-                }
-            }
-            SliderSetMode::ModifyChannel => {
-                match self.slider_state.channel {
-                    ColorSelectorChannel::Red => {
-                        self.current_color.r = self.current_color.r.saturating_sub(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Red.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.r, h)?;
-                    },
-                    ColorSelectorChannel::Green => {
-                        self.current_color.g = self.current_color.g.saturating_sub(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Green.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.g, h)?;
-                    },
-                    ColorSelectorChannel::Blue => {
-                        self.current_color.b = self.current_color.b.saturating_sub(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Blue.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.b, h)?;
-                    },
-                    ColorSelectorChannel::Done => unreachable!(),
-                }
-                Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
-            }
+        if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
+            self.unhighlight_selected_component();
+            self.draw_selected_component(h).await?;
+            self.current_selected_component = self.current_selected_component.prev();
+            self.highlight_selected_component();
+            self.draw_selected_component(h).await?;
+        } else if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Edit) {
+            self.selected_component_handle_left(menu_state, h).await?;
+            self.update_color_value();
+            Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
         }
         Ok(HandlerResult::None)
         // self.definition.right.handle(self, menu_state, h).await
@@ -1293,33 +1306,16 @@ impl RunHandlers for ColorSelectorState {
 
     async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
-        match self.slider_state.mode {
-            SliderSetMode::ChangeChannel => {
-                self.slider_state.channel = match self.slider_state.channel {
-                    ColorSelectorChannel::Red => ColorSelectorChannel::Green,
-                    ColorSelectorChannel::Green => ColorSelectorChannel::Blue,
-                    ColorSelectorChannel::Blue => ColorSelectorChannel::Done,
-                    ColorSelectorChannel::Done => ColorSelectorChannel::Red,
-                }
-            }
-            SliderSetMode::ModifyChannel => {
-                match self.slider_state.channel {
-                    ColorSelectorChannel::Red => {
-                        self.current_color.r = self.current_color.r.saturating_add(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Red.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.r, h)?;
-                    },
-                    ColorSelectorChannel::Green => {
-                        self.current_color.g = self.current_color.g.saturating_add(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Green.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.g, h)?;
-                    },
-                    ColorSelectorChannel::Blue => {
-                        self.current_color.b = self.current_color.b.saturating_add(1);
-                        self.draw_slider(Point::new(ColorSelectorChannel::Blue.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.b, h)?;
-                    },
-                    ColorSelectorChannel::Done => unreachable!(),
-                }
-                Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
-            }
+        if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
+            self.unhighlight_selected_component();
+            self.draw_selected_component(h).await?;
+            self.current_selected_component = self.current_selected_component.next();
+            self.highlight_selected_component();
+            self.draw_selected_component(h).await?;
+        } else if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Edit) {
+            self.selected_component_handle_right(menu_state, h).await?;
+            self.update_color_value();
+            Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
         }
         Ok(HandlerResult::None)
     }
@@ -1327,32 +1323,28 @@ impl RunHandlers for ColorSelectorState {
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         // self.definition.click.handle(self, menu_state, h).await
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
-        match self.mode {
+        match &self.mode {
             ColorSelectorMode::Unhighlighted => unreachable!(),
             ColorSelectorMode::Highlighted => {
-                self.mode = ColorSelectorMode::Selected;
+                self.mode = ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse);
                 h.screen.clear(theme.bg().as_rgb565())?;
                 self.draw(h).await?;
                 Ok(HandlerResult::None)
             },
-            ColorSelectorMode::Selected => {
-                match self.slider_state.mode {
-                    SliderSetMode::ChangeChannel => {
-                        if self.slider_state.channel == ColorSelectorChannel::Done {
-                            self.mode = ColorSelectorMode::Highlighted;
-                            h.screen.clear(theme.bg().as_rgb565())?;
-                            Ok(HandlerResult::ForceRedrawAndUnfocus)
-                        } else {
-                            self.slider_state.mode = SliderSetMode::ModifyChannel;
-                            Ok(HandlerResult::None)
-                        }
-                    }
-                    SliderSetMode::ModifyChannel => {
-                        self.slider_state.mode = SliderSetMode::ChangeChannel;
-                        Ok(HandlerResult::None)
-                    }
+            ColorSelectorMode::Selected(c) => {
+                if self.current_selected_component == ColorSelectorSubmenuSelection::Done {
+                    self.mode = ColorSelectorMode::Highlighted;
+                    h.screen.clear(theme.bg().as_rgb565())?;
+                    Ok(HandlerResult::ForceRedrawAndUnfocus)
+                } else {
+                    self.mode = ColorSelectorMode::Selected(match c {
+                        ColorSelectorSubmenuMode::Browse => ColorSelectorSubmenuMode::Edit,
+                        ColorSelectorSubmenuMode::Edit => ColorSelectorSubmenuMode::Browse,
+                    });
+                    self.selected_component_handle_click(menu_state, h).await?;
+                    Ok(HandlerResult::None)
                 }
-            }
+            },
         }
     }
 }
@@ -1371,9 +1363,100 @@ impl ColorSelectorState {
         .stroke_color(Rgb565::WHITE)
         .build();
     const DONE_TEXT_POS: Point = Point::new(64, 20);
+
+    const SLIDER_R_DEFINITION: SliderDefinition = SliderDefinition {
+            rect: Rectangle::new(Point::new(19, 20), Size::new(30, 80)),
+            bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
+            initial_value: SliderValueGetter::Const(0),
+            increment: 1
+        };
+    const SLIDER_G_DEFINITION: SliderDefinition = SliderDefinition {
+            rect: Rectangle::new(Point::new(49, 20), Size::new(30, 80)),
+            bg: SliderBackgroundDrawing::GradientY(rgb![0, 255, 0], rgb![0, 0, 0]),
+            initial_value: SliderValueGetter::Const(0),
+            increment: 1
+        };
+    const SLIDER_B_DEFINITION: SliderDefinition = SliderDefinition {
+            rect: Rectangle::new(Point::new(79, 20), Size::new(30, 80)),
+            bg: SliderBackgroundDrawing::GradientY(rgb![0, 0, 255], rgb![0, 0, 0]),
+            initial_value: SliderValueGetter::Const(0),
+            increment: 1
+        };
+    const DONE_BUTTON_DEFINITION: ButtonDefinition = ButtonDefinition {
+        pos: Point::new(64, 20),
+        click: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+        left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+        right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+        font_size: FontSize::Sz12,
+        text: &TEXT_OK,
+    };
+
     // const RECT_R: Rectangle = Rectangle::new(Point::new(19, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
     // const RECT_G: Rectangle = Rectangle::new(Point::new(49, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
     // const RECT_B: Rectangle = Rectangle::new(Point::new(79, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
+
+    async fn draw_selected_component(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].draw(h).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].draw(h).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].draw(h).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.draw(h).await
+        }
+    }
+
+    fn highlight_selected_component(&mut self) {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => { self.slider_states[0].highlight(); },
+            ColorSelectorSubmenuSelection::ChannelG => { self.slider_states[1].highlight(); },
+            ColorSelectorSubmenuSelection::ChannelB => { self.slider_states[2].highlight(); },
+            ColorSelectorSubmenuSelection::Done     => { self.button_state.highlight(); },
+        }
+    }
+
+    fn unhighlight_selected_component(&mut self) {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => { self.slider_states[0].unhighlight(); },
+            ColorSelectorSubmenuSelection::ChannelG => { self.slider_states[1].unhighlight(); },
+            ColorSelectorSubmenuSelection::ChannelB => { self.slider_states[2].unhighlight(); },
+            ColorSelectorSubmenuSelection::Done     => { self.button_state.unhighlight(); }
+        }
+    }
+
+    const fn update_color_value(&mut self) {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => { self.current_color.r = self.slider_states[0].cur_value; },
+            ColorSelectorSubmenuSelection::ChannelG => { self.current_color.g = self.slider_states[1].cur_value; },
+            ColorSelectorSubmenuSelection::ChannelB => { self.current_color.b = self.slider_states[2].cur_value; },
+            ColorSelectorSubmenuSelection::Done => {},
+        }
+    }
+
+    async fn selected_component_handle_right(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].right_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].right_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].right_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.right_handle(menu_state, h).await
+        }
+    }
+
+    async fn selected_component_handle_left(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].left_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].left_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].left_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.left_handle(menu_state, h).await
+        }
+    }
+
+    async fn selected_component_handle_click(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self.current_selected_component {
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].click_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].click_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].click_handle(menu_state, h).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.click_handle(menu_state, h).await
+        }
+    }
 
     fn draw_preview(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         self.definition.preview_rect.into_styled(self.preview_style()).draw(&mut h.screen)?;
@@ -1386,12 +1469,12 @@ impl ColorSelectorState {
         Ok(())
     }
 
-    fn draw_done_button(&mut self, lang: Lang, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        h.font.fgcol = if self.slider_state.channel == ColorSelectorChannel::Done { theme.highlight() } else { theme.fg() };
-        h.font.bgcol = theme.bg();
-        Text::with_alignment(TEXT_OK[lang], Self::DONE_TEXT_POS, &h.font, Alignment::Center).draw(&mut h.screen)?;
-        Ok(())
-    }
+    // fn draw_done_button(&mut self, lang: Lang, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+    //     h.font.fgcol = if self.slider_state.channel == ColorSelectorChannel::Done { theme.highlight() } else { theme.fg() };
+    //     h.font.bgcol = theme.bg();
+    //     Text::with_alignment(TEXT_OK[lang], Self::DONE_TEXT_POS, &h.font, Alignment::Center).draw(&mut h.screen)?;
+    //     Ok(())
+    // }
 
     const fn undraw_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
@@ -1433,15 +1516,14 @@ impl ComponentBehaviour for ColorSelectorState {
             },
             ColorSelectorMode::Unhighlighted => {
                 self.selection_undraw.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
-                self.selection_undraw = Rectangle::zero();
                 self.draw_preview(h)?;
             },
-            ColorSelectorMode::Selected => {
+            ColorSelectorMode::Selected(_) => {
                 Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
-                self.draw_slider(Point::new(ColorSelectorChannel::Red.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.r, h)?;
-                self.draw_slider(Point::new(ColorSelectorChannel::Green.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.g, h)?;
-                self.draw_slider(Point::new(ColorSelectorChannel::Blue.slider_x_pos(), Self::SLIDERS_TOP), Self::selection_style(theme), self.current_color.b, h)?;
-                self.draw_done_button(settings.lang, theme, h)?;
+                for slider in &mut self.slider_states {
+                    slider.draw(h).await?;
+                }
+                self.button_state.draw(h).await?;
             },
         }
         Ok(())
