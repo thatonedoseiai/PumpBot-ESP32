@@ -2,7 +2,7 @@ use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, Compon
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb, rgb::RGB};
+use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb, rgb::RGB, Theme};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -140,6 +140,7 @@ pub enum OptionSwitchHandler {
     PrevElement,
     ToggleFocus,
     PrintSelection,
+    ToggleFocusAndSetTheme,
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
@@ -177,6 +178,32 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
             Self::PrintSelection => {
                 log::info!("you selected [{}]!", state.definition.options[state.selection][Lang::En]);
                 Ok(HandlerResult::None)
+            },
+            Self::ToggleFocusAndSetTheme => {
+                let old_state_mode = state.mode;
+                state.mode = match state.mode {
+                    OptionSwitchMode::Unhighlighted => OptionSwitchMode::Unhighlighted,
+                    OptionSwitchMode::Highlighted => OptionSwitchMode::Selected,
+                    OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
+                };
+                log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
+                state.draw(h).await?;
+                if state.mode == OptionSwitchMode::Highlighted {
+                    if let MenuInternalState::DisplaySettings { theme, theme_custom_col } = menu_state {
+                        let mut settings = PB_GLOBAL_SETTINGS.write().await;
+                        settings.theme = match state.selection {
+                            0 => Theme::Dark,
+                            1 => Theme::Light,
+                            2 => Theme::Custom(*theme_custom_col),
+                            _ => unreachable!()
+                        }
+                        // settings.theme = Self::THEMES[self.selection]; // TODO:
+                        // todo!();
+                    }
+                    Ok(HandlerResult::ForceRedrawAndUnfocus)
+                } else {
+                    Ok(HandlerResult::None)
+                }
             }
         }
     }
@@ -480,12 +507,48 @@ impl SliderValueGetter {
 // COLOR GETTER {{{
 pub enum ColorGetter {
     Const(RGB),
+    ThemeMenuCustomColor
 }
 
 impl ColorGetter {
-    pub fn get(&self, h: &mut IOHandles<'_>) -> RGB {
+    pub fn get(&self, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> RGB {
         match self {
             Self::Const(r) => *r,
+            Self::ThemeMenuCustomColor => {
+                match internal_state {
+                    MenuInternalState::DisplaySettings { theme_custom_col, .. } => {
+                        *theme_custom_col
+                    }
+                    _ => panic!("bad ColorGetter::ThemeMenuCustomColor placement!")
+                }
+            }
+        }
+    }
+}
+// }}}
+// COLOR SUBMIT HANDLER {{{
+pub enum ColorSubmitHandler {
+    Generic(GenericHandler),
+    SetThemeMenuColor,
+}
+
+impl Handler<ColorSelectorState> for ColorSubmitHandler {
+    async fn handle(&self, state: &mut ColorSelectorState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => g.handle(&mut (), menu_state, h).await,
+            Self::SetThemeMenuColor => {
+                match menu_state {
+                    MenuInternalState::DisplaySettings { theme_custom_col, .. } => {
+                        *theme_custom_col = state.current_color;
+                        let settings = &mut PB_GLOBAL_SETTINGS.write().await;
+                        if let Theme::Custom(r) = settings.theme {
+                            settings.theme = Theme::Custom(state.current_color);
+                        }
+                    }
+                    _ => panic!("bad ColorSelectorState::SetThemeMenuHandler handler placement!!"),
+                }
+                Ok(HandlerResult::None)
+            }
         }
     }
 }

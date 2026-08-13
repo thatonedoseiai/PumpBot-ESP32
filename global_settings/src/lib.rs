@@ -60,6 +60,7 @@ impl ToString for PbGlobalSettings {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum Theme {
     Dark,
     Light,

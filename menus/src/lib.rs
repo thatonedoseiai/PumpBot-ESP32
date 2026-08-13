@@ -44,7 +44,7 @@ use embedded_graphics::prelude::RgbColor;
 use embedded_graphics::draw_target::DrawTarget;
 use log::info;
 use alloc::borrow::Cow;
-use global_settings::PB_GLOBAL_SETTINGS;
+use global_settings::{PB_GLOBAL_SETTINGS, PbGlobalSettings, rgb, rgb::RGB, Theme};
 use core::cell::{RefCell, Cell};
 use esp_radio::wifi::ap::AccessPointInfo;
 use alloc::string::String;
@@ -52,6 +52,7 @@ use embassy_net::{IpAddress, Ipv4Address};
 use socket::ServerConnection;
 use esp_hal::ledc::{channel::{Channel, ChannelIFace}, LowSpeed};
 use embedded_hal::pwm::SetDutyCycle;
+use core::ops::Deref;
 
 use profiler::SpanGuard;
 
@@ -165,7 +166,10 @@ enum MenuInternalState {
         ip: IpAddress,
         port: u16,
     },
-    DisplaySettings,
+    DisplaySettings {
+        theme: Theme,
+        theme_custom_col: RGB,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -206,7 +210,7 @@ impl ComponentMenu {
         }
     }
 
-    fn initial_state(self, h: &mut IOHandles<'_>) -> MenuInternalState {
+    fn initial_state(self, h: &mut IOHandles<'_>, settings: &PbGlobalSettings) -> MenuInternalState {
         match self {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
             Self::Lang(s) => MenuInternalState::Lang { language: s },
@@ -219,7 +223,10 @@ impl ComponentMenu {
                 ip: h.server.server_ip,
                 port: h.server.server_port,
             },
-            Self::DisplaySettings => MenuInternalState::DisplaySettings,
+            Self::DisplaySettings => MenuInternalState::DisplaySettings {
+                theme: settings.theme,
+                theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
+            },
         }
     }
 }
@@ -236,7 +243,7 @@ impl MenuStateBehaviour for Menu {
 impl MenuStateBehaviour for ComponentMenu {
     async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let num_components = self.definition().components.len();
-        let mut internal_state = self.initial_state(h);
+        let mut internal_state = self.initial_state(h, &PB_GLOBAL_SETTINGS.read().await.deref());
         let mut cur_menu_state = ComponentMenuInAction {
             layout: self.definition(),
             component_states: self.definition()
@@ -348,6 +355,7 @@ impl MenuStateBehaviour for ComponentMenu {
                     }
                 },
                 Some(HandlerResult::ForceRedrawAndUnfocus) => {
+                    h.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().as_rgb565())?;
                     cur_menu_state.component_states.iter_mut().for_each(|f| { f.reset_draw_flags(); });
                     cur_menu_state.draw_all_components(h).await?;
                     if num_components > 1 {

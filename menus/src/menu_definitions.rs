@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition, SliderDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing, ColorSubmitHandler};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -252,7 +252,7 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
                 pos: Point::new(20, 30),
-                click: OptionSwitchHandler::ToggleFocus,
+                click: OptionSwitchHandler::ToggleFocusAndSetTheme,
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
                 font_size: FontSize::Sz12,
@@ -279,15 +279,9 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                 preview_rect: Rectangle::new(Point::new(64, 100), Size::new(30, 30)),
                 left: ColorSelectorHandler::Generic(GenericHandler::Print("left btn!")),
                 right: ColorSelectorHandler::Generic(GenericHandler::Print("right btn!")),
-                initial_color: ColorGetter::Const(rgb![0, 255, 0]),
+                initial_color: ColorGetter::ThemeMenuCustomColor,
+                on_submit: ColorSubmitHandler::SetThemeMenuColor,
             }),
-        ComponentDefinition::Slider(
-            &SliderDefinition {
-                rect: Rectangle::new(Point::new(10, 50), Size::new(10, 80)),
-                bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
-                initial_value: SliderValueGetter::Const(10),
-                increment: 1,
-            })
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),

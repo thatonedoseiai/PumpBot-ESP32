@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -222,7 +222,7 @@ impl ComponentDefinition {
                 cursor_undraw_right: Rectangle::zero(),
             }),
             Self::ColorSelector(definition) => {
-                let start_col = definition.initial_color.get(h);
+                let start_col = definition.initial_color.get(internal_state, h);
                 ComponentState::ColorSelector(ColorSelectorState {
                     definition,
                     current_color: start_col,
@@ -1360,6 +1360,7 @@ pub struct ColorSelectorDefinition {
     pub left: ColorSelectorHandler,
     pub right: ColorSelectorHandler,
     pub initial_color: ColorGetter,
+    pub on_submit: ColorSubmitHandler,
 }
 
 impl RunHandlers for ColorSelectorState {
@@ -1398,7 +1399,7 @@ impl RunHandlers for ColorSelectorState {
 
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         // self.definition.click.handle(self, menu_state, h).await
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        let theme = PB_GLOBAL_SETTINGS.read().await.theme;
         match &self.mode {
             ColorSelectorMode::Unhighlighted => unreachable!(),
             ColorSelectorMode::Highlighted => {
@@ -1410,8 +1411,9 @@ impl RunHandlers for ColorSelectorState {
             ColorSelectorMode::Selected(c) => {
                 if self.current_selected_component == ColorSelectorSubmenuSelection::Done {
                     self.mode = ColorSelectorMode::Highlighted;
-                    h.screen.clear(theme.bg().as_rgb565())?;
                     self.slider_states.iter_mut().for_each(|f| {f.bg_drawn = false;});
+                    self.definition.on_submit.handle(self, menu_state, h).await?;
+                    h.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().as_rgb565())?;
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 } else {
                     self.mode = ColorSelectorMode::Selected(match c {
