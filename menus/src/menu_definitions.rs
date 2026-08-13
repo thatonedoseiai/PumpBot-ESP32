@@ -283,7 +283,7 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::Slider(
             &SliderDefinition {
-                rect: Rectangle::new(Point::new(0, 50), Size::new(30, 80)),
+                rect: Rectangle::new(Point::new(10, 50), Size::new(10, 80)),
                 bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
                 initial_value: SliderValueGetter::Const(10),
                 increment: 1,

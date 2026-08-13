@@ -348,6 +348,7 @@ impl MenuStateBehaviour for ComponentMenu {
                     }
                 },
                 Some(HandlerResult::ForceRedrawAndUnfocus) => {
+                    cur_menu_state.component_states.iter_mut().for_each(|f| { f.reset_draw_flags(); });
                     cur_menu_state.draw_all_components(h).await?;
                     if num_components > 1 {
                         cur_menu_state.mode = ComponentMenuMode::Browse;

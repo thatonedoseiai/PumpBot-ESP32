@@ -64,6 +64,7 @@ pub trait ComponentBehaviour {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()>;
     fn highlight(&mut self) -> &mut Self;
     fn unhighlight(&mut self) -> &mut Self;
+    fn reset_draw_flags(&mut self) -> &mut Self;
 }
 
 impl ComponentBehaviour for ComponentState {
@@ -101,6 +102,19 @@ impl ComponentBehaviour for ComponentState {
             Self::ValueSelector(b) => { b.unhighlight(); }
             Self::Slider(b) => { b.unhighlight(); }
             Self::ColorSelector(b) => { b.unhighlight(); }
+        }
+        self
+    }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
+        match self {
+            Self::Button(b) => { b.reset_draw_flags(); },
+            Self::OptionSwitch(b) => { b.reset_draw_flags(); },
+            Self::OptionScroller(b) => { b.reset_draw_flags(); },
+            Self::TextBox(b) => { b.reset_draw_flags(); },
+            Self::ValueSelector(b) => { b.reset_draw_flags(); }
+            Self::Slider(b) => { b.reset_draw_flags(); }
+            Self::ColorSelector(b) => { b.reset_draw_flags(); }
         }
         self
     }
@@ -203,6 +217,9 @@ impl ComponentDefinition {
                 definition,
                 cur_value: definition.initial_value.get(h),
                 mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                bg_drawn: false,
+                cursor_undraw_left: Rectangle::zero(),
+                cursor_undraw_right: Rectangle::zero(),
             }),
             Self::ColorSelector(definition) => {
                 let start_col = definition.initial_color.get(h);
@@ -216,16 +233,25 @@ impl ComponentDefinition {
                             definition: &ColorSelectorState::SLIDER_R_DEFINITION,
                             cur_value: start_col.r,
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                            bg_drawn: false,
+                            cursor_undraw_left: Rectangle::zero(),
+                            cursor_undraw_right: Rectangle::zero(),
                         },
                         SliderState { 
                             definition: &ColorSelectorState::SLIDER_G_DEFINITION,
                             cur_value: start_col.g,
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                            bg_drawn: false,
+                            cursor_undraw_left: Rectangle::zero(),
+                            cursor_undraw_right: Rectangle::zero(),
                         },
                         SliderState { 
                             definition: &ColorSelectorState::SLIDER_B_DEFINITION,
                             cur_value: start_col.b,
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+                            bg_drawn: false,
+                            cursor_undraw_left: Rectangle::zero(),
+                            cursor_undraw_right: Rectangle::zero(),
                         },
                     ],
                     button_state: ButtonState {
@@ -316,6 +342,10 @@ impl ComponentBehaviour for ButtonState {
     fn unhighlight(&mut self) -> &mut Self {
         // println!("UNHIGHLIGHTING COMPONENT [{}]", self.id);
         self.highlighted = false;
+        self
+    }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
         self
     }
 }
@@ -468,6 +498,10 @@ impl ComponentBehaviour for OptionSwitchState {
         }
         self
     }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
+        self
+    }
 }
 // }}}
 // OPTION SCROLLER {{{
@@ -597,6 +631,10 @@ impl ComponentBehaviour for OptionScrollerState {
     }
 
     fn unhighlight(&mut self) -> &mut Self {
+        self
+    }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
         self
     }
 }
@@ -1057,6 +1095,10 @@ impl ComponentBehaviour for TextBoxState {
         self.highlighted = false;
         self
     }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
+        self
+    }
 }
 
 // }}}
@@ -1138,6 +1180,10 @@ impl ComponentBehaviour for ValueSelectorState {
         self.mode = ValueSelectorMode::Unhighlighted;
         self
     }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
+        self
+    }
 }
 // }}}
 // SLIDER {{{
@@ -1154,6 +1200,9 @@ pub struct SliderState {
     definition: &'static SliderDefinition,
     cur_value: SLIDER_VALUE_TYPE,
     mode: SliderMode,
+    bg_drawn: bool,
+    cursor_undraw_left: Rectangle,
+    cursor_undraw_right: Rectangle,
 }
 
 pub struct SliderDefinition {
@@ -1164,13 +1213,22 @@ pub struct SliderDefinition {
 }
 
 impl SliderState {
-    const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
-    const CURSOR_RADIUS: i32 = 5;
-    const CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-        .stroke_width(2)
-        .stroke_color(Rgb565::WHITE)
-        .build();
+    // const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
+    const CURSOR_LEFT: Triangle = Triangle::new(Point::new(-1, 0), Point::new(-5, -4), Point::new(-5, 4));
+    const CURSOR_RIGHT: Triangle = Triangle::new(Point::new(1, 0), Point::new(5, -4), Point::new(5, 4));
+    // const CURSOR_RADIUS: i32 = 5;
+    const fn cursor_style(theme: &Theme, selected: bool) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(2)
+            .stroke_color(if selected { theme.highlight() } else { theme.fg() }.as_rgb565())
+            .build()
+    }
 
+    const fn undraw_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .fill_color(theme.bg().as_rgb565())
+            .build()
+    }
 }
 
 impl RunHandlers for SliderState {
@@ -1209,11 +1267,22 @@ impl RunHandlers for SliderState {
 
 impl ComponentBehaviour for SliderState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        self.definition.bg.draw(self.definition.rect, h)?;
-        let cursor_pos = Point::new(
-            self.definition.rect.top_left.x + (self.definition.rect.size.width / 2) as i32 - Self::CURSOR_RADIUS,
-            self.definition.rect.top_left.y + (self.definition.rect.size.height as i32 - Self::CURSOR_RADIUS * 2) - ((self.definition.rect.size.height as i32 - Self::CURSOR_RADIUS * 2) * self.cur_value as i32) / 255);
-        Self::CURSOR.translate(cursor_pos).into_styled(Self::CURSOR_STYLE).draw(&mut h.screen)?;
+        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        if !self.bg_drawn {
+            self.definition.bg.draw(self.definition.rect, h)?;
+            self.bg_drawn = true;
+        }
+        let cursor_y = self.definition.rect.top_left.y + (self.definition.rect.size.height as i32) - ((self.definition.rect.size.height as i32) * self.cur_value as i32) / 255;
+        let cursor_left_pos = Point::new(self.definition.rect.top_left.x, cursor_y);
+        let cursor_right_pos = Point::new(self.definition.rect.top_left.x + (self.definition.rect.size.width as i32), cursor_y);
+        self.cursor_undraw_left.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
+        self.cursor_undraw_right.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
+        let left_cursor = Self::CURSOR_LEFT.translate(cursor_left_pos).into_styled(Self::cursor_style(theme, self.mode == SliderMode::Highlighted));
+        let right_cursor = Self::CURSOR_RIGHT.translate(cursor_right_pos).into_styled(Self::cursor_style(theme, self.mode == SliderMode::Highlighted));
+        self.cursor_undraw_left = left_cursor.bounding_box();
+        self.cursor_undraw_right = right_cursor.bounding_box();
+        left_cursor.draw(&mut h.screen)?;
+        right_cursor.draw(&mut h.screen)?;
         Ok(())
     }
 
@@ -1224,6 +1293,11 @@ impl ComponentBehaviour for SliderState {
 
     fn unhighlight(&mut self) -> &mut Self {
         self.mode = SliderMode::Unhighlighted;
+        self
+    }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
+        self.bg_drawn = false;
         self
     }
 }
@@ -1337,6 +1411,7 @@ impl RunHandlers for ColorSelectorState {
                 if self.current_selected_component == ColorSelectorSubmenuSelection::Done {
                     self.mode = ColorSelectorMode::Highlighted;
                     h.screen.clear(theme.bg().as_rgb565())?;
+                    self.slider_states.iter_mut().for_each(|f| {f.bg_drawn = false;});
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 } else {
                     self.mode = ColorSelectorMode::Selected(match c {
@@ -1367,19 +1442,19 @@ impl ColorSelectorState {
     const DONE_TEXT_POS: Point = Point::new(64, 20);
 
     const SLIDER_R_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(19, 20), Size::new(30, 80)),
+            rect: Rectangle::new(Point::new(29, 20), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
         };
     const SLIDER_G_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(49, 20), Size::new(30, 80)),
+            rect: Rectangle::new(Point::new(59, 20), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 255, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
         };
     const SLIDER_B_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(79, 20), Size::new(30, 80)),
+            rect: Rectangle::new(Point::new(89, 20), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 0, 255], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
@@ -1538,6 +1613,10 @@ impl ComponentBehaviour for ColorSelectorState {
 
     fn unhighlight(&mut self) -> &mut Self {
         self.mode = ColorSelectorMode::Unhighlighted;
+        self
+    }
+
+    fn reset_draw_flags(&mut self) -> &mut Self {
         self
     }
 }
