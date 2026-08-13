@@ -1192,7 +1192,9 @@ impl RunHandlers for SliderState {
 
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self.mode {
-            SliderMode::Unhighlighted => unreachable!(),
+            SliderMode::Unhighlighted => {
+                Ok(HandlerResult::None)
+            }
             SliderMode::Highlighted => {
                 self.mode = SliderMode::Selected;
                 Ok(HandlerResult::None)
