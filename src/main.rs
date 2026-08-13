@@ -48,14 +48,13 @@ extern crate alloc;
 
 use esp_backtrace as _;
 
-use esp_hal::gpio::{Output, OutputConfig, Input, InputConfig, AnyPin, Level, Pull, DriveMode};
-use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, GPIO46, SPI2, FLASH, Peripherals, SW_INTERRUPT, TIMG0};
+use esp_hal::gpio::{Output, OutputConfig, Level, DriveMode};
+use esp_hal::peripherals::{GPIO9, GPIO10, GPIO11, GPIO12, SPI2, FLASH, Peripherals};
 use esp_hal::delay::Delay;
 use esp_alloc::psram_allocator;
-use esp_println::logger::init_logger_from_env;
-use esp_rtos::start;
+// use esp_rtos::start;
 use esp_hal::interrupt::software::SoftwareInterruptControl;
-use esp_hal::ram;
+// use esp_hal::ram;
 use esp_hal::timer::timg::TimerGroup;
 use esp_hal::spi::master::{Spi, Config};
 use esp_hal::time::Rate;
@@ -72,39 +71,27 @@ use rotenc::start_rotenc_thread;
 use log::{info, error, warn};
 use ledc::{LedController, LedPeripherals, LedMode};
 // use pwm::{OutputCtl, OutputPeripherals, Action};
-use pwm::{Pwm, PwmAction, Command};
+use pwm::Pwm;
 use fontfile::{FontSize, PbFont, pb_font_renderer::PbFontRenderer};
-use global_settings::{rgb::RGB, rgb, PB_GLOBAL_SETTINGS};
+use global_settings::{PB_GLOBAL_SETTINGS};
 // use ilidriver::ILIDriver;
 use flash_storage::PbFlashStorage;
 use dummy_pin::DummyPin;
 use embedded_hal_bus::spi::ExclusiveDevice;
-use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
+// use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
 use st7735_lcd::{ST7735, Orientation as STOrientation};
 // use std::sync::Arc;
 use alloc::sync::Arc;
 use alloc::vec;
-use alloc::vec::Vec;
 use menus::{run_menu_loop, Menu, ComponentMenu, CustomMenu, IOHandles, Screen};
-use global_settings::PbGlobalSettings;
-use display_interface_spi::SPIInterface;
+// use global_settings::PbGlobalSettings;
+// use display_interface_spi::SPIInterface;
 use embedded_graphics::{
     prelude::*,
-    pixelcolor::{Rgb565, raw::RawU16},
-    primitives::{Triangle, Rectangle, PrimitiveStyle},
-    mono_font::{MonoTextStyle, ascii::FONT_6X10},
-    text::Text,
-};
-use embassy_sync::{
-    rwlock::RwLock,
-    blocking_mutex::raw::CriticalSectionRawMutex
 };
 use wifi::PbWifi;
 use embassy_executor::Spawner;
-use core::convert::Infallible;
 use core::fmt;
-use embedded_hal::delay::DelayNs;
-use embassy_time::{Timer, Duration};
 use socket::ServerConnection;
 
 #[cfg(all(not(feature = "ST"), not(feature = "ILI")))]
@@ -185,7 +172,7 @@ async fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: 
     );
     // let mut delay = FreeRtos;
     let mut delay = Delay::new();
-    let res = s.init(&mut delay)?;
+    let _ = s.init(&mut delay)?; // TODO: handle
     s.set_orientation(&STOrientation::PortraitSwapped)?;
     s.set_offset(2, 1);
     // info!("clearing screen!");
@@ -251,7 +238,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     let fs = register_filesystem(peripherals.FLASH).await.map_err(|e| PbError::FSError(e))?;
 
     info!("STARTING APP!");
-    let mut settings = PbGlobalSettings::new();
+    // let mut settings = PbGlobalSettings::new();
 
     // let peripherals = Peripherals::take()?;
     // let sys_loop = EspSystemEventLoop::take()?;
@@ -261,7 +248,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     // pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
     // let http_server = PbHttpServer::start()?;
 
-    let mut pb_wifi = PbWifi::new(spawner, peripherals.WIFI)?;
+    let pb_wifi = PbWifi::new(spawner, peripherals.WIFI)?;
 
     // let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
     // button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
@@ -302,7 +289,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         peripherals.GPIO11,
         peripherals.GPIO12).await?;
     #[cfg(feature = "ST")]
-    let mut screen = init_screen(
+    let screen = init_screen(
         peripherals.SPI2,
         peripherals.GPIO9,
         peripherals.GPIO10,
@@ -313,7 +300,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     font.set_size(FontSize::Sz14)?;
 
     let pb_font_style = PbFontRenderer::new(font);
-    let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
+    // let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
 
     let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
     lstimer0.configure(timer::config::Config {
@@ -321,7 +308,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         clock_source: timer::LSClockSource::APBClk,
         frequency: Rate::from_khz(24),
     }).unwrap();
-    let mut backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
+    let backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
     let mut backlight_channel = ledc.channel(channel::Number::Channel7, backlight);
     backlight_channel.configure(channel::config::Config {
         timer: &lstimer0,
@@ -333,7 +320,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
-    run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::Wifi), &mut IOHandles::new(
+    run_menu_loop(spawner, Menu::CustomMenu(CustomMenu::HomeMenu), &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,
@@ -354,7 +341,7 @@ static PB_FLASH_ALLOC: StaticCell<Allocation<PbFlashStorage>> = StaticCell::new(
 
 /// Links the filesystem to FreeRTOS. This function is a wrapper that uses a bunch of unsafe C.
 /// Please do not change this, as it is known to work. If it fails, it will return an `Err(EspError)`
-async fn register_filesystem(flash: FLASH<'static>) -> Result<Arc<Filesystem<'static, PbFlashStorage>>, io::Error> {
+async fn register_filesystem(flash: FLASH<'static>) -> Result<Arc<Filesystem<'static, PbFlashStorage<'static>>>, io::Error> {
     let pb_flash_storage = PB_FLASH_STORAGE.init(PbFlashStorage::new(flash));
 
     let alloc = PB_FLASH_ALLOC.init(Filesystem::allocate());
@@ -449,21 +436,21 @@ pub unsafe extern "C" fn strspn(s: *const c_char, accept: *const c_char) -> usiz
     let mut count = 0;
     let mut s_ptr = s;
 
-    while *s_ptr != 0 {
+    while unsafe { *s_ptr } != 0 {
         let mut a_ptr = accept;
         let mut found = false;
-        while *a_ptr != 0 {
-            if *s_ptr == *a_ptr {
+        while unsafe{ *a_ptr } != 0 {
+            if unsafe { *s_ptr } == unsafe { *a_ptr } {
                 found = true;
                 break;
             }
-            a_ptr = a_ptr.add(1);
+            a_ptr = unsafe { a_ptr.add(1) };
         }
         if !found {
             break;
         }
         count += 1;
-        s_ptr = s_ptr.add(1);
+        s_ptr = unsafe { s_ptr.add(1) };
     }
     count
 }
@@ -473,16 +460,16 @@ pub unsafe extern "C" fn strcspn(s: *const c_char, reject: *const c_char) -> usi
     let mut count = 0;
     let mut s_ptr = s;
 
-    while *s_ptr != 0 {
+    while unsafe { *s_ptr } != 0 {
         let mut r_ptr = reject;
-        while *r_ptr != 0 {
-            if *s_ptr == *r_ptr {
+        while unsafe { *r_ptr } != 0 {
+            if unsafe { *s_ptr } == unsafe { *r_ptr } {
                 return count;
             }
-            r_ptr = r_ptr.add(1);
+            r_ptr = unsafe { r_ptr.add(1) };
         }
         count += 1;
-        s_ptr = s_ptr.add(1);
+        s_ptr = unsafe { s_ptr.add(1) };
     }
     count
 }

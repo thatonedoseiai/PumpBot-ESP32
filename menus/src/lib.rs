@@ -25,6 +25,7 @@ use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
 // use crate::menus::language_selection::LanguageState;
 use crate::menus::setup_method::SetupMethodState;
+use crate::menus::home_menu::HomeMenu;
 // use crate::menus::test_component_menu::TestComponentMenu;
 // use crate::menus_define;
 // use ilidriver::ILIDriver;
@@ -186,6 +187,7 @@ pub enum ComponentMenu {
 pub enum CustomMenu {
     Title,
     SetupMethod,
+    HomeMenu,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -378,21 +380,13 @@ impl MenuStateBehaviour for ComponentMenu {
 
 impl MenuStateBehaviour for CustomMenu {
     async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        // Do custom things here
-        // Ok(MenuSignal::Transition(Menu::CustomMenu(CustomMenu::CustomTitle)))
         match self {
             Self::Title => TitleState::new().run(h).await,
             Self::SetupMethod => SetupMethodState::new().run(h).await,
+            Self::HomeMenu => HomeMenu::new().run(h).await,
         }
     }
 }
-
-// menus_define![
-//     TitleMenu, Title(TitleState);
-//     LanguageMenu, Lang(LanguageState);
-//     SetupMethodMenu, SetupMethod(SetupMethodState);
-//     ComponentMenuTest, TESTCOMPONENTMENU(TestComponentMenu)
-// ];
 
 /// A collection of the various IOHandles that menus should be allowed to interact with.
 pub struct IOHandles<'a> {

@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition, SliderDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing, ColorSubmitHandler};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing, ColorSubmitHandler};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -277,13 +277,11 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::ColorSelector(
             &ColorSelectorDefinition {
                 preview_rect: Rectangle::new(Point::new(64, 100), Size::new(30, 30)),
-                left: ColorSelectorHandler::Generic(GenericHandler::Print("left btn!")),
-                right: ColorSelectorHandler::Generic(GenericHandler::Print("right btn!")),
                 initial_color: ColorGetter::ThemeMenuCustomColor,
                 on_submit: ColorSubmitHandler::SetThemeMenuColor,
             }),
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
-    right_btn: MenuHandler::Generic(GenericHandler::Print("right button!")),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::HomeMenu)))),
 };

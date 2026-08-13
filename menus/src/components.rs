@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -1357,8 +1357,6 @@ pub struct ColorSelectorState {
 
 pub struct ColorSelectorDefinition {
     pub preview_rect: Rectangle,
-    pub left: ColorSelectorHandler,
-    pub right: ColorSelectorHandler,
     pub initial_color: ColorGetter,
     pub on_submit: ColorSubmitHandler,
 }
@@ -1432,16 +1430,6 @@ impl ColorSelectorState {
     const BORDER_SIZE: u32 = 10;
     const RADIUS: u32 = 5;
     const EDITOR_PREVIEW_RECT: Rectangle = Rectangle::new(Point::new(0, 110), Size::new(128, 50));
-    const SLIDERS_TOP: i32 = 20;
-    const SLIDERS_HEIGHT: u32 = 80;
-    const SLIDERS_WIDTH: u32 = 30;
-    const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
-    const CURSOR_RADIUS: i32 = 5;
-    const CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
-        .stroke_width(2)
-        .stroke_color(Rgb565::WHITE)
-        .build();
-    const DONE_TEXT_POS: Point = Point::new(64, 20);
 
     const SLIDER_R_DEFINITION: SliderDefinition = SliderDefinition {
             rect: Rectangle::new(Point::new(29, 30), Size::new(10, 80)),
@@ -1541,19 +1529,6 @@ impl ColorSelectorState {
         self.definition.preview_rect.into_styled(self.preview_style()).draw(&mut h.screen)?;
         Ok(())
     }
-
-    fn draw_slider(&mut self, pos: Point, style: PrimitiveStyle<Rgb565>, val: u8, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        Rectangle::new(pos, Size::new(Self::SLIDERS_WIDTH, Self::SLIDERS_HEIGHT)).into_styled(style).draw(&mut h.screen)?;
-        Self::CURSOR.translate(Point::new(pos.x + (Self::SLIDERS_WIDTH as i32 / 2) - Self::CURSOR_RADIUS, Self::SLIDERS_TOP + ((Self::SLIDERS_HEIGHT - Self::CURSOR.diameter) * val as u32) as i32 / 255)).into_styled(Self::CURSOR_STYLE).draw(&mut h.screen)?;
-        Ok(())
-    }
-
-    // fn draw_done_button(&mut self, lang: Lang, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-    //     h.font.fgcol = if self.slider_state.channel == ColorSelectorChannel::Done { theme.highlight() } else { theme.fg() };
-    //     h.font.bgcol = theme.bg();
-    //     Text::with_alignment(TEXT_OK[lang], Self::DONE_TEXT_POS, &h.font, Alignment::Center).draw(&mut h.screen)?;
-    //     Ok(())
-    // }
 
     const fn undraw_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()

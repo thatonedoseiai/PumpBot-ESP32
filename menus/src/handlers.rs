@@ -342,19 +342,6 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
     }
 }
 // }}}
-// COLOR SELECTOR HANDLER {{{
-pub enum ColorSelectorHandler {
-    Generic(GenericHandler),
-}
-
-impl Handler<ColorSelectorState> for ColorSelectorHandler {
-    async fn handle(&self, state: &mut ColorSelectorState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Generic(g) => g.handle(&mut (), menu_state, h).await,
-        }
-    }
-}
-// }}}
 // SLIDER BACKGROUND DRAWING {{{
 pub enum SliderBackgroundDrawing {
     Fill(RGB),
