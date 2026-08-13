@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorSelectorHandler, ColorGetter, SliderBackgroundDrawing, SliderValueGetter};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
@@ -39,6 +39,7 @@ pub enum ComponentDefinition {
     OptionScroller(&'static OptionScrollerDefinition),
     TextBox(&'static TextBoxDefinition),
     ValueSelector(&'static ValueSelectorDefinition),
+    Slider(&'static SliderDefinition),
     ColorSelector(&'static ColorSelectorDefinition),
 }
 
@@ -48,6 +49,7 @@ pub enum ComponentState {
     OptionScroller(OptionScrollerState),
     TextBox(TextBoxState),
     ValueSelector(ValueSelectorState),
+    Slider(SliderState),
     ColorSelector(ColorSelectorState),
 }
 
@@ -71,6 +73,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionScroller(b) => b.draw(h).await,
             Self::TextBox(b) => b.draw(h).await,
             Self::ValueSelector(b) => b.draw(h).await,
+            Self::Slider(b) => b.draw(h).await,
             Self::ColorSelector(b) => b.draw(h).await,
         }
     }
@@ -82,6 +85,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionScroller(b) => { b.highlight(); },
             Self::TextBox(b) => { b.highlight(); },
             Self::ValueSelector(b) => { b.highlight(); },
+            Self::Slider(b) => { b.highlight(); },
             Self::ColorSelector(b) => { b.highlight(); },
         }
         self
@@ -94,6 +98,7 @@ impl ComponentBehaviour for ComponentState {
             Self::OptionScroller(b) => { b.unhighlight(); },
             Self::TextBox(b) => { b.unhighlight(); },
             Self::ValueSelector(b) => { b.unhighlight(); }
+            Self::Slider(b) => { b.unhighlight(); }
             Self::ColorSelector(b) => { b.unhighlight(); }
         }
         self
@@ -108,6 +113,7 @@ impl RunHandlers for ComponentState {
             Self::OptionScroller(b) => b.left_handle(menu_state, h).await,
             Self::TextBox(b) => b.left_handle(menu_state, h).await,
             Self::ValueSelector(b) => b.left_handle(menu_state, h).await,
+            Self::Slider(b) => b.left_handle(menu_state, h).await,
             Self::ColorSelector(b) => b.left_handle(menu_state, h).await,
         }
     }
@@ -119,6 +125,7 @@ impl RunHandlers for ComponentState {
             Self::OptionScroller(b) => b.right_handle(menu_state, h).await,
             Self::TextBox(b) => b.right_handle(menu_state, h).await,
             Self::ValueSelector(b) => b.right_handle(menu_state, h).await,
+            Self::Slider(b) => b.right_handle(menu_state, h).await,
             Self::ColorSelector(b) => b.right_handle(menu_state, h).await,
         }
     }
@@ -130,6 +137,7 @@ impl RunHandlers for ComponentState {
             Self::OptionScroller(b) => b.click_handle(menu_state, h).await,
             Self::TextBox(b) => b.click_handle(menu_state, h).await,
             Self::ValueSelector(b) => b.click_handle(menu_state, h).await,
+            Self::Slider(b) => b.click_handle(menu_state, h).await,
             Self::ColorSelector(b) => b.click_handle(menu_state, h).await,
         }
     }
@@ -143,6 +151,7 @@ impl ComponentState {
             Self::OptionScroller(b) => ComponentDefinition::OptionScroller(b.definition),
             Self::TextBox(b) => ComponentDefinition::TextBox(b.definition),
             Self::ValueSelector(b) => ComponentDefinition::ValueSelector(b.definition),
+            Self::Slider(b) => ComponentDefinition::Slider(b.definition),
             Self::ColorSelector(b) => ComponentDefinition::ColorSelector(b.definition),
         }
     }
@@ -189,6 +198,11 @@ impl ComponentDefinition {
                 undraw: Rectangle::zero(),
                 mode: if start_focused { ValueSelectorMode::Selected } else { ValueSelectorMode::Unhighlighted },
             }),
+            Self::Slider(definition) => ComponentState::Slider(SliderState {
+                definition,
+                cur_value: definition.initial_value.get(h),
+                mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
+            }),
             Self::ColorSelector(definition) => ComponentState::ColorSelector(ColorSelectorState {
                 definition,
                 current_color: definition.initial_color.get(h),
@@ -209,6 +223,7 @@ impl ComponentDefinition {
             Self::OptionScroller(_) => InteractionType::Editable,
             Self::TextBox(_) => InteractionType::Editable,
             Self::ValueSelector(_) => InteractionType::Editable,
+            Self::Slider(_) => InteractionType::Editable,
             Self::ColorSelector(_) => InteractionType::Editable,
         }
     }
@@ -1103,6 +1118,92 @@ impl ComponentBehaviour for ValueSelectorState {
     }
 }
 // }}}
+// SLIDER {{{
+pub type SLIDER_VALUE_TYPE = u8;
+
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+enum SliderMode {
+    Unhighlighted,
+    Highlighted,
+    Selected,
+}
+
+pub struct SliderState {
+    definition: &'static SliderDefinition,
+    cur_value: SLIDER_VALUE_TYPE,
+    mode: SliderMode,
+}
+
+pub struct SliderDefinition {
+    pub rect: Rectangle,
+    pub bg: SliderBackgroundDrawing,
+    pub initial_value: SliderValueGetter,
+    pub increment: SLIDER_VALUE_TYPE
+}
+
+impl SliderState {
+    const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
+    const CURSOR_RADIUS: i32 = 5;
+    const CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
+        .stroke_width(2)
+        .stroke_color(Rgb565::WHITE)
+        .build();
+
+}
+
+impl RunHandlers for SliderState {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        if self.mode == SliderMode::Selected {
+            self.cur_value = self.cur_value.saturating_sub(self.definition.increment);
+            self.draw(h).await?;
+        }
+        Ok(HandlerResult::None)
+    }
+
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        if self.mode == SliderMode::Selected {
+            self.cur_value = self.cur_value.saturating_add(self.definition.increment);
+            self.draw(h).await?;
+        }
+        Ok(HandlerResult::None)
+    }
+
+    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self.mode {
+            SliderMode::Unhighlighted => unreachable!(),
+            SliderMode::Highlighted => {
+                self.mode = SliderMode::Selected;
+                Ok(HandlerResult::None)
+            },
+            SliderMode::Selected => {
+                self.mode = SliderMode::Highlighted;
+                Ok(HandlerResult::Unfocus)
+            },
+        }
+    }
+}
+
+impl ComponentBehaviour for SliderState {
+    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        self.definition.bg.draw(self.definition.rect, h)?;
+        let cursor_pos = Point::new(
+            self.definition.rect.top_left.x + (self.definition.rect.size.width / 2) as i32 - Self::CURSOR_RADIUS,
+            self.definition.rect.top_left.y + (self.definition.rect.size.height as i32 - Self::CURSOR_RADIUS * 2) - ((self.definition.rect.size.height as i32 - Self::CURSOR_RADIUS * 2) * self.cur_value as i32) / 255);
+        Self::CURSOR.translate(cursor_pos).into_styled(Self::CURSOR_STYLE).draw(&mut h.screen)?;
+        Ok(())
+    }
+
+    fn highlight(&mut self) -> &mut Self {
+        self.mode = SliderMode::Highlighted;
+        self
+    }
+
+    fn unhighlight(&mut self) -> &mut Self {
+        self.mode = SliderMode::Unhighlighted;
+        self
+    }
+}
+// }}}
 // COLOR SELECTOR {{{
 enum SliderSetMode {
     ChangeChannel,
@@ -1263,16 +1364,16 @@ impl ColorSelectorState {
     const SLIDERS_TOP: i32 = 20;
     const SLIDERS_HEIGHT: u32 = 80;
     const SLIDERS_WIDTH: u32 = 30;
-    const CURSOR_RADIUS: i32 = 5;
-    const DONE_TEXT_POS: Point = Point::new(64, 20);
-    // const RECT_R: Rectangle = Rectangle::new(Point::new(19, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
-    // const RECT_G: Rectangle = Rectangle::new(Point::new(49, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
-    // const RECT_B: Rectangle = Rectangle::new(Point::new(79, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
     const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
+    const CURSOR_RADIUS: i32 = 5;
     const CURSOR_STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
         .stroke_width(2)
         .stroke_color(Rgb565::WHITE)
         .build();
+    const DONE_TEXT_POS: Point = Point::new(64, 20);
+    // const RECT_R: Rectangle = Rectangle::new(Point::new(19, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
+    // const RECT_G: Rectangle = Rectangle::new(Point::new(49, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
+    // const RECT_B: Rectangle = Rectangle::new(Point::new(79, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
 
     fn draw_preview(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         self.definition.preview_rect.into_styled(self.preview_style()).draw(&mut h.screen)?;

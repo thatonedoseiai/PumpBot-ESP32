@@ -8,6 +8,10 @@ use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
 use embassy_net::IpAddress;
 use socket::ServerConnection;
+use embedded_graphics::{
+    prelude::*,
+    primitives::{Rectangle, PrimitiveStyle}
+};
 
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerError {
@@ -324,6 +328,32 @@ impl Handler<ColorSelectorState> for ColorSelectorHandler {
     }
 }
 // }}}
+// SLIDER BACKGROUND DRAWING {{{
+pub enum SliderBackgroundDrawing {
+    Fill(RGB),
+    GradientY(RGB, RGB),
+}
+
+impl SliderBackgroundDrawing {
+    pub fn draw(&self, rect: Rectangle, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        match self {
+            Self::Fill(c) => {
+                rect.into_styled(PrimitiveStyle::with_fill(c.as_rgb565())).draw(&mut h.screen)?;
+                Ok(())
+            },
+            Self::GradientY(a, b) => {
+                rect.points().map(|p| {
+                    let y_offset = (p.y - rect.top_left.y) as f32;
+                    let factor = (y_offset / rect.size.height as f32).clamp(0.0, 1.0);
+                    let col = RGB::lerp(a, b, factor);
+                    Pixel(p, col.as_rgb565())
+                }).draw(&mut h.screen)?;
+                Ok(())
+            }
+        }
+    }
+}
+// }}}
 // OPTIONS GENERATOR {{{
 pub enum OptionsGenerator {
     Const(&'static [&'static str]),
@@ -430,6 +460,19 @@ impl InitialValueGenerator {
         match self {
             Self::Const(s) => *s,
             Self::BacklightBrightness => h.backlight_brightness_pct.into(),
+        }
+    }
+}
+// }}}
+// SLIDER INITIAL VALUE GETTER {{{
+pub enum SliderValueGetter {
+    Const(u8),
+}
+
+impl SliderValueGetter {
+    pub fn get(&self, h: &mut IOHandles<'_>) -> u8 {
+        match self {
+            Self::Const(v) => *v
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition, SliderDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -281,6 +281,13 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                 right: ColorSelectorHandler::Generic(GenericHandler::Print("right btn!")),
                 initial_color: ColorGetter::Const(rgb![0, 255, 0]),
             }),
+        ComponentDefinition::Slider(
+            &SliderDefinition {
+                rect: Rectangle::new(Point::new(0, 50), Size::new(30, 80)),
+                bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
+                initial_value: SliderValueGetter::Const(10),
+                increment: 1,
+            })
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),

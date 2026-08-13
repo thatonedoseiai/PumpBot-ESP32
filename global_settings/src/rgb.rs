@@ -105,6 +105,13 @@ impl RGB {
     pub const fn as_rgb565(&self) -> Rgb565 {
         Rgb565::new(self.r >> 3, self.g >> 2, self.b >> 3)
     }
+
+    pub const fn lerp(a: &RGB, b: &RGB, y: f32) -> RGB {
+        let r = (a.r as f32 * (1.0 - y) + b.r as f32 * y) as u8;
+        let g = (a.g as f32 * (1.0 - y) + b.g as f32 * y) as u8;
+        let b = (a.b as f32 * (1.0 - y) + b.b as f32 * y) as u8;
+        rgb![r, g, b]
+    }
 }
 
 /// The macro used to create RGB because I got really fed up with writing it out all the time.
