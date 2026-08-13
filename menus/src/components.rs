@@ -1431,7 +1431,7 @@ impl RunHandlers for ColorSelectorState {
 impl ColorSelectorState {
     const BORDER_SIZE: u32 = 10;
     const RADIUS: u32 = 5;
-    const EDITOR_PREVIEW_RECT: Rectangle = Rectangle::new(Point::new(0, 100), Size::new(128, 50));
+    const EDITOR_PREVIEW_RECT: Rectangle = Rectangle::new(Point::new(0, 110), Size::new(128, 50));
     const SLIDERS_TOP: i32 = 20;
     const SLIDERS_HEIGHT: u32 = 80;
     const SLIDERS_WIDTH: u32 = 30;
@@ -1444,19 +1444,19 @@ impl ColorSelectorState {
     const DONE_TEXT_POS: Point = Point::new(64, 20);
 
     const SLIDER_R_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(29, 20), Size::new(10, 80)),
+            rect: Rectangle::new(Point::new(29, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
         };
     const SLIDER_G_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(59, 20), Size::new(10, 80)),
+            rect: Rectangle::new(Point::new(59, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 255, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
         };
     const SLIDER_B_DEFINITION: SliderDefinition = SliderDefinition {
-            rect: Rectangle::new(Point::new(89, 20), Size::new(10, 80)),
+            rect: Rectangle::new(Point::new(89, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 0, 255], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
             increment: 1
@@ -1599,6 +1599,7 @@ impl ComponentBehaviour for ColorSelectorState {
             },
             ColorSelectorMode::Selected(_) => {
                 Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
+                self.highlight_selected_component();
                 for slider in &mut self.slider_states {
                     slider.draw(h).await?;
                 }
