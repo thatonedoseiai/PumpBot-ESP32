@@ -40,6 +40,12 @@ impl Ord for Command {
     }
 }
 
+impl Command {
+    pub const fn new(action: PwmAction, time: Time) -> Self {
+        Command { action, time }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum PwmNumber {
     Pwm0,
@@ -82,6 +88,12 @@ impl From<PwmNumber> for usize {
             PwmNumber::Pwm2 => 2,
             PwmNumber::Pwm3 => 3,
         }
+    }
+}
+
+impl PwmNumber {
+    pub async fn get_state(&self) -> PwmPinInfo {
+        PIN_STATES[usize::from(self)].read().await.clone()
     }
 }
 
