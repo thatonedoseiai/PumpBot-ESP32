@@ -10,7 +10,7 @@ use fontfile::{PbFont};
 // use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};
 use display_interface_spi::SPIInterface;
 use esp_hal::Blocking;
-use esp_hal::spi::master::{Spi, Config, ConfigError};
+use esp_hal::spi::master::{Spi, Config};
 use esp_hal::gpio::{Output, AnyPin, OutputConfig, Level, Input, InputConfig, Pull};
 use esp_hal::delay::Delay;
 use esp_hal::peripherals::SPI2;
@@ -18,7 +18,6 @@ use esp_hal::time::Rate;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use dummy_pin::DummyPin;
 // use std::error::Error;
-use core::error;
 use log::info;
 
 // type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;

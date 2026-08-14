@@ -5,12 +5,12 @@ pub mod screen {
         pixelcolor::Rgb565,
         primitives::Rectangle,
     };
-    use ili9341::{DisplaySize240x320, Ili9341, Orientation as ILIOrientation};
-    use st7735_lcd::{ST7735, Orientation as STOrientation};
+    use ili9341::Ili9341;
+    use st7735_lcd::ST7735;
     use core::convert::Infallible;
     // use esp_idf_hal::gpio::{AnyIOPin, Output, PinDriver};
     // use esp_idf_hal::spi::{SpiDriver, SpiDeviceDriver};
-    use esp_hal::gpio::{AnyPin, Output, Level};
+    use esp_hal::gpio::Output;
     use esp_hal::spi::master::{Spi};
     use esp_hal::Blocking;
     use esp_hal::delay::Delay;

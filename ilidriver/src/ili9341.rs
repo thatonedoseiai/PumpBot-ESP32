@@ -133,12 +133,12 @@ impl DisplaySize for DisplaySize240x320 {
 }
 
 /// Generic display size of 320x480 pixels
-pub struct DisplaySize320x480;
+// pub struct DisplaySize320x480;
 
-impl DisplaySize for DisplaySize320x480 {
-    const WIDTH: usize = 320;
-    const HEIGHT: usize = 480;
-}
+// impl DisplaySize for DisplaySize320x480 {
+//     const WIDTH: usize = 320;
+//     const HEIGHT: usize = 480;
+// }
 
 /// For quite a few boards (ESP32-S2-Kaluga-1, M5Stack, M5Core2 and others),
 /// the ILI9341 initialization command arguments are slightly different

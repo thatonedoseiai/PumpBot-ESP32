@@ -2,7 +2,7 @@ use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, Compon
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb, rgb::RGB, Theme};
+use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -52,7 +52,7 @@ pub enum GenericHandler {
 }
 
 impl Handler<()> for GenericHandler {
-    async fn handle(&self, state: &mut (), menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, _: &mut (), _: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Print(s) => {
                 // println!("{s}");
@@ -73,7 +73,7 @@ pub enum MenuHandler {
 }
 
 impl Handler<ComponentMenuInAction> for MenuHandler {
-    async fn handle(&self, state: &mut ComponentMenuInAction, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, _: &mut ComponentMenuInAction, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
                 g.handle(&mut (), menu_state, h).await
@@ -90,7 +90,7 @@ pub enum ButtonHandler {
 }
 
 impl Handler<ButtonState> for ButtonHandler {
-    async fn handle(&self, state: &mut ButtonState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, _: &mut ButtonState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Generic(g) => {
                 g.handle(&mut (), menu_state, h).await
@@ -119,11 +119,11 @@ impl Handler<ButtonState> for ButtonHandler {
             Self::ConnectServer => {
                 let res = h.server.connect().await;
                 match res {
-                    Ok(h) => {
+                    Ok(_) => {
                         log::info!("pb connected to server!");
                         Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))
                     },
-                    Err(e) => {
+                    Err(_) => {
                         log::info!("pb failed to connect!");
                         Ok(HandlerResult::None)
                     }
@@ -189,7 +189,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
                 state.draw(h).await?;
                 if state.mode == OptionSwitchMode::Highlighted {
-                    if let MenuInternalState::DisplaySettings { theme, theme_custom_col } = menu_state {
+                    if let MenuInternalState::DisplaySettings { theme_custom_col, .. } = menu_state {
                         let mut settings = PB_GLOBAL_SETTINGS.write().await;
                         settings.theme = match state.selection {
                             0 => Theme::Dark,
@@ -226,7 +226,6 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
             },
             Self::NextOption => {
                 // log::info!("next selection: {}, PS: {}; [{}]", state.selection, state.page_start, state.definition.options.len());
-                let lang = &PB_GLOBAL_SETTINGS.read().await.lang;
                 let options = state.generated_options(h).await?;
                 if options.len() == 0 {
                     return Ok(HandlerResult::None); // TODO: handle this properly!
@@ -427,7 +426,7 @@ pub enum TextSubmitHandler {
 }
 
 impl Handler<TextBoxState> for TextSubmitHandler {
-    async fn handle(&self, state: &mut TextBoxState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, state: &mut TextBoxState, menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match (self, menu_state) {
             (Self::SetWifiSSID, MenuInternalState::WifiDetails { ap: a, .. }) => {
                 // set the wifi details
@@ -484,7 +483,7 @@ pub enum SliderValueGetter {
 }
 
 impl SliderValueGetter {
-    pub fn get(&self, h: &mut IOHandles<'_>) -> u8 {
+    pub fn get(&self, _: &mut IOHandles<'_>) -> u8 {
         match self {
             Self::Const(v) => *v
         }
@@ -498,7 +497,7 @@ pub enum ColorGetter {
 }
 
 impl ColorGetter {
-    pub fn get(&self, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> RGB {
+    pub fn get(&self, internal_state: &MenuInternalState, _: &mut IOHandles<'_>) -> RGB {
         match self {
             Self::Const(r) => *r,
             Self::ThemeMenuCustomColor => {
@@ -528,7 +527,7 @@ impl Handler<ColorSelectorState> for ColorSubmitHandler {
                     MenuInternalState::DisplaySettings { theme_custom_col, .. } => {
                         *theme_custom_col = state.current_color;
                         let settings = &mut PB_GLOBAL_SETTINGS.write().await;
-                        if let Theme::Custom(r) = settings.theme {
+                        if let Theme::Custom(_) = settings.theme {
                             settings.theme = Theme::Custom(state.current_color);
                         }
                     }

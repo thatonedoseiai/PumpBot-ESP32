@@ -8,10 +8,8 @@
 
 extern crate alloc;
 
-use esp_hal::gpio::{InputConfig, Pull, Input, AnyPin, Pin};
+use esp_hal::gpio::{InputConfig, Pull, Input, AnyPin};
 use esp_hal::time::Instant;
-use esp_hal::delay::Delay;
-use embedded_hal::delay::DelayNs;
 use embassy_executor::Spawner;
 use embassy_sync::channel::{Channel, Receiver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;

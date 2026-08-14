@@ -2,23 +2,17 @@
 //! This menu will display the welcome text to pumpbot, while cycling the welcome text language at a
 //! constant rate.
 
-use crate::{MenuSignal, IOHandles, MenuStateBehaviour, Menu, ComponentMenu};
+use crate::{MenuSignal, IOHandles, Menu, ComponentMenu};
 use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;
-use log::info;
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
-    pixelcolor::Rgb565,
     primitives::{Rectangle, PrimitiveStyleBuilder}
 };
-use profiler::{timed, SpanGuard};
-use alloc::vec::Vec;
-use embassy_executor::Spawner;
-use embassy_sync::channel::{Channel, Sender, Receiver};
-use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
-use button_idf::{ButtonEvent, ButtonType};
+use profiler::{timed};
+use button_idf::ButtonType;
 use embassy_futures::select::{select, Either};
 use embassy_time::{Timer, Duration};
 use core::borrow::BorrowMut;
@@ -32,12 +26,7 @@ pub struct TitleMenu;
 
 pub struct TitleState {
     cur_lang: Lang,
-    counter: u8,
     undraw_bbs: [Rectangle;3],
-}
-
-enum IpcMessage {
-    NextMenu,
 }
 
 /// A helper function that determines the order of the language swaps. Russian is currently unused
@@ -60,14 +49,13 @@ impl TitleState {
     pub fn new() -> Self {
         TitleState {
             cur_lang: Lang::En,
-            counter: 20,
             undraw_bbs: [Rectangle::zero(); 3],
         }
     }
 }
 
 impl TitleState {
-    pub async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    pub(crate) async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         // info!("update loop iteration {}", self.counter);
         // self.counter = self.counter.wrapping_add(1);
         // if self.counter == 0 {

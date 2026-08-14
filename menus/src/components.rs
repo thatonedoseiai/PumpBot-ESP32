@@ -1,7 +1,7 @@
 use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
+use fontfile::FontSize;
 use global_settings::{lang::*, rgb::RGB, rgb, PB_GLOBAL_SETTINGS, Theme};
 use embedded_graphics::{
     prelude::*,
@@ -13,19 +13,15 @@ use embedded_graphics::{
         PrimitiveStyle, 
         RoundedRectangle,
         Triangle,
-        Circle,
         Line,
     },
     geometry::AnchorPoint,
 };
-use core::fmt;
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use core::borrow::Borrow;
-use core::cell::{RefCell, Ref, Cell};
+use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
-use alloc::boxed::Box;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -984,7 +980,7 @@ impl TextBoxState {
 }
 
 impl RunHandlers for TextBoxState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         if self.sub_menu_open {
             self.text_selector_state.prev();
             self.text_selector_state.draw(h).await?;
@@ -992,7 +988,7 @@ impl RunHandlers for TextBoxState {
         Ok(HandlerResult::None)
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         if self.sub_menu_open {
             self.text_selector_state.next();
             self.text_selector_state.draw(h).await?;
@@ -1187,7 +1183,7 @@ impl ComponentBehaviour for ValueSelectorState {
 }
 // }}}
 // SLIDER {{{
-pub type SLIDER_VALUE_TYPE = u8;
+pub type SliderValueType = u8;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 enum SliderMode {
@@ -1198,7 +1194,7 @@ enum SliderMode {
 
 pub struct SliderState {
     definition: &'static SliderDefinition,
-    cur_value: SLIDER_VALUE_TYPE,
+    cur_value: SliderValueType,
     mode: SliderMode,
     bg_drawn: bool,
     cursor_undraw_left: Rectangle,
@@ -1209,7 +1205,7 @@ pub struct SliderDefinition {
     pub rect: Rectangle,
     pub bg: SliderBackgroundDrawing,
     pub initial_value: SliderValueGetter,
-    pub increment: SLIDER_VALUE_TYPE
+    pub increment: SliderValueType
 }
 
 impl SliderState {
@@ -1232,7 +1228,7 @@ impl SliderState {
 }
 
 impl RunHandlers for SliderState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
             self.cur_value = self.cur_value.saturating_sub(self.definition.increment);
             self.draw(h).await?;
@@ -1240,7 +1236,7 @@ impl RunHandlers for SliderState {
         Ok(HandlerResult::None)
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
             self.cur_value = self.cur_value.saturating_add(self.definition.increment);
             self.draw(h).await?;
@@ -1248,7 +1244,7 @@ impl RunHandlers for SliderState {
         Ok(HandlerResult::None)
     }
 
-    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn click_handle(&mut self, _: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self.mode {
             SliderMode::Unhighlighted => {
                 Ok(HandlerResult::None)
@@ -1347,7 +1343,7 @@ enum ColorSelectorMode {
 pub struct ColorSelectorState {
     pub definition: &'static ColorSelectorDefinition,
     pub current_color: RGB,
-    pub mode: ColorSelectorMode,
+    mode: ColorSelectorMode,
     selection_undraw: Rectangle,
     slider_states: [SliderState;3],
     button_state: ButtonState,
@@ -1363,7 +1359,6 @@ pub struct ColorSelectorDefinition {
 
 impl RunHandlers for ColorSelectorState {
     async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
             self.unhighlight_selected_component();
             self.draw_selected_component(h).await?;
@@ -1380,7 +1375,6 @@ impl RunHandlers for ColorSelectorState {
     }
 
     async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
             self.unhighlight_selected_component();
             self.draw_selected_component(h).await?;

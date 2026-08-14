@@ -1,4 +1,4 @@
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer, FontSize, FontFileError};
+use fontfile::{pb_font_renderer::PbFontRenderer, FontSize};
 use global_settings::{lang::LanguageString, ThemedColor, PB_GLOBAL_SETTINGS};
 use embedded_graphics::{
     prelude::*,

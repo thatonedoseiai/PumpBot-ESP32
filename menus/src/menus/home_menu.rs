@@ -50,7 +50,7 @@ impl HomeMenu {
         todo!()
     }
 
-    pub async fn run(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    pub(crate) async fn run(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let theme = PB_GLOBAL_SETTINGS.read().await.theme;
         h.screen.clear(theme.bg().as_rgb565())?;
         h.font.fgcol = theme.fg();

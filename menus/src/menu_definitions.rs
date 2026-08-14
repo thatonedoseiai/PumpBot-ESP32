@@ -1,13 +1,13 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
-use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition, SliderDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, SliderValueGetter, SliderBackgroundDrawing, ColorSubmitHandler};
+use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, ColorSubmitHandler};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
     primitives::rectangle::Rectangle,
 };
 use fontfile::FontSize;
-use global_settings::{lang::*, ThemedColor, rgb, rgb::RGB};
+use global_settings::{lang::*, ThemedColor};
 use crate::static_element::StaticElement;
 
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {

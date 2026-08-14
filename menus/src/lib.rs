@@ -16,8 +16,8 @@ mod handlers;
 mod components;
 mod menu_definitions;
 
-use crate::handlers::{ButtonHandler, MenuHandler, GenericHandler, Handler, HandlerResult};
-use crate::components::{ButtonState, ComponentDefinition, ComponentState, RunHandlers, ButtonDefinition, ComponentBehaviour, InteractionType};
+use crate::handlers::{MenuHandler, GenericHandler, Handler, HandlerResult};
+use crate::components::{ComponentDefinition, ComponentState, RunHandlers, ComponentBehaviour, InteractionType};
 use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS, SERVER_DETAILS, DISPLAY_SETTINGS};
 use crate::static_element::StaticElement;
 
@@ -30,32 +30,23 @@ use crate::menus::home_menu::HomeMenu;
 // use crate::menus_define;
 // use ilidriver::ILIDriver;
 // use alloc::sync::Arc;
-use fontfile::{PbFont, pb_font_renderer::PbFontRenderer};
+use fontfile::{pb_font_renderer::PbFontRenderer};
 pub use crate::screen::screen::{Screen, ScreenDrawError};
-use log::warn;
-use core::fmt;
 use rotenc::EncoderEvent;
 use button_idf::{ButtonEvent, ButtonType, ButtonEventKind};
 use rotenc::Direction;
 use embassy_futures::select::{Either, select};
 use wifi::PbWifi;
 use alloc::{vec::Vec, vec};
-use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::prelude::RgbColor;
 use embedded_graphics::draw_target::DrawTarget;
-use log::info;
-use alloc::borrow::Cow;
 use global_settings::{PB_GLOBAL_SETTINGS, PbGlobalSettings, rgb, rgb::RGB, Theme};
-use core::cell::{RefCell, Cell};
+use core::cell::RefCell;
 use esp_radio::wifi::ap::AccessPointInfo;
 use alloc::string::String;
-use embassy_net::{IpAddress, Ipv4Address};
+use embassy_net::IpAddress;
 use socket::ServerConnection;
 use esp_hal::ledc::{channel::{Channel, ChannelIFace}, LowSpeed};
-use embedded_hal::pwm::SetDutyCycle;
 use core::ops::Deref;
-
-use profiler::SpanGuard;
 
 #[cfg(feature = "sim")]
 mod cond_deps {
@@ -75,7 +66,6 @@ mod cond_deps {
     pub use ledc::LedController;
     pub use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
     pub use embassy_executor::Spawner;
-    pub use embassy_time::{Timer, Duration};
 }
 
 use crate::cond_deps::*;
@@ -168,7 +158,6 @@ enum MenuInternalState {
         port: u16,
     },
     DisplaySettings {
-        theme: Theme,
         theme_custom_col: RGB,
     },
 }
@@ -226,7 +215,6 @@ impl ComponentMenu {
                 port: h.server.server_port,
             },
             Self::DisplaySettings => MenuInternalState::DisplaySettings {
-                theme: settings.theme,
                 theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
             },
         }
@@ -369,6 +357,7 @@ impl MenuStateBehaviour for ComponentMenu {
                     return Ok(MenuSignal::Back);
                 },
                 Some(HandlerResult::WifiConnectionFailure(e)) => {
+                    todo!("handle wifi connection error! {}", e)
                     // return Ok(MenuSignal::None);
                 },
                 Some(HandlerResult::None) => {},
@@ -432,7 +421,7 @@ impl<'a> IOHandles<'a> {
 /// - `q`: a queue that receives events from the buttons and rotary encoder and sends them for the
 /// menus to use to react to button presses and rotenc spins.
 #[cfg(not(feature = "sim"))]
-pub async fn run_menu_loop(spawner: Spawner, start_menu: Menu, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
+pub async fn run_menu_loop(_: Spawner, start_menu: Menu, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
     log::info!("beginning menu loop!");
 
     let mut menu_stack = vec![];

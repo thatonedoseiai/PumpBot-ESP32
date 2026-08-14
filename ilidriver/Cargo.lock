@@ -895,6 +895,7 @@ name = "global_settings"
 version = "0.1.0"
 dependencies = [
  "embassy-sync 0.8.0",
+ "embedded-graphics",
 ]
 
 [[package]]

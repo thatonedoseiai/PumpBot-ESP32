@@ -5,26 +5,15 @@
 
 extern crate alloc;
 
-// use esp_idf_hal::ledc::*;
-// use esp_idf_hal::ledc::config::TimerConfig;
-// use esp_idf_hal::prelude::*;
-// use esp_idf_hal::gpio::{AnyIOPin};
 use esp_hal::gpio::{AnyPin, Output, OutputConfig, Level};
 use esp_hal::ledc::{timer::Timer, LowSpeed, channel::{Channel, Number}, Ledc};
-// use esp_hal::peripherals::LEDC;
-use esp_hal::delay::Delay;
 use global_settings::rgb::RGB;
 use alloc::sync::Arc;
-use core::time::Duration;
 use embedded_hal::pwm::SetDutyCycle;
 use embassy_executor::Spawner;
-// use embassy_sync::rwlock::RwLock;
 use embassy_sync::once_lock::OnceLock;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_time::{Timer as ETimer, Duration as EDuration};
-use log::info;
-
-// use std::thread;
 
 // --- Types and Configuration ---
 

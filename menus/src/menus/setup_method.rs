@@ -25,7 +25,6 @@ use embedded_graphics::{
     primitives::{Rectangle, PrimitiveStyleBuilder, PrimitiveStyle, Line, Triangle, Styled}
 };
 use embassy_futures::select::{select, Either};
-use embassy_executor::Spawner;
 use core::borrow::BorrowMut;
 use core::cell::RefCell;
 
@@ -85,7 +84,7 @@ impl SetupMethodState {
 const CURSOR_YS: [i32; 2] = [47, 57];
 const CURSOR_WIDTHS: [i32; 2] = [34, 44];
 impl SetupMethodState {
-    pub async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+    pub(crate) async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
         RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
 
