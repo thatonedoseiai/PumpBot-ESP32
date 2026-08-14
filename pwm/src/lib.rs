@@ -93,7 +93,7 @@ impl From<PwmNumber> for usize {
 
 impl PwmNumber {
     pub async fn get_state(&self) -> PwmPinInfo {
-        PIN_STATES[usize::from(self)].read().await.clone()
+        PIN_STATES[usize::from(*self)].read().await.clone()
     }
 }
 
@@ -149,7 +149,7 @@ enum PwmPinState {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct PwmPinInfo {
+pub struct PwmPinInfo {
     state: PwmPinState,
     duty: u16,
     freeze_timer: Time,

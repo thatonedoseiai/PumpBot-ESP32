@@ -6,7 +6,7 @@ use embedded_graphics::{
     pixelcolor::Rgb565,
 };
 use embassy_futures::select::{Either, select};
-use global_settings::{PB_GLOBAL_SETTINGS, Theme, Lang};
+use global_settings::{PB_GLOBAL_SETTINGS, Theme};
 use pwm::{PwmNumber, Command, PwmAction};
 use button_idf::{ButtonEventKind, ButtonType};
 

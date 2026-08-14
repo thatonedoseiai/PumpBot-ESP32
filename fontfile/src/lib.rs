@@ -29,14 +29,13 @@ use alloc::{
     vec};
 use core::fmt;
 use core::error::Error;
-use log::info;
-use global_settings::{rgb::{RGB, ColorConversionError}, rgb};
+use global_settings::{rgb::RGB, rgb};
 use flash_storage::PbFlashStorage;
 use core::fmt::Debug;
 use core::cell::RefCell;
 use alloc::sync::Arc;
 
-use profiler::{timed, SpanGuard};
+use profiler::timed;
 
 // use embedded_graphics::{
 //     text::{
@@ -124,13 +123,15 @@ impl From<FontSize> for u16 {
 struct CharCache {
     contents: Vec<(u16, u32)>,
     lru: [(u16, u32); 32],
+    lru_index: usize,
 }
 
-static CHAR_CACHE: Mutex<RefCell<CharCache>> = Mutex::new(RefCell::new(CharCache { contents: Vec::new(), lru: [(0,0); 32] }));
+static CHAR_CACHE: Mutex<RefCell<CharCache>> = Mutex::new(RefCell::new(CharCache { contents: Vec::new(), lru: [(0,0); 32], lru_index: 0 }));
 
 impl CharCache {
     fn set_contents(&mut self, n: Vec<(u16, u32)>) {
         self.contents = n;
+        self.lru = [(0,0); 32];
     }
 }
 
@@ -338,7 +339,9 @@ impl PbFont {
                             (codepoint, offset)
                         })
                         .collect();
-                    CHAR_CACHE.lock(|k| {k.borrow_mut().set_contents(entries)});
+                    CHAR_CACHE.lock(|k| {
+                        k.borrow_mut().set_contents(entries);
+                    });
                     Ok(())
                 }
             )?;
@@ -348,11 +351,26 @@ impl PbFont {
 
     fn binary_search_cache(&mut self, k: u16) -> Result<u32, FontFileError> {
         let result = CHAR_CACHE.lock(|f| {
-            let c_ref = &f.borrow().contents;
-            c_ref.binary_search_by_key(&k, |&(codepoint, _)| codepoint)
+            let cache = f.borrow();
+            for (entry, output) in &cache.lru {
+                if *entry == k {
+                    return Ok(*output);
+                }
+            }
+            let c_ref = &cache.contents;
+            let res = c_ref.binary_search_by_key(&k, |&(codepoint, _)| codepoint)
                 .ok()
                 .map(|i| c_ref[i].1)
-                .ok_or(FontFileError::InvalidChar(k))
+                .ok_or(FontFileError::InvalidChar(k));
+            drop(cache);
+            if let Ok(r) = res {
+                let mut mut_cache = f.borrow_mut();
+                let inx = mut_cache.lru_index;
+                mut_cache.lru[inx] = (k, r);
+                let len = mut_cache.lru.len();
+                mut_cache.lru_index = (inx + 1) % len;
+            }
+            res
         })?;
         // let result = contents_ref
         //     .binary_search_by_key(&k, |&(codepoint, _)| codepoint)
@@ -363,66 +381,66 @@ impl PbFont {
     }
 
     // Binary search, returns the offset into the file for the glyph
-    fn binary_search(&mut self, k: u16) -> Result<u32, FontFileError> {
-        let mut offset: i64 = (self.font_metadata.num_glyphs >> 1).into();
-        if let Some(sz) = self.font_size {
-            Ok(self.fs.open_file_and_then(
-                sz.as_path(),
-                |f| {
-                    f.seek(SeekFrom::Start((offset * 6 + 16) as u32))?;
-                    let mut total_off: u64 = (offset * 6 + 16) as u64;
+    // fn binary_search(&mut self, k: u16) -> Result<u32, FontFileError> {
+    //     let mut offset: i64 = (self.font_metadata.num_glyphs >> 1).into();
+    //     if let Some(sz) = self.font_size {
+    //         Ok(self.fs.open_file_and_then(
+    //             sz.as_path(),
+    //             |f| {
+    //                 f.seek(SeekFrom::Start((offset * 6 + 16) as u32))?;
+    //                 let mut total_off: u64 = (offset * 6 + 16) as u64;
 
-                    let mut buf = [0u8; 2];
-                    f.read_exact(&mut buf)?;
-                    let mut prev_entry = u16::from_le_bytes(buf);
-                    let mut curr_entry = prev_entry;
+    //                 let mut buf = [0u8; 2];
+    //                 f.read_exact(&mut buf)?;
+    //                 let mut prev_entry = u16::from_le_bytes(buf);
+    //                 let mut curr_entry = prev_entry;
 
-                    while curr_entry != k {
-                        // if curr_entry > self.max
-                        if prev_entry < k && curr_entry > k && offset == 1 {
-                            return Ok(Err(FontFileError::InvalidChar(k)));
-                        }
+    //                 while curr_entry != k {
+    //                     // if curr_entry > self.max
+    //                     if prev_entry < k && curr_entry > k && offset == 1 {
+    //                         return Ok(Err(FontFileError::InvalidChar(k)));
+    //                     }
 
-                        offset >>= 1;
-                        if offset < 1 {
-                            offset = 1;
-                        }
+    //                     offset >>= 1;
+    //                     if offset < 1 {
+    //                         offset = 1;
+    //                     }
 
-                        let offset_amt = if curr_entry > k {
-                            -offset * 6 - 2
-                        } else {
-                            offset * 6 - 2
-                        };
+    //                     let offset_amt = if curr_entry > k {
+    //                         -offset * 6 - 2
+    //                     } else {
+    //                         offset * 6 - 2
+    //                     };
 
-                        f.seek(SeekFrom::Current(offset_amt as i32))?;
-                        match total_off.checked_add_signed(offset_amt+2) {
-                            Some(k) => {
-                                // info!("{} + {} = {}", total_off, offset_amt, k);
-                                total_off = k;
-                            },
-                            None => {
-                                info!("BAD: {} + {} = OOB", total_off, offset_amt); 
-                                panic!(); 
-                            }
-                        }
-                        if total_off > (self.font_metadata.num_glyphs * 6 + 16) as u64 {
-                            return Ok(Err(FontFileError::InvalidChar(k)));
-                        }
-                        prev_entry = curr_entry;
+    //                     f.seek(SeekFrom::Current(offset_amt as i32))?;
+    //                     match total_off.checked_add_signed(offset_amt+2) {
+    //                         Some(k) => {
+    //                             // info!("{} + {} = {}", total_off, offset_amt, k);
+    //                             total_off = k;
+    //                         },
+    //                         None => {
+    //                             info!("BAD: {} + {} = OOB", total_off, offset_amt); 
+    //                             panic!(); 
+    //                         }
+    //                     }
+    //                     if total_off > (self.font_metadata.num_glyphs * 6 + 16) as u64 {
+    //                         return Ok(Err(FontFileError::InvalidChar(k)));
+    //                     }
+    //                     prev_entry = curr_entry;
                         
-                        let mut buf = [0u8; 2];
-                        f.read_exact(&mut buf)?;
-                        curr_entry = u16::from_le_bytes(buf);
-                    }
+    //                     let mut buf = [0u8; 2];
+    //                     f.read_exact(&mut buf)?;
+    //                     curr_entry = u16::from_le_bytes(buf);
+    //                 }
                     
-                    let mut buf = [0u8; 4];
-                    f.read_exact(&mut buf)?;
-                    Ok(Ok(u32::from_le_bytes(buf)))
-                })??)
-        } else {
-            Err(FontFileError::FileNotOpen)
-        }
-    }
+    //                 let mut buf = [0u8; 4];
+    //                 f.read_exact(&mut buf)?;
+    //                 Ok(Ok(u32::from_le_bytes(buf)))
+    //             })??)
+    //     } else {
+    //         Err(FontFileError::FileNotOpen)
+    //     }
+    // }
 
     // Load character
     /// Loads a character with the character code `curchar`, returning either an error or the
@@ -546,8 +564,9 @@ impl PbBg {
     /// Decodes the `index`th background image, reading from the file `name`. If `force_load` is
     /// `True`, the file is forced to be opened anew regardless of whether the previous background image
     /// was from the same file.
-    pub fn load_bgimg(&mut self, name: &Path, force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
+    pub fn load_bgimg(&mut self, name: &Path, _force_load: bool, index: i32) -> Result<Vec<RGB>, FontFileError> {
         // let mut image_file = self.bg_file;
+        // TODO: figure out force_load
 
         let res: Result<Result<Vec<RGB>, FontFileError>, littlefs2::io::Error> = self.fs.open_file_and_then(
             name, 

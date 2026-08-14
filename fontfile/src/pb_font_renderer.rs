@@ -9,7 +9,7 @@ use embedded_graphics::{
     }, 
     pixelcolor::{Rgb565, Rgb888},
     geometry::{Point},
-    prelude::{DrawTarget, RgbColor, Size},
+    prelude::{DrawTarget, Size},
     image::{Image, ImageRaw},
     Drawable,
     draw_target::DrawTargetExt,
@@ -24,7 +24,7 @@ use alloc::rc::Rc;
 use alloc::vec::Vec;
 
 use crate::{PbFont, RGB, rgb};
-use profiler::{SpanGuard, timed};
+use profiler::timed;
 
 /// Defines the global state of the renderer. Font size and everything is already included in
 /// `PbFont`, so we only need to add `bgcol` (background colour) and `fgcol` (foreground colour).
@@ -62,20 +62,20 @@ impl TextRenderer for &PbFontRenderer {
        where D: DrawTarget<Color = Self::Color> {
         let mut start_char_point = position;
 
-        let mut DBG_PINDRIVER = unsafe {
+        let mut dbg_pindriver = unsafe {
             // PinDriver::output(Gpio14::new()).unwrap()
             Output::new(GPIO14::steal(), Level::High, OutputConfig::default())
         };
 
         for c in text.encode_utf16() {
 
-            DBG_PINDRIVER.set_low();
+            dbg_pindriver.set_low();
 
             let (metrics, coldata) = timed!("load char", { 
                 self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
             });
             if metrics.width != 0 {
-                let true_height = timed!("true_height = ", metrics.height / 3);
+                // let true_height = timed!("true_height = ", metrics.height / 3);
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
                 let byteslice = timed!("set byteslice", {
                                 coldata.into_iter()
@@ -109,7 +109,7 @@ impl TextRenderer for &PbFontRenderer {
             }
             start_char_point += Point::new(metrics.advance.into(), 0);
 
-            DBG_PINDRIVER.set_high();
+            dbg_pindriver.set_high();
 
         }
 
@@ -121,7 +121,7 @@ impl TextRenderer for &PbFontRenderer {
         width: u32,
         position: Point,
         _baseline: Baseline,
-        target: &mut D,
+        _target: &mut D,
     ) -> Result<Point, D::Error>
        where D: DrawTarget<Color = Self::Color> {
         Ok(position + Point::new(width.saturating_as(), 0))
