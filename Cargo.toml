@@ -9,7 +9,12 @@ rust-version = "1.88"
 [[bin]]
 name = "pb_test_buttons"
 path = "./src/main.rs"
-# harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
+harness = false # do not use the built-in cargo test harness -> resolve rust-analyzer errors
+test = false
+
+[[test]]
+name = "hardware_tests"
+harness = false
 
 [profile.release]
 # opt-level = 3
@@ -21,6 +26,10 @@ opt-level = "s"
 [profile.dev]
 debug = true    # Symbols are nice, and they don't increase the size on Flash
 opt-level = 3 # "s"
+
+[profile.test]
+debug = true
+opt-level = "s"
 
 [features]
 # default = []

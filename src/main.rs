@@ -59,7 +59,7 @@ use esp_hal::timer::timg::TimerGroup;
 use esp_hal::spi::master::{Spi, Config};
 use esp_hal::time::Rate;
 use esp_hal::clock::CpuClock;
-use esp_hal::ledc::{Ledc, LSGlobalClkSource, timer, LowSpeed, timer::TimerIFace, channel, channel::ChannelIFace};
+use esp_hal::ledc::{Ledc, LSGlobalClkSource, timer, LowSpeed, timer::{TimerIFace, Timer}, channel, channel::ChannelIFace};
 // use esp_alloc::HEAP;
 
 use littlefs2::io;
@@ -109,7 +109,9 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 #[derive(Debug, Copy, Clone)]
 enum PbError {
-    FSError(io::Error)
+    FSError(io::Error),
+    LedcError(channel::Error),
+    LedTimerError(timer::Error),
 }
 
 impl core::error::Error for PbError { }
@@ -117,6 +119,8 @@ impl fmt::Display for PbError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PbError::FSError(e) => write!(f, "FS error! {:?}", e),
+            PbError::LedcError(e) => write!(f, "Channel error! {:?}", e),
+            PbError::LedTimerError(e) => write!(f, "Timer error! {:?}", e),
         }
     }
 }
@@ -185,6 +189,7 @@ async fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: 
     Ok(Screen::ST(s))
 }
 
+#[cfg(not(test))]
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
     esp_println::logger::init_logger_from_env();
@@ -200,6 +205,8 @@ async fn main(spawner: Spawner) -> ! {
 
     loop { }
 }
+
+static LEDC_TIMER: StaticCell<Timer<'static, LowSpeed>> = StaticCell::new();
 
 /// Initializes the board, then starts all the menus. `main` will stop in case of an error, causing
 /// the board to reset. This is why it returns an `anyhow::Result<()>`
@@ -229,30 +236,15 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     psram_allocator!(peripherals.PSRAM, esp_hal::psram, psram_config);
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    // let systimer = esp_hal::timer::systimer::SystemTimer::new(peripherals.SYSTIMER);
     let sw_interrupt = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
     esp_rtos::start(timg0.timer0, sw_interrupt.software_interrupt0);
 
-    // esp_idf_svc::sys::link_patches();
-    // esp_idf_svc::log::EspLogger::initialize_default(); // Everything is fine when removing this line
     let fs = register_filesystem(peripherals.FLASH).await.map_err(|e| PbError::FSError(e))?;
 
     info!("STARTING APP!");
-    // let mut settings = PbGlobalSettings::new();
-
-    // let peripherals = Peripherals::take()?;
-    // let sys_loop = EspSystemEventLoop::take()?;
-    // let nvs = EspDefaultNvsPartition::take()?;
-
-    // let mut pb_wifi = PbWifi::new(peripherals.modem, sys_loop, nvs)?;
-    // pb_wifi.connect("hidden".try_into().unwrap(), "".try_into().unwrap())?;
-    // let http_server = PbHttpServer::start()?;
 
     let pb_wifi = PbWifi::new(spawner, peripherals.WIFI)?;
 
-    // let button_queue: Arc<Queue<Event>> = Arc::new(Queue::new(4));
-    // button_init(vec![peripherals.pins.gpio0.downgrade(), peripherals.pins.gpio3.downgrade(), peripherals.pins.gpio18.downgrade()], peripherals.timer00, button_queue.clone())?;
-    // start_rotenc_thread(button_queue.clone(), peripherals.pins.gpio17.downgrade(), peripherals.pins.gpio8.downgrade())?;
     let button_receiver = button_init(spawner, vec![
         (peripherals.GPIO0.into(), ButtonType::Left), 
         (peripherals.GPIO3.into(), ButtonType::Right), 
@@ -261,13 +253,20 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let mut ledc = Ledc::new(peripherals.LEDC);
     ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
+    let mut lstimer0 = LEDC_TIMER.init(ledc.timer::<LowSpeed>(timer::Number::Timer0));
+    lstimer0.configure(timer::config::Config {
+        duty: timer::config::Duty::Duty14Bit,
+        clock_source: timer::LSClockSource::APBClk,
+        frequency: Rate::from_khz(1),
+    }).map_err(|e| PbError::LedTimerError(e))?;
 
     let ledperipherals = LedPeripherals::new(
         peripherals.GPIO14.into(),
         peripherals.GPIO21.into(),
         peripherals.GPIO47.into(),
         &ledc,
-    );
+        lstimer0,
+    ).map_err(|e| PbError::LedcError(e))?;
     let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off);
     leddriver.set_brightness(128);
     let outputperipherals = Pwm::new(
@@ -300,23 +299,16 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     font.set_size(FontSize::Sz14)?;
 
     let pb_font_style = PbFontRenderer::new(font);
-    // let color_vec: Vec<RGB> = (0..100).map(|x| { rgb![255-x] }).collect();
 
-    let mut lstimer0 = ledc.timer::<LowSpeed>(timer::Number::Timer0);
-    lstimer0.configure(timer::config::Config {
-        duty: timer::config::Duty::Duty5Bit,
-        clock_source: timer::LSClockSource::APBClk,
-        frequency: Rate::from_khz(24),
-    }).unwrap();
     let backlight = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
     let mut backlight_channel = ledc.channel(channel::Number::Channel7, backlight);
     backlight_channel.configure(channel::config::Config {
-        timer: &lstimer0,
+        timer: lstimer0,
         duty_pct: 10,
         drive_mode: DriveMode::PushPull,
-    }).unwrap(); // TODO: fix this
+    }).map_err(|e| PbError::LedcError(e))?;
 
-    backlight_channel.set_duty(10).unwrap();
+    backlight_channel.set_duty(10).map_err(|e| PbError::LedcError(e))?;
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
@@ -330,7 +322,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
                 pb_wifi,
                 pb_server_connection,
                 backlight_channel,
-                10, // brightness
+                10,
             )).await?;
     Ok(())
 }

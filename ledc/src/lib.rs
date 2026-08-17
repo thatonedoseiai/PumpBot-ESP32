@@ -5,8 +5,8 @@
 
 extern crate alloc;
 
-use esp_hal::gpio::{AnyPin, Output, OutputConfig, Level};
-use esp_hal::ledc::{timer::Timer, LowSpeed, channel::{Channel, Number}, Ledc};
+use esp_hal::gpio::{AnyPin, Output, OutputConfig, Level, DriveMode};
+use esp_hal::ledc::{timer::Timer, LowSpeed, channel::{Error, Channel, Number, ChannelIFace, config::Config}, Ledc};
 use global_settings::rgb::RGB;
 use alloc::sync::Arc;
 use embedded_hal::pwm::SetDutyCycle;
@@ -46,13 +46,9 @@ pub struct LedController {
 
 /// A collection of all the peripherals needed to run the LED driver.
 pub struct LedPeripherals<'a> {
-    // led_r: AnyPin,
-    // led_g: AnyPin,
-    // led_b: AnyPin,
     channel_r: Channel<'a, LowSpeed>,
     channel_g: Channel<'a, LowSpeed>,
     channel_b: Channel<'a, LowSpeed>,
-    timer: Timer<'a, LowSpeed>
 }
 
 impl LedPeripherals<'_> {
@@ -62,23 +58,24 @@ impl LedPeripherals<'_> {
         led_g: AnyPin<'a>,
         led_b: AnyPin<'a>,
         ledc_driver: &Ledc<'a>,
-        // channel_r: Channel<'a, LowSpeed>,
-        // channel_g: Channel<'a, LowSpeed>,
-        // channel_b: Channel<'a, LowSpeed>,
-        // timer: Timer<'a, LowSpeed>
-    ) -> LedPeripherals<'a> {
-        // let ledc_driver = Ledc::new(ledc);
+        timer: &'a Timer<'a, LowSpeed>
+    ) -> Result<LedPeripherals<'a>, Error> {
         let config = OutputConfig::default();
-        let channel_r = ledc_driver.channel(Number::Channel0, Output::new(led_r, Level::Low, config));
-        let channel_g = ledc_driver.channel(Number::Channel1, Output::new(led_g, Level::Low, config));
-        let channel_b = ledc_driver.channel(Number::Channel2, Output::new(led_b, Level::Low, config));
-        let timer = ledc_driver.timer(esp_hal::ledc::timer::Number::Timer0);
+        let mut channel_r = ledc_driver.channel(Number::Channel0, Output::new(led_r, Level::Low, config));
+        let mut channel_g = ledc_driver.channel(Number::Channel1, Output::new(led_g, Level::Low, config));
+        let mut channel_b = ledc_driver.channel(Number::Channel2, Output::new(led_b, Level::Low, config));
+        let channel_config = Config {
+            timer: timer,
+            duty_pct: 10,
+            drive_mode: DriveMode::PushPull,
+        };
+        channel_r.configure(channel_config)?;
+        channel_g.configure(channel_config)?;
+        channel_b.configure(channel_config)?;
 
-        LedPeripherals {
-            // led_r, led_g, led_b,
+        Ok(LedPeripherals {
             channel_r, channel_g, channel_b,
-            timer
-        }
+        })
     }
 }
 
@@ -86,20 +83,9 @@ static STATE: OnceLock<Arc<RwLock<ControllerState>>> = OnceLock::new();
 
 #[embassy_executor::task]
 async fn ledc_worker(mut p: LedPeripherals<'static>) {
-    // let peripherals = Peripherals::take().unwrap();
-    // let config = TimerConfig::new().resolution(Resolution::Bits14);//.frequency(5.kHz().into());
-    // let timerdriver = LedcTimerDriver::new(p.timer, &config).unwrap();
-
-    // Initialize Channels
-    // let mut ch_r: LedcDriver = LedcDriver::new(p.channel_r, &timerdriver, p.led_r).unwrap();
-    // let mut ch_g: LedcDriver = LedcDriver::new(p.channel_g, &timerdriver, p.led_g).unwrap();
-    // let mut ch_b: LedcDriver = LedcDriver::new(p.channel_b, &timerdriver, p.led_b).unwrap();
-
-    // let max_duty = ch_r.get_max_duty();
     let max_duty = p.channel_r.max_duty_cycle();
     let mut tick: u32 = 0;
     let mut goingup = true;
-    // let delay = Delay::new();
 
     loop {
         let current = STATE.get().await.clone();
@@ -133,20 +119,17 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
         };
 
         // Apply brightness and set duty
-        let apply = async |val: u8| -> u16 {
-            (val as u16 * current.read().await.brightness as u16 * max_duty) / 65025
+        let apply = |val: u8, bright: u8| -> u16 {
+            ((val as u32 * bright as u32 * max_duty as u32) / 65025) as u16
         };
 
-        // info!("led: ({} {} {}), max: {}", apply(r), apply(g), apply(b), max_duty);
+        {
+            let brightness = current.read().await.brightness;
+            p.channel_r.set_duty_cycle(apply(r, brightness)).unwrap();
+            p.channel_g.set_duty_cycle(apply(g, brightness)).unwrap();
+            p.channel_b.set_duty_cycle(apply(b, brightness)).unwrap();
+        }
 
-        p.channel_r.set_duty_cycle(apply(r).await).unwrap();
-        p.channel_g.set_duty_cycle(apply(g).await).unwrap();
-        p.channel_b.set_duty_cycle(apply(b).await).unwrap();
-
-        // tick += 2.0; // Increment based on speed
-        // thread::sleep(Duration::from_millis(current.speed_ms));
-        // esp_idf_hal::delay::FreeRtos::delay_ms(current.speed_ms as u32);
-        // delay.delay_millis(current.read().await.speed_ms as u32);
         ETimer::after(EDuration::from_millis(current.read().await.speed_ms)).await;
     }
 }
@@ -199,8 +182,14 @@ impl LedController {
 // (a as f32 + (b as f32 - a as f32) * t) as u8
 /// linearly interpolates between `a` and `b` at a percentage `t/255`.
 fn lerp(a: u8, b: u8, t: u8) -> u8 {
-    let diff: u16 = if a > b { a - b } else { b - a } as u16;
-    (a as u16 + (diff * t as u16) / 255) as u8
+    let a = a as u16;
+    let b = b as u16;
+    let t = t as u16;
+
+    let result = (a * (255 - t) + b * t + 127) / 255;
+    result as u8
+    // let diff: u16 = if a > b { a - b } else { b - a } as u16;
+    // (a as u16 + (diff * t as u16) / 255) as u8
 }
 
 /// Converts HSV to RGB coloration.

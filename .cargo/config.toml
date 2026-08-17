@@ -1,5 +1,6 @@
 [target.xtensa-esp32s3-none-elf]
 runner = "espflash flash --monitor --chip esp32s3 --partition-table ./partition.csv"
+# runner = "probe-rs run --chip ESP32S3 --base-address 0x10000"
 
 [env]
 ESP_LOG="info"

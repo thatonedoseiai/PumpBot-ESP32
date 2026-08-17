@@ -62,14 +62,14 @@ impl TextRenderer for &PbFontRenderer {
        where D: DrawTarget<Color = Self::Color> {
         let mut start_char_point = position;
 
-        let mut dbg_pindriver = unsafe {
-            // PinDriver::output(Gpio14::new()).unwrap()
-            Output::new(GPIO14::steal(), Level::High, OutputConfig::default())
-        };
+        // let mut dbg_pindriver = unsafe {
+        //     // PinDriver::output(Gpio14::new()).unwrap()
+        //     Output::new(GPIO14::steal(), Level::High, OutputConfig::default())
+        // };
 
         for c in text.encode_utf16() {
 
-            dbg_pindriver.set_low();
+            // dbg_pindriver.set_low();
 
             let (metrics, coldata) = timed!("load char", { 
                 self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
@@ -109,7 +109,7 @@ impl TextRenderer for &PbFontRenderer {
             }
             start_char_point += Point::new(metrics.advance.into(), 0);
 
-            dbg_pindriver.set_high();
+            // dbg_pindriver.set_high();
 
         }
 
