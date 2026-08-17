@@ -47,6 +47,7 @@ use embassy_net::IpAddress;
 use socket::ServerConnection;
 use esp_hal::ledc::{channel::{Channel, ChannelIFace}, LowSpeed};
 use core::ops::Deref;
+use enum_dispatch::enum_dispatch;
 
 #[cfg(feature = "sim")]
 mod cond_deps {
@@ -69,21 +70,6 @@ mod cond_deps {
 }
 
 use crate::cond_deps::*;
-
-// #[derive(Debug)]
-// pub enum MenuError {
-//     UnimplementedMenu,
-// }
-
-// impl fmt::Display for MenuError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             MenuError::UnimplementedMenu => write!(f, "UnimplementedMenu")
-//         }
-//     }
-// }
-
-// impl core::error::Error for MenuError { }
 
 enum MenuSignal {
     Back,
@@ -179,12 +165,14 @@ pub enum CustomMenu {
     HomeMenu,
 }
 
+#[enum_dispatch(MenuStateBehaviour)]
 #[derive(Debug, Clone, Copy)]
 pub enum Menu {
     CustomMenu(CustomMenu),
     ComponentMenu(ComponentMenu),
 }
 
+#[enum_dispatch]
 trait MenuStateBehaviour {
     async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal>;
 }
@@ -217,15 +205,6 @@ impl ComponentMenu {
             Self::DisplaySettings => MenuInternalState::DisplaySettings {
                 theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
             },
-        }
-    }
-}
-
-impl MenuStateBehaviour for Menu {
-    async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        match self {
-            Self::CustomMenu(m) => m.run(h).await,
-            Self::ComponentMenu(m) => m.run(h).await,
         }
     }
 }
