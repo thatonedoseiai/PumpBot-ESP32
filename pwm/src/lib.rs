@@ -245,17 +245,13 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
     match action {
         PwmAction::On(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            if !state.frozen {
-                channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
-                state.state = PwmPinState::On;
-            }
+            channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
+            state.state = PwmPinState::On;
         },
         PwmAction::Off(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            if !state.frozen {
-                channels[usize::from(c)].set_duty_cycle(0).unwrap();
-                state.state = PwmPinState::Off;
-            }
+            channels[usize::from(c)].set_duty_cycle(0).unwrap();
+            state.state = PwmPinState::Off;
         },
         PwmAction::SetDuty(c, duty) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
