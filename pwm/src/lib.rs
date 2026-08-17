@@ -30,7 +30,7 @@ pub struct Command {
 
 impl PartialOrd for Command {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.time.partial_cmp(&other.time)
+        Some(self.time.partial_cmp(&other.time)?.reverse())
     }
 }
 
@@ -178,7 +178,7 @@ impl PwmPinInfo {
     const fn new() -> Self {
         PwmPinInfo {
             state: PwmPinState::Off,
-            duty: 0,
+            duty: 16383,
             freeze_timer: 0,
             frozen: false,
         }
@@ -199,11 +199,12 @@ const CHANNEL_NUMBERS: [Number; 4] = [Number::Channel3, Number::Channel4, Number
 #[embassy_executor::task]
 async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>) {
     let mut command_queue: BinaryHeap<Command> = BinaryHeap::new();
-    let now = Instant::now();
 
     loop {
+        let now = Instant::now();
         // let mut state = PIN_STATES[usize::from(c)].write().await;
-        let next_delay = command_queue.peek().map(|e| e.time - now.duration_since_epoch().as_millis());
+        let next_delay = command_queue.peek().map(|e| 
+            e.time.saturating_sub(now.duration_since_epoch().as_millis()));
         let delay_event = match next_delay {
             Some(d) => Some(ETimer::after(Duration::from_millis(d))),
             None => None,
@@ -218,7 +219,10 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>) {
 
         match next_action {
             Either3::First(c) => {
-                command_queue.push(c);
+                command_queue.push(Command::new(
+                        c.action,
+                        c.time + now.duration_since_epoch().as_millis(),
+                        ));
             },
             Either3::Second(_) => {
                 let command = command_queue.pop().unwrap();
@@ -241,13 +245,17 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
     match action {
         PwmAction::On(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
-            state.state = PwmPinState::On;
+            if !state.frozen {
+                channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
+                state.state = PwmPinState::On;
+            }
         },
         PwmAction::Off(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(0).unwrap();
-            state.state = PwmPinState::Off;
+            if !state.frozen {
+                channels[usize::from(c)].set_duty_cycle(0).unwrap();
+                state.state = PwmPinState::Off;
+            }
         },
         PwmAction::SetDuty(c, duty) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;

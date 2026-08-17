@@ -276,7 +276,9 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
             peripherals.GPIO5.into(),
             peripherals.GPIO6.into(),
             peripherals.GPIO7.into(),
-        ]);
+        ],
+        lstimer0
+        ).map_err(|e| PbError::LedcError(e))?;
     info!("initializing screen");
 
     #[cfg(feature = "ILI")]
