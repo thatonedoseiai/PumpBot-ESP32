@@ -820,6 +820,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum_dispatch"
+version = "0.3.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "enumset"
 version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1590,6 +1602,7 @@ dependencies = [
  "embedded-graphics-simulator",
  "embedded-hal 1.0.0",
  "embedded-hal-bus",
+ "enum_dispatch",
  "esp-hal",
  "esp-radio",
  "fontfile",

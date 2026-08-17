@@ -258,11 +258,13 @@ impl MenuStateBehaviour for ComponentMenu {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
                             if let Some(m) = cur_menu_state.selected() {
-                                m.unhighlight().draw(h).await?;
+                                m.unhighlight();
+                                m.draw(h).await?;
                             }
                             cur_menu_state.next_component();
                             if let Some(m) = cur_menu_state.selected() {
-                                m.highlight().draw(h).await?;
+                                m.highlight();
+                                m.draw(h).await?;
                             }
                             None
                         },
@@ -278,11 +280,13 @@ impl MenuStateBehaviour for ComponentMenu {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
                             if let Some(m) = cur_menu_state.selected() {
-                                m.unhighlight().draw(h).await?;
+                                m.unhighlight();
+                                m.draw(h).await?;
                             }
                             cur_menu_state.prev_component();
                             if let Some(m) = cur_menu_state.selected() {
-                                m.highlight().draw(h).await?;
+                                m.highlight();
+                                m.draw(h).await?;
                             }
                             None
                         },

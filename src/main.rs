@@ -68,7 +68,7 @@ use static_cell::StaticCell;
 use button_idf::{button_init, ButtonType};
 // use rotenc::{rotary_encoder_init, grab};
 use rotenc::start_rotenc_thread;
-use log::{info, error, warn};
+use log::{info, error};
 use ledc::{LedController, LedPeripherals, LedMode};
 // use pwm::{OutputCtl, OutputPeripherals, Action};
 use pwm::Pwm;
@@ -253,7 +253,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let mut ledc = Ledc::new(peripherals.LEDC);
     ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);
-    let mut lstimer0 = LEDC_TIMER.init(ledc.timer::<LowSpeed>(timer::Number::Timer0));
+    let lstimer0 = LEDC_TIMER.init(ledc.timer::<LowSpeed>(timer::Number::Timer0));
     lstimer0.configure(timer::config::Config {
         duty: timer::config::Duty::Duty14Bit,
         clock_source: timer::LSClockSource::APBClk,
@@ -371,6 +371,7 @@ async fn register_filesystem(flash: FLASH<'static>) -> Result<Arc<Filesystem<'st
     Ok(Arc::new(fs))
 }
 
+#[cfg(test)]
 fn test_storage(flash: &mut PbFlashStorage<'static>) {
     use littlefs2::driver::Storage;
     // const TEST_PARTITION_OFFSET: usize = 0x210000;

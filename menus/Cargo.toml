@@ -23,6 +23,7 @@ embassy-futures = "0.1.2"
 esp-radio = { version = "1.0.0-beta.0", features = ["esp32s3", "wifi"] }
 embassy-net = { version = "0.9.1", features = ["tcp", "alloc", "medium-ip", "proto-ipv4"] }
 embedded-hal = "1.0.0"
+enum_dispatch = "0.3.13"
 # embedded-graphics-simulator = "0.8.0"
 
 [target.'cfg(not(feature = "sim"))'.dependencies]

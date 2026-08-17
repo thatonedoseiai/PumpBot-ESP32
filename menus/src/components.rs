@@ -22,6 +22,7 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
+use enum_dispatch::enum_dispatch;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -40,6 +41,7 @@ pub enum ComponentDefinition {
     ColorSelector(&'static ColorSelectorDefinition),
 }
 
+#[enum_dispatch(ComponentBehaviour, RunHandlers)]
 pub enum ComponentState {
     Button(ButtonState),
     OptionSwitch(OptionSwitchState),
@@ -50,108 +52,19 @@ pub enum ComponentState {
     ColorSelector(ColorSelectorState),
 }
 
+#[enum_dispatch]
 pub trait RunHandlers {
     async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
     async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
+#[enum_dispatch]
 pub trait ComponentBehaviour {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()>;
-    fn highlight(&mut self) -> &mut Self;
-    fn unhighlight(&mut self) -> &mut Self;
-    fn reset_draw_flags(&mut self) -> &mut Self;
-}
-
-impl ComponentBehaviour for ComponentState {
-    async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        match self {
-            Self::Button(b) => b.draw(h).await,
-            Self::OptionSwitch(b) => b.draw(h).await,
-            Self::OptionScroller(b) => b.draw(h).await,
-            Self::TextBox(b) => b.draw(h).await,
-            Self::ValueSelector(b) => b.draw(h).await,
-            Self::Slider(b) => b.draw(h).await,
-            Self::ColorSelector(b) => b.draw(h).await,
-        }
-    }
-
-    fn highlight(&mut self) -> &mut Self {
-        match self {
-            Self::Button(b) => { b.highlight(); },
-            Self::OptionSwitch(b) => { b.highlight(); },
-            Self::OptionScroller(b) => { b.highlight(); },
-            Self::TextBox(b) => { b.highlight(); },
-            Self::ValueSelector(b) => { b.highlight(); },
-            Self::Slider(b) => { b.highlight(); },
-            Self::ColorSelector(b) => { b.highlight(); },
-        }
-        self
-    }
-
-    fn unhighlight(&mut self) -> &mut Self {
-        match self {
-            Self::Button(b) => { b.unhighlight(); },
-            Self::OptionSwitch(b) => { b.unhighlight(); },
-            Self::OptionScroller(b) => { b.unhighlight(); },
-            Self::TextBox(b) => { b.unhighlight(); },
-            Self::ValueSelector(b) => { b.unhighlight(); }
-            Self::Slider(b) => { b.unhighlight(); }
-            Self::ColorSelector(b) => { b.unhighlight(); }
-        }
-        self
-    }
-
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        match self {
-            Self::Button(b) => { b.reset_draw_flags(); },
-            Self::OptionSwitch(b) => { b.reset_draw_flags(); },
-            Self::OptionScroller(b) => { b.reset_draw_flags(); },
-            Self::TextBox(b) => { b.reset_draw_flags(); },
-            Self::ValueSelector(b) => { b.reset_draw_flags(); }
-            Self::Slider(b) => { b.reset_draw_flags(); }
-            Self::ColorSelector(b) => { b.reset_draw_flags(); }
-        }
-        self
-    }
-}
-
-impl RunHandlers for ComponentState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Button(b) => b.left_handle(menu_state, h).await,
-            Self::OptionSwitch(b) => b.left_handle(menu_state, h).await,
-            Self::OptionScroller(b) => b.left_handle(menu_state, h).await,
-            Self::TextBox(b) => b.left_handle(menu_state, h).await,
-            Self::ValueSelector(b) => b.left_handle(menu_state, h).await,
-            Self::Slider(b) => b.left_handle(menu_state, h).await,
-            Self::ColorSelector(b) => b.left_handle(menu_state, h).await,
-        }
-    }
-
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Button(b) => b.right_handle(menu_state, h).await,
-            Self::OptionSwitch(b) => b.right_handle(menu_state, h).await,
-            Self::OptionScroller(b) => b.right_handle(menu_state, h).await,
-            Self::TextBox(b) => b.right_handle(menu_state, h).await,
-            Self::ValueSelector(b) => b.right_handle(menu_state, h).await,
-            Self::Slider(b) => b.right_handle(menu_state, h).await,
-            Self::ColorSelector(b) => b.right_handle(menu_state, h).await,
-        }
-    }
-
-    async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Button(b) => b.click_handle(menu_state, h).await,
-            Self::OptionSwitch(b) => b.click_handle(menu_state, h).await,
-            Self::OptionScroller(b) => b.click_handle(menu_state, h).await,
-            Self::TextBox(b) => b.click_handle(menu_state, h).await,
-            Self::ValueSelector(b) => b.click_handle(menu_state, h).await,
-            Self::Slider(b) => b.click_handle(menu_state, h).await,
-            Self::ColorSelector(b) => b.click_handle(menu_state, h).await,
-        }
-    }
+    fn highlight(&mut self);
+    fn unhighlight(&mut self);
+    fn reset_draw_flags(&mut self);
 }
 
 impl ComponentState {
@@ -329,21 +242,17 @@ impl ComponentBehaviour for ButtonState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         // println!("HIGHLIGHTING COMPONENT [{}]", self.id);
         self.highlighted = true;
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         // println!("UNHIGHLIGHTING COMPONENT [{}]", self.id);
         self.highlighted = false;
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
-    }
+    fn reset_draw_flags(&mut self) { }
 }
 
 pub struct ButtonDefinition {
@@ -481,23 +390,19 @@ impl ComponentBehaviour for OptionSwitchState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         if self.mode == OptionSwitchMode::Unhighlighted {
             self.mode = OptionSwitchMode::Highlighted;
         }
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         if self.mode == OptionSwitchMode::Highlighted {
             self.mode = OptionSwitchMode::Unhighlighted;
         }
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
-    }
+    fn reset_draw_flags(&mut self) { }
 }
 // }}}
 // OPTION SCROLLER {{{
@@ -622,17 +527,11 @@ impl ComponentBehaviour for OptionScrollerState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
-        self
-    }
+    fn highlight(&mut self) { }
 
-    fn unhighlight(&mut self) -> &mut Self {
-        self
-    }
+    fn unhighlight(&mut self) { }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
-    }
+    fn reset_draw_flags(&mut self) { }
 }
 // }}}
 // TEXT BOX {{{
@@ -1082,19 +981,15 @@ impl ComponentBehaviour for TextBoxState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         self.highlighted = true;
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         self.highlighted = false;
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
-    }
+    fn reset_draw_flags(&mut self) { }
 }
 
 // }}}
@@ -1167,19 +1062,15 @@ impl ComponentBehaviour for ValueSelectorState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         self.mode = ValueSelectorMode::Highlighted;
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         self.mode = ValueSelectorMode::Unhighlighted;
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
-    }
+    fn reset_draw_flags(&mut self) { }
 }
 // }}}
 // SLIDER {{{
@@ -1282,19 +1173,16 @@ impl ComponentBehaviour for SliderState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         self.mode = SliderMode::Highlighted;
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         self.mode = SliderMode::Unhighlighted;
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
+    fn reset_draw_flags(&mut self) {
         self.bg_drawn = false;
-        self
     }
 }
 // }}}
@@ -1578,18 +1466,15 @@ impl ComponentBehaviour for ColorSelectorState {
         Ok(())
     }
 
-    fn highlight(&mut self) -> &mut Self {
+    fn highlight(&mut self) {
         self.mode = ColorSelectorMode::Highlighted;
-        self
     }
 
-    fn unhighlight(&mut self) -> &mut Self {
+    fn unhighlight(&mut self) {
         self.mode = ColorSelectorMode::Unhighlighted;
-        self
     }
 
-    fn reset_draw_flags(&mut self) -> &mut Self {
-        self
+    fn reset_draw_flags(&mut self) {
     }
 }
 // }}}
