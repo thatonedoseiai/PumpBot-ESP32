@@ -7,47 +7,84 @@
 extern crate alloc;
 
 pub mod menus;
-// pub mod components;
-// mod event;
 mod screen;
 mod static_element;
-// mod menu_define;
 mod handlers;
 mod components;
 mod menu_definitions;
 
-use crate::handlers::{MenuHandler, GenericHandler, Handler, HandlerResult};
-use crate::components::{ComponentDefinition, ComponentState, RunHandlers, ComponentBehaviour, InteractionType};
-use crate::menu_definitions::{COMPONENT_TESTING, LANG, WIFI, WIFI_DETAILS, SERVER_DETAILS, DISPLAY_SETTINGS};
+use crate::handlers::{
+    MenuHandler,
+    GenericHandler,
+    Handler,
+    HandlerResult
+};
+use crate::components::{
+    ComponentDefinition,
+    ComponentState,
+    RunHandlers,
+    ComponentBehaviour,
+    InteractionType
+};
+use crate::menu_definitions::{
+    COMPONENT_TESTING,
+    LANG,
+    WIFI,
+    WIFI_DETAILS,
+    SERVER_DETAILS,
+    DISPLAY_SETTINGS
+};
 use crate::static_element::StaticElement;
-
-// pub use crate::event::event::Event;
 use crate::menus::titlescreen::TitleState;
-// use crate::menus::language_selection::LanguageState;
 use crate::menus::setup_method::SetupMethodState;
 use crate::menus::home_menu::HomeMenu;
-// use crate::menus::test_component_menu::TestComponentMenu;
-// use crate::menus_define;
-// use ilidriver::ILIDriver;
-// use alloc::sync::Arc;
-use fontfile::{pb_font_renderer::PbFontRenderer};
-pub use crate::screen::screen::{Screen, ScreenDrawError};
-use rotenc::EncoderEvent;
-use button_idf::{ButtonEvent, ButtonType, ButtonEventKind};
-use rotenc::Direction;
-use embassy_futures::select::{Either, select};
+pub use crate::screen::screen::{
+    Screen,
+    ScreenDrawError
+};
+
+use fontfile::pb_font_renderer::PbFontRenderer;
+use rotenc::{
+    EncoderEvent,
+    Direction
+};
+use button_idf::{
+    ButtonEvent,
+    ButtonType,
+    ButtonEventKind
+};
+use embassy_futures::select::{
+    Either,
+    select
+};
 use wifi::PbWifi;
-use alloc::{vec::Vec, vec};
 use embedded_graphics::draw_target::DrawTarget;
-use global_settings::{PB_GLOBAL_SETTINGS, PbGlobalSettings, rgb, rgb::RGB, Theme};
-use core::cell::RefCell;
+use global_settings::{
+    PB_GLOBAL_SETTINGS,
+    PbGlobalSettings,
+    rgb,
+    rgb::RGB,
+    Theme
+};
 use esp_radio::wifi::ap::AccessPointInfo;
-use alloc::string::String;
 use embassy_net::IpAddress;
 use socket::ServerConnection;
-use esp_hal::ledc::{channel::{Channel, ChannelIFace}, LowSpeed};
-use core::ops::Deref;
+use esp_hal::ledc::{
+    channel::{
+        Channel, 
+        ChannelIFace
+    }, 
+    LowSpeed
+};
 use enum_dispatch::enum_dispatch;
+
+use core::cell::RefCell;
+use core::ops::Deref;
+use alloc::{
+    vec::Vec, 
+    vec, 
+    string::String
+};
 
 #[cfg(feature = "sim")]
 mod cond_deps {
@@ -57,7 +94,6 @@ mod cond_deps {
 
     pub use mock_pwm::OutputCtl;
     pub use mock_ledc::LedController;
-    // pub use esp_idf_hal::task::queue::Queue;
     pub use mock_queue::Queue;
     pub use embedded_graphics_simulator::{SimulatorDisplay, Window, OutputSettingsBuilder, SimulatorEvent};
 }
