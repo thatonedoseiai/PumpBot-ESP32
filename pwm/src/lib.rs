@@ -3,8 +3,8 @@
 
 extern crate alloc;
 
-use esp_hal::gpio::{AnyPin, Output, Level, OutputConfig};
-use esp_hal::ledc::{channel::{Channel, Number}, LowSpeed};
+use esp_hal::gpio::{AnyPin, Output, Level, OutputConfig, DriveMode};
+use esp_hal::ledc::{channel::{Channel, Error, Number, config::Config, ChannelIFace}, timer::Timer, LowSpeed};
 use esp_hal::time::Instant;
 use embassy_futures::{select::{select3, Either3}, block_on};
 use embassy_sync::channel::{Channel as EChannel, Sender};
@@ -128,13 +128,31 @@ pub struct Pwm<'a> {
 impl Pwm<'_> {
     pub fn new(
         spawner: &Spawner,
-        pins: [AnyPin<'static>; NUM_CHANNELS]
-    ) -> Self {
-        spawner.spawn(pwm_runner(pins).unwrap());
+        pins: [AnyPin<'static>; NUM_CHANNELS],
+        timer: &'static Timer<'static, LowSpeed>,
+    ) -> Result<Self, Error> {
+        let config = OutputConfig::default();
+        let channel_config = Config {
+            timer,
+            duty_pct: 0,
+            drive_mode: DriveMode::PushPull,
+        };
+        let mut channels: Vec<Channel<LowSpeed>> = pins
+                    .into_iter()
+                    .zip(CHANNEL_NUMBERS)
+                    .map(|(pin, cnum)| {
+                        Channel::new(cnum, Output::new(pin, Level::Low, config))
+                    })
+                    .collect();
+        channels.iter_mut()
+                .try_for_each(|chan| {
+                    chan.configure(channel_config)
+                })?;
+        spawner.spawn(pwm_runner(channels).unwrap());
 
-        Pwm {
+        Ok(Pwm {
             command_sender: COMMAND_CHANNEL.sender()
-        }
+        })
     }
 
     pub async fn send(&self, c: Command) {
@@ -179,11 +197,9 @@ static COMMAND_CHANNEL: EChannel<CriticalSectionRawMutex, Command, 8> = EChannel
 
 const CHANNEL_NUMBERS: [Number; 4] = [Number::Channel3, Number::Channel4, Number::Channel5, Number::Channel6];
 #[embassy_executor::task]
-async fn pwm_runner(pins: [AnyPin<'static>; NUM_CHANNELS]) {
+async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>) {
     let mut command_queue: BinaryHeap<Command> = BinaryHeap::new();
     let now = Instant::now();
-    let config = OutputConfig::default();
-    let mut channels: Vec<Channel<LowSpeed>> = pins.into_iter().zip(CHANNEL_NUMBERS).map(|(pin, cnum)| Channel::new(cnum, Output::new(pin, Level::Low, config))).collect();
 
     loop {
         // let mut state = PIN_STATES[usize::from(c)].write().await;
