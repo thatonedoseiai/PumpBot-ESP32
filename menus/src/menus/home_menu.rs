@@ -1,14 +1,17 @@
 use crate::{MenuSignal, IOHandles};
+use fontfile::FontSize;
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
-    primitives::{PrimitiveStyle, PrimitiveStyleBuilder},
+    primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Circle},
     pixelcolor::Rgb565,
 };
-use embassy_futures::select::{Either, select};
-use global_settings::{PB_GLOBAL_SETTINGS, Theme};
-use pwm::{PwmNumber, Command, PwmAction};
+use embassy_futures::select::{Either3, select3};
+use global_settings::{PB_GLOBAL_SETTINGS, Theme, rgb, rgb::RGB};
+use pwm::{PwmNumber, Command, PwmAction, PwmPinState};
 use button_idf::{ButtonEventKind, ButtonType};
+use rotenc::Direction;
+use alloc::string::ToString;
 
 #[derive(Debug, Copy, Clone)]
 enum HomeMenuMode {
@@ -19,13 +22,25 @@ enum HomeMenuMode {
 pub struct HomeMenu {
     mode: HomeMenuMode,
     selected_channel: PwmNumber,
+    main_dial_undraw: Rectangle,
+    pwm0_undraw: Rectangle,
+    pwm1_undraw: Rectangle,
+    pwm2_undraw: Rectangle,
+    pwm3_undraw: Rectangle,
 }
 
 impl HomeMenu {
+    const CHANNEL_BOX: Rectangle = Rectangle::new(Point::new(0, 0), Size::new(40, 30));
+
     pub const fn new() -> Self {
         HomeMenu {
             mode: HomeMenuMode::Browse,
             selected_channel: PwmNumber::Pwm0,
+            main_dial_undraw: Rectangle::zero(),
+            pwm0_undraw: Rectangle::zero(),
+            pwm1_undraw: Rectangle::zero(),
+            pwm2_undraw: Rectangle::zero(),
+            pwm3_undraw: Rectangle::zero(),
         }
     }
 
@@ -45,9 +60,70 @@ impl HomeMenu {
         self
     }
 
-    fn draw_main_dial(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        let current_state = self.selected_channel.get_state();
-        todo!()
+    const fn channel_position(c: PwmNumber) -> Point {
+        match c {
+            PwmNumber::Pwm0 => Point::new(24, 130),
+            PwmNumber::Pwm1 => Point::new(64, 130),
+            PwmNumber::Pwm2 => Point::new(24, 100),
+            PwmNumber::Pwm3 => Point::new(64, 100),
+        }
+    }
+
+    async fn draw_main_dial(&mut self, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        h.font.font.borrow_mut().set_size(FontSize::Sz14)?;
+        let current_state = self.selected_channel.get_state().await;
+        let percentage = current_state.get_duty_pct();
+        let percentage_string = percentage.to_string() + "%";
+        self.main_dial_undraw.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
+        let dial_text = Text::with_alignment(&percentage_string, Point::new(64, 40), &h.font, Alignment::Center);
+        self.main_dial_undraw = dial_text.bounding_box();
+        dial_text.draw(&mut h.screen)?;
+        Ok(())
+    }
+
+    const fn channel_style(theme: &Theme, selected: bool) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_color(if selected { theme.highlight() } else { theme.fg() }.as_rgb565())
+            .stroke_width(2)
+            .build()
+    }
+
+    const fn power_indicator_style(theme: &Theme, state: PwmPinState) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_color(theme.fg().as_rgb565())
+            .stroke_width(1)
+            .fill_color(match state {
+                PwmPinState::On => rgb![52, 242, 51],
+                PwmPinState::Off => rgb![255, 0, 0],
+            }.as_rgb565())
+            .build()
+    }
+
+    async fn draw_channel(&mut self, channel: PwmNumber, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
+        let current_state = channel.get_state().await;
+        let pos = Self::channel_position(channel);
+        let surrounding_rect = Self::CHANNEL_BOX.translate(pos).into_styled(Self::channel_style(theme, self.selected_channel == channel)).draw(&mut h.screen)?;
+
+        let percentage = current_state.get_duty_pct();
+        let percentage_string = percentage.to_string() + "%";
+        match channel {
+            PwmNumber::Pwm0 => { self.pwm0_undraw }
+            PwmNumber::Pwm1 => { self.pwm1_undraw }
+            PwmNumber::Pwm2 => { self.pwm2_undraw }
+            PwmNumber::Pwm3 => { self.pwm3_undraw }
+        }.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
+        let channel_text = Text::with_alignment(&percentage_string, pos + Point::new(20, 10), &h.font, Alignment::Center);
+        match channel {
+            PwmNumber::Pwm0 => { self.pwm0_undraw = channel_text.bounding_box(); }
+            PwmNumber::Pwm1 => { self.pwm1_undraw = channel_text.bounding_box(); }
+            PwmNumber::Pwm2 => { self.pwm2_undraw = channel_text.bounding_box(); }
+            PwmNumber::Pwm3 => { self.pwm3_undraw = channel_text.bounding_box(); }
+        };
+        channel_text.draw(&mut h.screen)?;
+
+        Circle::new(pos + Point::new(15, 15), 10).into_styled(Self::power_indicator_style(theme, current_state.state)).draw(&mut h.screen)?;
+        Ok(())
     }
 
     pub(crate) async fn run(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
@@ -55,26 +131,35 @@ impl HomeMenu {
         h.screen.clear(theme.bg().as_rgb565())?;
         h.font.fgcol = theme.fg();
         h.font.bgcol = theme.bg();
+        self.draw_main_dial(&theme, h).await?;
+        self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
+        self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
         loop {
-            let result = select(
+            let result = select3(
                 h.rotenc.receive(),
                 h.button.receive(),
+                h.pwm_output.wait_result(),
             ).await;
             match (result, self.mode) {
-                (Either::First(r), HomeMenuMode::Browse) => {
+                (Either3::First(r), HomeMenuMode::Browse) => {
                     self.next_selection();
+                    self.draw_main_dial(&theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 },
-                (Either::Second(b), _) => {
+                (Either3::Second(b), _) => {
                     match (&b.button_type, &b.event) {
                         (ButtonType::Right, ButtonEventKind::Down) => {
                             // transition to settings menu
                             todo!("transition to settings menu")
                         },
                         (ButtonType::Left, ButtonEventKind::Down) => {
-                            h.pwm_output.send(Command::new(
+                            h.pwm_output.send_await(Command::new(
                                 PwmAction::Toggle(self.selected_channel), 
                                 0 
                             )).await;
+                            let state = self.selected_channel.get_state().await;
+                            self.draw_channel(self.selected_channel, &theme, h).await?;
                         },
                         (ButtonType::Rotenc, ButtonEventKind::Down) => {
                             self.mode = match self.mode {
@@ -85,13 +170,43 @@ impl HomeMenu {
                         _ => ()
                     }
                 },
-                (Either::First(r), HomeMenuMode::Edit) => {
+                (Either3::First(r), HomeMenuMode::Edit) => {
                     // control PWM values
-                    todo!("control PWM values")
+                    let state = self.selected_channel.get_state().await;
+                    match r.dir {
+                        Direction::Clockwise => {
+                            let new_duty = if state.duty >= (99 * 163) {
+                                16383
+                            } else {
+                                state.duty.saturating_add(163)
+                            };
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::SetDuty(self.selected_channel, new_duty), 
+                                0 
+                            )).await;
+                        },
+                        Direction::Anticlockwise => {
+                            let new_duty = if state.duty == 16383 {
+                                99 * 163
+                            } else {
+                                state.duty.saturating_sub(163)
+                            };
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::SetDuty(self.selected_channel, new_duty), 
+                                0 
+                            )).await;
+                        },
+                        _ => {}
+                    }
                 },
+                (Either3::Third(_), _) => {
+                    self.draw_main_dial(&theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
+                }
             }
-            let text = Text::with_alignment("menu", Point::new(10, 20), &h.font, Alignment::Left);
-            text.draw(&mut h.screen)?;
+            // let text = Text::with_alignment("menu", Point::new(10, 20), &h.font, Alignment::Left);
+            // text.draw(&mut h.screen)?;
         }
     }
 }

@@ -261,7 +261,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     }).map_err(|e| PbError::LedTimerError(e))?;
 
     let ledperipherals = LedPeripherals::new(
-        peripherals.GPIO14.into(),
+        peripherals.GPIO4.into(),
         peripherals.GPIO21.into(),
         peripherals.GPIO47.into(),
         &ledc,
@@ -272,7 +272,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
     let outputperipherals = Pwm::new(
         &spawner, 
         [
-            peripherals.GPIO4.into(),
+            peripherals.GPIO14.into(),
             peripherals.GPIO5.into(),
             peripherals.GPIO6.into(),
             peripherals.GPIO7.into(),
@@ -314,7 +314,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
-    run_menu_loop(spawner, Menu::CustomMenu(CustomMenu::Title), &mut IOHandles::new(
+    run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::DisplaySettings), &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,

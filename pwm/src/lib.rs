@@ -9,6 +9,7 @@ use esp_hal::time::Instant;
 use embassy_futures::{select::{select3, Either3}, block_on};
 use embassy_sync::channel::{Channel as EChannel, Sender};
 use embassy_sync::rwlock::RwLock;
+use embassy_sync::signal::Signal;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_time::{Timer as ETimer, Duration};
 use embassy_executor::Spawner;
@@ -17,6 +18,7 @@ use core::cmp::{Ord, Ordering, PartialOrd};
 use core::fmt;
 use alloc::collections::binary_heap::BinaryHeap;
 use alloc::vec::Vec;
+use alloc::sync::Arc;
 use core::future;
 
 type Time = u64;
@@ -97,11 +99,14 @@ impl PwmNumber {
     }
 }
 
+pub struct PwmResponse;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum PwmAction {
     On(PwmNumber),
     Off(PwmNumber),
     SetDuty(PwmNumber, u16),
+    SetDutyPct(PwmNumber, u8),
     UnfreezePin(PwmNumber),
     Toggle(PwmNumber),
     FreezePin(PwmNumber, Time),
@@ -113,6 +118,7 @@ impl fmt::Display for PwmAction {
             PwmAction::On(x) => { write!(f, "CHANNEL {} ON", x) },
             PwmAction::Off(x) => { write!(f, "CHANNEL {} OFF", x) },
             PwmAction::SetDuty(x, v) => { write!(f, "CHANNEL {} => DUTY {}", x, v) },
+            PwmAction::SetDutyPct(x, p) => { write!(f, "CHANNEL {} => SET DUTY {}%", x, p) },
             PwmAction::UnfreezePin(x) => { write!(f, "UNFREEZE CHANNEL {}", x) },
             PwmAction::Toggle(x) => { write!(f, "TOGGLE CHANNEL {}", x) },
             PwmAction::FreezePin(x, t) => { write!(f, "FREEZE CHANNEL {} FOR {} MS", x, t) }
@@ -122,7 +128,8 @@ impl fmt::Display for PwmAction {
 
 pub struct Pwm<'a> {
     // channels: [Channel<LowSpeed>; 4],
-    command_sender: Sender<'a, CriticalSectionRawMutex, Command, 8>
+    command_sender: Sender<'a, CriticalSectionRawMutex, Command, 8>,
+    result_signal: Arc<Signal<CriticalSectionRawMutex, PwmResponse>>,
 }
 
 impl Pwm<'_> {
@@ -148,30 +155,44 @@ impl Pwm<'_> {
                 .try_for_each(|chan| {
                     chan.configure(channel_config)
                 })?;
-        spawner.spawn(pwm_runner(channels).unwrap());
+        let result_signal = Arc::new(Signal::new());
+        spawner.spawn(pwm_runner(channels, result_signal.clone()).unwrap());
 
         Ok(Pwm {
-            command_sender: COMMAND_CHANNEL.sender()
+            command_sender: COMMAND_CHANNEL.sender(),
+            result_signal
         })
     }
 
-    pub async fn send(&self, c: Command) {
+    pub async fn send_and_forget(&self, c: Command) {
+        self.result_signal.reset();
         self.command_sender.send(c).await;
+    }
+
+    pub async fn send_await(&self, c: Command) {
+        self.command_sender.send(c).await;
+        self.result_signal.wait().await;
+        self.result_signal.reset();
+    }
+
+    pub async fn wait_result(&self) {
+        self.result_signal.wait().await;
+        self.result_signal.reset();
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-enum PwmPinState {
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum PwmPinState {
     Off,
     On,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct PwmPinInfo {
-    state: PwmPinState,
-    duty: u16,
-    freeze_timer: Time,
-    frozen: bool,
+    pub state: PwmPinState,
+    pub duty: u16,
+    pub freeze_timer: Time,
+    pub frozen: bool,
 }
 
 impl PwmPinInfo {
@@ -182,6 +203,12 @@ impl PwmPinInfo {
             freeze_timer: 0,
             frozen: false,
         }
+    }
+
+    /// gets the duty as an integer percentage from 0 to 100.
+    /// assumes 14 bit bitdepth (because screw you)
+    pub const fn get_duty_pct(&self) -> u8 {
+        (self.duty / 163) as u8
     }
 }
 
@@ -197,7 +224,7 @@ static COMMAND_CHANNEL: EChannel<CriticalSectionRawMutex, Command, 8> = EChannel
 
 const CHANNEL_NUMBERS: [Number; 4] = [Number::Channel3, Number::Channel4, Number::Channel5, Number::Channel6];
 #[embassy_executor::task]
-async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>) {
+async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: Arc<Signal<CriticalSectionRawMutex, PwmResponse>>) {
     let mut command_queue: BinaryHeap<Command> = BinaryHeap::new();
 
     loop {
@@ -227,6 +254,7 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>) {
             Either3::Second(_) => {
                 let command = command_queue.pop().unwrap();
                 execute_command(&mut channels, command.action).await;
+                done_signal.signal(PwmResponse);
             },
             Either3::Third(_) => {
                 PIN_STATES.iter().for_each(|f| {
@@ -255,8 +283,17 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
         },
         PwmAction::SetDuty(c, duty) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(duty).unwrap();
+            if state.state == PwmPinState::On {
+                channels[usize::from(c)].set_duty_cycle(duty).unwrap();
+            }
             state.duty = duty;
+        },
+        PwmAction::SetDutyPct(c, pct) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            if state.state == PwmPinState::On {
+                channels[usize::from(c)].set_duty(pct).unwrap();
+            }
+            state.duty = 164 * pct as u16;
         },
         PwmAction::UnfreezePin(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
