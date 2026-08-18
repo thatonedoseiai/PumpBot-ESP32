@@ -17,7 +17,9 @@ use global_settings::{
         TEXT_NEXT,
         TEXT_BACK,
     }, 
-    PB_GLOBAL_SETTINGS};
+    Theme,
+    PB_GLOBAL_SETTINGS
+};
 use embedded_graphics::{
     prelude::*,
     text::{Text, Alignment},
@@ -27,6 +29,7 @@ use embedded_graphics::{
 use embassy_futures::select::{select, Either};
 use core::borrow::BorrowMut;
 use core::cell::RefCell;
+use alloc::borrow::Cow;
 
 
 const STYLE: PrimitiveStyle<Rgb565> = PrimitiveStyleBuilder::new()
@@ -84,16 +87,8 @@ impl SetupMethodState {
 const CURSOR_YS: [i32; 2] = [47, 57];
 const CURSOR_WIDTHS: [i32; 2] = [34, 44];
 impl SetupMethodState {
-    pub(crate) async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        let (theme, lang) = {
-            let settings = &PB_GLOBAL_SETTINGS.read().await;
-            (settings.theme, settings.lang)
-        };
-        RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
-        io_handles.font.fgcol = theme.fg();
+    fn draw_menu_base(&mut self, current_selection: u8, lang: Lang, theme: &Theme, io_handles: &mut IOHandles<'_>) -> anyhow::Result<(Rectangle, Rectangle)> {
         io_handles.font.bgcol = theme.bg();
-
-        RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
         Text::with_alignment(TEXT_SETUP_PB[lang], Point::new(64, 20), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
         Text::with_alignment(TEXT_SETUP_PB_A[lang], Point::new(64, 30), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
         Text::with_alignment(TEXT_WIFI_SETUP[lang], Point::new(64, 50), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
@@ -110,12 +105,24 @@ impl SetupMethodState {
             .into_styled(PrimitiveStyle::with_stroke(theme.fg().into(), 1))
             .draw(io_handles.screen.borrow_mut())?;
 
+        self.draw_tooltip(current_selection, lang, io_handles)?;
+        Ok(static_draw_two_cursors(Point::new(64, CURSOR_YS[current_selection as usize]), 34, &mut io_handles.screen)?)
+    }
+
+    pub(crate) async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
+        let (theme, lang) = {
+            let settings = &PB_GLOBAL_SETTINGS.read().await;
+            (settings.theme, settings.lang)
+        };
+        RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
+        io_handles.font.fgcol = theme.fg();
+
         let black = PrimitiveStyleBuilder::new()
                 .fill_color(theme.bg().as_rgb565())
                 .build();
+
         let mut current_selection: u8 = 0;
-        self.draw_tooltip(current_selection, lang, io_handles)?;
-        let (mut lc_bb, mut rc_bb) = static_draw_two_cursors(Point::new(64, 47), 34, &mut io_handles.screen)?;
+        let (mut lc_bb, mut rc_bb) = self.draw_menu_base(current_selection, lang, &theme, io_handles)?;
 
         loop {
             let result = select(
@@ -135,7 +142,17 @@ impl SetupMethodState {
                 },
                 Either::Second(b) => {
                     match (&b.button_type, &b.event) {
-                        (ButtonType::Right, ButtonEventKind::Down) => return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Wifi))),
+                        (ButtonType::Right, ButtonEventKind::Down) |
+                        (ButtonType::Rotenc, ButtonEventKind::Down) => {
+                            if current_selection == 0 {
+                                ComponentMenu::draw_error_dialogue(Cow::Borrowed("no.\n\nThis option is not yet\nimplemented!"), &theme, io_handles)?;
+                                while io_handles.button.receive().await.event != ButtonEventKind::Down {}
+                                io_handles.screen.clear(theme.bg().as_rgb565())?;
+                                (lc_bb, rc_bb) = self.draw_menu_base(current_selection, lang, &theme, io_handles)?;
+                            } else {
+                                return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Wifi)))
+                            }
+                        },
                         (ButtonType::Left, ButtonEventKind::Down) => return Ok(MenuSignal::Back),
                         _ => {}
                     }
