@@ -39,6 +39,7 @@ pub enum HandlerResult {
     Unfocus,
     ForceRedrawAndUnfocus,
     WifiConnectionFailure(WifiError),
+    ShowErrorDialogue(Cow<'static, str>),
 }
 
 pub trait Handler<S> {

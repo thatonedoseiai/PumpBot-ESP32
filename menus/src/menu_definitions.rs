@@ -9,6 +9,7 @@ use embedded_graphics::{
 use fontfile::FontSize;
 use global_settings::{lang::*, ThemedColor};
 use crate::static_element::StaticElement;
+use alloc::borrow::Cow;
 
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[

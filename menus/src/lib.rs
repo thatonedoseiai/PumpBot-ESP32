@@ -43,7 +43,10 @@ pub use crate::screen::screen::{
     ScreenDrawError
 };
 
-use fontfile::pb_font_renderer::PbFontRenderer;
+use fontfile::{
+    pb_font_renderer::PbFontRenderer,
+    FontSize,
+};
 use rotenc::{
     EncoderEvent,
     Direction
@@ -58,7 +61,21 @@ use embassy_futures::select::{
     select
 };
 use wifi::PbWifi;
-use embedded_graphics::draw_target::DrawTarget;
+use embedded_graphics::{
+    prelude::*,
+    draw_target::DrawTarget,
+    text::{
+        Alignment,
+        Text,
+    },
+    primitives::{
+        PrimitiveStyleBuilder,
+        PrimitiveStyle,
+        RoundedRectangle,
+        Rectangle
+    },
+    pixelcolor::Rgb565,
+};
 use global_settings::{
     PB_GLOBAL_SETTINGS,
     PbGlobalSettings,
@@ -214,6 +231,19 @@ trait MenuStateBehaviour {
 }
 
 impl ComponentMenu {
+    const DIALOGUE_BOX: RoundedRectangle = RoundedRectangle::with_equal_corners(
+                        Rectangle::new(Point::new(10, 10), Size::new(108, 140)),
+                        Size::new(10, 10),
+                    );
+
+    const fn dialogue_box_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(3)
+            .stroke_color(theme.fg().as_rgb565())
+            .fill_color(theme.bg_secondary().as_rgb565())
+            .build()
+    }
+
     const fn definition(&self) -> &'static ComponentMenuDefinition {
         match self {
             Self::ComponentTesting => &COMPONENT_TESTING,
@@ -378,6 +408,17 @@ impl MenuStateBehaviour for ComponentMenu {
                 Some(HandlerResult::WifiConnectionFailure(e)) => {
                     todo!("handle wifi connection error! {}", e)
                     // return Ok(MenuSignal::None);
+                },
+                Some(HandlerResult::ShowErrorDialogue(message)) => {
+                    // todo!("draw the error dialogue and drop into a sub-loop");
+                    log::warn!("error hit!");
+                    h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
+                    Self::DIALOGUE_BOX.into_styled(Self::dialogue_box_style(&PB_GLOBAL_SETTINGS.read().await.theme)).draw(&mut h.screen)?;
+                    Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new(5, 5), &h.font, Alignment::Left).draw(&mut h.screen)?;
+                    h.button.receive().await; // only continue on click
+                    h.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().as_rgb565())?;
+                    cur_menu_state.component_states.iter_mut().for_each(|f| { f.reset_draw_flags(); });
+                    cur_menu_state.draw_all_components(h).await?;
                 },
                 Some(HandlerResult::None) => {},
                 None => {},
