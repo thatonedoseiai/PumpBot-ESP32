@@ -83,7 +83,7 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
-                pos: Point::new(20, 110),
+                pos: Point::new(26, 50),
                 click: OptionSwitchHandler::Generic(GenericHandler::SetLanguageAndTransition(Menu::CustomMenu(CustomMenu::SetupMethod))),
                 left: OptionSwitchHandler::PrevElementUpdateLang,
                 right: OptionSwitchHandler::NextElementUpdateLang,
@@ -101,7 +101,29 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 ],
             }),
     ],
-    static_elements: &[],
+    static_elements: &[
+        StaticElement::Text(
+            Point::new(64, 20),
+            FontSize::Sz7,
+            &TEXT_CHOOSE_LANG,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(10, 150),
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+        StaticElement::Text(
+            Point::new(118, 150),
+            FontSize::Sz7,
+            &TEXT_OK,
+            ThemedColor::Fg,
+            Alignment::Right,
+        ),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::SetLanguageAndTransition(Menu::CustomMenu(CustomMenu::SetupMethod))),
 };
@@ -110,7 +132,7 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::OptionScroller(
             &OptionScrollerDefinition {
-                pos: Point::new(0, 0),
+                pos: Point::new(0, 20),
                 click: OptionScrollerHandler::SetMenuState(MenuInternalStateAction::SetWifi),
                 left: OptionScrollerHandler::PrevOption,
                 right: OptionScrollerHandler::NextOption,
@@ -120,7 +142,15 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
                 options: OptionsGenerator::WifiGenerator,
             }),
     ],
-    static_elements: &[],
+    static_elements: &[
+        StaticElement::Text(
+            Point::new(64, 15),
+            FontSize::Sz12,
+            &TEXT_WIFI_SETTINGS,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))),
 };
