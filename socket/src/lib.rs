@@ -6,6 +6,7 @@ extern crate alloc;
 
 use embassy_net::{
     tcp::{TcpSocket, ConnectError},
+    tcp,
     IpEndpoint,
     IpAddress,
     Stack
@@ -20,11 +21,15 @@ use core::write;
 use core::convert::From;
 use pwm::PwmNumber;
 use alloc::string::{ToString, String};
+use alloc::vec::Vec;
+use core::task::Poll;
+use core::future::poll_fn;
 
 #[derive(Clone, Copy)]
 pub enum ServerCommand {
     Connect(IpAddress, u16),
     Disconnect,
+    Listen,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -40,6 +45,12 @@ pub enum ServerResponse {
     None
 }
 
+impl ServerResponse {
+    const fn decode_from(v: Vec<u8>) -> Self {
+        todo!()
+    }
+}
+
 pub struct ServerConnection {
     pub server_ip: IpAddress,
     pub server_port: u16,
@@ -47,13 +58,15 @@ pub struct ServerConnection {
 
 #[derive(Debug)]
 pub enum ServerError {
-    ConnectError(ConnectError)
+    ConnectError(ConnectError),
+    TcpError(tcp::Error),
 }
 impl core::error::Error for ServerError { }
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::ConnectError(c) => write!(f, "SERVER ERROR: ConnectError {}", c)
+            Self::ConnectError(c) => write!(f, "SERVER ERROR: ConnectError {}", c),
+            Self::TcpError(e) => write!(f, "SERVER ERROR: Tcp Error during read: {}", e),
         }
     }
 }
@@ -61,6 +74,12 @@ impl fmt::Display for ServerError {
 impl From<ConnectError> for ServerError {
     fn from(val: ConnectError) -> ServerError {
         Self::ConnectError(val)
+    }
+}
+
+impl From<tcp::Error> for ServerError {
+    fn from(val: tcp::Error) -> ServerError {
+        Self::TcpError(val)
     }
 }
 
@@ -87,6 +106,11 @@ impl ServerConnection {
 
     pub async fn disconnect(&mut self) {
         COMMAND_CHANNEL.send(ServerCommand::Disconnect).await;
+    }
+
+    pub async fn receive(&self) -> Result<ServerResponse, ServerError> {
+        COMMAND_CHANNEL.send(ServerCommand::Listen).await;
+        RESPONSE_CHANNEL.receive().await
     }
 
     pub fn string_from_ip(ip: &IpAddress) -> String {
@@ -148,7 +172,29 @@ async fn socket_runner_task(commands: Receiver<'static, CriticalSectionRawMutex,
             },
             ServerCommand::Disconnect => {
                 conn.close();
-            }
+            },
+            ServerCommand::Listen => {
+                if conn.local_endpoint().is_some() {
+                    let mut buf: Vec<u8> = Vec::with_capacity(256);
+                    wait_until_truly_readable(&conn).await;
+                    let res = conn.read(&mut buf).await;
+                    let response = match res {
+                        Ok(_size) => Ok(ServerResponse::decode_from(buf)),
+                        Err(e) => Err(ServerError::TcpError(e)),
+                    };
+                    responses.send(response).await;
+                }
+            },
         }
     }
+}
+
+async fn wait_until_truly_readable(socket: &TcpSocket<'_>) -> () {
+    poll_fn(|cx| {
+        if socket.may_recv() {
+            return Poll::Ready(());
+        } else {
+            return Poll::Pending; 
+        }
+    }).await
 }

@@ -6,7 +6,7 @@ use embedded_graphics::{
     primitives::{PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, Circle},
     pixelcolor::Rgb565,
 };
-use embassy_futures::select::{Either3, select3};
+use embassy_futures::select::{Either4, select4};
 use global_settings::{PB_GLOBAL_SETTINGS, Theme, rgb, rgb::RGB};
 use pwm::{PwmNumber, Command, PwmAction, PwmPinState};
 use button_idf::{ButtonEventKind, ButtonType};
@@ -135,19 +135,20 @@ impl HomeMenu {
         self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
         loop {
-            let result = select3(
+            let result = select4(
                 h.rotenc.receive(),
                 h.button.receive(),
                 h.pwm_output.wait_result(),
+                h.server.receive(),
             ).await;
             match (result, self.mode) {
-                (Either3::First(r), HomeMenuMode::Browse) => {
+                (Either4::First(r), HomeMenuMode::Browse) => {
                     self.next_selection();
                     self.draw_main_dial(&theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 },
-                (Either3::Second(b), _) => {
+                (Either4::Second(b), _) => {
                     match (&b.button_type, &b.event) {
                         (ButtonType::Right, ButtonEventKind::Down) => {
                             // transition to settings menu
@@ -170,7 +171,7 @@ impl HomeMenu {
                         _ => ()
                     }
                 },
-                (Either3::First(r), HomeMenuMode::Edit) => {
+                (Either4::First(r), HomeMenuMode::Edit) => {
                     // control PWM values
                     let state = self.selected_channel.get_state().await;
                     match r.dir {
@@ -199,10 +200,13 @@ impl HomeMenu {
                         _ => {}
                     }
                 },
-                (Either3::Third(_), _) => {
+                (Either4::Third(_), _) => {
                     self.draw_main_dial(&theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
+                }
+                (Either4::Fourth(_), _) => {
+                    todo!("handle a network command!")
                 }
             }
             // let text = Text::with_alignment("menu", Point::new(10, 20), &h.font, Alignment::Left);
