@@ -12,6 +12,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::{Rectangle, PrimitiveStyle}
 };
+use alloc::format;
 
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerError {
@@ -119,7 +120,10 @@ impl Handler<ButtonState> for ButtonHandler {
                             log::info!("connect returned OK!");
                             Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
                         },
-                        Err(e) => Ok(HandlerResult::WifiConnectionFailure(e))
+                        Err(e) => {
+                            let error_msg = format!("Failed to connect to Wifi!\n\nError:\n{}", e);
+                            Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(error_msg)))
+                        }
                     }
                 } else {
                     unreachable!();
@@ -131,12 +135,10 @@ impl Handler<ButtonState> for ButtonHandler {
                 let res = h.server.connect().await;
                 match res {
                     Ok(_) => {
-                        log::info!("pb connected to server!");
                         Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))
                     },
                     Err(_) => {
-                        log::info!("pb failed to connect!");
-                        Ok(HandlerResult::None)
+                        Ok(HandlerResult::ShowErrorDialogue(Cow::Borrowed("Pb failed to connect\nto the server!")))
                     }
                 }
             }

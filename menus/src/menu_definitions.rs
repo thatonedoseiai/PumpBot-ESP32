@@ -282,7 +282,7 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
-                pos: Point::new(20, 30),
+                pos: Point::new(20, 60),
                 click: OptionSwitchHandler::ToggleFocusAndSetTheme,
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
@@ -293,9 +293,15 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                     TEXT_CUSTOM,
                 ],
             }),
+        ComponentDefinition::ColorSelector(
+            &ColorSelectorDefinition {
+                preview_rect: Rectangle::new(Point::new(64-15, 70), Size::new(30, 30)),
+                initial_color: ColorGetter::ThemeMenuCustomColor,
+                on_submit: ColorSubmitHandler::SetThemeMenuColor,
+            }),
         ComponentDefinition::ValueSelector(
             &ValueSelectorDefinition {
-                pos: Point::new(64, 80),
+                pos: Point::new(64, 140),
                 click: ValueSelectorHandler::ToggleFocus,
                 left: ValueSelectorHandler::DecrementBrightness,
                 right: ValueSelectorHandler::IncrementBrightness,
@@ -305,14 +311,30 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                 high_limit: 100,
                 initial_value: InitialValueGenerator::BacklightBrightness,
             }),
-        ComponentDefinition::ColorSelector(
-            &ColorSelectorDefinition {
-                preview_rect: Rectangle::new(Point::new(64, 100), Size::new(30, 30)),
-                initial_color: ColorGetter::ThemeMenuCustomColor,
-                on_submit: ColorSubmitHandler::SetThemeMenuColor,
-            }),
     ],
-    static_elements: &[],
+    static_elements: &[
+        StaticElement::Text(
+            Point::new(64, 15),
+            FontSize::Sz7,
+            &TEXT_TOOLTIP_DISPLAY_SETTING,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(64, 40),
+            FontSize::Sz7,
+            &TEXT_THEME,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+        StaticElement::Text(
+            Point::new(64, 120),
+            FontSize::Sz7,
+            &TEXT_BRIGHTNESS,
+            ThemedColor::Fg,
+            Alignment::Center,
+        ),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::HomeMenu)))),
 };

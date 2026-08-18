@@ -718,15 +718,15 @@ pub const TEXT_DISPLAY_SETTING: LanguageString = LanguageString {
 };
 
 pub const TEXT_TOOLTIP_DISPLAY_SETTING: LanguageString = LanguageString {
-    en: "Change Display Brightness and Theme",
-    jp: "画面の明るさとテーマを変えます",
-    fr: "Changer le thème et la luminosité",
-    es: "Cambiar el brillo y el tema de la pantalla",
+    en: "Change Display Brightness\nand Theme",
+    jp: "画面の明るさとテーマを\n変えます",
+    fr: "Changer le thème et\nla luminosité",
+    es: "Cambiar el brillo y el\ntema de la pantalla",
     pt: "Mudar Brilho e Tema",
     zh: "改画面光度和颜色模式",
     cn: "改畫面光度和顏色模式",
-    ru: "Изменить яркость и тему дисплея ",
-    de: "Bildschirmhelligkeit und Theme anpassen",
+    ru: "Изменить яркость и\nтему дисплея",
+    de: "Bildschirmhelligkeit\nund Theme anpassen",
 };
 
 pub const TEXT_BRIGHTNESS: LanguageString = LanguageString {

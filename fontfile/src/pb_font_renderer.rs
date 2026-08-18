@@ -23,7 +23,7 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
 
-use crate::{PbFont, RGB, rgb};
+use crate::{PbFont, RGB, rgb, FontSize};
 use profiler::timed;
 
 /// Defines the global state of the renderer. Font size and everything is already included in
@@ -78,18 +78,18 @@ impl TextRenderer for &PbFontRenderer {
                 // let true_height = timed!("true_height = ", metrics.height / 3);
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
                 let byteslice = timed!("set byteslice", {
-                                coldata.into_iter()
-                                       .map(|x| -> [u8;3] { 
-                                           // let col = x * self.fgcol + (rgb![255] - x) * self.bgcol;
-                                           let col = rgb![
-                                               ((((x.r as u16) * (self.fgcol.r as u16)) + ((255 - x.r) as u16) * (self.bgcol.r as u16)) / 255) as u8,
-                                               ((((x.g as u16) * (self.fgcol.g as u16)) + ((255 - x.g) as u16) * (self.bgcol.g as u16)) / 255) as u8,
-                                               ((((x.b as u16) * (self.fgcol.b as u16)) + ((255 - x.b) as u16) * (self.bgcol.b as u16)) / 255) as u8,
-                                           ];
-                                           col.into()
-                                       })
-                                       .flatten()
-                                       .collect::<Vec<u8>>()
+                    coldata.into_iter()
+                           .map(|x| -> [u8;3] { 
+                               // let col = x * self.fgcol + (rgb![255] - x) * self.bgcol;
+                               let col = rgb![
+                                   ((((x.r as u16) * (self.fgcol.r as u16)) + ((255 - x.r) as u16) * (self.bgcol.r as u16)) / 255) as u8,
+                                   ((((x.g as u16) * (self.fgcol.g as u16)) + ((255 - x.g) as u16) * (self.bgcol.g as u16)) / 255) as u8,
+                                   ((((x.b as u16) * (self.fgcol.b as u16)) + ((255 - x.b) as u16) * (self.bgcol.b as u16)) / 255) as u8,
+                               ];
+                               col.into()
+                           })
+                           .flatten()
+                           .collect::<Vec<u8>>()
                     });
                 let rawimage = timed!("convert to ImageRaw", {
                     ImageRaw::<Rgb888>::new(
@@ -166,7 +166,15 @@ impl TextRenderer for &PbFontRenderer {
 
     /// this function currently returns a constant. This is a TODO.
     fn line_height(&self) -> u32 {
-        return 30u32;
+        match self.font.borrow().font_size {
+            Some(FontSize::Sz7) => 10,
+            Some(FontSize::Sz12) => 14,
+            Some(FontSize::Sz14) => 18,
+            Some(FontSize::Sz18) => 22,
+            Some(FontSize::Sz24) => 28,
+            Some(FontSize::Sz42) => 50,
+            None => 0
+        }
         // todo!();
     }
 }

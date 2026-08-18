@@ -1101,7 +1101,7 @@ pub struct SliderDefinition {
 
 impl SliderState {
     // const CURSOR: Circle = Circle::new(Point::new(0, 0), Self::CURSOR_RADIUS as u32 * 2);
-    const CURSOR_LEFT: Triangle = Triangle::new(Point::new(-1, 0), Point::new(-5, -4), Point::new(-5, 4));
+    const CURSOR_LEFT: Triangle = Triangle::new(Point::new(-2, 0), Point::new(-6, -4), Point::new(-6, 4));
     const CURSOR_RIGHT: Triangle = Triangle::new(Point::new(1, 0), Point::new(5, -4), Point::new(5, 4));
     // const CURSOR_RADIUS: i32 = 5;
     const fn cursor_style(theme: &Theme, selected: bool) -> PrimitiveStyle<Rgb565> {
@@ -1135,8 +1135,8 @@ impl RunHandlers for SliderState {
         Ok(HandlerResult::None)
     }
 
-    async fn click_handle(&mut self, _: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self.mode {
+    async fn click_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        let res = match self.mode {
             SliderMode::Unhighlighted => {
                 Ok(HandlerResult::None)
             }
@@ -1148,7 +1148,9 @@ impl RunHandlers for SliderState {
                 self.mode = SliderMode::Highlighted;
                 Ok(HandlerResult::Unfocus)
             },
-        }
+        };
+        self.draw(h).await?;
+        res
     }
 }
 

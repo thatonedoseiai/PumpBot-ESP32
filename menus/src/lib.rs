@@ -69,10 +69,12 @@ use embedded_graphics::{
         Text,
     },
     primitives::{
+        Circle,
         PrimitiveStyleBuilder,
         PrimitiveStyle,
         RoundedRectangle,
-        Rectangle
+        Rectangle,
+        Line,
     },
     pixelcolor::Rgb565,
 };
@@ -244,6 +246,14 @@ impl ComponentMenu {
             .build()
     }
 
+    const fn cross_bg_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_width(1)
+            .stroke_color(theme.fg().as_rgb565())
+            .fill_color(theme.bg_secondary().as_rgb565())
+            .build()
+    }
+
     const fn definition(&self) -> &'static ComponentMenuDefinition {
         match self {
             Self::ComponentTesting => &COMPONENT_TESTING,
@@ -394,7 +404,9 @@ impl MenuStateBehaviour for ComponentMenu {
                     }
                 },
                 Some(HandlerResult::ForceRedrawAndUnfocus) => {
-                    h.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().as_rgb565())?;
+                    let bgcol = PB_GLOBAL_SETTINGS.read().await.theme.bg();
+                    h.screen.clear(bgcol.as_rgb565())?;
+                    h.font.bgcol = bgcol;
                     cur_menu_state.component_states.iter_mut().for_each(|f| { f.reset_draw_flags(); });
                     cur_menu_state.draw_all_components(h).await?;
                     if num_components > 1 {
@@ -410,13 +422,26 @@ impl MenuStateBehaviour for ComponentMenu {
                     // return Ok(MenuSignal::None);
                 },
                 Some(HandlerResult::ShowErrorDialogue(message)) => {
-                    // todo!("draw the error dialogue and drop into a sub-loop");
-                    log::warn!("error hit!");
+                    let theme = {
+                        PB_GLOBAL_SETTINGS.read().await.theme
+                    };
                     h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
-                    Self::DIALOGUE_BOX.into_styled(Self::dialogue_box_style(&PB_GLOBAL_SETTINGS.read().await.theme)).draw(&mut h.screen)?;
-                    Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new(5, 5), &h.font, Alignment::Left).draw(&mut h.screen)?;
-                    h.button.receive().await; // only continue on click
-                    h.screen.clear(PB_GLOBAL_SETTINGS.read().await.theme.bg().as_rgb565())?;
+                    h.font.bgcol = theme.bg_secondary();
+                    Circle::new(Point::new(2, 2), 11)
+                        .into_styled(Self::cross_bg_style(&theme))
+                        .draw(&mut h.screen)?;
+                    Line::new(Point::new(5, 5), Point::new(10, 10))
+                        .into_styled(PrimitiveStyle::with_stroke(theme.highlight().as_rgb565(), 2))
+                        .draw(&mut h.screen)?;
+                    Line::new(Point::new(5, 10), Point::new(10, 5))
+                        .into_styled(PrimitiveStyle::with_stroke(theme.highlight().as_rgb565(), 2))
+                        .draw(&mut h.screen)?;
+                    Self::DIALOGUE_BOX.into_styled(Self::dialogue_box_style(&theme)).draw(&mut h.screen)?;
+                    Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new(5, 10), &h.font, Alignment::Left).draw(&mut h.screen)?;
+                    while h.button.receive().await.event != ButtonEventKind::Down {}; // only continue on click
+                    let bgcol = PB_GLOBAL_SETTINGS.read().await.theme.bg();
+                    h.screen.clear(bgcol.as_rgb565())?;
+                    h.font.bgcol = bgcol;
                     cur_menu_state.component_states.iter_mut().for_each(|f| { f.reset_draw_flags(); });
                     cur_menu_state.draw_all_components(h).await?;
                 },
