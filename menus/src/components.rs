@@ -373,7 +373,7 @@ impl ComponentBehaviour for OptionSwitchState {
                 f.fgcol = theme.highlight();
                 let text = Text::with_alignment(self.definition.options[self.selection][settings.lang], self.definition.pos, &h.font, Alignment::Left);
                 let text_bb = text.bounding_box();
-                let left_coord = text_bb.top_left + Size::new(0, text_bb.size.height / 2);
+                let left_coord = text_bb.top_left + Size::new(0, 3);
                 let right_coord = left_coord + Size::new(text_bb.size.width, 0);
                 let left_cursor = Self::OPTION_SWITCH_LEFT_CURSOR.translate(left_coord);
                 let right_cursor = Self::OPTION_SWITCH_RIGHT_CURSOR.translate(right_coord);

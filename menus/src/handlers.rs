@@ -49,10 +49,11 @@ pub trait Handler<S> {
 pub enum GenericHandler {
     Print(&'static str),
     Signal(HandlerResult),
+    SetLanguageAndTransition(Menu),
 }
 
 impl Handler<()> for GenericHandler {
-    async fn handle(&self, _: &mut (), _: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, _: &mut (), menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Print(s) => {
                 // println!("{s}");
@@ -62,6 +63,15 @@ impl Handler<()> for GenericHandler {
             Self::Signal(s) => {
                 // println!("sending {:?}", s);
                 Ok(s.clone())
+            },
+            Self::SetLanguageAndTransition(m) => {
+                if let MenuInternalState::Lang { language } = menu_state {
+                    let mut settings = PB_GLOBAL_SETTINGS.write().await;
+                    settings.lang = (*language).into();
+                    Ok(HandlerResult::Transition(*m))
+                } else {
+                    panic!("Handler::SetLanguageAndTransition used on bad menu!");
+                }
             }
         }
     }
@@ -138,6 +148,8 @@ pub enum OptionSwitchHandler {
     Generic(GenericHandler),
     NextElement,
     PrevElement,
+    NextElementUpdateLang,
+    PrevElementUpdateLang,
     ToggleFocus,
     PrintSelection,
     ToggleFocusAndSetTheme,
@@ -159,6 +171,27 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 state.selection = (state.selection + num_options - 1) % num_options;
                 state.draw(h).await?;
                 Ok(HandlerResult::None)
+            },
+            Self::NextElementUpdateLang => {
+                if let MenuInternalState::Lang { language } = menu_state {
+                    state.selection = (state.selection + 1) % state.definition.options.len();
+                    state.draw(h).await?;
+                    *language = state.selection as u8;
+                    Ok(HandlerResult::None)
+                } else {
+                    panic!("OptionSwitchHandler::NextElementUpdateLang used on non-language menu!");
+                }
+            },
+            Self::PrevElementUpdateLang => {
+                if let MenuInternalState::Lang { language } = menu_state {
+                    let num_options = state.definition.options.len();
+                    state.selection = (state.selection + num_options - 1) % num_options;
+                    state.draw(h).await?;
+                    *language = state.selection as u8;
+                    Ok(HandlerResult::None)
+                } else {
+                    panic!("OptionSwitchHandler::NextElementUpdateLang used on non-language menu!");
+                }
             },
             Self::ToggleFocus => {
                 let old_state_mode = state.mode;

@@ -84,9 +84,9 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
                 pos: Point::new(20, 110),
-                click: OptionSwitchHandler::ToggleFocus,
-                left: OptionSwitchHandler::PrevElement,
-                right: OptionSwitchHandler::NextElement,
+                click: OptionSwitchHandler::Generic(GenericHandler::SetLanguageAndTransition(Menu::CustomMenu(CustomMenu::SetupMethod))),
+                left: OptionSwitchHandler::PrevElementUpdateLang,
+                right: OptionSwitchHandler::NextElementUpdateLang,
                 font_size: FontSize::Sz12,
                 options: &[
                     LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::En)),
@@ -103,7 +103,7 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
-    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::SetupMethod)))),
+    right_btn: MenuHandler::Generic(GenericHandler::SetLanguageAndTransition(Menu::CustomMenu(CustomMenu::SetupMethod))),
 };
 
 pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {

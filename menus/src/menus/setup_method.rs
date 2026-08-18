@@ -70,11 +70,11 @@ impl SetupMethodState {
         }
     }
 
-    fn draw_tooltip(&mut self, current_tooltip: u8, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
-        let tooltip_top = Text::with_alignment(TOOLTIPS_TOP[current_tooltip as usize][Lang::En], Point::new(64, 80), &io_handles.font, Alignment::Center);
+    fn draw_tooltip(&mut self, current_tooltip: u8, lang: Lang, io_handles: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        let tooltip_top = Text::with_alignment(TOOLTIPS_TOP[current_tooltip as usize][lang], Point::new(64, 80), &io_handles.font, Alignment::Center);
         self.undraw_tooltip[0] = tooltip_top.bounding_box();
         tooltip_top.draw(io_handles.screen.borrow_mut())?;
-        let tooltip_bottom = Text::with_alignment(TOOLTIPS_BOTTOM[current_tooltip as usize][Lang::En], Point::new(64, 90), &io_handles.font, Alignment::Center);
+        let tooltip_bottom = Text::with_alignment(TOOLTIPS_BOTTOM[current_tooltip as usize][lang], Point::new(64, 90), &io_handles.font, Alignment::Center);
         self.undraw_tooltip[1] = tooltip_bottom.bounding_box();
         tooltip_bottom.draw(io_handles.screen.borrow_mut())?;
         Ok(())
@@ -85,16 +85,21 @@ const CURSOR_YS: [i32; 2] = [47, 57];
 const CURSOR_WIDTHS: [i32; 2] = [34, 44];
 impl SetupMethodState {
     pub(crate) async fn run(&mut self, io_handles: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        let theme = &PB_GLOBAL_SETTINGS.read().await.theme;
+        let (theme, lang) = {
+            let settings = &PB_GLOBAL_SETTINGS.read().await;
+            (settings.theme, settings.lang)
+        };
         RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
+        io_handles.font.fgcol = theme.fg();
+        io_handles.font.bgcol = theme.bg();
 
         RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?;
-        Text::with_alignment(TEXT_SETUP_PB[Lang::En], Point::new(64, 20), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_SETUP_PB_A[Lang::En], Point::new(64, 30), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_WIFI_SETUP[Lang::En], Point::new(64, 50), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_STANDALONE_SETUP[Lang::En], Point::new(64, 60), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_BACK[Lang::En], Point::new(8, 150), &io_handles.font, Alignment::Left).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_NEXT[Lang::En], Point::new(120, 150), &io_handles.font, Alignment::Right).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_SETUP_PB[lang], Point::new(64, 20), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_SETUP_PB_A[lang], Point::new(64, 30), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_WIFI_SETUP[lang], Point::new(64, 50), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_STANDALONE_SETUP[lang], Point::new(64, 60), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_BACK[lang], Point::new(8, 150), &io_handles.font, Alignment::Left).draw(io_handles.screen.borrow_mut())?;
+        Text::with_alignment(TEXT_NEXT[lang], Point::new(120, 150), &io_handles.font, Alignment::Right).draw(io_handles.screen.borrow_mut())?;
         Line::new(Point::new(0, 42), Point::new(128, 42))
             .into_styled(PrimitiveStyle::with_stroke(theme.fg().into(), 1))
             .draw(io_handles.screen.borrow_mut())?;
@@ -109,7 +114,7 @@ impl SetupMethodState {
                 .fill_color(theme.bg().as_rgb565())
                 .build();
         let mut current_selection: u8 = 0;
-        self.draw_tooltip(current_selection, io_handles)?;
+        self.draw_tooltip(current_selection, lang, io_handles)?;
         let (mut lc_bb, mut rc_bb) = static_draw_two_cursors(Point::new(64, 47), 34, &mut io_handles.screen)?;
 
         loop {
@@ -124,8 +129,7 @@ impl SetupMethodState {
                         for bb in [lc_bb, rc_bb, self.undraw_tooltip[0], self.undraw_tooltip[1]].iter() {
                             bb.into_styled(black).draw(io_handles.screen.borrow_mut())?;
                         }
-                        log::info!("rotary encoder! {}", r);
-                        self.draw_tooltip(current_selection, io_handles)?;
+                        self.draw_tooltip(current_selection, lang, io_handles)?;
                         (lc_bb, rc_bb) = static_draw_two_cursors(Point::new(64, CURSOR_YS[current_selection as usize]), CURSOR_WIDTHS[current_selection as usize], &mut io_handles.screen)?;
                     }
                 },
