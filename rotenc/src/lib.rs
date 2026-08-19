@@ -17,6 +17,7 @@ extern crate alloc;
 // use std::num::Wrapping;
 // use std::fmt;
 pub use rotary_encoder_embedded::{standard::StandardMode, Direction};
+use quadrature_encoder::{RotaryEncoder, RotaryMovement};
 use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
 // use esp_hal::delay::Delay;
 use embassy_sync::channel::{Channel, Receiver};
@@ -29,12 +30,12 @@ use embassy_time::{Timer, Duration};
 /// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
 pub struct EncoderEvent {
-    pub pos: Wrapping<u32>,
+    pub pos: Wrapping<i32>,
     pub dir: Direction,
 }
 
 impl EncoderEvent {
-    fn new(pos: Wrapping<u32>, dir: Direction) -> Self {
+    const fn new(pos: Wrapping<i32>, dir: Direction) -> Self {
         EncoderEvent {pos, dir}
     }
 }
@@ -49,7 +50,7 @@ impl fmt::Display for EncoderEvent {
     }
 }
 
-static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 10> = Channel::new();
+static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 20> = Channel::new();
 
 /// the rotary encoder thread
 #[embassy_executor::task]
@@ -59,21 +60,36 @@ async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
     let pin_b_driver = Input::new(pin_b, inputconfig);
     // let delay = Delay::new();
 
-    let mut encoder = StandardMode::new();
-    let mut position = Wrapping(0u32);
+    // let mut encoder = StandardMode::new();
+    let mut encoder = RotaryEncoder::<_, _>::new(pin_a_driver, pin_b_driver).into_async();
+    let mut position = Wrapping(0i32);
 
     loop {
-        let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
-        match dir {
-            Direction::Clockwise => {position += 1;}
-            Direction::Anticlockwise => {position -= 1;}
-            _ => {}
-        }
+        // let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
+        let encoder_val = encoder.poll().await;
+        let dir = match encoder_val {
+            Ok(Some(RotaryMovement::Clockwise)) => {
+                position += 1;
+                Direction::Clockwise
+            },
+            Ok(Some(RotaryMovement::CounterClockwise)) => {
+                position -= 1;
+                Direction::Anticlockwise
+            },
+            Err(e) => {
+                panic!("Rotary encoder error! {:?}", e);
+            },
+            _ => {
+                Direction::None
+            },
+        };
+
+        // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
         if dir != Direction::None {
-            // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
+            assert!(position == Wrapping(encoder.position()));
             EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
         }
-        Timer::after(Duration::from_millis(10)).await;
+        // Timer::after(Duration::from_millis(10)).await;
         // delay.delay_millis(10);
         // FreeRtos::delay_ms(10);
     }
@@ -86,7 +102,7 @@ pub fn start_rotenc_thread(
     spawner: Spawner,
     pin_a: AnyPin<'static>,
     pin_b: AnyPin<'static>,
-) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 10> {
+) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20> {
 
     let _ = spawner.spawn(rotenc_thread(pin_a, pin_b).unwrap());
 

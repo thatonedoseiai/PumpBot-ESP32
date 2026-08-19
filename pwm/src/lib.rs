@@ -107,6 +107,8 @@ pub enum PwmAction {
     Off(PwmNumber),
     SetDuty(PwmNumber, u16),
     SetDutyPct(PwmNumber, u8),
+    IncDutyPct(PwmNumber, u8),
+    DecDutyPct(PwmNumber, u8),
     UnfreezePin(PwmNumber),
     Toggle(PwmNumber),
     FreezePin(PwmNumber, Time),
@@ -119,6 +121,8 @@ impl fmt::Display for PwmAction {
             PwmAction::Off(x) => { write!(f, "CHANNEL {} OFF", x) },
             PwmAction::SetDuty(x, v) => { write!(f, "CHANNEL {} => DUTY {}", x, v) },
             PwmAction::SetDutyPct(x, p) => { write!(f, "CHANNEL {} => SET DUTY {}%", x, p) },
+            PwmAction::IncDutyPct(x, p) => { write!(f, "CHANNEL {}: INCREMENT DUTY BY {}%", x, p) },
+            PwmAction::DecDutyPct(x, p) => { write!(f, "CHANNEL {}: DECREMENT DUTY BY {}%", x, p) },
             PwmAction::UnfreezePin(x) => { write!(f, "UNFREEZE CHANNEL {}", x) },
             PwmAction::Toggle(x) => { write!(f, "TOGGLE CHANNEL {}", x) },
             PwmAction::FreezePin(x, t) => { write!(f, "FREEZE CHANNEL {} FOR {} MS", x, t) }
@@ -294,6 +298,26 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
                 channels[usize::from(c)].set_duty(pct).unwrap();
             }
             state.duty = 164 * pct as u16;
+        },
+        PwmAction::IncDutyPct(c, p) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            let cur_duty_pct = state.get_duty_pct();
+            if cur_duty_pct < 100 {
+                if state.state == PwmPinState::On {
+                    channels[usize::from(c)].set_duty(cur_duty_pct + p).unwrap();
+                }
+                state.duty = 164 * (cur_duty_pct + p) as u16;
+            }
+        },
+        PwmAction::DecDutyPct(c, p) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            let cur_duty_pct = state.get_duty_pct();
+            if cur_duty_pct > 0 {
+                if state.state == PwmPinState::On {
+                    channels[usize::from(c)].set_duty(cur_duty_pct.saturating_sub(p)).unwrap();
+                }
+                state.duty = 164 * (cur_duty_pct.saturating_sub(p)) as u16;
+            }
         },
         PwmAction::UnfreezePin(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;

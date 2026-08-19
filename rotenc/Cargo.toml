@@ -9,4 +9,5 @@ embassy-sync = "0.8.0"
 embassy-time = "0.5.1"
 esp-hal = { version = "1.1.1", features = ["esp32s3", "unstable"] }
 log = "0.4.33"
+quadrature-encoder = "0.2.1"
 rotary-encoder-embedded = "0.5.0"
