@@ -183,7 +183,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(32, 140),
-                click: ButtonHandler::ConnectWifi,
+                click: ButtonHandler::Generic(GenericHandler::ConnectWifi),
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 font_size: FontSize::Sz12,
@@ -244,7 +244,7 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(32, 140),
-                click: ButtonHandler::ConnectServer,
+                click: ButtonHandler::Generic(GenericHandler::ConnectServer),
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 font_size: FontSize::Sz12,

@@ -52,18 +52,18 @@ pub enum GenericHandler {
     Print(&'static str),
     Signal(HandlerResult),
     SetLanguageAndTransition(Menu),
+    ConnectWifi,
+    ConnectServer,
 }
 
 impl Handler<()> for GenericHandler {
-    async fn handle(&self, _: &mut (), menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn handle(&self, _: &mut (), menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match self {
             Self::Print(s) => {
-                // println!("{s}");
                 log::info!("{s}");
                 Ok(HandlerResult::None)
             },
             Self::Signal(s) => {
-                // println!("sending {:?}", s);
                 Ok(s.clone())
             },
             Self::SetLanguageAndTransition(m) => {
@@ -74,38 +74,6 @@ impl Handler<()> for GenericHandler {
                 } else {
                     panic!("Handler::SetLanguageAndTransition used on bad menu!");
                 }
-            }
-        }
-    }
-}
-// }}}
-// MENU HANDLER {{{
-pub enum MenuHandler {
-    Generic(GenericHandler)
-}
-
-impl Handler<ComponentMenuInAction> for MenuHandler {
-    async fn handle(&self, _: &mut ComponentMenuInAction, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Generic(g) => {
-                g.handle(&mut (), menu_state, h).await
-            }
-        }
-    }
-}
-// }}}
-// BUTTON HANDLER {{{
-pub enum ButtonHandler {
-    Generic(GenericHandler),
-    ConnectWifi,
-    ConnectServer,
-}
-
-impl Handler<ButtonState> for ButtonHandler {
-    async fn handle(&self, _: &mut ButtonState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        match self {
-            Self::Generic(g) => {
-                g.handle(&mut (), menu_state, h).await
             },
             Self::ConnectWifi => {
                 if let MenuInternalState::WifiDetails {
@@ -128,8 +96,6 @@ impl Handler<ButtonState> for ButtonHandler {
                 } else {
                     unreachable!();
                 }
-                // Ok(HandlerResult::None)
-                // todo!("ConnectWifi button handler not implemented yet!")
             },
             Self::ConnectServer => {
                 let res = h.server.connect().await;
@@ -141,7 +107,37 @@ impl Handler<ButtonState> for ButtonHandler {
                         Ok(HandlerResult::ShowErrorDialogue(Cow::Borrowed("Pb failed to connect\nto the server!")))
                     }
                 }
+            },
+        }
+    }
+}
+// }}}
+// MENU HANDLER {{{
+pub enum MenuHandler {
+    Generic(GenericHandler)
+}
+
+impl Handler<ComponentMenuInAction> for MenuHandler {
+    async fn handle(&self, _: &mut ComponentMenuInAction, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => {
+                g.handle(&mut (), menu_state, h).await
             }
+        }
+    }
+}
+// }}}
+// BUTTON HANDLER {{{
+pub enum ButtonHandler {
+    Generic(GenericHandler),
+}
+
+impl Handler<ButtonState> for ButtonHandler {
+    async fn handle(&self, _: &mut ButtonState, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+        match self {
+            Self::Generic(g) => {
+                g.handle(&mut (), menu_state, h).await
+            },
         }
     }
 }
