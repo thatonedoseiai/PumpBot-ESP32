@@ -314,7 +314,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
-    run_menu_loop(spawner, Menu::CustomMenu(CustomMenu::Title), &mut IOHandles::new(
+    run_menu_loop(spawner, Menu::ComponentMenu(ComponentMenu::DisplaySettings), &mut IOHandles::new(
                 screen,
                 leddriver,
                 outputperipherals,
