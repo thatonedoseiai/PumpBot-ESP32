@@ -185,6 +185,7 @@ impl ComponentMenuInAction {
     }
 }
 
+#[derive(Debug)]
 enum MenuInternalState {
     ComponentTesting { },
     Lang {
@@ -207,7 +208,7 @@ enum MenuInternalState {
 #[derive(Debug, Clone, Copy)]
 pub enum ComponentMenu {
     ComponentTesting,
-    Lang(u8),
+    Lang,
     Wifi,
     WifiDetails(usize),
     ServerDetails,
@@ -258,7 +259,7 @@ impl ComponentMenu {
     const fn definition(&self) -> &'static ComponentMenuDefinition {
         match self {
             Self::ComponentTesting => &COMPONENT_TESTING,
-            Self::Lang(_) => &LANG,
+            Self::Lang => &LANG,
             Self::Wifi => &WIFI,
             Self::WifiDetails(_) => &WIFI_DETAILS,
             Self::ServerDetails => &SERVER_DETAILS,
@@ -286,7 +287,7 @@ impl ComponentMenu {
     fn initial_state(self, h: &mut IOHandles<'_>, settings: &PbGlobalSettings) -> MenuInternalState {
         match self {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
-            Self::Lang(s) => MenuInternalState::Lang { language: s },
+            Self::Lang => MenuInternalState::Lang { language: settings.lang.into() },
             Self::Wifi => MenuInternalState::Wifi,
             Self::WifiDetails(a) => MenuInternalState::WifiDetails { 
                 ap: h.wifi.get_wifis()[a].clone(),

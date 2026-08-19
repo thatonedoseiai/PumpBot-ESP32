@@ -124,6 +124,6 @@ impl TitleState {
         }
         // Ok(MenuSignal::Transition(MenuSelection::LanguageMenu)) // TODO: fix this
         let lang = PB_GLOBAL_SETTINGS.read().await.lang;
-        Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Lang(lang.into()))))
+        Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Lang)))
     }
 }

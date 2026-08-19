@@ -11,6 +11,9 @@ use global_settings::{lang::*, ThemedColor};
 use crate::static_element::StaticElement;
 use alloc::borrow::Cow;
 
+const BACK_BUTTON_POINT: Point = Point::new(10, 150);
+const NEXT_BUTTON_POINT: Point = Point::new(118, 150);
+
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::Button(
@@ -77,7 +80,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Print("title left btn")),
-    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::Lang(0))))),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::Lang)))),
 };
 
 pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
@@ -111,14 +114,14 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
             Alignment::Center,
         ),
         StaticElement::Text(
-            Point::new(10, 150),
+            BACK_BUTTON_POINT,
             FontSize::Sz7,
             &TEXT_BACK,
             ThemedColor::Fg,
             Alignment::Left,
         ),
         StaticElement::Text(
-            Point::new(118, 150),
+            NEXT_BUTTON_POINT,
             FontSize::Sz7,
             &TEXT_OK,
             ThemedColor::Fg,
@@ -150,6 +153,20 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
             &TEXT_WIFI_SETTINGS,
             ThemedColor::Fg,
             Alignment::Center,
+        ),
+        StaticElement::Text(
+            BACK_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+        StaticElement::Text(
+            NEXT_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_NEXT,
+            ThemedColor::Fg,
+            Alignment::Right,
         ),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
@@ -212,6 +229,20 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             ThemedColor::Fg,
             Alignment::Center,
         ),
+        StaticElement::Text(
+            BACK_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+        StaticElement::Text(
+            NEXT_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_NEXT,
+            ThemedColor::Fg,
+            Alignment::Right,
+        ),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))),
@@ -273,6 +304,20 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             ThemedColor::Fg,
             Alignment::Center,
         ),
+        StaticElement::Text(
+            BACK_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+        StaticElement::Text(
+            NEXT_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_NEXT,
+            ThemedColor::Fg,
+            Alignment::Right,
+        ),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))),
@@ -333,6 +378,20 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
             &TEXT_BRIGHTNESS,
             ThemedColor::Fg,
             Alignment::Center,
+        ),
+        StaticElement::Text(
+            BACK_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+        StaticElement::Text(
+            NEXT_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_OK,
+            ThemedColor::Fg,
+            Alignment::Right,
         ),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
