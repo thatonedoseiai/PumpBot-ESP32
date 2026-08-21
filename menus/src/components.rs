@@ -23,6 +23,7 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::string::{String, ToString};
 use enum_dispatch::enum_dispatch;
+use core::num::Saturating;
 
 #[derive(PartialEq)]
 pub enum InteractionType {
@@ -54,8 +55,8 @@ pub enum ComponentState {
 
 #[enum_dispatch]
 pub trait RunHandlers {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult>;
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult>;
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult>;
 }
 
@@ -124,7 +125,7 @@ impl ComponentDefinition {
             }),
             Self::Slider(definition) => ComponentState::Slider(SliderState {
                 definition,
-                cur_value: definition.initial_value.get(h),
+                cur_value: Saturating(definition.initial_value.get(h)),
                 mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
                 bg_drawn: false,
                 cursor_undraw_left: Rectangle::zero(),
@@ -140,7 +141,7 @@ impl ComponentDefinition {
                     slider_states: [
                         SliderState { 
                             definition: &ColorSelectorState::SLIDER_R_DEFINITION,
-                            cur_value: start_col.r,
+                            cur_value: Saturating(start_col.r),
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
                             bg_drawn: false,
                             cursor_undraw_left: Rectangle::zero(),
@@ -148,7 +149,7 @@ impl ComponentDefinition {
                         },
                         SliderState { 
                             definition: &ColorSelectorState::SLIDER_G_DEFINITION,
-                            cur_value: start_col.g,
+                            cur_value: Saturating(start_col.g),
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
                             bg_drawn: false,
                             cursor_undraw_left: Rectangle::zero(),
@@ -156,7 +157,7 @@ impl ComponentDefinition {
                         },
                         SliderState { 
                             definition: &ColorSelectorState::SLIDER_B_DEFINITION,
-                            cur_value: start_col.b,
+                            cur_value: Saturating(start_col.b),
                             mode: if start_focused { SliderMode::Selected } else { SliderMode::Unhighlighted },
                             bg_drawn: false,
                             cursor_undraw_left: Rectangle::zero(),
@@ -265,11 +266,11 @@ pub struct ButtonDefinition {
 }
 
 impl RunHandlers for ButtonState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, menu_state, h).await
     }
 
@@ -304,11 +305,11 @@ pub struct OptionSwitchDefinition {
 }
 
 impl RunHandlers for OptionSwitchState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, menu_state, h).await
     }
 
@@ -426,11 +427,11 @@ pub struct OptionScrollerDefinition {
 }
 
 impl RunHandlers for OptionScrollerState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, menu_state, h).await
     }
 
@@ -879,7 +880,7 @@ impl TextBoxState {
 }
 
 impl RunHandlers for TextBoxState {
-    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.sub_menu_open {
             self.text_selector_state.prev();
             self.text_selector_state.draw(h).await?;
@@ -887,7 +888,7 @@ impl RunHandlers for TextBoxState {
         Ok(HandlerResult::None)
     }
 
-    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.sub_menu_open {
             self.text_selector_state.next();
             self.text_selector_state.draw(h).await?;
@@ -1023,11 +1024,11 @@ pub struct ValueSelectorDefinition {
 }
 
 impl RunHandlers for ValueSelectorState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.left.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         self.definition.right.handle(self, menu_state, h).await
     }
 
@@ -1074,7 +1075,7 @@ impl ComponentBehaviour for ValueSelectorState {
 }
 // }}}
 // SLIDER {{{
-pub type SliderValueType = u8;
+pub type SliderValueType = Saturating<u8>;
 
 #[derive(Eq, PartialEq, Copy, Clone, Debug)]
 enum SliderMode {
@@ -1119,17 +1120,19 @@ impl SliderState {
 }
 
 impl RunHandlers for SliderState {
-    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
-            self.cur_value = self.cur_value.saturating_sub(self.definition.increment);
+            self.cur_value = self.cur_value - (self.definition.increment * Saturating(k.abs().min(255) as u8));
+            log::warn!("self.cur_value: {}", self.cur_value);
             self.draw(h).await?;
         }
         Ok(HandlerResult::None)
     }
 
-    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
-            self.cur_value = self.cur_value.saturating_add(self.definition.increment);
+            self.cur_value = self.cur_value + (self.definition.increment * Saturating(k.abs().min(255) as u8));
+            log::warn!("self.cur_value: {}", self.cur_value);
             self.draw(h).await?;
         }
         Ok(HandlerResult::None)
@@ -1161,7 +1164,7 @@ impl ComponentBehaviour for SliderState {
             self.definition.bg.draw(self.definition.rect, h)?;
             self.bg_drawn = true;
         }
-        let cursor_y = self.definition.rect.top_left.y + (self.definition.rect.size.height as i32) - ((self.definition.rect.size.height as i32) * self.cur_value as i32) / 255;
+        let cursor_y = self.definition.rect.top_left.y + (self.definition.rect.size.height as i32) - ((self.definition.rect.size.height as i32) * self.cur_value.0 as i32) / 255;
         let cursor_left_pos = Point::new(self.definition.rect.top_left.x, cursor_y);
         let cursor_right_pos = Point::new(self.definition.rect.top_left.x + (self.definition.rect.size.width as i32), cursor_y);
         self.cursor_undraw_left.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
@@ -1248,7 +1251,7 @@ pub struct ColorSelectorDefinition {
 }
 
 impl RunHandlers for ColorSelectorState {
-    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn left_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
             self.unhighlight_selected_component();
             self.draw_selected_component(h).await?;
@@ -1256,7 +1259,7 @@ impl RunHandlers for ColorSelectorState {
             self.highlight_selected_component();
             self.draw_selected_component(h).await?;
         } else if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Edit) {
-            self.selected_component_handle_left(menu_state, h).await?;
+            self.selected_component_handle_left(menu_state, h, k).await?;
             self.update_color_value();
             Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
         }
@@ -1264,7 +1267,7 @@ impl RunHandlers for ColorSelectorState {
         // self.definition.right.handle(self, menu_state, h).await
     }
 
-    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn right_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Browse) {
             self.unhighlight_selected_component();
             self.draw_selected_component(h).await?;
@@ -1272,7 +1275,7 @@ impl RunHandlers for ColorSelectorState {
             self.highlight_selected_component();
             self.draw_selected_component(h).await?;
         } else if self.mode == ColorSelectorMode::Selected(ColorSelectorSubmenuMode::Edit) {
-            self.selected_component_handle_right(menu_state, h).await?;
+            self.selected_component_handle_right(menu_state, h, k).await?;
             self.update_color_value();
             Self::EDITOR_PREVIEW_RECT.into_styled(self.preview_style()).draw(&mut h.screen)?;
         }
@@ -1319,19 +1322,19 @@ impl ColorSelectorState {
             rect: Rectangle::new(Point::new(29, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![255, 0, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
-            increment: 1
+            increment: Saturating(1)
         };
     const SLIDER_G_DEFINITION: SliderDefinition = SliderDefinition {
             rect: Rectangle::new(Point::new(59, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 255, 0], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
-            increment: 1
+            increment: Saturating(1)
         };
     const SLIDER_B_DEFINITION: SliderDefinition = SliderDefinition {
             rect: Rectangle::new(Point::new(89, 30), Size::new(10, 80)),
             bg: SliderBackgroundDrawing::GradientY(rgb![0, 0, 255], rgb![0, 0, 0]),
             initial_value: SliderValueGetter::Const(0),
-            increment: 1
+            increment: Saturating(1)
         };
     const DONE_BUTTON_DEFINITION: ButtonDefinition = ButtonDefinition {
         pos: Point::new(64, 20),
@@ -1375,28 +1378,28 @@ impl ColorSelectorState {
 
     const fn update_color_value(&mut self) {
         match self.current_selected_component {
-            ColorSelectorSubmenuSelection::ChannelR => { self.current_color.r = self.slider_states[0].cur_value; },
-            ColorSelectorSubmenuSelection::ChannelG => { self.current_color.g = self.slider_states[1].cur_value; },
-            ColorSelectorSubmenuSelection::ChannelB => { self.current_color.b = self.slider_states[2].cur_value; },
+            ColorSelectorSubmenuSelection::ChannelR => { self.current_color.r = self.slider_states[0].cur_value.0; },
+            ColorSelectorSubmenuSelection::ChannelG => { self.current_color.g = self.slider_states[1].cur_value.0; },
+            ColorSelectorSubmenuSelection::ChannelB => { self.current_color.b = self.slider_states[2].cur_value.0; },
             ColorSelectorSubmenuSelection::Done => {},
         }
     }
 
-    async fn selected_component_handle_right(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn selected_component_handle_right(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         match self.current_selected_component {
-            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].right_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].right_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].right_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::Done     => self.button_state.right_handle(menu_state, h).await
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].right_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].right_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].right_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.right_handle(menu_state, h, k).await
         }
     }
 
-    async fn selected_component_handle_left(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
+    async fn selected_component_handle_left(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         match self.current_selected_component {
-            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].left_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].left_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].left_handle(menu_state, h).await,
-            ColorSelectorSubmenuSelection::Done     => self.button_state.left_handle(menu_state, h).await
+            ColorSelectorSubmenuSelection::ChannelR => self.slider_states[0].left_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::ChannelG => self.slider_states[1].left_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::ChannelB => self.slider_states[2].left_handle(menu_state, h, k).await,
+            ColorSelectorSubmenuSelection::Done     => self.button_state.left_handle(menu_state, h, k).await
         }
     }
 

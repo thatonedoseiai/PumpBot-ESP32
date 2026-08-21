@@ -303,10 +303,10 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let mut state = PIN_STATES[usize::from(c)].write().await;
             let cur_duty_pct = state.get_duty_pct();
             if cur_duty_pct < 100 {
+                state.duty = ((((cur_duty_pct + p) as u32).min(100) * 16383u32) / 100) as u16;
                 if state.state == PwmPinState::On {
-                    channels[usize::from(c)].set_duty_cycle(((((cur_duty_pct + p) as u32).min(100) * 16383u32) / 100) as u16).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(state.duty).unwrap();
                 }
-                state.duty = 164 * (cur_duty_pct + p) as u16;
             }
         },
         PwmAction::DecDutyPct(c, p) => {

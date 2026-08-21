@@ -75,17 +75,17 @@ impl HomeMenu {
         let percentage = current_state.get_duty_pct();
         let percentage_string = percentage.to_string() + "%";
         self.main_dial_undraw.into_styled(Self::undraw_style(theme)).draw(&mut h.screen)?;
-        // let dial_end = (percentage as f32 * 2.7).deg();
-        // let dial = Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
-        //             .into_styled(PrimitiveStyle::with_stroke(theme.fg().as_rgb565(), 5));
+        let dial_end = (percentage as f32 * 2.7).deg();
+        let dial = Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
+                    .into_styled(PrimitiveStyle::with_stroke(theme.fg().as_rgb565(), 5));
         let dial_text = Text::with_alignment(&percentage_string, Point::new(64, 78), &h.font, Alignment::Center);
-        self.main_dial_undraw = dial_text.bounding_box(); // dial_text.bounding_box();
-        // dial.draw(&mut h.screen)?;
+        self.main_dial_undraw = dial.bounding_box(); // dial_text.bounding_box();
+        dial.draw(&mut h.screen)?;
         dial_text.draw(&mut h.screen)?;
-        // let dial_colour = RGB::lerp(&rgb![255, 0, 0], &rgb![0, 255, 0], (percentage as f32) / 100.0).as_rgb565();
-        // Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
-        //             .into_styled(PrimitiveStyle::with_stroke(dial_colour, 3))
-        //             .draw(&mut h.screen)?;
+        let dial_colour = RGB::lerp(&rgb![255, 0, 0], &rgb![0, 255, 0], (percentage as f32) / 100.0).as_rgb565();
+        Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
+                    .into_styled(PrimitiveStyle::with_stroke(dial_colour, 3))
+                    .draw(&mut h.screen)?;
         Ok(())
     }
 

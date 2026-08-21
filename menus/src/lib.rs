@@ -342,7 +342,7 @@ impl MenuStateBehaviour for ComponentMenu {
                                 m.unhighlight();
                                 m.draw(h).await?;
                             }
-                            cur_menu_state.advance_component(k.abs());
+                            cur_menu_state.advance_component(k);
                             if let Some(m) = cur_menu_state.selected() {
                                 m.highlight();
                                 m.draw(h).await?;
@@ -352,9 +352,9 @@ impl MenuStateBehaviour for ComponentMenu {
                         ComponentMenuMode::Edit => 
                             if let Some(f) = cur_menu_state.selected() {
                                 if k > 0 {
-                                    Some(f.right_handle(&mut internal_state, h).await?)
+                                    Some(f.right_handle(&mut internal_state, h, k).await?)
                                 } else {
-                                    Some(f.left_handle(&mut internal_state, h).await?)
+                                    Some(f.left_handle(&mut internal_state, h, k).await?)
                                 }
                             } else {
                                 None
