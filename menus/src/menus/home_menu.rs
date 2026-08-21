@@ -182,32 +182,28 @@ impl HomeMenu {
                 (Either4::First(r), HomeMenuMode::Edit) => {
                     // control PWM values
                     let state = self.selected_channel.get_state().await;
-                    match r.dir {
-                        Direction::Clockwise => {
-                            // let new_duty = if state.duty >= (99 * 163) {
-                            //     16383
-                            // } else {
-                            //     state.duty.saturating_add(163)
-                            // };
-                            h.pwm_output.send_and_forget(Command::new(
-                                // PwmAction::SetDuty(self.selected_channel, new_duty), 
-                                PwmAction::IncDutyPct(self.selected_channel, 1),
-                                0 
-                            )).await;
-                        },
-                        Direction::Anticlockwise => {
-                            // let new_duty = if state.duty == 16383 {
-                            //     99 * 163
-                            // } else {
-                            //     state.duty.saturating_sub(163)
-                            // };
-                            h.pwm_output.send_and_forget(Command::new(
-                                // PwmAction::SetDuty(self.selected_channel, new_duty), 
-                                PwmAction::DecDutyPct(self.selected_channel, 1),
-                                0 
-                            )).await;
-                        },
-                        _ => {}
+                    if r > 0 {
+                        // let new_duty = if state.duty >= (99 * 163) {
+                        //     16383
+                        // } else {
+                        //     state.duty.saturating_add(163)
+                        // };
+                        h.pwm_output.send_and_forget(Command::new(
+                            // PwmAction::SetDuty(self.selected_channel, new_duty), 
+                            PwmAction::IncDutyPct(self.selected_channel, r.min(255) as u8),
+                            0 
+                        )).await;
+                    } else {
+                        // let new_duty = if state.duty == 16383 {
+                        //     99 * 163
+                        // } else {
+                        //     state.duty.saturating_sub(163)
+                        // };
+                        h.pwm_output.send_and_forget(Command::new(
+                            // PwmAction::SetDuty(self.selected_channel, new_duty), 
+                            PwmAction::DecDutyPct(self.selected_channel, (-r).min(255) as u8),
+                            0 
+                        )).await;
                     }
                 },
                 (Either4::Third(_), _) => {

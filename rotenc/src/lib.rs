@@ -19,13 +19,19 @@ extern crate alloc;
 pub use rotary_encoder_embedded::{standard::StandardMode, Direction};
 use quadrature_encoder::{RotaryEncoder, RotaryMovement};
 use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
+use esp_hal::pcnt::{Pcnt, unit::Unit, channel::{CtrlMode, EdgeMode}};
+use esp_hal::peripherals::PCNT;
 // use esp_hal::delay::Delay;
 use embassy_sync::channel::{Channel, Receiver};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::signal::Signal;
 use embassy_executor::Spawner;
 use core::num::Wrapping;
 use core::fmt;
 use embassy_time::{Timer, Duration};
+use alloc::sync::Arc;
+use critical_section::Mutex;
+use core::cell::RefCell;
 
 /// Represents some rotation that happened with the rotary encoder.
 #[derive(Clone, Copy, Debug)]
@@ -50,61 +56,171 @@ impl fmt::Display for EncoderEvent {
     }
 }
 
-static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 20> = Channel::new();
+pub struct RotencDriver { }
+
+impl RotencDriver {
+    pub async fn receive(&self) -> i16 {
+        EVENT_SIGNAL.wait().await;
+        // let mut d = 0;
+        // while d == 0 {
+        //     d = self.get_delta();
+        //     log::warn!("ROTENC: poll delta {}", d);
+        //     Timer::after(Duration::from_millis(1000)).await;
+        // }
+        let d = self.get_delta();
+        critical_section::with(|cs| {
+            let u = UNIT0.borrow_ref(cs);
+            log::warn!("ROTENC: signaled: {}, interrupt: {}", EVENT_SIGNAL.signaled(), u.as_ref().unwrap().interrupt_is_set());
+        });
+        EVENT_SIGNAL.reset();
+        // self.rotenc_unit.reset_interrupt();
+        d
+    }
+
+    pub fn get_delta(&self) -> i16 {
+        critical_section::with(|cs| {
+            let mut u0 = UNIT0.borrow_ref(cs);
+            if let Some(u) = u0.as_ref() {
+                let k = u.value();
+                u.clear();
+                k
+            } else {
+                unreachable!("unit0 should already be initialized")
+            }
+        })
+    }
+}
+
+// static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 20> = Channel::new();
+static EVENT_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
 /// the rotary encoder thread
 #[embassy_executor::task]
-async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>) {
-    let inputconfig = InputConfig::default().with_pull(Pull::Down);
+async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>, p: PCNT<'static>, event_signal: Arc<Signal<CriticalSectionRawMutex, bool>>) {
+    let inputconfig = InputConfig::default().with_pull(Pull::Up);
     let pin_a_driver = Input::new(pin_a, inputconfig);
     let pin_b_driver = Input::new(pin_b, inputconfig);
+    let pcnt = Pcnt::new(p);
+    let u0 = pcnt.unit0;
+    // u0.set_low_limit(Some(-100)).unwrap();
+    // u0.set_high_limit(Some(100)).unwrap();
+    u0.set_filter(Some(800)).unwrap();
+    let input_a = pin_a_driver.peripheral_input();
+    let input_b = pin_b_driver.peripheral_input();
+    let ch0 = &u0.channel0;
+    // let ch1 = &u0.channel1;
+    ch0.set_ctrl_signal(input_a.clone());
+    ch0.set_edge_signal(input_b.clone());
+    ch0.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
+    ch0.set_input_mode(EdgeMode::Increment, EdgeMode::Hold);
+
+    // ch1.set_ctrl_signal(input_b);
+    // ch1.set_edge_signal(input_a);
+    // ch1.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
+    // ch1.set_input_mode(EdgeMode::Decrement, EdgeMode::Increment);
+
+    u0.clear();
+    u0.resume();
+
+    // loop {
+        // log::warn!("rotenc pos: {}", u0.value());
+        // Timer::after(Duration::from_millis(1000)).await;
+    // }
+
+    // ch0.set_edge_action(esp_hal::pcnt::channel::EdgeAction::Increment, esp_hal::pcnt::channel::EdgeAction::Hold);
+    // ch0.set_level_action(esp_hal::pcnt::channel::LevelAction::Keep, esp_hal::pcnt::channel::LevelAction::Inverse);
+    // ch0.set_pins(Some(pin_a.peripheral_input()), Some(pin_b.peripheral_input()));
     // let delay = Delay::new();
 
     // let mut encoder = StandardMode::new();
-    let mut encoder = RotaryEncoder::<_, _>::new(pin_a_driver, pin_b_driver).into_async();
-    let mut position = Wrapping(0i32);
+    // let mut encoder = RotaryEncoder::<_, _>::new(pin_a_driver, pin_b_driver).into_async();
+    // let mut position = Wrapping(0i32);
 
-    loop {
-        // let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
-        let encoder_val = encoder.poll().await;
-        let dir = match encoder_val {
-            Ok(Some(RotaryMovement::Clockwise)) => {
-                position += 1;
-                Direction::Clockwise
-            },
-            Ok(Some(RotaryMovement::CounterClockwise)) => {
-                position -= 1;
-                Direction::Anticlockwise
-            },
-            Err(e) => {
-                panic!("Rotary encoder error! {:?}", e);
-            },
-            _ => {
-                Direction::None
-            },
-        };
+    // loop {
+    //     // let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
+    //     let encoder_val = encoder.poll().await;
+    //     let dir = match encoder_val {
+    //         Ok(Some(RotaryMovement::Clockwise)) => {
+    //             position += 1;
+    //             Direction::Clockwise
+    //         },
+    //         Ok(Some(RotaryMovement::CounterClockwise)) => {
+    //             position -= 1;
+    //             Direction::Anticlockwise
+    //         },
+    //         Err(e) => {
+    //             panic!("Rotary encoder error! {:?}", e);
+    //         },
+    //         _ => {
+    //             Direction::None
+    //         },
+    //     };
 
-        // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
-        if dir != Direction::None {
-            assert!(position == Wrapping(encoder.position()));
-            EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
-        }
-        // Timer::after(Duration::from_millis(10)).await;
-        // delay.delay_millis(10);
-        // FreeRtos::delay_ms(10);
-    }
+    //     // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
+    //     if dir != Direction::None {
+    //         assert!(position == Wrapping(encoder.position()));
+    //         log::warn!("rotenc event! {}", position);
+    //         // EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
+    //     }
+    //     // Timer::after(Duration::from_millis(10)).await;
+    //     // delay.delay_millis(10);
+    //     // FreeRtos::delay_ms(10);
+    // }
 }
+
+static UNIT0: Mutex<RefCell<Option<Unit<'static, 0>>>> = Mutex::new(RefCell::new(None));
 
 /// Starts the rotary encoder listener. `pin_a` represents the left-turning pin, and `pin_b`
 /// represents the right-turning pin. Any events captured by the listener are sent over `queue`.
 pub fn start_rotenc_thread(
     // queue: Arc<Queue<T>>,
-    spawner: Spawner,
+    // spawner: Spawner,
     pin_a: AnyPin<'static>,
     pin_b: AnyPin<'static>,
-) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20> {
+    p: PCNT<'static>,
+// ) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20> {
+) -> RotencDriver {
 
-    let _ = spawner.spawn(rotenc_thread(pin_a, pin_b).unwrap());
+    // let e = Arc::new(Signal::new());
+    // let _ = spawner.spawn(rotenc_thread(pin_a, pin_b, pcnt, e.clone()).unwrap());
 
-    EVENT_QUEUE.receiver()
+    let inputconfig = InputConfig::default().with_pull(Pull::Up);
+    let pin_a_driver = Input::new(pin_a, inputconfig);
+    let pin_b_driver = Input::new(pin_b, inputconfig);
+    let mut pcnt = Pcnt::new(p);
+    pcnt.set_interrupt_handler(interrupt_handler);
+    let u0 = pcnt.unit0;
+    u0.set_filter(Some(800)).unwrap();
+    let input_a = pin_a_driver.peripheral_input();
+    let input_b = pin_b_driver.peripheral_input();
+    let ch0 = &u0.channel0;
+    ch0.set_ctrl_signal(input_a.clone());
+    ch0.set_edge_signal(input_b.clone());
+    ch0.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
+    ch0.set_input_mode(EdgeMode::Increment, EdgeMode::Hold);
+    u0.set_threshold0(Some(1));
+    u0.set_threshold1(Some(-1));
+    u0.clear();
+    u0.listen();
+    u0.resume();
+
+    critical_section::with(|cs| UNIT0.borrow_ref_mut(cs).replace(u0));
+
+    RotencDriver {
+        // rotenc_unit: u0,
+    }
+
+    // EVENT_QUEUE.receiver()
+}
+
+use core::borrow::Borrow;
+#[esp_hal::handler]
+fn interrupt_handler() {
+    EVENT_SIGNAL.signal(true);
+    critical_section::with(|cs| {
+        let mut u0 = UNIT0.borrow_ref(cs);
+        if let Some(u) = u0.as_ref() {
+            u.reset_interrupt();
+        }
+    });
 }

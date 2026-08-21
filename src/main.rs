@@ -249,7 +249,12 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         (peripherals.GPIO0.into(), ButtonType::Left), 
         (peripherals.GPIO3.into(), ButtonType::Right), 
         (peripherals.GPIO18.into(), ButtonType::Rotenc)]);
-    let rotenc_receiver = start_rotenc_thread(spawner, peripherals.GPIO17.into(), peripherals.GPIO8.into());
+    let rotenc_receiver = start_rotenc_thread(peripherals.GPIO17.into(), peripherals.GPIO8.into(), peripherals.PCNT);
+
+    // use embassy_time::{Timer, Duration};
+    // loop {
+    //     Timer::after(Duration::from_millis(1000)).await;
+    // }
 
     let mut ledc = Ledc::new(peripherals.LEDC);
     ledc.set_global_slow_clock(LSGlobalClkSource::APBClk);

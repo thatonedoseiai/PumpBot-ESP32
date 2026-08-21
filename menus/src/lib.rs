@@ -49,7 +49,8 @@ use fontfile::{
 };
 use rotenc::{
     EncoderEvent,
-    Direction
+    Direction,
+    RotencDriver
 };
 use button_idf::{
     ButtonEvent,
@@ -163,6 +164,12 @@ impl ComponentMenuInAction {
     fn prev_component(&mut self) {
         if !self.component_states.is_empty() {
             self.selected_component = (self.selected_component + self.component_states.len() - 1) % self.component_states.len();
+        }
+    }
+
+    fn advance_component(&mut self, n: i16) {
+        if !self.component_states.is_empty() {
+            self.selected_component = ((self.selected_component as i16 + n).rem_euclid(self.component_states.len() as i16)) as usize;
         }
     }
 
@@ -328,14 +335,14 @@ impl MenuStateBehaviour for ComponentMenu {
                 h.rotenc.receive(),
             ).await;
             let signal: Option<HandlerResult> = match inp {
-                Either::Second(EncoderEvent {dir: Direction::Clockwise, ..}) => {
+                Either::Second(k) => {
                     match cur_menu_state.mode {
                         ComponentMenuMode::Browse => {
                             if let Some(m) = cur_menu_state.selected() {
                                 m.unhighlight();
                                 m.draw(h).await?;
                             }
-                            cur_menu_state.next_component();
+                            cur_menu_state.advance_component(k.abs());
                             if let Some(m) = cur_menu_state.selected() {
                                 m.highlight();
                                 m.draw(h).await?;
@@ -345,28 +352,6 @@ impl MenuStateBehaviour for ComponentMenu {
                         ComponentMenuMode::Edit => 
                             if let Some(f) = cur_menu_state.selected() {
                                 Some(f.right_handle(&mut internal_state, h).await?)
-                            } else {
-                                None
-                            }
-                    }
-                },
-                Either::Second(EncoderEvent {dir: Direction::Anticlockwise, ..}) => {
-                    match cur_menu_state.mode {
-                        ComponentMenuMode::Browse => {
-                            if let Some(m) = cur_menu_state.selected() {
-                                m.unhighlight();
-                                m.draw(h).await?;
-                            }
-                            cur_menu_state.prev_component();
-                            if let Some(m) = cur_menu_state.selected() {
-                                m.highlight();
-                                m.draw(h).await?;
-                            }
-                            None
-                        },
-                        ComponentMenuMode::Edit =>
-                            if let Some(f) = cur_menu_state.selected() {
-                                Some(f.left_handle(&mut internal_state, h).await?)
                             } else {
                                 None
                             }
@@ -476,7 +461,7 @@ pub struct IOHandles<'a> {
     pub pwm_output: Pwm<'a>,
     pub font: PbFontRenderer,
     pub button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
-    pub rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20>,
+    pub rotenc: RotencDriver,
     pub wifi: PbWifi<'a>,
     pub server: ServerConnection,
     pub backlight: Channel<'a, LowSpeed>,
@@ -490,7 +475,7 @@ impl<'a> IOHandles<'a> {
         pwm_output: Pwm<'a>,
         font: PbFontRenderer,
         button: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
-        rotenc: Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20>,
+        rotenc: RotencDriver,
         wifi: PbWifi<'a>,
         server: ServerConnection,
         backlight: Channel<'a, LowSpeed>,

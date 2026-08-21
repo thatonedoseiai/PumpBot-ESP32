@@ -131,14 +131,12 @@ impl SetupMethodState {
             ).await;
             match result {
                 Either::First(r) => {
-                    if r.dir != Direction::None {
-                        current_selection = (current_selection + 1) % 2;
-                        for bb in [lc_bb, rc_bb, self.undraw_tooltip[0], self.undraw_tooltip[1]].iter() {
-                            bb.into_styled(black).draw(io_handles.screen.borrow_mut())?;
-                        }
-                        self.draw_tooltip(current_selection, lang, io_handles)?;
-                        (lc_bb, rc_bb) = static_draw_two_cursors(Point::new(64, CURSOR_YS[current_selection as usize]), CURSOR_WIDTHS[current_selection as usize], &mut io_handles.screen)?;
+                    current_selection = ((current_selection as i16 + r).rem_euclid(2)) as u8;
+                    for bb in [lc_bb, rc_bb, self.undraw_tooltip[0], self.undraw_tooltip[1]].iter() {
+                        bb.into_styled(black).draw(io_handles.screen.borrow_mut())?;
                     }
+                    self.draw_tooltip(current_selection, lang, io_handles)?;
+                    (lc_bb, rc_bb) = static_draw_two_cursors(Point::new(64, CURSOR_YS[current_selection as usize]), CURSOR_WIDTHS[current_selection as usize], &mut io_handles.screen)?;
                 },
                 Either::Second(b) => {
                     match (&b.button_type, &b.event) {
