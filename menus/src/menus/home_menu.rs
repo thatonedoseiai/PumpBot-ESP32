@@ -101,8 +101,8 @@ impl HomeMenu {
             .stroke_color(theme.fg().as_rgb565())
             .stroke_width(1)
             .fill_color(match state {
-                PwmPinState::On => rgb![52, 242, 51],
-                PwmPinState::Off => rgb![255, 0, 0],
+                PwmPinState::On => theme.highlight(),
+                PwmPinState::Off => theme.bg(),
             }.as_rgb565())
             .build()
     }
