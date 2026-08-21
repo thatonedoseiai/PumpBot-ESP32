@@ -70,7 +70,7 @@ impl RotencDriver {
         let d = self.get_delta();
         critical_section::with(|cs| {
             let u = UNIT0.borrow_ref(cs);
-            log::warn!("ROTENC: signaled: {}, interrupt: {}", EVENT_SIGNAL.signaled(), u.as_ref().unwrap().interrupt_is_set());
+            // log::warn!("ROTENC: signaled: {}, interrupt: {}", EVENT_SIGNAL.signaled(), u.as_ref().unwrap().interrupt_is_set());
         });
         EVENT_SIGNAL.reset();
         // self.rotenc_unit.reset_interrupt();

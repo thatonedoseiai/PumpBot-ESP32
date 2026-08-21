@@ -351,7 +351,11 @@ impl MenuStateBehaviour for ComponentMenu {
                         },
                         ComponentMenuMode::Edit => 
                             if let Some(f) = cur_menu_state.selected() {
-                                Some(f.right_handle(&mut internal_state, h).await?)
+                                if k > 0 {
+                                    Some(f.right_handle(&mut internal_state, h).await?)
+                                } else {
+                                    Some(f.left_handle(&mut internal_state, h).await?)
+                                }
                             } else {
                                 None
                             }
