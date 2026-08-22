@@ -1,0 +1,17 @@
+[package]
+name = "lua_scripting"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# embedded-storage = "0.3.1"
+# esp-hal = { version = "=1.1.1", features = ["esp32s3"] }
+# esp-storage = { version = "0.9.0", features = ["esp32s3", "critical-section"] }
+# littlefs2 = "0.8.0"
+littlefs2 = { git = "https://github.com/Tortus-exe/littlefs2.git" }
+log = "0.4.33"
+flash_storage = { path = "../flash_storage" }
+esp32s3 = "=0.35.2"
+heapless = { version = "0.9.3", features = ["alloc"] }
+# piccolo = "0.3.3"
+# littlefs2 = "0.8.1"
