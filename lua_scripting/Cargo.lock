@@ -867,7 +867,14 @@ dependencies = [
  "heapless 0.9.3",
  "littlefs2",
  "log",
+ "luna-core",
 ]
+
+[[package]]
+name = "luna-core"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20314f73aabf130535208465b4039d3de4542a1a29f9d892466f819cacff2621"
 
 [[package]]
 name = "memchr"

@@ -397,3 +397,17 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::CustomMenu(CustomMenu::HomeMenu)))),
 };
+
+pub const SCRIPT_BROWSER: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const WGET_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
