@@ -36,6 +36,7 @@ use core::cell::{RefCell, Ref};
 use alloc::rc::Rc;
 use esp_hal::time::Duration;
 use wget::wget;
+use embedded_io_async::ErrorKind;
 // use std::cell::RefCell;
 
 // When you are okay with using a nightly compiler it's better to use https://docs.rs/static_cell/2.1.0/static_cell/macro.make_static.html
@@ -134,11 +135,11 @@ impl<'a> PbWifi<'a> {
         Ok(())
     }
 
-    pub async fn wget(&self, url: &str) -> Option<String> {
+    pub async fn wget(&self, url: &str) -> anyhow::Result<String> {
         if let Some(_) = self.connected_info {
-            Some(wget(self.netstack, url).await)
+            Ok(wget(self.netstack, url).await?)
         } else {
-            None
+            Err(reqwless::Error::Network(ErrorKind::NotConnected).into())
         }
     }
 }
