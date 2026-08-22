@@ -72,7 +72,6 @@ esp-println = { version = "0.17.0", features = ["esp32s3", "log-04"] }
 esp-radio = { version = "1.0.0-beta.0", features = ["esp32s3", "esp-alloc", "log-04", "unstable", "wifi"] }
 
 embedded-io = "0.7.1"
-embedded-io-async = "0.7.0"
 embassy-net = { version = "0.9.1", features = [
   "dhcpv4",
   "log",

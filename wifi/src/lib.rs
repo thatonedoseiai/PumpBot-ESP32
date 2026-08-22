@@ -6,6 +6,8 @@
 #![no_main]
 // #![feature(str_split_remainder)]
 
+mod wget;
+
 extern crate alloc;
 
 // mod http_server;
@@ -28,11 +30,12 @@ use esp_hal::rng::Rng;
 use esp_hal::peripherals::WIFI;
 // pub use crate::http_server::{PbHttpServer, PbHttpServerError};
 use log::{info, warn};
-use alloc::string::ToString;
+use alloc::string::{ToString, String};
 use alloc::vec::Vec;
 use core::cell::{RefCell, Ref};
 use alloc::rc::Rc;
 use esp_hal::time::Duration;
+use wget::wget;
 // use std::cell::RefCell;
 
 // When you are okay with using a nightly compiler it's better to use https://docs.rs/static_cell/2.1.0/static_cell/macro.make_static.html
@@ -70,7 +73,7 @@ impl<'a> PbWifi<'a> {
         let rng = Rng::new();
         let seed = (rng.random() as u64) << 32 | rng.random() as u64;
 
-        let (netstack, runner) = embassy_net::new(Interface::station(), dhcpv4_config, mk_static!(StackResources<3>, StackResources::<3>::new()), seed);
+        let (netstack, runner) = embassy_net::new(Interface::station(), dhcpv4_config, mk_static!(StackResources<6>, StackResources::<6>::new()), seed);
 
         spawner.spawn(run_netstack(runner).unwrap());
 
@@ -129,6 +132,14 @@ impl<'a> PbWifi<'a> {
             self.ap_cache.replace(scan_result);
         }
         Ok(())
+    }
+
+    pub async fn wget(&self, url: &str) -> Option<String> {
+        if let Some(_) = self.connected_info {
+            Some(wget(self.netstack, url).await)
+        } else {
+            None
+        }
     }
 }
 
