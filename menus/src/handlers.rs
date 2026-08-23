@@ -2,7 +2,7 @@ use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, Compon
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::Lang, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
+use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT}, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -52,7 +52,7 @@ pub enum GenericHandler {
     Print(&'static str),
     Signal(HandlerResult),
     SetLanguageAndTransition(Menu),
-    ConnectWifi,
+    ConnectDisconnectWifi,
     ConnectServer,
 }
 
@@ -75,23 +75,28 @@ impl Handler<()> for GenericHandler {
                     panic!("Handler::SetLanguageAndTransition used on bad menu!");
                 }
             },
-            Self::ConnectWifi => {
+            Self::ConnectDisconnectWifi => {
                 if let MenuInternalState::WifiDetails {
                     ap: a,
                     pass: p
                 } = menu_state {
-                    let pw = p.borrow();
-                    log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
-                    let wifi_res = h.wifi.connect(&a, &pw).await;
-                    match wifi_res {
-                        Ok(()) => {
-                            log::info!("connect returned OK!");
-                            Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
-                        },
-                        Err(e) => {
-                            let error_msg = format!("Failed to connect to Wifi!\n\nError:\n{}", e);
-                            Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(error_msg)))
+                    if !h.wifi.is_connected() {
+                        let pw = p.borrow();
+                        log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
+                        let wifi_res = h.wifi.connect(&a, &pw).await;
+                        match wifi_res {
+                            Ok(()) => {
+                                log::info!("connect returned OK!");
+                                Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
+                            },
+                            Err(e) => {
+                                let error_msg = format!("Failed to connect to Wifi!\n\nError:\n{}", e);
+                                Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(error_msg)))
+                            }
                         }
+                    } else {
+                        h.wifi.disconnect().await?;
+                        Ok(HandlerResult::None)
                     }
                 } else {
                     unreachable!();
@@ -247,7 +252,8 @@ pub enum OptionScrollerHandler {
     NextOption,
     PrevOption,
     PrintSelection,
-    SetMenuState(MenuInternalStateAction)
+    SetMenuState(MenuInternalStateAction),
+    TransitionToMenu,
 }
 
 impl Handler<OptionScrollerState> for OptionScrollerHandler {
@@ -304,7 +310,16 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                     },
                     _ => { Ok(HandlerResult::None) }
                 }
-            }
+            },
+            Self::TransitionToMenu => {
+                let (_, menu) = match state.definition.options {
+                    OptionsGenerator::Menus(t) => {
+                        t[state.selection]
+                    }
+                    _ => panic!("bad option used with TransitionToMenu handler!"),
+                };
+                Ok(HandlerResult::Transition(menu))
+            },
         }
     }
 }
@@ -399,9 +414,31 @@ impl SliderBackgroundDrawing {
     }
 }
 // }}}
+// BUTTON TEXT GENERATOR {{{
+pub enum ButtonTextGenerator {
+    LangStr(&'static LanguageString),
+    WifiConnectDisconnect,
+}
+
+impl ButtonTextGenerator {
+    pub async fn generate(&self, l: &Lang, h: &mut IOHandles<'_>) -> anyhow::Result<Cow<'static, str>> {
+        match self {
+            Self::LangStr(s) => Ok(Cow::Borrowed(s[*l])),
+            Self::WifiConnectDisconnect => {
+                if h.wifi.is_connected() {
+                    Ok(Cow::Borrowed(TEXT_DISCONNECT[*l]))
+                } else {
+                    Ok(Cow::Borrowed(TEXT_CONNECT[*l]))
+                }
+            }
+        }
+    }
+}
+// }}}
 // OPTIONS GENERATOR {{{
 pub enum OptionsGenerator {
     Const(&'static [&'static str]),
+    Menus(&'static [(&'static LanguageString, Menu)]),
     WifiGenerator
 }
 
@@ -412,6 +449,10 @@ impl OptionsGenerator {
             Self::WifiGenerator => {
                 h.wifi.scan().await?;
                 Ok(h.wifi.get_wifis().iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect())
+            },
+            Self::Menus(s) => {
+                let lang = {&PB_GLOBAL_SETTINGS.read().await.lang};
+                Ok(s.iter().map(|(f, _)| Cow::Borrowed(f[*lang])).collect())
             },
         }
     }

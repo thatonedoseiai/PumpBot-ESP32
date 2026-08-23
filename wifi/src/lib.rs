@@ -116,6 +116,15 @@ impl<'a> PbWifi<'a> {
         Ok(())
     }
 
+    pub async fn disconnect(&mut self) -> Result<(), WifiError> {
+        self.wifi_mod.disconnect_async().await?;
+        Ok(())
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.wifi_mod.is_connected()
+    }
+
     pub fn get_wifis(&self) -> Ref<'_, Vec<AccessPointInfo>> {
         self.ap_cache.borrow()
         // Ok(self.wifi_mod.scan_n::<10>()?.0.to_vec())

@@ -1533,3 +1533,15 @@ pub const TEXT_FACTORY_RESET: LanguageString = LanguageString {
     de: "Zurücksetzen auf Werksseinstellungen",
 };
 
+// TODO: get this localized
+pub const TEXT_REFRESH: LanguageString = LanguageString {
+    en: "Refresh",
+    jp: "リロード",
+    fr: "Recharger",
+    es: "Recargar",
+    pt: "Recarregar",
+    zh: "再找网路",
+    cn: "再搵網絡",
+    ru: "обновить сети",
+    de: "",
+};

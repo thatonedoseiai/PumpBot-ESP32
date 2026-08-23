@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, ColorSubmitHandler};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, ColorSubmitHandler, ButtonTextGenerator};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -23,7 +23,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[first button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[first button right]")),
                 font_size: FontSize::Sz7,
-                text: &LanguageString::const_string("hello"),
+                text: ButtonTextGenerator::LangStr(&LanguageString::const_string("hello")),
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
@@ -32,7 +32,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[second button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[second button right]")),
                 font_size: FontSize::Sz7,
-                text: &LanguageString::const_string("blue!"),
+                text: ButtonTextGenerator::LangStr(&LanguageString::const_string("blue!")),
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
@@ -41,7 +41,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Print("[third button left]")),
                 right: ButtonHandler::Generic(GenericHandler::Print("[third button right]")),
                 font_size: FontSize::Sz7,
-                text: &LanguageString::const_string("click me!"),
+                text: ButtonTextGenerator::LangStr(&LanguageString::const_string("click me!")),
             }),
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
@@ -200,11 +200,11 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::Button(
             &ButtonDefinition {
                 pos: Point::new(32, 140),
-                click: ButtonHandler::Generic(GenericHandler::ConnectWifi),
+                click: ButtonHandler::Generic(GenericHandler::ConnectDisconnectWifi),
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 font_size: FontSize::Sz12,
-                text: &TEXT_CONNECT,
+                text: ButtonTextGenerator::WifiConnectDisconnect,
             }),
     ],
     static_elements: &[
@@ -279,7 +279,7 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 font_size: FontSize::Sz12,
-                text: &TEXT_CONNECT,
+                text: ButtonTextGenerator::LangStr(&TEXT_CONNECT),
             }),
     ],
     static_elements: &[
@@ -407,6 +407,29 @@ pub const SCRIPT_BROWSER: ComponentMenuDefinition = ComponentMenuDefinition {
 
 pub const WGET_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionScroller(
+            &OptionScrollerDefinition{
+                pos: Point::new(0, 0),
+                click: OptionScrollerHandler::TransitionToMenu,
+                left: OptionScrollerHandler::PrevOption,
+                right: OptionScrollerHandler::NextOption,
+                num_visible_elements: 5,
+                width: 100,
+                font_size: FontSize::Sz12,
+                options: OptionsGenerator::Menus(&[
+                    (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::Wifi)),
+                    (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettings)),
+                    (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetails)),
+                ]),
+            }),
+    ],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),

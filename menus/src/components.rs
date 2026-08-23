@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler, ButtonTextGenerator};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::FontSize;
@@ -218,14 +218,14 @@ impl ButtonState {
 impl ComponentBehaviour for ButtonState {
     async fn draw(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         // println!("DRAWING COMPONENT [{}]", self.id);
-        let s = &mut h.screen;
         let f = &mut h.font;
         let settings = &PB_GLOBAL_SETTINGS.read().await;
         let theme = &settings.theme;
         f.fgcol = theme.fg();
         f.bgcol = theme.bg();
         f.font.borrow_mut().set_size(self.definition.font_size).unwrap();
-        let button_text = Text::with_alignment(self.definition.text[settings.lang], self.definition.pos, &h.font, Alignment::Left);
+        let label = self.definition.text.generate(&settings.lang, h).await?;
+        let button_text = Text::with_alignment(&label, self.definition.pos, &h.font, Alignment::Left);
         let text_bb = button_text.bounding_box();
         let backing_rectangle = RoundedRectangle::with_equal_corners(
             // Rectangle::new(self.definition.pos, bounding_box_size + Size::new(BUTTON_BORDER_SIZE, BUTTON_BORDER_SIZE)),
@@ -238,8 +238,8 @@ impl ComponentBehaviour for ButtonState {
             } else {
                 Self::graphic_style(theme)
             }
-        ).draw(s)?;
-        button_text.draw(s)?;
+        ).draw(&mut h.screen)?;
+        button_text.draw(&mut h.screen)?;
         Ok(())
     }
 
@@ -262,7 +262,7 @@ pub struct ButtonDefinition {
     pub left: ButtonHandler,
     pub right: ButtonHandler,
     pub font_size: FontSize,
-    pub text: &'static LanguageString,
+    pub text: ButtonTextGenerator,
 }
 
 impl RunHandlers for ButtonState {
@@ -1342,7 +1342,7 @@ impl ColorSelectorState {
         left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
         right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
         font_size: FontSize::Sz12,
-        text: &TEXT_OK,
+        text: ButtonTextGenerator::LangStr(&TEXT_OK),
     };
 
     // const RECT_R: Rectangle = Rectangle::new(Point::new(19, Self::SLIDERS_TOP), Size::new(30, Self::SLIDERS_HEIGHT));
