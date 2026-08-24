@@ -582,7 +582,12 @@ impl ComponentBehaviour for OptionScrollerState {
         };
     }
 
-    fn reset_draw_flags(&mut self) { }
+    fn reset_draw_flags(&mut self) {
+        // we will take advantage of the fact that submenu components (e.g. rgb selector/text
+        // field) never appear on the same menu as this generator to reload the contents if the
+        // screen is redrawn forcibly.
+        self.generated_options.replace(None);
+    }
 }
 // }}}
 // TEXT BOX {{{

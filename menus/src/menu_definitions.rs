@@ -173,13 +173,13 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
         StaticElement::Text(
             NEXT_BUTTON_POINT,
             FontSize::Sz7,
-            &TEXT_NEXT,
+            &TEXT_REFRESH,
             ThemedColor::Fg,
             Alignment::Right,
         ),
     ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
-    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::ForceRedrawAndUnfocus)),
 };
 
 pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
