@@ -99,6 +99,7 @@ impl ComponentDefinition {
                 page_start: 0,
                 redraw_scrollbar: true,
                 generated_options: RefCell::new(None),
+                mode: if start_focused { OptionScrollerMode::Selected } else { OptionScrollerMode::Unhighlighted }
             }),
             Self::TextBox(definition) => ComponentState::TextBox(TextBoxState {
                 definition,
@@ -407,12 +408,20 @@ impl ComponentBehaviour for OptionSwitchState {
 }
 // }}}
 // OPTION SCROLLER {{{
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum OptionScrollerMode {
+    Unhighlighted,
+    Highlighted,
+    Selected,
+}
+
 pub struct OptionScrollerState {
     pub definition: &'static OptionScrollerDefinition,
     pub selection: usize,
     pub page_start: usize,
     pub redraw_scrollbar: bool,
     pub generated_options: RefCell<Option<Rc<Vec<Cow<'static, str>>>>>,
+    pub mode: OptionScrollerMode,
 }
 
 pub struct OptionScrollerDefinition {
@@ -436,7 +445,12 @@ impl RunHandlers for OptionScrollerState {
     }
 
     async fn click_handle(&mut self, menu_state: &mut MenuInternalState, h: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
-        self.definition.click.handle(self, menu_state, h).await
+        if self.mode == OptionScrollerMode::Selected {
+            self.definition.click.handle(self, menu_state, h).await
+        } else {
+            self.mode = OptionScrollerMode::Selected;
+            Ok(HandlerResult::None)
+        }
     }
 }
 
@@ -460,6 +474,21 @@ impl OptionScrollerState {
     const fn pill_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
             .fill_color(theme.fg().as_rgb565())
+            .build()
+    }
+
+    const fn unhighlighted_outline_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_color(theme.fg().as_rgb565())
+            .stroke_width(1)
+            .build()
+    }
+
+
+    const fn highlighted_outline_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
+        PrimitiveStyleBuilder::new()
+            .stroke_color(theme.highlight().as_rgb565())
+            .stroke_width(2)
             .build()
     }
 
@@ -495,10 +524,9 @@ impl ComponentBehaviour for OptionScrollerState {
             }
             ).draw(&mut h.screen)?;
 
-            f.fgcol = if option_index == self.selection {
-                theme.highlight()
-            } else {
-                theme.fg()
+            f.fgcol = match (option_index == self.selection, &self.mode) {
+                (true, OptionScrollerMode::Selected) => theme.highlight(),
+                _ => theme.fg(),
             };
 
             f.bgcol = if option_index % 2 == 0 {
@@ -508,6 +536,16 @@ impl ComponentBehaviour for OptionScrollerState {
             };
             let option_text = Text::with_alignment(&options[option_index], rect_pos + Point::new(0, Self::OPTION_HEIGHT - Self::TEXT_OFFSET), &*f, Alignment::Left);
             option_text.draw(&mut h.screen)?;
+        }
+
+        match self.mode {
+            OptionScrollerMode::Unhighlighted => {
+                Rectangle::new(self.definition.pos, Size::new(self.definition.width, Self::OPTION_HEIGHT as u32 * self.definition.num_visible_elements as u32)).into_styled(Self::unhighlighted_outline_style(theme)).draw(&mut h.screen)?;
+            },
+            OptionScrollerMode::Highlighted => {
+                Rectangle::new(self.definition.pos, Size::new(self.definition.width, Self::OPTION_HEIGHT as u32 * self.definition.num_visible_elements as u32)).into_styled(Self::highlighted_outline_style(theme)).draw(&mut h.screen)?;
+            },
+            OptionScrollerMode::Selected => {}
         }
 
         if self.redraw_scrollbar && (self.definition.num_visible_elements < options.len()) {
@@ -528,9 +566,21 @@ impl ComponentBehaviour for OptionScrollerState {
         Ok(())
     }
 
-    fn highlight(&mut self) { }
+    fn highlight(&mut self) {
+        self.mode = match self.mode {
+            OptionScrollerMode::Unhighlighted => OptionScrollerMode::Highlighted,
+            OptionScrollerMode::Highlighted => OptionScrollerMode::Highlighted,
+            OptionScrollerMode::Selected => OptionScrollerMode::Selected,
+        };
+    }
 
-    fn unhighlight(&mut self) { }
+    fn unhighlight(&mut self) {
+        self.mode = match self.mode {
+            OptionScrollerMode::Unhighlighted => OptionScrollerMode::Unhighlighted,
+            OptionScrollerMode::Highlighted => OptionScrollerMode::Unhighlighted,
+            OptionScrollerMode::Selected => OptionScrollerMode::Selected,
+        };
+    }
 
     fn reset_draw_flags(&mut self) { }
 }

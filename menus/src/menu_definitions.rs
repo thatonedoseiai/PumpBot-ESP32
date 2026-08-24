@@ -145,6 +145,15 @@ pub const WIFI: ComponentMenuDefinition = ComponentMenuDefinition {
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::WifiGenerator,
             }),
+        // ComponentDefinition::Button(
+        //     &ButtonDefinition {
+        //         pos: Point::new(0, 140),
+        //         click: ButtonHandler::Generic(GenericHandler::ConnectDisconnectWifi),
+        //         left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+        //         right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+        //         font_size: FontSize::Sz12,
+        //         text: ButtonTextGenerator::LangStr(&TEXT_REFRESH),
+        //     }),
     ],
     static_elements: &[
         StaticElement::Text(

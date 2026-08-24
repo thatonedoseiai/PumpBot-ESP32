@@ -2,7 +2,7 @@ use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, Compon
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT}, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
+use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT, TEXT_CUSTOM}, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -447,8 +447,11 @@ impl OptionsGenerator {
         match self {
             Self::Const(s) => Ok(s.iter().map(|f| Cow::Borrowed(*f)).collect()),
             Self::WifiGenerator => {
+                let lang = {PB_GLOBAL_SETTINGS.read().await.lang};
                 h.wifi.scan().await?;
-                Ok(h.wifi.get_wifis().iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect())
+                let mut list: Vec<Cow<'static, str>> = h.wifi.get_wifis().iter().map(|f| Cow::Owned(f.ssid.as_str().to_string())).collect();
+                list.push(Cow::Owned(String::from("<") + TEXT_CUSTOM[lang] + ">"));
+                Ok(list)
             },
             Self::Menus(s) => {
                 let lang = {&PB_GLOBAL_SETTINGS.read().await.lang};

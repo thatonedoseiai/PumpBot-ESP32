@@ -1543,5 +1543,5 @@ pub const TEXT_REFRESH: LanguageString = LanguageString {
     zh: "再找网路",
     cn: "再搵網絡",
     ru: "обновить сети",
-    de: "",
+    de: "Refresh",
 };

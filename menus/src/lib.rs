@@ -296,9 +296,16 @@ impl ComponentMenu {
             Self::ComponentTesting => MenuInternalState::ComponentTesting { },
             Self::Lang => MenuInternalState::Lang { language: settings.lang.into() },
             Self::Wifi => MenuInternalState::Wifi,
-            Self::WifiDetails(a) => MenuInternalState::WifiDetails { 
-                ap: h.wifi.get_wifis()[a].clone(),
-                pass: RefCell::new(String::new())
+            Self::WifiDetails(a) => {
+                let ap = if a < h.wifi.get_wifis().len() {
+                    h.wifi.get_wifis()[a].clone()
+                } else {
+                    AccessPointInfo::default()
+                };
+                MenuInternalState::WifiDetails { 
+                    ap,
+                    pass: RefCell::new(String::new())
+                }
             },
             Self::ServerDetails => MenuInternalState::ServerDetails {
                 ip: h.server.server_ip,
