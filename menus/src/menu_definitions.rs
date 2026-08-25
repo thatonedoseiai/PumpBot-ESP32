@@ -1,6 +1,6 @@
 use crate::{ComponentMenuDefinition, ComponentDefinition, GenericHandler, Menu, ComponentMenu, MenuHandler, CustomMenu};
 use crate::components::{ButtonDefinition, OptionSwitchDefinition, OptionScrollerDefinition, TextBoxDefinition, ValueSelectorDefinition, ColorSelectorDefinition};
-use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, ColorSubmitHandler, ButtonTextGenerator};
+use crate::handlers::{HandlerResult, OptionSwitchHandler, ButtonHandler, OptionScrollerHandler, OptionsGenerator, MenuInternalStateAction, TextGetterSetter, TextSubmitHandler, InitialValueGenerator, ValueSelectorHandler, ColorGetter, ColorSubmitHandler, ButtonTextGenerator, OptionSwitchInitialOptionGenerator};
 use embedded_graphics::{
     prelude::*,
     text::Alignment,
@@ -10,6 +10,7 @@ use fontfile::FontSize;
 use global_settings::{lang::*, ThemedColor};
 use crate::static_element::StaticElement;
 use alloc::borrow::Cow;
+use esp_radio::wifi::AuthenticationMethod;
 
 const BACK_BUTTON_POINT: Point = Point::new(10, 150);
 const NEXT_BUTTON_POINT: Point = Point::new(118, 150);
@@ -50,6 +51,7 @@ pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
                 font_size: FontSize::Sz12,
+                initial_option: OptionSwitchInitialOptionGenerator::Const(0),
                 options: &[
                     LanguageString::const_string("first"),
                     LanguageString::const_string("second"),
@@ -91,6 +93,7 @@ pub const LANG: ComponentMenuDefinition = ComponentMenuDefinition {
                 click: OptionSwitchHandler::Generic(GenericHandler::SetLanguageAndTransition(Menu::CustomMenu(CustomMenu::SetupMethod))),
                 left: OptionSwitchHandler::PrevElementUpdateLang,
                 right: OptionSwitchHandler::NextElementUpdateLang,
+                initial_option: OptionSwitchInitialOptionGenerator::Const(0),
                 font_size: FontSize::Sz12,
                 options: &[
                     LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::En)),
@@ -206,13 +209,59 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
                 initial_text: TextGetterSetter::WifiMenuPassword,
                 on_submit: TextSubmitHandler::SetWifiPassword,
             }),
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 120),
+                click: OptionSwitchHandler::ToggleFocus,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                initial_option: OptionSwitchInitialOptionGenerator::WifiAuthMethod(&[
+                    AuthenticationMethod::None,
+                    AuthenticationMethod::Wep,
+                    AuthenticationMethod::Wpa,
+                    AuthenticationMethod::Wpa2Personal,
+                    AuthenticationMethod::WpaWpa2Personal,
+                    AuthenticationMethod::Wpa2Enterprise,
+                    AuthenticationMethod::Wpa3Personal,
+                    AuthenticationMethod::Wpa2Wpa3Personal,
+                    AuthenticationMethod::WapiPersonal,
+                    AuthenticationMethod::Owe,
+                    AuthenticationMethod::Wpa3EntSuiteB192Bit,
+                    AuthenticationMethod::Wpa3ExtPsk,
+                    AuthenticationMethod::Wpa3ExtPskMixed,
+                    AuthenticationMethod::Dpp,
+                    AuthenticationMethod::Wpa3Enterprise,
+                    AuthenticationMethod::Wpa2Wpa3Enterprise,
+                    AuthenticationMethod::WpaEnterprise,
+                ]),
+                font_size: FontSize::Sz7,
+                options: &[
+                    LanguageString::const_string("None"),
+                    LanguageString::const_string("Wep"),
+                    LanguageString::const_string("Wpa"),
+                    LanguageString::const_string("Wpa2Personal"),
+                    LanguageString::const_string("WpaWpa2Personal"),
+                    LanguageString::const_string("Wpa2Enterprise"),
+                    LanguageString::const_string("Wpa3Personal"),
+                    LanguageString::const_string("Wpa2Wpa3Personal"),
+                    LanguageString::const_string("WapiPersonal"),
+                    LanguageString::const_string("Owe"),
+                    LanguageString::const_string("Wpa3EntSuiteB192Bit"),
+                    LanguageString::const_string("Wpa3ExtPsk"),
+                    LanguageString::const_string("Wpa3ExtPskMixed"),
+                    LanguageString::const_string("Dpp"),
+                    LanguageString::const_string("Wpa3Enterprise"),
+                    LanguageString::const_string("Wpa2Wpa3Enterprise"),
+                    LanguageString::const_string("WpaEnterprise"),
+                ],
+            }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(32, 140),
+                pos: Point::new(46, 140),
                 click: ButtonHandler::Generic(GenericHandler::ConnectDisconnectWifi),
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
-                font_size: FontSize::Sz12,
+                font_size: FontSize::Sz7,
                 text: ButtonTextGenerator::WifiConnectDisconnect,
             }),
     ],
@@ -283,11 +332,11 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::Button(
             &ButtonDefinition {
-                pos: Point::new(32, 140),
+                pos: Point::new(46, 140),
                 click: ButtonHandler::Generic(GenericHandler::ConnectServer),
                 left: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
                 right: ButtonHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
-                font_size: FontSize::Sz12,
+                font_size: FontSize::Sz7,
                 text: ButtonTextGenerator::LangStr(&TEXT_CONNECT),
             }),
     ],
@@ -340,6 +389,7 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
                 click: OptionSwitchHandler::ToggleFocusAndSetTheme,
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
+                initial_option: OptionSwitchInitialOptionGenerator::Const(0),
                 font_size: FontSize::Sz12,
                 options: &[
                     TEXT_DARK_MODE,

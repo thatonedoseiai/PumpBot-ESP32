@@ -1,4 +1,4 @@
-use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler, ButtonTextGenerator};
+use crate::handlers::{HandlerResult, ButtonHandler, Handler, OptionSwitchHandler, OptionScrollerHandler, OptionSwitchInitialOptionGenerator, OptionsGenerator, TextGetterSetter, TextSubmitHandler, ValueSelectorHandler, InitialValueGenerator, ColorGetter, SliderBackgroundDrawing, SliderValueGetter, GenericHandler, ColorSubmitHandler, ButtonTextGenerator};
 use crate::{IOHandles, MenuInternalState, ComponentMenuDefinition};
 use crate::screen::screen::{Screen, ScreenDrawError};
 use fontfile::FontSize;
@@ -89,7 +89,7 @@ impl ComponentDefinition {
             Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 
                 definition, 
                 mode: if start_focused { OptionSwitchMode::Selected } else { OptionSwitchMode::Unhighlighted },
-                selection: 0, 
+                selection: definition.initial_option.generate(internal_state, h), 
                 text_undraw: None,
                 cursor_undraws: None,
             }),
@@ -302,6 +302,7 @@ pub struct OptionSwitchDefinition {
     pub left: OptionSwitchHandler,
     pub right: OptionSwitchHandler,
     pub font_size: FontSize,
+    pub initial_option: OptionSwitchInitialOptionGenerator,
     pub options: &'static [LanguageString],
 }
 
@@ -587,6 +588,7 @@ impl ComponentBehaviour for OptionScrollerState {
         // field) never appear on the same menu as this generator to reload the contents if the
         // screen is redrawn forcibly.
         self.generated_options.replace(None);
+        self.selection = 0;
     }
 }
 // }}}

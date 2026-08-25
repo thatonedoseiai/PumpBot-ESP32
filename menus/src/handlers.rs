@@ -13,6 +13,7 @@ use embedded_graphics::{
     primitives::{Rectangle, PrimitiveStyle}
 };
 use alloc::format;
+use esp_radio::wifi::AuthenticationMethod;
 
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerError {
@@ -384,6 +385,27 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
                 }
                 Ok(HandlerResult::None)
             },
+        }
+    }
+}
+// }}}
+// OPTION SWITCH INITIAL OPTION GENERATOR {{{
+pub enum OptionSwitchInitialOptionGenerator {
+    Const(usize),
+    WifiAuthMethod(&'static [AuthenticationMethod]),
+}
+
+impl OptionSwitchInitialOptionGenerator {
+    pub fn generate(&self, menu_state: &MenuInternalState, h: &mut IOHandles<'_>) -> usize {
+        match self {
+            Self::Const(u) => *u,
+            Self::WifiAuthMethod(t) => {
+                if let MenuInternalState::WifiDetails { ap, .. } = menu_state {
+                    t.iter().enumerate().filter(|(i, f)| Some(**f) == ap.auth_method).next().map(|a| a.0).unwrap_or(0)
+                } else {
+                    panic!("bad use of WifiAuthMethod initial generator!");
+                }
+            }
         }
     }
 }

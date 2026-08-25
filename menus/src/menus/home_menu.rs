@@ -143,8 +143,8 @@ impl HomeMenu {
         self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
 
-        let ip = h.wifi.wget("http://ifconfig.me").await.unwrap();
-        log::error!("my ip! {}", ip);
+        // let ip = h.wifi.wget("http://ifconfig.me").await.unwrap();
+        // log::error!("my ip! {}", ip);
 
         loop {
             let result = select4(
