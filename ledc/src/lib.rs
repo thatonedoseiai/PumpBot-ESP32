@@ -20,7 +20,7 @@ use embassy_time::{Timer as ETimer, Duration as EDuration};
 type RwLock<T> = embassy_sync::rwlock::RwLock<CriticalSectionRawMutex, T>;
 
 /// Represents an operating mode of the LED cycling engine.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LedMode {
     Solid(RGB),
     Fade(RGB, RGB),
@@ -89,8 +89,9 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
 
     loop {
         let current = STATE.get().await.clone();
-        
-        let (r, g, b) = match current.read().await.mode {
+        let mode = {current.read().await.mode};
+
+        let (r, g, b) = match mode {
             LedMode::Off => (0, 0, 0),
             LedMode::Solid(color) => (color.r, color.g, color.b),
             // LedMode::Solid(color) => (255, 0, 0),
@@ -124,13 +125,14 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
         };
 
         {
-            let brightness = current.read().await.brightness;
+            let brightness = {current.read().await.brightness};
             p.channel_r.set_duty_cycle(apply(r, brightness)).unwrap();
             p.channel_g.set_duty_cycle(apply(g, brightness)).unwrap();
             p.channel_b.set_duty_cycle(apply(b, brightness)).unwrap();
         }
+        let speed = {current.read().await.speed_ms};
 
-        ETimer::after(EDuration::from_millis(current.read().await.speed_ms)).await;
+        ETimer::after(EDuration::from_millis(speed)).await;
     }
 }
 
@@ -159,21 +161,32 @@ impl LedController {
 
     // TODO: add the errors or make it async
     /// Sets the current operating mode of the LED driver to `mode`.
-    pub fn update_mode(&self, mode: LedMode) {
-        let mut s = self.state.try_write().unwrap();
+    pub async fn set_mode(&self, mode: LedMode) {
+        let mut s = self.state.write().await;
         s.mode = mode;
     }
 
     /// Sets the current brightness of the LEDs to `brightness`. 0 < `brightness` < 255
-    pub fn set_brightness(&self, brightness: u8) {
-        let mut s = self.state.try_write().unwrap();
+    pub async fn set_brightness(&self, brightness: u8) {
+        // log::info!("LED STATE LOCKED");
+        let mut s = self.state.write().await;
         s.brightness = brightness;
+        // log::info!("LED STATE UNLOCKED");
     }
 
     /// Sets the period between updates to `speed_ms` milliseconds.
-    pub fn set_speed(&self, speed_ms: u64) {
-        let mut s = self.state.try_write().unwrap();
+    pub async fn set_speed(&self, speed_ms: u64) {
+        // log::info!("LED STATE LOCKED");
+        let mut s = self.state.write().await;
         s.speed_ms = speed_ms;
+        // log::info!("LED STATE UNLOCKED");
+    }
+
+    pub async fn get_mode(&self) -> LedMode {
+        // log::info!("LED STATE LOCKED");
+        let k = self.state.read().await.mode;
+        // log::info!("LED STATE UNLOCKED");
+        k
     }
 }
 

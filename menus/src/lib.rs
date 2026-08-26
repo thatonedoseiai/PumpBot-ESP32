@@ -32,7 +32,9 @@ use crate::menu_definitions::{
     WIFI,
     WIFI_DETAILS,
     SERVER_DETAILS,
-    DISPLAY_SETTINGS
+    DISPLAY_SETTINGS,
+    SETTINGS_MENU,
+    RGB_MENU,
 };
 use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
@@ -96,7 +98,12 @@ use esp_hal::ledc::{
     }, 
     LowSpeed
 };
+use ledc::LedMode;
 use enum_dispatch::enum_dispatch;
+use futures_util::stream::{
+    iter,
+    StreamExt
+};
 
 use core::cell::RefCell;
 use core::ops::Deref;
@@ -210,6 +217,12 @@ enum MenuInternalState {
     DisplaySettings {
         theme_custom_col: RGB,
     },
+    Settings,
+    RgbMenu {
+        mode: LedMode,
+        primary_col: RGB,
+        secondary_col: RGB,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -220,6 +233,8 @@ pub enum ComponentMenu {
     WifiDetails(usize),
     ServerDetails,
     DisplaySettings,
+    Settings,
+    RgbMenu,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -271,6 +286,8 @@ impl ComponentMenu {
             Self::WifiDetails(_) => &WIFI_DETAILS,
             Self::ServerDetails => &SERVER_DETAILS,
             Self::DisplaySettings => &DISPLAY_SETTINGS,
+            Self::Settings => &SETTINGS_MENU,
+            Self::RgbMenu => &RGB_MENU,
         }
     }
 
@@ -314,6 +331,12 @@ impl ComponentMenu {
             Self::DisplaySettings => MenuInternalState::DisplaySettings {
                 theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
             },
+            Self::Settings => MenuInternalState::Settings,
+            Self::RgbMenu => MenuInternalState::RgbMenu {
+                mode: LedMode::Off,
+                primary_col: rgb![128],
+                secondary_col: rgb![128],
+            },
         }
     }
 }
@@ -322,13 +345,13 @@ impl MenuStateBehaviour for ComponentMenu {
     async fn run(self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
         let num_components = self.definition().components.len();
         let mut internal_state = self.initial_state(h, &PB_GLOBAL_SETTINGS.read().await.deref());
+        let mut component_states = Vec::new();
+        for component in self.definition().components.into_iter() {
+            component_states.push(component.construct(num_components == 1, self.definition(), &internal_state, h).await);
+        }
         let mut cur_menu_state = ComponentMenuInAction {
             layout: self.definition(),
-            component_states: self.definition()
-                                      .components
-                                      .into_iter()
-                                      .map(|f| f.construct(num_components == 1, self.definition(), &internal_state, h))
-                                      .collect(),
+            component_states,
             selected_component: 0,
             mode: if num_components > 1 { ComponentMenuMode::Browse } else { ComponentMenuMode::Edit },
         };

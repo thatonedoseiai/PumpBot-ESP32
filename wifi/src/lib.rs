@@ -118,11 +118,12 @@ impl<'a> PbWifi<'a> {
 
     pub async fn disconnect(&mut self) -> Result<(), WifiError> {
         self.wifi_mod.disconnect_async().await?;
+        self.connected_info = None;
         Ok(())
     }
 
     pub fn is_connected(&self) -> bool {
-        self.wifi_mod.is_connected()
+        self.connected_info.is_some()
     }
 
     pub fn get_wifis(&self) -> Ref<'_, Vec<AccessPointInfo>> {

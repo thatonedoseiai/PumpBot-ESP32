@@ -83,7 +83,7 @@ impl ComponentState {
 }
 
 impl ComponentDefinition {
-    pub fn construct(&self, start_focused: bool, menu_definition: &ComponentMenuDefinition, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> ComponentState {
+    pub async fn construct(&self, start_focused: bool, menu_definition: &ComponentMenuDefinition, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> ComponentState {
         match self {
             Self::Button(definition) => ComponentState::Button(ButtonState { definition, highlighted: false }),
             Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 

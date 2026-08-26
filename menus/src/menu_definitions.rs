@@ -7,7 +7,7 @@ use embedded_graphics::{
     primitives::rectangle::Rectangle,
 };
 use fontfile::FontSize;
-use global_settings::{lang::*, ThemedColor};
+use global_settings::{lang::*, ThemedColor, rgb, rgb::RGB};
 use crate::static_element::StaticElement;
 use alloc::borrow::Cow;
 use esp_radio::wifi::AuthenticationMethod;
@@ -480,12 +480,13 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 left: OptionScrollerHandler::PrevOption,
                 right: OptionScrollerHandler::NextOption,
                 num_visible_elements: 5,
-                width: 100,
+                width: 128,
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::Menus(&[
                     (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::Wifi)),
                     (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettings)),
                     (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetails)),
+                    (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
                 ]),
             }),
     ],
@@ -493,3 +494,40 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
 };
+
+pub const RGB_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(20, 40),
+                click: OptionSwitchHandler::ToggleFocusAndSetRGB,
+                left: OptionSwitchHandler::PrevElement,
+                right: OptionSwitchHandler::NextElement,
+                font_size: FontSize::Sz12,
+                initial_option: OptionSwitchInitialOptionGenerator::RGBMode,
+                options: &[
+                    LanguageString::const_string("Off"),
+                    LanguageString::const_string("Solid"),
+                    LanguageString::const_string("Fade"),
+                    LanguageString::const_string("Rainbow"),
+                ],
+            }),
+        ComponentDefinition::ColorSelector(
+            &ColorSelectorDefinition {
+                preview_rect: Rectangle::new(Point::new(64-15, 70), Size::new(30, 30)),
+                initial_color: ColorGetter::LedSecondaryColor,
+                on_submit: ColorSubmitHandler::SetLedPrimaryColor,
+            }),
+        ComponentDefinition::ColorSelector(
+            &ColorSelectorDefinition {
+                preview_rect: Rectangle::new(Point::new(64-15, 110), Size::new(30, 30)),
+                initial_color: ColorGetter::LedSecondaryColor,
+                on_submit: ColorSubmitHandler::SetLedSecondaryColor,
+            }),
+    ],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+// TODO: might want to make a done signal somehow

@@ -2,7 +2,7 @@ use crate::components::{ButtonState, OptionSwitchState, OptionSwitchMode, Compon
 use crate::{ComponentMenu, ComponentMenuInAction, Menu, IOHandles, MenuInternalState, ComponentMenuDefinition};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
-use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT, TEXT_CUSTOM}, PB_GLOBAL_SETTINGS, rgb::RGB, Theme};
+use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT, TEXT_CUSTOM}, PB_GLOBAL_SETTINGS, rgb::RGB, rgb, Theme};
 use alloc::string::{ToString, String};
 use esp_radio::wifi::{Ssid, WifiError};
 use core::str::FromStr;
@@ -14,6 +14,8 @@ use embedded_graphics::{
 };
 use alloc::format;
 use esp_radio::wifi::AuthenticationMethod;
+use ledc::LedMode;
+use embassy_futures::block_on;
 
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerError {
@@ -158,6 +160,7 @@ pub enum OptionSwitchHandler {
     ToggleFocus,
     PrintSelection,
     ToggleFocusAndSetTheme,
+    ToggleFocusAndSetRGB,
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
@@ -242,7 +245,39 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 } else {
                     Ok(HandlerResult::None)
                 }
-            }
+            },
+            Self::ToggleFocusAndSetRGB => {
+                let old_state_mode = state.mode;
+                state.mode = match state.mode {
+                    OptionSwitchMode::Unhighlighted => OptionSwitchMode::Unhighlighted,
+                    OptionSwitchMode::Highlighted => OptionSwitchMode::Selected,
+                    OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
+                };
+                log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
+                state.draw(h).await?;
+                if let MenuInternalState::RgbMenu { mode, primary_col, secondary_col } = menu_state {
+                    if state.mode == OptionSwitchMode::Highlighted {
+                        *mode = match state.selection {
+                            1 => LedMode::Solid(rgb![0]),
+                            2 => LedMode::Fade(rgb![0], rgb![0]),
+                            3 => LedMode::Rainbow,
+                            _ => LedMode::Off,
+                        };
+                        let new_mode = match mode {
+                            LedMode::Off => LedMode::Off,
+                            LedMode::Solid(_) => LedMode::Solid(*primary_col),
+                            LedMode::Fade(_, _) => LedMode::Fade(*primary_col, *secondary_col),
+                            LedMode::Rainbow => LedMode::Rainbow,
+                        };
+                        h.leddriver.set_mode(new_mode).await;
+                        Ok(HandlerResult::Unfocus)
+                    } else {
+                        Ok(HandlerResult::None)
+                    }
+                } else {
+                    panic!("bad use of ToggleFocusAndSetRGB option switch action!")
+                }
+            },
         }
     }
 }
@@ -393,6 +428,7 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
 pub enum OptionSwitchInitialOptionGenerator {
     Const(usize),
     WifiAuthMethod(&'static [AuthenticationMethod]),
+    RGBMode,
 }
 
 impl OptionSwitchInitialOptionGenerator {
@@ -405,7 +441,19 @@ impl OptionSwitchInitialOptionGenerator {
                 } else {
                     panic!("bad use of WifiAuthMethod initial generator!");
                 }
-            }
+            },
+            Self::RGBMode => {
+                if let MenuInternalState::RgbMenu { mode, .. } = menu_state {
+                    match mode {
+                        LedMode::Off => 0,
+                        LedMode::Solid(_) => 1,
+                        LedMode::Fade(_, _) => 2,
+                        LedMode::Rainbow => 3,
+                    }
+                } else {
+                    panic!("bad use of RGBMode initial generator!");
+                }
+            },
         }
     }
 }
@@ -591,11 +639,13 @@ impl SliderValueGetter {
 // COLOR GETTER {{{
 pub enum ColorGetter {
     Const(RGB),
-    ThemeMenuCustomColor
+    ThemeMenuCustomColor,
+    LedPrimaryColor,
+    LedSecondaryColor,
 }
 
 impl ColorGetter {
-    pub fn get(&self, internal_state: &MenuInternalState, _: &mut IOHandles<'_>) -> RGB {
+    pub fn get(&self, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> RGB {
         match self {
             Self::Const(r) => *r,
             Self::ThemeMenuCustomColor => {
@@ -604,6 +654,21 @@ impl ColorGetter {
                         *theme_custom_col
                     }
                     _ => panic!("bad ColorGetter::ThemeMenuCustomColor placement!")
+                }
+            },
+            Self::LedPrimaryColor => {
+                let mode = block_on(h.leddriver.get_mode());
+                match mode {
+                    LedMode::Solid(a) => a,
+                    LedMode::Fade(a, _) => a,
+                    _ => rgb![128],
+                }
+            },
+            Self::LedSecondaryColor => {
+                let mode = block_on(h.leddriver.get_mode());
+                match mode {
+                    LedMode::Fade(_, b) => b,
+                    _ => rgb![128],
                 }
             }
         }
@@ -614,6 +679,8 @@ impl ColorGetter {
 pub enum ColorSubmitHandler {
     Generic(GenericHandler),
     SetThemeMenuColor,
+    SetLedPrimaryColor,
+    SetLedSecondaryColor,
 }
 
 impl Handler<ColorSelectorState> for ColorSubmitHandler {
@@ -632,6 +699,34 @@ impl Handler<ColorSelectorState> for ColorSubmitHandler {
                     _ => panic!("bad ColorSelectorState::SetThemeMenuHandler handler placement!!"),
                 }
                 Ok(HandlerResult::None)
+            },
+            Self::SetLedPrimaryColor => {
+                if let MenuInternalState::RgbMenu { mode, primary_col, secondary_col } = menu_state {
+                    *primary_col = state.current_color;
+                    match mode {
+                        LedMode::Off => {},
+                        LedMode::Rainbow => {},
+                        LedMode::Solid(_) => { h.leddriver.set_mode(LedMode::Solid(state.current_color)); },
+                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(state.current_color, *secondary_col)); }
+                    }
+                    Ok(HandlerResult::None)
+                } else {
+                    panic!("bad use of SetLedPrimaryColor handler!");
+                }
+            },
+            Self::SetLedSecondaryColor => {
+                if let MenuInternalState::RgbMenu { mode, primary_col, secondary_col } = menu_state {
+                    *secondary_col = state.current_color;
+                    match mode {
+                        LedMode::Off => {},
+                        LedMode::Rainbow => {},
+                        LedMode::Solid(_) => {},
+                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(*primary_col, state.current_color)); }
+                    }
+                    Ok(HandlerResult::None)
+                } else {
+                    panic!("bad use of SetLedSecondaryColor handler!");
+                }
             }
         }
     }

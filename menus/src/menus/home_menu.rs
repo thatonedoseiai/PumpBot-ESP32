@@ -1,4 +1,4 @@
-use crate::{MenuSignal, IOHandles};
+use crate::{MenuSignal, IOHandles, ComponentMenu, Menu};
 use fontfile::FontSize;
 use embedded_graphics::{
     prelude::*,
@@ -164,7 +164,8 @@ impl HomeMenu {
                     match (&b.button_type, &b.event) {
                         (ButtonType::Right, ButtonEventKind::Down) => {
                             // transition to settings menu
-                            todo!("transition to settings menu")
+                            // todo!("transition to settings menu")
+                            return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Settings)));
                         },
                         (ButtonType::Left, ButtonEventKind::Down) => {
                             h.pwm_output.send_await(Command::new(

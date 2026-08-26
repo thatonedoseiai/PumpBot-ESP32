@@ -273,7 +273,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         lstimer0,
     ).map_err(|e| PbError::LedcError(e))?;
     let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off);
-    leddriver.set_brightness(128);
+    leddriver.set_brightness(128).await;
     let outputperipherals = Pwm::new(
         &spawner, 
         [
