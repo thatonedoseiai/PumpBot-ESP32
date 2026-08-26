@@ -230,16 +230,20 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
                 state.draw(h).await?;
                 if state.mode == OptionSwitchMode::Highlighted {
-                    if let MenuInternalState::DisplaySettings { theme_custom_col, .. } = menu_state {
-                        let mut settings = PB_GLOBAL_SETTINGS.write().await;
-                        settings.theme = match state.selection {
-                            0 => Theme::Dark,
-                            1 => Theme::Light,
-                            2 => Theme::Custom(*theme_custom_col),
-                            _ => unreachable!()
-                        }
-                        // settings.theme = Self::THEMES[self.selection]; // TODO:
-                        // todo!();
+                    match menu_state {
+                        MenuInternalState::DisplaySettings { theme_custom_col, .. } | MenuInternalState::DisplaySettingsSettingsMenu { theme_custom_col, .. } => {
+
+                            let mut settings = PB_GLOBAL_SETTINGS.write().await;
+                            settings.theme = match state.selection {
+                                0 => Theme::Dark,
+                                1 => Theme::Light,
+                                2 => Theme::Custom(*theme_custom_col),
+                                _ => unreachable!()
+                            }
+                            // settings.theme = Self::THEMES[self.selection]; // TODO:
+                            // todo!();
+                        },
+                        _ => {}
                     }
                     Ok(HandlerResult::ForceRedrawAndUnfocus)
                 } else {
@@ -670,7 +674,7 @@ impl ColorGetter {
             Self::Const(r) => *r,
             Self::ThemeMenuCustomColor => {
                 match internal_state {
-                    MenuInternalState::DisplaySettings { theme_custom_col, .. } => {
+                    MenuInternalState::DisplaySettings { theme_custom_col, .. } | MenuInternalState::DisplaySettingsSettingsMenu { theme_custom_col, .. } => {
                         *theme_custom_col
                     }
                     _ => panic!("bad ColorGetter::ThemeMenuCustomColor placement!")
@@ -709,7 +713,7 @@ impl Handler<ColorSelectorState> for ColorSubmitHandler {
             Self::Generic(g) => g.handle(&mut (), menu_state, h).await,
             Self::SetThemeMenuColor => {
                 match menu_state {
-                    MenuInternalState::DisplaySettings { theme_custom_col, .. } => {
+                    MenuInternalState::DisplaySettings { theme_custom_col, .. } | MenuInternalState::DisplaySettingsSettingsMenu { theme_custom_col, .. } => {
                         *theme_custom_col = state.current_color;
                         let settings = &mut PB_GLOBAL_SETTINGS.write().await;
                         if let Theme::Custom(_) = settings.theme {

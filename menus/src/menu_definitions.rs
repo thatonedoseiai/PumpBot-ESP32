@@ -381,7 +381,7 @@ pub const SERVER_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))),
 };
 
-pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
+pub const DISPLAY_SETTINGS_SETUP: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
@@ -484,7 +484,7 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::Menus(&[
                     (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::Wifi)),
-                    (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettings)),
+                    (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettingsSettingsMenu)),
                     (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetails)),
                     (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
                 ]),
@@ -540,6 +540,13 @@ pub const RGB_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: DISPLAY_SETTINGS_SETUP.components,
+    static_elements: &DISPLAY_SETTINGS_SETUP.static_elements[0..4],
+    left_btn: DISPLAY_SETTINGS_SETUP.left_btn,
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None))
 };
 
 // TODO: might want to make a done signal somehow

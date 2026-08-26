@@ -3,6 +3,8 @@
 
 #![no_std]
 #![no_main]
+#![feature(const_index)]
+#![feature(const_trait_impl)]
 
 extern crate alloc;
 
@@ -33,6 +35,7 @@ use crate::menu_definitions::{
     WIFI_DETAILS,
     SERVER_DETAILS,
     DISPLAY_SETTINGS,
+    DISPLAY_SETTINGS_SETUP,
     SETTINGS_MENU,
     RGB_MENU,
 };
@@ -223,6 +226,9 @@ enum MenuInternalState {
         primary_col: RGB,
         secondary_col: RGB,
     },
+    DisplaySettingsSettingsMenu {
+        theme_custom_col: RGB,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -235,6 +241,7 @@ pub enum ComponentMenu {
     DisplaySettings,
     Settings,
     RgbMenu,
+    DisplaySettingsSettingsMenu,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -285,9 +292,10 @@ impl ComponentMenu {
             Self::Wifi => &WIFI,
             Self::WifiDetails(_) => &WIFI_DETAILS,
             Self::ServerDetails => &SERVER_DETAILS,
-            Self::DisplaySettings => &DISPLAY_SETTINGS,
+            Self::DisplaySettings => &DISPLAY_SETTINGS_SETUP,
             Self::Settings => &SETTINGS_MENU,
             Self::RgbMenu => &RGB_MENU,
+            Self::DisplaySettingsSettingsMenu => &DISPLAY_SETTINGS,
         }
     }
 
@@ -336,6 +344,9 @@ impl ComponentMenu {
                 mode: LedMode::Off,
                 primary_col: rgb![128],
                 secondary_col: rgb![128],
+            },
+            Self::DisplaySettingsSettingsMenu => MenuInternalState::DisplaySettingsSettingsMenu {
+                theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
             },
         }
     }
