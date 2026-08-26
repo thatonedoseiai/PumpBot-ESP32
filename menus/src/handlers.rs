@@ -368,6 +368,8 @@ pub enum ValueSelectorHandler {
     Decrement(ValueSelectorNumType),
     IncrementBrightness,
     DecrementBrightness,
+    IncrementLedBrightness,
+    DecrementLedBrightness
 }
 
 
@@ -420,6 +422,22 @@ impl Handler<ValueSelectorState> for ValueSelectorHandler {
                 }
                 Ok(HandlerResult::None)
             },
+            Self::IncrementLedBrightness => {
+                if state.selection < state.definition.high_limit {
+                    state.selection = state.selection.saturating_add(1);
+                    h.leddriver.set_brightness(state.selection as u8).await;
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            },
+            Self::DecrementLedBrightness => {
+                if state.selection > state.definition.low_limit {
+                    state.selection = state.selection.saturating_sub(1);
+                    h.leddriver.set_brightness(state.selection as u8).await;
+                    state.draw(h).await?;
+                }
+                Ok(HandlerResult::None)
+            },
         }
     }
 }
@@ -432,7 +450,7 @@ pub enum OptionSwitchInitialOptionGenerator {
 }
 
 impl OptionSwitchInitialOptionGenerator {
-    pub fn generate(&self, menu_state: &MenuInternalState, h: &mut IOHandles<'_>) -> usize {
+    pub async fn generate(&self, menu_state: &MenuInternalState, h: &mut IOHandles<'_>) -> usize {
         match self {
             Self::Const(u) => *u,
             Self::WifiAuthMethod(t) => {
@@ -444,7 +462,7 @@ impl OptionSwitchInitialOptionGenerator {
             },
             Self::RGBMode => {
                 if let MenuInternalState::RgbMenu { mode, .. } = menu_state {
-                    match mode {
+                    match h.leddriver.get_mode().await {
                         LedMode::Off => 0,
                         LedMode::Solid(_) => 1,
                         LedMode::Fade(_, _) => 2,
@@ -612,13 +630,15 @@ impl Handler<TextBoxState> for TextSubmitHandler {
 pub enum InitialValueGenerator {
     Const(ValueSelectorNumType),
     BacklightBrightness,
+    LedBrightness,
 }
 
 impl InitialValueGenerator {
-    pub fn get(&self, h: &mut IOHandles<'_>) -> ValueSelectorNumType {
+    pub async fn get(&self, h: &mut IOHandles<'_>) -> ValueSelectorNumType {
         match self {
             Self::Const(s) => *s,
             Self::BacklightBrightness => h.backlight_brightness_pct.into(),
+            Self::LedBrightness => h.leddriver.get_brightness().await.into(),
         }
     }
 }
@@ -645,7 +665,7 @@ pub enum ColorGetter {
 }
 
 impl ColorGetter {
-    pub fn get(&self, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> RGB {
+    pub async fn get(&self, internal_state: &MenuInternalState, h: &mut IOHandles<'_>) -> RGB {
         match self {
             Self::Const(r) => *r,
             Self::ThemeMenuCustomColor => {
@@ -657,7 +677,7 @@ impl ColorGetter {
                 }
             },
             Self::LedPrimaryColor => {
-                let mode = block_on(h.leddriver.get_mode());
+                let mode = h.leddriver.get_mode().await;
                 match mode {
                     LedMode::Solid(a) => a,
                     LedMode::Fade(a, _) => a,
@@ -665,7 +685,7 @@ impl ColorGetter {
                 }
             },
             Self::LedSecondaryColor => {
-                let mode = block_on(h.leddriver.get_mode());
+                let mode = h.leddriver.get_mode().await;
                 match mode {
                     LedMode::Fade(_, b) => b,
                     _ => rgb![128],
@@ -706,8 +726,8 @@ impl Handler<ColorSelectorState> for ColorSubmitHandler {
                     match mode {
                         LedMode::Off => {},
                         LedMode::Rainbow => {},
-                        LedMode::Solid(_) => { h.leddriver.set_mode(LedMode::Solid(state.current_color)); },
-                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(state.current_color, *secondary_col)); }
+                        LedMode::Solid(_) => { h.leddriver.set_mode(LedMode::Solid(state.current_color)).await; },
+                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(state.current_color, *secondary_col)).await; }
                     }
                     Ok(HandlerResult::None)
                 } else {
@@ -721,7 +741,7 @@ impl Handler<ColorSelectorState> for ColorSubmitHandler {
                         LedMode::Off => {},
                         LedMode::Rainbow => {},
                         LedMode::Solid(_) => {},
-                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(*primary_col, state.current_color)); }
+                        LedMode::Fade(_, _) => { h.leddriver.set_mode(LedMode::Fade(*primary_col, state.current_color)).await; }
                     }
                     Ok(HandlerResult::None)
                 } else {

@@ -89,7 +89,7 @@ impl ComponentDefinition {
             Self::OptionSwitch(definition) => ComponentState::OptionSwitch(OptionSwitchState { 
                 definition, 
                 mode: if start_focused { OptionSwitchMode::Selected } else { OptionSwitchMode::Unhighlighted },
-                selection: definition.initial_option.generate(internal_state, h), 
+                selection: definition.initial_option.generate(internal_state, h).await, 
                 text_undraw: None,
                 cursor_undraws: None,
             }),
@@ -120,7 +120,7 @@ impl ComponentDefinition {
             }),
             Self::ValueSelector(definition) => ComponentState::ValueSelector(ValueSelectorState {
                 definition,
-                selection: definition.initial_value.get(h),
+                selection: definition.initial_value.get(h).await,
                 undraw: Rectangle::zero(),
                 mode: if start_focused { ValueSelectorMode::Selected } else { ValueSelectorMode::Unhighlighted },
             }),
@@ -133,7 +133,7 @@ impl ComponentDefinition {
                 cursor_undraw_right: Rectangle::zero(),
             }),
             Self::ColorSelector(definition) => {
-                let start_col = definition.initial_color.get(internal_state, h);
+                let start_col = definition.initial_color.get(internal_state, h).await;
                 ComponentState::ColorSelector(ColorSelectorState {
                     definition,
                     current_color: start_col,
@@ -1180,7 +1180,6 @@ impl RunHandlers for SliderState {
     async fn left_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
             self.cur_value = self.cur_value - (self.definition.increment * Saturating(k.abs().min(255) as u8));
-            log::warn!("self.cur_value: {}", self.cur_value);
             self.draw(h).await?;
         }
         Ok(HandlerResult::None)
@@ -1189,7 +1188,6 @@ impl RunHandlers for SliderState {
     async fn right_handle(&mut self, _: &mut MenuInternalState, h: &mut IOHandles<'_>, k: i16) -> anyhow::Result<HandlerResult> {
         if self.mode == SliderMode::Selected {
             self.cur_value = self.cur_value + (self.definition.increment * Saturating(k.abs().min(255) as u8));
-            log::warn!("self.cur_value: {}", self.cur_value);
             self.draw(h).await?;
         }
         Ok(HandlerResult::None)

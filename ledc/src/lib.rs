@@ -174,6 +174,10 @@ impl LedController {
         // log::info!("LED STATE UNLOCKED");
     }
 
+    pub async fn get_brightness(&self) -> u8 {
+        self.state.read().await.brightness
+    }
+
     /// Sets the period between updates to `speed_ms` milliseconds.
     pub async fn set_speed(&self, speed_ms: u64) {
         // log::info!("LED STATE LOCKED");

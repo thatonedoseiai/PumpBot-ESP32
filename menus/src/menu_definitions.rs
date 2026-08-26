@@ -514,15 +514,27 @@ pub const RGB_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
             }),
         ComponentDefinition::ColorSelector(
             &ColorSelectorDefinition {
-                preview_rect: Rectangle::new(Point::new(64-15, 70), Size::new(30, 30)),
-                initial_color: ColorGetter::LedSecondaryColor,
+                preview_rect: Rectangle::new(Point::new(64-15-20, 50), Size::new(30, 30)),
+                initial_color: ColorGetter::LedPrimaryColor,
                 on_submit: ColorSubmitHandler::SetLedPrimaryColor,
             }),
         ComponentDefinition::ColorSelector(
             &ColorSelectorDefinition {
-                preview_rect: Rectangle::new(Point::new(64-15, 110), Size::new(30, 30)),
+                preview_rect: Rectangle::new(Point::new(64-15+20, 50), Size::new(30, 30)),
                 initial_color: ColorGetter::LedSecondaryColor,
                 on_submit: ColorSubmitHandler::SetLedSecondaryColor,
+            }),
+        ComponentDefinition::ValueSelector(
+            &ValueSelectorDefinition {
+                pos: Point::new(64, 110),
+                click: ValueSelectorHandler::ToggleFocus,
+                left: ValueSelectorHandler::DecrementLedBrightness,
+                right: ValueSelectorHandler::IncrementLedBrightness,
+                suffix: "",
+                font_size: FontSize::Sz12,
+                low_limit: 0,
+                high_limit: 255,
+                initial_value: InitialValueGenerator::LedBrightness,
             }),
     ],
     static_elements: &[],
