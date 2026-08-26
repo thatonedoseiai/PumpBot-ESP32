@@ -212,7 +212,7 @@ pub const WIFI_DETAILS: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
                 pos: Point::new(20, 120),
-                click: OptionSwitchHandler::ToggleFocus,
+                click: OptionSwitchHandler::SetMenuState(MenuInternalStateAction::SetAuthMethod),
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
                 initial_option: OptionSwitchInitialOptionGenerator::WifiAuthMethod(&[
@@ -483,7 +483,7 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 width: 128,
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::Menus(&[
-                    (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::Wifi)),
+                    (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::WifiSettingsMenu)),
                     (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettingsSettingsMenu)),
                     (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetails)),
                     (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
@@ -549,4 +549,17 @@ pub const DISPLAY_SETTINGS: ComponentMenuDefinition = ComponentMenuDefinition {
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None))
 };
 
+pub const WIFI_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: WIFI.components,
+    static_elements: WIFI.static_elements,
+    left_btn: WIFI.left_btn,
+    right_btn: WIFI.right_btn,
+};
+
+pub const WIFI_DETAILS_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: WIFI_DETAILS.components,
+    static_elements: &WIFI_DETAILS.static_elements[0..WIFI_DETAILS.static_elements.len() - 1],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::BackN(2))),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
 // TODO: might want to make a done signal somehow

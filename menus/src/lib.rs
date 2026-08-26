@@ -38,6 +38,8 @@ use crate::menu_definitions::{
     DISPLAY_SETTINGS_SETUP,
     SETTINGS_MENU,
     RGB_MENU,
+    WIFI_SETTINGS_MENU,
+    WIFI_DETAILS_SETTINGS_MENU,
 };
 use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
@@ -140,6 +142,7 @@ use crate::cond_deps::*;
 
 enum MenuSignal {
     Back,
+    BackN(u8),
     Transition(Menu),
     Return,
 }
@@ -229,6 +232,11 @@ enum MenuInternalState {
     DisplaySettingsSettingsMenu {
         theme_custom_col: RGB,
     },
+    WifiSettingsMenu,
+    WifiDetailsSettingsMenu {
+        ap: AccessPointInfo,
+        pass: RefCell<String>,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -242,6 +250,8 @@ pub enum ComponentMenu {
     Settings,
     RgbMenu,
     DisplaySettingsSettingsMenu,
+    WifiSettingsMenu,
+    WifiDetailsSettingsMenu(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -296,6 +306,8 @@ impl ComponentMenu {
             Self::Settings => &SETTINGS_MENU,
             Self::RgbMenu => &RGB_MENU,
             Self::DisplaySettingsSettingsMenu => &DISPLAY_SETTINGS,
+            Self::WifiSettingsMenu => &WIFI_SETTINGS_MENU,
+            Self::WifiDetailsSettingsMenu(_) => &WIFI_DETAILS_SETTINGS_MENU,
         }
     }
 
@@ -347,6 +359,18 @@ impl ComponentMenu {
             },
             Self::DisplaySettingsSettingsMenu => MenuInternalState::DisplaySettingsSettingsMenu {
                 theme_custom_col: if let Theme::Custom(r) = settings.theme { r } else { rgb![128, 128, 128] },
+            },
+            Self::WifiSettingsMenu => MenuInternalState::WifiSettingsMenu,
+            Self::WifiDetailsSettingsMenu(a) => {
+                let ap = if a < h.wifi.get_wifis().len() {
+                    h.wifi.get_wifis()[a].clone()
+                } else {
+                    AccessPointInfo::default()
+                };
+                MenuInternalState::WifiDetailsSettingsMenu { 
+                    ap,
+                    pass: RefCell::new(String::new())
+                }
             },
         }
     }
@@ -466,6 +490,9 @@ impl MenuStateBehaviour for ComponentMenu {
                     // println!("GOING BACK TO PREVIOUS MENU");
                     return Ok(MenuSignal::Back);
                 },
+                Some(HandlerResult::BackN(x)) => {
+                    return Ok(MenuSignal::BackN(x));
+                }
                 Some(HandlerResult::WifiConnectionFailure(e)) => {
                     todo!("handle wifi connection error! {}", e)
                     // return Ok(MenuSignal::None);
@@ -562,6 +589,13 @@ pub async fn run_menu_loop(_: Spawner, start_menu: Menu, io_handles: &mut IOHand
                     menu = m;
                 }
             },
+            MenuSignal::BackN(k) => {
+                menu_stack.truncate(menu_stack.len() - k as usize + 1);
+                let maybe_menu = menu_stack.pop();
+                if let Some(m) = maybe_menu {
+                    menu = m;
+                }
+            }
             MenuSignal::Return => {
                 return Ok(());
             }

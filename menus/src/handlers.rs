@@ -4,7 +4,7 @@ use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use global_settings::{lang::{Lang, LanguageString, TEXT_CONNECT, TEXT_DISCONNECT, TEXT_CUSTOM}, PB_GLOBAL_SETTINGS, rgb::RGB, rgb, Theme};
 use alloc::string::{ToString, String};
-use esp_radio::wifi::{Ssid, WifiError};
+use esp_radio::wifi::{Ssid, WifiError, ap::AccessPointInfo};
 use core::str::FromStr;
 use embassy_net::IpAddress;
 use socket::ServerConnection;
@@ -16,6 +16,7 @@ use alloc::format;
 use esp_radio::wifi::AuthenticationMethod;
 use ledc::LedMode;
 use embassy_futures::block_on;
+use core::cell::RefCell;
 
 #[derive(Debug, Copy, Clone)]
 pub enum HandlerError {
@@ -33,6 +34,7 @@ impl core::fmt::Display for HandlerError {
 pub enum MenuInternalStateAction {
     SetLang,
     SetWifi,
+    SetAuthMethod,
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +42,7 @@ pub enum HandlerResult {
     None,
     Transition(Menu),
     Back,
+    BackN(u8),
     Unfocus,
     ForceRedrawAndUnfocus,
     WifiConnectionFailure(WifiError),
@@ -57,6 +60,33 @@ pub enum GenericHandler {
     SetLanguageAndTransition(Menu),
     ConnectDisconnectWifi,
     ConnectServer,
+}
+
+impl GenericHandler {
+    async fn connect_wifi(a: &mut AccessPointInfo, p: &mut RefCell<String>, h: &mut IOHandles<'_>, transition: bool) -> anyhow::Result<HandlerResult> {
+        if !h.wifi.is_connected() {
+            let pw = p.borrow();
+            log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
+            let wifi_res = h.wifi.connect(&a, &pw).await;
+            match wifi_res {
+                Ok(()) => {
+                    log::info!("connect returned OK!");
+                    if transition {
+                        Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
+                    } else {
+                        Ok(HandlerResult::ForceRedrawAndUnfocus)
+                    }
+                },
+                Err(e) => {
+                    let error_msg = format!("Failed to connect to Wifi!\n\nError:\n{}", e);
+                    Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(error_msg)))
+                }
+            }
+        } else {
+            h.wifi.disconnect().await?;
+            Ok(HandlerResult::ForceRedrawAndUnfocus)
+        }
+    }
 }
 
 impl Handler<()> for GenericHandler {
@@ -79,30 +109,14 @@ impl Handler<()> for GenericHandler {
                 }
             },
             Self::ConnectDisconnectWifi => {
-                if let MenuInternalState::WifiDetails {
-                    ap: a,
-                    pass: p
-                } = menu_state {
-                    if !h.wifi.is_connected() {
-                        let pw = p.borrow();
-                        log::warn!("Connecting to wifi: SSID {}, pass {}", a.ssid.as_str(), &pw);
-                        let wifi_res = h.wifi.connect(&a, &pw).await;
-                        match wifi_res {
-                            Ok(()) => {
-                                log::info!("connect returned OK!");
-                                Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::ServerDetails)))
-                            },
-                            Err(e) => {
-                                let error_msg = format!("Failed to connect to Wifi!\n\nError:\n{}", e);
-                                Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(error_msg)))
-                            }
-                        }
-                    } else {
-                        h.wifi.disconnect().await?;
-                        Ok(HandlerResult::None)
-                    }
-                } else {
-                    unreachable!();
+                match menu_state {
+                    MenuInternalState::WifiDetails { ap, pass } => {
+                        Self::connect_wifi(ap, pass, h, true).await
+                    },
+                    MenuInternalState::WifiDetailsSettingsMenu { ap, pass } => {
+                        Self::connect_wifi(ap, pass, h, false).await
+                    },
+                    _ => unreachable!()
                 }
             },
             Self::ConnectServer => {
@@ -161,6 +175,7 @@ pub enum OptionSwitchHandler {
     PrintSelection,
     ToggleFocusAndSetTheme,
     ToggleFocusAndSetRGB,
+    SetMenuState(MenuInternalStateAction),
 }
 
 impl Handler<OptionSwitchState> for OptionSwitchHandler {
@@ -282,6 +297,33 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     panic!("bad use of ToggleFocusAndSetRGB option switch action!")
                 }
             },
+            Self::SetMenuState(s) => {
+                let old_state_mode = state.mode;
+                state.mode = match state.mode {
+                    OptionSwitchMode::Unhighlighted => OptionSwitchMode::Unhighlighted,
+                    OptionSwitchMode::Highlighted => OptionSwitchMode::Selected,
+                    OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
+                };
+                log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
+                state.draw(h).await?;
+                match (s, menu_state) {
+                    (MenuInternalStateAction::SetAuthMethod, MenuInternalState::WifiDetails { ap, .. }) | (MenuInternalStateAction::SetAuthMethod, MenuInternalState::WifiDetailsSettingsMenu { ap, .. }) => {
+                        if let OptionSwitchInitialOptionGenerator::WifiAuthMethod(k) = state.definition.initial_option {
+                            ap.auth_method = Some(k[state.selection]);
+                        } else {
+                            unreachable!("bad initial option for setting auth method!");
+                        }
+                    }
+                    (_, _) => {
+                        unreachable!("bad use of SetMenuState Option switch handlers!");
+                    }
+                };
+                if state.mode == OptionSwitchMode::Highlighted {
+                    Ok(HandlerResult::Unfocus)
+                } else {
+                    Ok(HandlerResult::None)
+                }
+            },
         }
     }
 }
@@ -347,6 +389,10 @@ impl Handler<OptionScrollerState> for OptionScrollerHandler {
                     (MenuInternalStateAction::SetWifi, MenuInternalState::Wifi) => {
                         log::info!("wifi selection set to {}!", state.selection);
                         Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::WifiDetails(state.selection))))
+                    },
+                    (MenuInternalStateAction::SetWifi, MenuInternalState::WifiSettingsMenu) => {
+                        log::info!("wifi selection set to {}!", state.selection);
+                        Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::WifiDetailsSettingsMenu(state.selection))))
                     },
                     _ => { Ok(HandlerResult::None) }
                 }
@@ -458,10 +504,11 @@ impl OptionSwitchInitialOptionGenerator {
         match self {
             Self::Const(u) => *u,
             Self::WifiAuthMethod(t) => {
-                if let MenuInternalState::WifiDetails { ap, .. } = menu_state {
-                    t.iter().enumerate().filter(|(i, f)| Some(**f) == ap.auth_method).next().map(|a| a.0).unwrap_or(0)
-                } else {
-                    panic!("bad use of WifiAuthMethod initial generator!");
+                match menu_state {
+                    MenuInternalState::WifiDetails { ap, .. } | MenuInternalState::WifiDetailsSettingsMenu { ap, .. } => {
+                        t.iter().enumerate().filter(|(i, f)| Some(**f) == ap.auth_method).next().map(|a| a.0).unwrap_or(0)
+                    },
+                    _ => panic!("bad use of WifiAuthMethod initial generator!")
                 }
             },
             Self::RGBMode => {
@@ -568,7 +615,7 @@ impl TextGetterSetter {
             (Self::Const(s), _, _) => {
                 String::from(*s)
             },
-            (Self::WifiMenuSSIDName, _, MenuInternalState::WifiDetails {ap: a, ..}) => {
+            (Self::WifiMenuSSIDName, _, MenuInternalState::WifiDetails {ap: a, ..}) | (Self::WifiMenuSSIDName, _, MenuInternalState::WifiDetailsSettingsMenu {ap: a, ..}) => {
                 String::from(a.ssid.as_str())
             },
             (Self::WifiMenuPassword, _, _) => {
@@ -596,12 +643,12 @@ pub enum TextSubmitHandler {
 impl Handler<TextBoxState> for TextSubmitHandler {
     async fn handle(&self, state: &mut TextBoxState, menu_state: &mut MenuInternalState, _: &mut IOHandles<'_>) -> anyhow::Result<HandlerResult> {
         match (self, menu_state) {
-            (Self::SetWifiSSID, MenuInternalState::WifiDetails { ap: a, .. }) => {
+            (Self::SetWifiSSID, MenuInternalState::WifiDetails { ap: a, .. }) | (Self::SetWifiSSID, MenuInternalState::WifiDetailsSettingsMenu { ap: a, .. }) => {
                 // set the wifi details
                 a.ssid = Ssid::from(state.current_entry.as_ref().borrow().as_str());
                 Ok(HandlerResult::None)
             },
-            (Self::SetWifiPassword, MenuInternalState::WifiDetails { pass: p, .. }) => {
+            (Self::SetWifiPassword, MenuInternalState::WifiDetails { pass: p, .. }) | (Self::SetWifiPassword, MenuInternalState::WifiDetailsSettingsMenu { pass: p, .. }) => {
                 log::info!("SET PASS: {}", state.current_entry.as_ref().borrow());
                 p.replace(state.current_entry.as_ref().borrow().to_string());
                 Ok(HandlerResult::None)
