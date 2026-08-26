@@ -40,6 +40,7 @@ use crate::menu_definitions::{
     RGB_MENU,
     WIFI_SETTINGS_MENU,
     WIFI_DETAILS_SETTINGS_MENU,
+    SERVER_DETAILS_SETTINGS_MENU,
 };
 use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
@@ -237,6 +238,10 @@ enum MenuInternalState {
         ap: AccessPointInfo,
         pass: RefCell<String>,
     },
+    ServerDetailsSettingsMenu {
+        ip: IpAddress,
+        port: u16,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -252,6 +257,7 @@ pub enum ComponentMenu {
     DisplaySettingsSettingsMenu,
     WifiSettingsMenu,
     WifiDetailsSettingsMenu(usize),
+    ServerDetailsSettingsMenu,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -308,6 +314,7 @@ impl ComponentMenu {
             Self::DisplaySettingsSettingsMenu => &DISPLAY_SETTINGS,
             Self::WifiSettingsMenu => &WIFI_SETTINGS_MENU,
             Self::WifiDetailsSettingsMenu(_) => &WIFI_DETAILS_SETTINGS_MENU,
+            Self::ServerDetailsSettingsMenu => &SERVER_DETAILS_SETTINGS_MENU,
         }
     }
 
@@ -371,6 +378,10 @@ impl ComponentMenu {
                     ap,
                     pass: RefCell::new(String::new())
                 }
+            },
+            Self::ServerDetailsSettingsMenu => MenuInternalState::ServerDetailsSettingsMenu {
+                ip: h.server.server_ip,
+                port: h.server.server_port,
             },
         }
     }

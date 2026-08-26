@@ -35,6 +35,7 @@ pub enum MenuInternalStateAction {
     SetLang,
     SetWifi,
     SetAuthMethod,
+    SetRGBMode,
 }
 
 #[derive(Debug, Clone)]
@@ -174,7 +175,6 @@ pub enum OptionSwitchHandler {
     ToggleFocus,
     PrintSelection,
     ToggleFocusAndSetTheme,
-    ToggleFocusAndSetRGB,
     SetMenuState(MenuInternalStateAction),
 }
 
@@ -265,38 +265,6 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                     Ok(HandlerResult::None)
                 }
             },
-            Self::ToggleFocusAndSetRGB => {
-                let old_state_mode = state.mode;
-                state.mode = match state.mode {
-                    OptionSwitchMode::Unhighlighted => OptionSwitchMode::Unhighlighted,
-                    OptionSwitchMode::Highlighted => OptionSwitchMode::Selected,
-                    OptionSwitchMode::Selected => OptionSwitchMode::Highlighted,
-                };
-                log::info!("toggling option select mode! {:?} -> {:?} and redrawing", old_state_mode, state.mode);
-                state.draw(h).await?;
-                if let MenuInternalState::RgbMenu { mode, primary_col, secondary_col } = menu_state {
-                    if state.mode == OptionSwitchMode::Highlighted {
-                        *mode = match state.selection {
-                            1 => LedMode::Solid(rgb![0]),
-                            2 => LedMode::Fade(rgb![0], rgb![0]),
-                            3 => LedMode::Rainbow,
-                            _ => LedMode::Off,
-                        };
-                        let new_mode = match mode {
-                            LedMode::Off => LedMode::Off,
-                            LedMode::Solid(_) => LedMode::Solid(*primary_col),
-                            LedMode::Fade(_, _) => LedMode::Fade(*primary_col, *secondary_col),
-                            LedMode::Rainbow => LedMode::Rainbow,
-                        };
-                        h.leddriver.set_mode(new_mode).await;
-                        Ok(HandlerResult::Unfocus)
-                    } else {
-                        Ok(HandlerResult::None)
-                    }
-                } else {
-                    panic!("bad use of ToggleFocusAndSetRGB option switch action!")
-                }
-            },
             Self::SetMenuState(s) => {
                 let old_state_mode = state.mode;
                 state.mode = match state.mode {
@@ -313,7 +281,24 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                         } else {
                             unreachable!("bad initial option for setting auth method!");
                         }
-                    }
+                    },
+                    (MenuInternalStateAction::SetRGBMode, MenuInternalState::RgbMenu { mode, primary_col, secondary_col }) => {
+                        if state.mode == OptionSwitchMode::Highlighted {
+                            *mode = match state.selection {
+                                1 => LedMode::Solid(rgb![0]),
+                                2 => LedMode::Fade(rgb![0], rgb![0]),
+                                3 => LedMode::Rainbow,
+                                _ => LedMode::Off,
+                            };
+                            let new_mode = match mode {
+                                LedMode::Off => LedMode::Off,
+                                LedMode::Solid(_) => LedMode::Solid(*primary_col),
+                                LedMode::Fade(_, _) => LedMode::Fade(*primary_col, *secondary_col),
+                                LedMode::Rainbow => LedMode::Rainbow,
+                            };
+                            h.leddriver.set_mode(new_mode).await;
+                        }
+                    },
                     (_, _) => {
                         unreachable!("bad use of SetMenuState Option switch handlers!");
                     }

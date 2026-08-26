@@ -485,7 +485,7 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 options: OptionsGenerator::Menus(&[
                     (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::WifiSettingsMenu)),
                     (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettingsSettingsMenu)),
-                    (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetails)),
+                    (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetailsSettingsMenu)),
                     (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
                 ]),
             }),
@@ -500,7 +500,7 @@ pub const RGB_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
         ComponentDefinition::OptionSwitch(
             &OptionSwitchDefinition {
                 pos: Point::new(20, 40),
-                click: OptionSwitchHandler::ToggleFocusAndSetRGB,
+                click: OptionSwitchHandler::SetMenuState(MenuInternalStateAction::SetRGBMode),
                 left: OptionSwitchHandler::PrevElement,
                 right: OptionSwitchHandler::NextElement,
                 font_size: FontSize::Sz12,
@@ -560,6 +560,13 @@ pub const WIFI_DETAILS_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDef
     components: WIFI_DETAILS.components,
     static_elements: &WIFI_DETAILS.static_elements[0..WIFI_DETAILS.static_elements.len() - 1],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::BackN(2))),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const SERVER_DETAILS_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: SERVER_DETAILS.components,
+    static_elements: &SERVER_DETAILS.static_elements[0..SERVER_DETAILS.static_elements.len() - 1],
+    left_btn: SERVER_DETAILS.left_btn,
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
 };
 // TODO: might want to make a done signal somehow
