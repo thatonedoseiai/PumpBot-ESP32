@@ -41,11 +41,13 @@ use crate::menu_definitions::{
     WIFI_SETTINGS_MENU,
     WIFI_DETAILS_SETTINGS_MENU,
     SERVER_DETAILS_SETTINGS_MENU,
+    PWM_WIZARD,
 };
 use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
 use crate::menus::setup_method::SetupMethodState;
 use crate::menus::home_menu::HomeMenu;
+use crate::menus::pwm_wizard::PwmWizardState;
 pub use crate::screen::screen::{
     Screen,
     ScreenDrawError
@@ -133,7 +135,10 @@ mod cond_deps {
 }
 #[cfg(not(feature = "sim"))]
 mod cond_deps {
-    pub use pwm::Pwm;
+    pub use pwm::{
+        Pwm,
+        PwmNumber,
+    };
     pub use ledc::LedController;
     pub use embassy_sync::{channel::Receiver, blocking_mutex::raw::CriticalSectionRawMutex};
     pub use embassy_executor::Spawner;
@@ -242,6 +247,10 @@ enum MenuInternalState {
         ip: IpAddress,
         port: u16,
     },
+    PwmWizard {
+        selected_channel: PwmNumber,
+        voltage: u8,
+    },
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -258,6 +267,7 @@ pub enum ComponentMenu {
     WifiSettingsMenu,
     WifiDetailsSettingsMenu(usize),
     ServerDetailsSettingsMenu,
+    PwmWizard,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -265,6 +275,7 @@ pub enum CustomMenu {
     Title,
     SetupMethod,
     HomeMenu,
+    PwmWizard,
 }
 
 #[enum_dispatch(MenuStateBehaviour)]
@@ -315,6 +326,7 @@ impl ComponentMenu {
             Self::WifiSettingsMenu => &WIFI_SETTINGS_MENU,
             Self::WifiDetailsSettingsMenu(_) => &WIFI_DETAILS_SETTINGS_MENU,
             Self::ServerDetailsSettingsMenu => &SERVER_DETAILS_SETTINGS_MENU,
+            Self::PwmWizard => &PWM_WIZARD,
         }
     }
 
@@ -383,6 +395,10 @@ impl ComponentMenu {
                 ip: h.server.server_ip,
                 port: h.server.server_port,
             },
+            Self::PwmWizard => MenuInternalState::PwmWizard {
+                selected_channel: PwmNumber::Pwm0,
+                voltage: 12, // 12V default
+            }
         }
     }
 }
@@ -408,7 +424,7 @@ impl MenuStateBehaviour for ComponentMenu {
         loop {
             let inp = select(
                 h.button.receive(),
-                h.rotenc.receive(),
+                h.rotenc.receive(0),
             ).await;
             let signal: Option<HandlerResult> = match inp {
                 Either::Second(k) => {
@@ -533,6 +549,7 @@ impl MenuStateBehaviour for CustomMenu {
             Self::Title => TitleState::new().run(h).await,
             Self::SetupMethod => SetupMethodState::new().run(h).await,
             Self::HomeMenu => HomeMenu::new().run(h).await,
+            Self::PwmWizard => PwmWizardState::new().run(h).await,
         }
     }
 }

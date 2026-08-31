@@ -148,7 +148,7 @@ impl HomeMenu {
 
         loop {
             let result = select4(
-                h.rotenc.receive(),
+                h.rotenc.receive(0),
                 h.button.receive(),
                 h.pwm_output.wait_result(),
                 h.server.receive(),

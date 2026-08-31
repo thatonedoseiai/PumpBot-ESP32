@@ -53,7 +53,7 @@ impl MenuBehaviour for LanguageState {
                 draw = false;
             }
             let result = select(
-                io_handles.rotenc.receive(),
+                io_handles.rotenc.receive(0),
                 io_handles.button.receive(),
             ).await;
             match result {

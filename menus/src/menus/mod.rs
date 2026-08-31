@@ -7,3 +7,4 @@ pub mod setup_method;
 // pub mod test_component_menu;
 // mod component_combined_menu_macros;
 pub mod home_menu;
+pub mod pwm_wizard;

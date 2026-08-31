@@ -126,7 +126,7 @@ impl SetupMethodState {
 
         loop {
             let result = select(
-                io_handles.rotenc.receive(),
+                io_handles.rotenc.receive(0),
                 io_handles.button.receive(),
             ).await;
             match result {

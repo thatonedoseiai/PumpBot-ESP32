@@ -46,7 +46,7 @@ const fn next_lang(cur: Lang) -> Lang {
 }
 
 impl TitleState {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         TitleState {
             cur_lang: Lang::En,
             undraw_bbs: [Rectangle::zero(); 3],

@@ -483,10 +483,11 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 width: 128,
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::Menus(&[
-                    (&TEXT_NETWORK, Menu::ComponentMenu(ComponentMenu::WifiSettingsMenu)),
+                    (&TEXT_NETWORK_SETTINGS, Menu::ComponentMenu(ComponentMenu::WifiSettingsMenu)),
                     (&TEXT_DISPLAY_SETTING, Menu::ComponentMenu(ComponentMenu::DisplaySettingsSettingsMenu)),
                     (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetailsSettingsMenu)),
                     (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
+                    (&TEXT_PWM_WIZARD, Menu::CustomMenu(CustomMenu::PwmWizard)),
                 ]),
             }),
     ],
@@ -567,6 +568,13 @@ pub const SERVER_DETAILS_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuD
     components: SERVER_DETAILS.components,
     static_elements: &SERVER_DETAILS.static_elements[0..SERVER_DETAILS.static_elements.len() - 1],
     left_btn: SERVER_DETAILS.left_btn,
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const PWM_WIZARD: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[],
+    static_elements: &[],
+    left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
 };
 // TODO: might want to make a done signal somehow
