@@ -4,7 +4,7 @@ use pwm::{PwmNumber, PwmMode, Command, PwmAction};
 use embassy_futures::select::{select, Either};
 use fontfile::FontSize;
 use button_idf::{ButtonType, ButtonEventKind};
-use global_settings::{ PB_GLOBAL_SETTINGS, Theme, lang::{ Lang, TEXT_BACK, TEXT_SOLENOID_MODE, TEXT_MAX, TEXT_MIN, TEXT_VOLTAGE, TEXT_CHANNEL_NUM, TEXT_SETTINGS_OUTPUT } };
+use global_settings::{ PB_GLOBAL_SETTINGS, Theme, lang::{ Lang, TEXT_BACK, TEXT_SOLENOID_MODE, TEXT_MAX, TEXT_MIN, TEXT_VOLTAGE, TEXT_CHANNEL_NUM, TEXT_SETTINGS_OUTPUT, TEXT_PWM_WIZARD } };
 
 use embedded_graphics::{
     prelude::*,
@@ -39,8 +39,8 @@ struct MenuElement {
 }
 
 impl MenuElement {
-    const CHANNEL_POS: Point = Point::new(90, 30);
-    const VOLTAGE_POS: Point = Point::new(90, 50);
+    const CHANNEL_POS: Point = Point::new(90, 40);
+    const VOLTAGE_POS: Point = Point::new(90, 60);
     const SOLENOID_TEXT_POS: Point = Point::new(90, 130);
     const MAX_TEXT_POS: Point = Point::new(90, 90);
     const VOLT_LABEL_POS_MAX: Point = Point::new(90, 100);
@@ -254,6 +254,7 @@ impl PwmWizardState {
     }
 
     async fn draw_static_elements(&self, lang: Lang, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        Text::with_alignment(TEXT_PWM_WIZARD[lang], Point::new(64, 20), &h.font, Alignment::Center).draw(&mut h.screen)?;
         h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
         Text::with_alignment(TEXT_BACK[lang], NEXT_BUTTON_POINT, &h.font, Alignment::Right).draw(&mut h.screen)?;
         Text::with_alignment(TEXT_SETTINGS_OUTPUT[lang], BACK_BUTTON_POINT, &h.font, Alignment::Left).draw(&mut h.screen)?;
