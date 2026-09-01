@@ -73,18 +73,13 @@ impl RotencDriver {
         let d = self.get_delta();
         critical_section::with(|cs| {
             let u = UNIT0.borrow_ref(cs);
-            // log::warn!("ROTENC: signaled: {}, interrupt: {}", EVENT_SIGNAL.signaled(), u.as_ref().unwrap().interrupt_is_set());
         });
-        // let accel_multiplier = (100 / (self.prev_event.borrow().elapsed().as_millis().clamp(5, 100))) as i16;
         EVENT_SIGNAL.reset();
         let delta_time = self.prev_event.borrow().elapsed().as_millis();
-        // let k = (12 - (delta_time / 20).min(12)).clamp(1, 128) as i16;
         let accel_multiplier = if accel_sensitivity == 0 { 1 } else {
             ((120 - delta_time.min(120)).saturating_pow(2) * accel_sensitivity as u64 / 1000).clamp(1, 100) as i16
         };
-        log::info!("{}", accel_multiplier);
         self.prev_event.replace(Instant::now());
-        // self.rotenc_unit.reset_interrupt();
         d.saturating_mul(accel_multiplier)
     }
 

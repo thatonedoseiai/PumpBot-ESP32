@@ -1,5 +1,5 @@
 use crate::{MenuSignal, IOHandles, Menu, ComponentMenu};
-use pwm::{PwmNumber, PwmMode};
+use pwm::{PwmNumber, PwmMode, Command, PwmAction};
 use embassy_futures::select::{select, Either};
 use fontfile::FontSize;
 use button_idf::{ButtonType, ButtonEventKind};
@@ -297,7 +297,9 @@ impl PwmWizardState {
                             self.draw_element(self.selected_element, &theme, h).await?;
                         },
                         (ButtonType::Right, _) => return Ok(MenuSignal::Back),
-                        (ButtonType::Left, ButtonEventKind::Down) => todo!("on/off button in drawing does what??"),
+                        (ButtonType::Left, ButtonEventKind::Down) => {
+                            h.pwm_output.send_await(Command::new(PwmAction::Toggle(self.selected_channel), 0)).await;
+                        },
                         (_, _) => {}
                     };
                 },
@@ -311,7 +313,9 @@ impl PwmWizardState {
                     match self.elements[self.selected_element].elem_type {
                         MenuElementType::Channel => {
                             // self.channel_state.set(self.selected_channel, h).await;
+                            h.pwm_output.send_await(Command::new(PwmAction::Off(self.selected_channel), 0)).await;
                             self.next_channel();
+                            h.pwm_output.send_await(Command::new(PwmAction::On(self.selected_channel), 0)).await;
                             self.channel_state = ChannelState::get(self.selected_channel, h).await;
                             for i in 0..self.elements.len() {
                                 self.draw_element(i, &theme, h).await?
