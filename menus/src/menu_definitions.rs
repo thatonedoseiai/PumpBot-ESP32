@@ -12,8 +12,8 @@ use crate::static_element::StaticElement;
 use alloc::borrow::Cow;
 use esp_radio::wifi::AuthenticationMethod;
 
-const BACK_BUTTON_POINT: Point = Point::new(10, 150);
-const NEXT_BUTTON_POINT: Point = Point::new(118, 150);
+pub const BACK_BUTTON_POINT: Point = Point::new(10, 150);
+pub const NEXT_BUTTON_POINT: Point = Point::new(118, 150);
 
 pub const COMPONENT_TESTING: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[

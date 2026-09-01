@@ -1054,7 +1054,7 @@ pub const TEXT_OUTPUT_MODE: LanguageString = LanguageString {
 };
 
 pub const TEXT_CHANNEL_NUM: LanguageString = LanguageString {
-    en: "Channel ",
+    en: "Channel",
     jp: "出力チャンネル",
     fr: "Port",
     es: "Canal",
@@ -1544,4 +1544,52 @@ pub const TEXT_REFRESH: LanguageString = LanguageString {
     cn: "再搵網絡",
     ru: "обновить сети",
     de: "Refresh",
+};
+
+pub const TEXT_VOLTAGE: LanguageString = LanguageString {
+    en: "Voltage",
+    jp: "電圧",
+    fr: "Tension électrique",
+    es: "Voltaje",
+    pt: "Tensão elétrica",
+    zh: "電壓",
+    cn: "電壓",
+    ru: "Электри́ческое напряже́ние",
+    de: "Spannung",
+};
+
+pub const TEXT_MIN: LanguageString = LanguageString {
+    en: "Miniumum",
+    jp: "最低",
+    fr: "Minimum",
+    es: "Mínimo",
+    pt: "Mínimo",
+    zh: "最低",
+    cn: "最低",
+    ru: "Минимум",
+    de: "Minimum",
+};
+
+pub const TEXT_MAX: LanguageString = LanguageString {
+    en: "Maximum",
+    jp: "最高",
+    fr: "Maximum",
+    es: "Máximo",
+    pt: "Máximo",
+    zh: "最高",
+    cn: "最高",
+    ru: "Максимум",
+    de: "Maximum",
+};
+
+pub const TEXT_SOLENOID_MODE: LanguageString = LanguageString {
+    en: "Solenoid Mode",
+    jp: "a",
+    fr: "a",
+    es: "a",
+    pt: "a",
+    zh: "a",
+    cn: "a",
+    ru: "a",
+    de: "a",
 };

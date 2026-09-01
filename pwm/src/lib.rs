@@ -361,7 +361,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let cur_duty_pct = state.get_duty_pct();
             if cur_duty_pct < 100 {
                 // state.duty = ((((cur_duty_pct + p) as u32).min(100) * 16383u32) / 100) as u16;
-                state.duty = pct_to_duty(max_duty, (cur_duty_pct + p).min(100));
+                state.duty = pct_to_duty(max_duty, (cur_duty_pct.saturating_add(p)).min(100));
                 if state.state == PwmPinState::On {
                     channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
                 }
@@ -371,10 +371,11 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let mut state = PIN_STATES[usize::from(c)].write().await;
             let cur_duty_pct = state.get_duty_pct();
             if cur_duty_pct > 0 {
+                state.duty = pct_to_duty(max_duty, (cur_duty_pct.saturating_sub(p)));
                 if state.state == PwmPinState::On {
-                    channels[usize::from(c)].set_duty(cur_duty_pct.saturating_sub(p)).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
                 }
-                state.duty = 164 * (cur_duty_pct.saturating_sub(p)) as u16;
+                // state.duty = 164 * (cur_duty_pct.saturating_sub(p)) as u16;
             }
         },
         PwmAction::UnfreezePin(c) => {

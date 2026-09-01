@@ -1,9 +1,10 @@
 use crate::{MenuSignal, IOHandles, Menu, ComponentMenu};
+use crate::menu_definitions::{ NEXT_BUTTON_POINT, BACK_BUTTON_POINT };
 use pwm::{PwmNumber, PwmMode, Command, PwmAction};
 use embassy_futures::select::{select, Either};
 use fontfile::FontSize;
 use button_idf::{ButtonType, ButtonEventKind};
-use global_settings::{ PB_GLOBAL_SETTINGS, Theme };
+use global_settings::{ PB_GLOBAL_SETTINGS, Theme, lang::{ Lang, TEXT_BACK, TEXT_SOLENOID_MODE, TEXT_MAX, TEXT_MIN, TEXT_VOLTAGE, TEXT_CHANNEL_NUM, TEXT_SETTINGS_OUTPUT } };
 
 use embedded_graphics::{
     prelude::*,
@@ -38,13 +39,13 @@ struct MenuElement {
 }
 
 impl MenuElement {
-    const CHANNEL_POS: Point = Point::new(64, 30);
-    const VOLTAGE_POS: Point = Point::new(64, 60);
-    const SOLENOID_TEXT_POS: Point = Point::new(64, 110);
-    const MAX_TEXT_POS: Point = Point::new(90, 80);
-    const VOLT_LABEL_POS_MAX: Point = Point::new(90, 90);
-    const MIN_TEXT_POS: Point = Point::new(30, 80);
-    const VOLT_LABEL_POS_MIN: Point = Point::new(30, 90);
+    const CHANNEL_POS: Point = Point::new(90, 30);
+    const VOLTAGE_POS: Point = Point::new(90, 50);
+    const SOLENOID_TEXT_POS: Point = Point::new(90, 130);
+    const MAX_TEXT_POS: Point = Point::new(90, 90);
+    const VOLT_LABEL_POS_MAX: Point = Point::new(90, 100);
+    const MIN_TEXT_POS: Point = Point::new(30, 90);
+    const VOLT_LABEL_POS_MIN: Point = Point::new(30, 100);
     const CURSOR_LEFT: Triangle = Triangle::new(Point::new(0, 0), Point::new(5, 5), Point::new(5, -5));
     const CURSOR_RIGHT: Triangle = Triangle::new(Point::new(0, 0), Point::new(-5, 5), Point::new(-5, -5));
 
@@ -252,24 +253,37 @@ impl PwmWizardState {
         }
     }
 
+    async fn draw_static_elements(&self, lang: Lang, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+        h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
+        Text::with_alignment(TEXT_BACK[lang], NEXT_BUTTON_POINT, &h.font, Alignment::Right).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_SETTINGS_OUTPUT[lang], BACK_BUTTON_POINT, &h.font, Alignment::Left).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_CHANNEL_NUM[lang], MenuElement::CHANNEL_POS - Point::new(20, 0), &h.font, Alignment::Right).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_VOLTAGE[lang], MenuElement::VOLTAGE_POS - Point::new(40, 0), &h.font, Alignment::Right).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_MIN[lang], MenuElement::MIN_TEXT_POS - Point::new(0, 15), &h.font, Alignment::Center).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_MAX[lang], MenuElement::MAX_TEXT_POS - Point::new(0, 15), &h.font, Alignment::Center).draw(&mut h.screen)?;
+        Text::with_alignment(TEXT_SOLENOID_MODE[lang], MenuElement::SOLENOID_TEXT_POS - Point::new(20, 0), &h.font, Alignment::Right).draw(&mut h.screen)?;
+        Ok(())
+    }
+
     async fn draw_element(&mut self, index: usize, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         self.elements[index].draw(self.voltage, self.selected_channel, index == self.selected_element, self.mode == Mode::Edit, theme, self.channel_state, h).await?;
         Ok(())
     }
 
     pub(crate) async fn run(&mut self, h: &mut IOHandles<'_>) -> anyhow::Result<MenuSignal> {
-        let theme = {
+        let (lang, theme) = {
             let settings = &PB_GLOBAL_SETTINGS.read().await;
-            settings.theme
+            (settings.lang, settings.theme)
         };
-        h.font.font.borrow_mut().set_size(FontSize::Sz12)?;
         h.font.fgcol = theme.fg();
         h.font.bgcol = theme.bg();
 
         self.channel_state = ChannelState::get(self.selected_channel, h).await;
         // self.draw_dynamic_elements(&theme, h).await?;
+        self.draw_static_elements(lang, &theme, h).await?;
+        h.font.font.borrow_mut().set_size(FontSize::Sz12)?;
         for i in 0..self.elements.len() {
-            self.draw_element(i, &theme, h).await?
+            self.draw_element(i, &theme, h).await?;
         }
 
         loop {
