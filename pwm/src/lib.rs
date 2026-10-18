@@ -264,7 +264,7 @@ impl PwmPinInfo {
 
     pub const fn map_duty_max_min(&self, duty: u16) -> u16 {
         match self.operating_mode {
-            PwmMode::Pwm => ((duty as u32 * (self.max_duty as u32 - self.min_duty as u32) + self.min_duty as u32) / PWM_MAX_DUTY as u32) as u16,
+            PwmMode::Pwm => ((duty as u32 * (self.max_duty as u32 - self.min_duty as u32)) / PWM_MAX_DUTY as u32) as u16 + self.min_duty,
             PwmMode::Solenoid => if duty > 0 { self.max_duty } else { 0 },  // can use 0 because
                                                                             // it's always def off
         }
