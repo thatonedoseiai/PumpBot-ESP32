@@ -117,28 +117,15 @@ pub const TEXT_LANGUAGE_NAME: LanguageString = LanguageString {
 };
 
 pub const TEXT_WELCOME: LanguageString = LanguageString {
-    en: "Welcome to",
-    jp: "PumpBotへ",
-    fr: "Bienvenue sur",
-    es: "¡Bienvenido a",
-    pt: "Bem-vinde ao",
-    zh: "欢迎使用",
-    cn: "歡迎使用",
-    ru: "Добро подаловать",
-    de: "Willkommen zu",
-};
-
-
-pub const TEXT_WELCOME_A: LanguageString = LanguageString {
-    en: "PumpBot!",
-    jp: "ようこそ!",
-    fr: "PumpBot!",
-    es: "PumpBot!",
-    pt: "PumpBot!",
-    zh: "PumpBot！",
-    cn: "PumpBot！",
-    ru: "в PumpBot!",
-    de: "PumpBot!",
+    en: "Welcome to\nPumpBot!",
+    jp: "PumpBotへ\nようこそ!",
+    fr: "Bienvenue sur\nPumpBot!",
+    es: "¡Bienvenido a\nPumpBot!",
+    pt: "Bem-vinde ao\nPumpBot!",
+    zh: "欢迎使用\nPumpBot!",
+    cn: "歡迎使用\nPumpBot!",
+    ru: "Добро подаловать\nв PumpBot!",
+    de: "Willkommen zu\nPumpBot!",
 };
 
 pub const TEXT_PRESSENC: LanguageString = LanguageString {
@@ -253,7 +240,7 @@ pub const TEXT_NEXT: LanguageString = LanguageString {
     en: "Next",
     jp: "次へ",
     fr: "Suivant",
-    es: "Siᴳuiente",
+    es: "Siguiente",
     pt: "Próximo",
     zh: "继续",
     cn: "繼續",
@@ -274,27 +261,15 @@ pub const TEXT_CHOOSE_LANG: LanguageString = LanguageString {
 };
 
 pub const TEXT_SETUP_PB: LanguageString = LanguageString {
-    en: "How would you like to",
-    jp: "PumpBotをどうやって",
-    fr: "Comment voulez-vous",
-    es: "¿Cómo te gustaría",
-    pt: "Como gostaria de configurar",
-    zh: "你要怎么样",
-    cn: "你要怎麽樣",
-    ru: "Как бы вы хотели",
-    de: "Wie würdest du PumpBot",
-};
-
-pub const TEXT_SETUP_PB_A: LanguageString = LanguageString {
-    en: "setup PumpBot?",
-    jp: "設定したいですか？",
-    fr: "configurer Pumpbot?",
-    es: "configurar PumpBot?",
-    pt: " o PumpBot?",
-    zh: "设置PumpBot?",
-    cn: "設置PumpBot?",
-    ru: "настроить PumpBot?",
-    de: "gerne aufsetzen?",
+    en: "How would you like to\nsetup PumpBot?",
+    jp: "PumpBotをどうやって\n設定したいですか？",
+    fr: "Comment voulez-vous\nconfigurer Pumpbot?",
+    es: "¿Cómo te gustaría\nconfigurar PumpBot?",
+    pt: "Como gostaria de\nconfigurar o PumpBot?",
+    zh: "你要怎么样\n设置PumpBot?",
+    cn: "你要怎麽樣\n設置PumpBot?",
+    ru: "Как бы вы хотели\nнастроить PumpBot?",
+    de: "Wie würdest du PumpBot\ngerne aufsetzen?",
 };
 
 pub const TEXT_WIFI_SETUP: LanguageString = LanguageString {
@@ -310,51 +285,27 @@ pub const TEXT_WIFI_SETUP: LanguageString = LanguageString {
 };
 
 pub const TEXT_TOOLTIP_WIFI_SETUP: LanguageString = LanguageString {
-    en: "Set up PumpBot by connecting",
-    jp: "他のデバイスに",
-    fr: "Configurer Pumpbot en connectant",
-    es: "Configura PumpBot conectando",
-    pt: "Configurar PumpBot conectando",
-    zh: "连接其他台机来",
-    cn: "連接第二部機來",
-    ru: "Настройте PumpBot подключив",
-    de: "Setze PumpBot durch das Verbinden",
-};
-
-pub const TEXT_TOOLTIP_WIFI_SETUP_A: LanguageString = LanguageString {
-    en: "another device",
-    jp: "接続して設定する",
-    fr: "un autre appareil",
-    es: "otro dispositivo",
-    pt: "a um dispositivo",
-    zh: "设置Pumpbot",
-    cn: "設置PumpBot",
-    ru: "другое устройство",
-    de: "eines anderen Gerätes auf",
+    en: "Set up PumpBot by\nconnecting another device",
+    jp: "他のデバイスに\n接続して設定する",
+    fr: "Configurer PumpBot en\nconnectant un\nautre appareil",
+    es: "Configura PumpBot\nconectando otro\ndispositivo",
+    pt: "Configurar PumpBot\nconectando a um\ndispositivo",
+    zh: "连接其他台机来\n设置PumpBot",
+    cn: "連接第二部機來\n設置PumpBot",
+    ru: "Настройте PumpBot\nподключив другое\nустройство",
+    de: "Setze PumpBot durch das\nVerbinden eines anderen\nGerätes auf",
 };
 
 pub const TEXT_CONNECT_HERE: LanguageString = LanguageString {
-    en: "Connect to this Wi-Fi network",
-    jp: "PumpBotを設定するためにこの",
-    fr: "Connectez-vous à ce Wi-Fi",
-    es: "Conecta a esta red Wi-Fi",
-    pt: "Conecte a essa rede de Wi-Fi ",
-    zh: "连接这个网路",
-    cn: "連接這個網絡",
-    ru: "Подключитесь к этой сети Wi-Fi,",
-    de: "Verbinde zu diesem Wi-Fi Netzwerk um",
-};
-
-pub const TEXT_CONNECT_HERE_A: LanguageString = LanguageString {
-    en: "to configure PumpBot",
-    jp: "ネットワークに接続してください",
-    fr: "pour configurer Pumpbot",
-    es: "para configurar PumpBot",
-    pt: "para configurar PumpBot",
-    zh: "来设置PumpBot",
-    cn: "來設置PumpBot",
-    ru: "чтобы настроить PumpBot",
-    de: "PumpBot zu konfigurieren",
+    en: "Connect to this Wi-Fi network\nto configure PumpBot",
+    jp: "PumpBotを設定するためにこの\nネットワークに接続してください",
+    fr: "Connectez-vous à ce Wi-Fi\npour configurer Pumpbot",
+    es: "Conecta a esta red Wi-Fi\npara configurar PumpBot",
+    pt: "Conecte a essa rede de Wi-Fi\npara configurar PumpBot",
+    zh: "连接这个网路\n来设置PumpBot",
+    cn: "連接這個網絡\n來設置PumpBot",
+    ru: "Подключитесь к этой сети Wi-Fi,\nчтобы настроить PumpBot",
+    de: "Verbinde zu diesem Wi-Fi Netzwerk um\nPumpBot zu konfigurieren",
 };
 
 pub const TEXT_GO_TO_URL: LanguageString = LanguageString {
@@ -362,23 +313,11 @@ pub const TEXT_GO_TO_URL: LanguageString = LanguageString {
     jp: "このリンクをブラウザーで開く",
     fr: "Ouvrez ce lien dans votre navigateur",
     es: "Abre este link en tu navegador",
-    pt: "Abra essa página no seu",
+    pt: "Abra essa página no seu\nnavegador de internet",
     zh: "用浏览器开这条链接",
     cn: "用瀏覽器開這條鏈接",
-    ru: "Откройте этот URL-адрес",
-    de: "Öffne diese URL in ",
-};
-
-pub const TEXT_GO_TO_URL_A: LanguageString = LanguageString {
-    en: "",
-    jp: "",
-    fr: "",
-    es: "",
-    pt: "navegador de internet",
-    zh: "",
-    cn: "",
-    ru: "в своем веб-браузере",
-    de: "deinem Web-Browser",
+    ru: "Откройте этот URL-адрес\nв своем веб-браузере",
+    de: "Öffne diese URL in\ndeinem Web-Browser",
 };
 
 pub const TEXT_WIFI_STARTING: LanguageString = LanguageString {
@@ -418,32 +357,20 @@ pub const TEXT_SAVE_EXIT: LanguageString = LanguageString {
 };
 
 pub const TEXT_WIFI_CONTINUE_WITHOUT: LanguageString = LanguageString {
-    en: "Continue without",
-    jp: "Wi-Fiに接続せずに",
-    fr: "Continuer sans",
-    es: "¿Continuar sin",
-    pt: "Continuar sem conectar",
-    zh: "不连接网路",
-    cn: "不連接網絡",
-    ru: "Продолжить без",
-    de: "Fortfahren ohne mit",
-};
-
-pub const TEXT_WIFI_CONTINUE_WITHOUT_A: LanguageString = LanguageString {
-    en: "connecting to Wi-Fi?",
-    jp: "続きますか？",
-    fr: "se connecter au Wi-Fi? ",
-    es: "conexión Wi-Fi?",
-    pt: "a uma rede Wi-Fi?",
-    zh: "这样设置?",
-    cn: "怎樣設定?",
-    ru: "подключения к Wi-Fi?",
-    de: "Wi-Fi zu verbinden?",
+    en: "Continue without\nconnecting to Wi-Fi?",
+    jp: "Wi-Fiに接続せずに\n続きますか？",
+    fr: "Continuer sans\nse connecter au Wi-Fi?",
+    es: "¿Continuar sin\nconexión Wi-Fi?",
+    pt: "Continuar sem conectar\na uma rede Wi-Fi?",
+    zh: "不连接网路\n这样设置?",
+    cn: "不連接網絡\n怎樣設定?",
+    ru: "Продолжить без\nподключения к Wi-Fi?",
+    de: "Fortfahren ohne mit\nWi-Fi zu verbinden?",
 };
 
 pub const TEXT_SETUP_COMPLETE: LanguageString = LanguageString {
     en: "Setup Complete!",
-    jp: "セットアップ完了！",
+    jp: "セットアップ完了!",
     fr: "Configuration terminée!",
     es: "¡Configuración completa!",
     pt: "Configuração finalizada!",
@@ -466,27 +393,15 @@ pub const TEXT_STANDALONE_SETUP: LanguageString = LanguageString {
 };
 
 pub const TEXT_TOOLTIP_STANDALONE_SETUP: LanguageString = LanguageString {
-    en: "Set up PumpBot without connecting ",
-    jp: "他のデバイスに",
-    fr: "Configurez Pumpbot sans connecter ",
-    es: "Configurar PumpBot sin conectar",
-    pt: "Configurar PumpBot não conectando",
-    zh: "不要连接其他台机来",
-    cn: "不要連接其他部機來",
-    ru: "Настройте PumpBot без подключения",
-    de: "Setze PumpBot ohne zusätzliche",
-};
-
-pub const TEXT_TOOLTIP_STANDALONE_SETUP_A: LanguageString = LanguageString {
-    en: "another device",
-    jp: "接続せずに設定する",
-    fr: "un autre appareil",
-    es: "otro dispositivo",
-    pt: "a um dispositivo",
-    zh: "设置PumpBot",
-    cn: "設定PumpBot",
-    ru: "другого устройства",
-    de: "Geräteverbindung auf",
+    en: "Set up PumpBot without\nconnecting another device",
+    jp: "他のデバイスに\n接続せずに設定する",
+    fr: "Configurez Pumpbot sans\nconnecter un autre appareil",
+    es: "Configurar PumpBot sin\nconectar otro dispositivo",
+    pt: "Configurar PumpBot não\nconectando a um dispositivo",
+    zh: "不要连接其他台机来\n设置PumpBot",
+    cn: "不要連接其他部機來\n設定PumpBot",
+    ru: "Настройте PumpBot без\nподключения другого\nустройства",
+    de: "Setze PumpBot\nohne zusätzliche\nGeräteverbindung auf",
 };
 
 pub const TEXT_WIFI_SETTINGS: LanguageString = LanguageString {
@@ -635,11 +550,11 @@ pub const TEXT_DISCONNECTED: LanguageString = LanguageString {
 
 pub const TEXT_CONNECTING: LanguageString = LanguageString {
     en: "Connecting...",
-    jp: "接続処理中…",
+    jp: "接続処理中...",
     fr: "Connexion...",
     es: "Conectando...",
     pt: "Conectando...",
-    zh: "连线中",
+    zh: "连线中...",
     cn: "連線中...",
     ru: "Подключение...",
     de: "Verbinden...",
@@ -647,7 +562,7 @@ pub const TEXT_CONNECTING: LanguageString = LanguageString {
 
 pub const TEXT_CONNECTED: LanguageString = LanguageString {
     en: "Connected!",
-    jp: "接続済み！",
+    jp: "接続済み!",
     fr: "Connecté!",
     es: "¡Conectado!",
     pt: "Conectado!",
@@ -659,7 +574,7 @@ pub const TEXT_CONNECTED: LanguageString = LanguageString {
 
 pub const TEXT_CONNECTION_FAIL: LanguageString = LanguageString {
     en: "Connection Failed!",
-    jp: "接続失敗！",
+    jp: "接続失敗!",
     fr: "Connexion échouée!",
     es: "¡Conexión fallida!",
     pt: "Conexão Falhou!",
@@ -1002,7 +917,7 @@ pub const TEXT_ADDON_SETTINGS: LanguageString = LanguageString {
     zh: "插件设定",
     cn: "插件設定",
     ru: "Настройка Периферий",
-    de: "Erweiterungseinstellungen ",
+    de: "Erweiterungseinstellungen",
 };
 
 pub const TEXT_MPRLS: LanguageString = LanguageString {
@@ -1403,7 +1318,7 @@ pub const TEXT_APP_DL_FROM_URL: LanguageString = LanguageString {
 
 pub const TEXT_APP_URL: LanguageString = LanguageString {
     en: "URL",
-    jp: "ﾘﾝｸ",
+    jp: "リンク",
     fr: "Lien",
     es: "URL",
     pt: "URL",
@@ -1533,7 +1448,6 @@ pub const TEXT_FACTORY_RESET: LanguageString = LanguageString {
     de: "Zurücksetzen auf Werksseinstellungen",
 };
 
-// TODO: get this localized
 pub const TEXT_REFRESH: LanguageString = LanguageString {
     en: "Refresh",
     jp: "リロード",
@@ -1581,15 +1495,17 @@ pub const TEXT_MAX: LanguageString = LanguageString {
     ru: "Максимум",
     de: "Maximum",
 };
-
+// TODO: get this localized (solenoid mode was originally "solenoid valve mode", but
+//       since that was long, it became "solenoid mode". Use "solenoid valve mode"
+//       as a translation where permissible, please.)
 pub const TEXT_SOLENOID_MODE: LanguageString = LanguageString {
     en: "Solenoid Mode",
-    jp: "a",
-    fr: "a",
-    es: "a",
-    pt: "a",
-    zh: "a",
-    cn: "a",
-    ru: "a",
-    de: "a",
+    jp: "電磁弁モード",
+    fr: "Mode Électrovanne", //Blue's shitty french knowledge (machine translation agrees!)
+    es: "Modo Solenoide", //MACHINE TRANSLATION
+    pt: "Modo Solenoide", //MACHINE TRANSLATION
+    zh: "电磁阀模式", //MACHINE TRANSLATION
+    cn: "電磁閥模式", //MACHINE TRANSLATION
+    ru: "Режим соленоида", //MACHINE TRANSLATION
+    de: "Magnetventil-Modus", //MACHINE TRANSLATION
 };
