@@ -51,30 +51,30 @@ use profiler::timed;
 
 // Font file constants
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_7:  &Path = path!("/NC_7.cbf");
+const FONT_NAME_SIZE_7:  &Path = path!("/7pt.cbf");
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_12: &Path = path!("/NC_12.cbf");
+const FONT_NAME_SIZE_12: &Path = path!("/12pt.cbf");
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_14: &Path = path!("/NC_14.cbf");
+const FONT_NAME_SIZE_14: &Path = path!("/14pt.cbf");
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_18: &Path = path!("/NC_18.cbf");
+const FONT_NAME_SIZE_18: &Path = path!("/18pt.cbf");
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_24: &Path = path!("/NC_24.cbf");
+const FONT_NAME_SIZE_24: &Path = path!("/24pt.cbf");
 #[cfg(target_os = "none")]
-const FONT_NAME_SIZE_42: &Path = path!("/NC_42.cbf");
+const FONT_NAME_SIZE_42: &Path = path!("/42pt.cbf");
 
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_7:  &Path = path!("./fs/NC_7.cbf");
+const FONT_NAME_SIZE_7:  &Path = path!("./fs/7pt.cbf");
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_12: &Path = path!("./fs/NC_12.cbf");
+const FONT_NAME_SIZE_12: &Path = path!("./fs/12pt.cbf");
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_14: &Path = path!("./fs/NC_14.cbf");
+const FONT_NAME_SIZE_14: &Path = path!("./fs/14pt.cbf");
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_18: &Path = path!("./fs/NC_18.cbf");
+const FONT_NAME_SIZE_18: &Path = path!("./fs/18pt.cbf");
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_24: &Path = path!("./fs/NC_24.cbf");
+const FONT_NAME_SIZE_24: &Path = path!("./fs/24pt.cbf");
 #[cfg(not(target_os = "none"))]
-const FONT_NAME_SIZE_42: &Path = path!("./fs/NC_42.cbf");
+const FONT_NAME_SIZE_42: &Path = path!("./fs/42pt.cbf");
 
 type File<'a, 'b, 'c> = littlefs2::fs::File<'a, 'b, PbFlashStorage<'c>>;
 type Mutex<T> = CriticalSectionMutex<T>;
