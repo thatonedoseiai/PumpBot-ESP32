@@ -9,7 +9,7 @@ pub mod lang;
 pub mod rgb;
 
 use crate::lang::Lang;
-use crate::rgb::RGB;
+use crate::rgb::{RGB, hsv_to_rgb};
 // use fontfile::rgb::RGB;
 use alloc::string::{ToString, String};
 use alloc::format;
@@ -103,7 +103,12 @@ impl Theme {
     }
 
     pub const fn highlight(&self) -> RGB {
-        rgb![255, 0, 0] // TODO: make this an appropriate colour
+        match self {
+            Theme::Dark => rgb![0, 96, 160],
+            Theme::Light => rgb![0, 96, 160],
+            Theme::Custom(r) => hsv_to_rgb((r.hue() + 60.0) % 360.0, 1.0, 1.0),
+        }
+        // rgb![255, 0, 0] // TODO: make this an appropriate colour
     }
 }
 

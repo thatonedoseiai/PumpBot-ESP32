@@ -73,7 +73,7 @@ use ledc::{LedController, LedPeripherals, LedMode};
 // use pwm::{OutputCtl, OutputPeripherals, Action};
 use pwm::Pwm;
 use fontfile::{FontSize, PbFont, pb_font_renderer::PbFontRenderer};
-use global_settings::{PB_GLOBAL_SETTINGS};
+use global_settings::{PB_GLOBAL_SETTINGS, Theme};
 // use ilidriver::ILIDriver;
 use flash_storage::PbFlashStorage;
 use dummy_pin::DummyPin;
@@ -83,6 +83,8 @@ use st7735_lcd::{ST7735, Orientation as STOrientation};
 // use std::sync::Arc;
 use alloc::sync::Arc;
 use alloc::vec;
+use alloc::format;
+use alloc::borrow::Cow;
 use menus::{run_menu_loop, Menu, ComponentMenu, CustomMenu, IOHandles, Screen};
 // use global_settings::PbGlobalSettings;
 // use display_interface_spi::SPIInterface;
@@ -192,18 +194,18 @@ async fn init_screen<'a>(spi2: SPI2<'a>, sclk: GPIO9<'a>, mosi: GPIO10<'a>, dc: 
 #[cfg(not(test))]
 #[esp_rtos::main]
 async fn main(spawner: Spawner) -> ! {
-    esp_println::logger::init_logger_from_env();
-    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let peripherals = esp_hal::init(config);
+    loop {
+        esp_println::logger::init_logger_from_env();
+        let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+        let peripherals = esp_hal::init(config);
 
-    let program_result = init_board(spawner, peripherals).await;
+        let program_result = init_board(spawner, peripherals).await;
 
-    match program_result {
-        Ok(_) => info!("MAIN RETURNED."),
-        Err(e) => error!("MAIN ERRORED OUT WITH CODE {}!", e)
+        match program_result {
+            Ok(_) => info!("MAIN RETURNED WITHOUT AN ERROR."),
+            Err(e) => error!("MAIN ERRORED OUT WITH CODE {}! REBOOTING...", e)
+        }
     }
-
-    loop { }
 }
 
 static LEDC_TIMER: StaticCell<Timer<'static, LowSpeed>> = StaticCell::new();
@@ -319,18 +321,37 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
 
     let pb_server_connection = ServerConnection::new(spawner, pb_wifi.netstack);
 
-    run_menu_loop(spawner, Menu::CustomMenu(CustomMenu::Title), &mut IOHandles::new(
-                screen,
-                leddriver,
-                outputperipherals,
-                pb_font_style,
-                button_receiver,
-                rotenc_receiver,
-                pb_wifi,
-                pb_server_connection,
-                backlight_channel,
-                10,
-            )).await?;
+    let mut io_handles = IOHandles::new(
+        screen,
+        leddriver,
+        outputperipherals,
+        pb_font_style,
+        button_receiver,
+        rotenc_receiver,
+        pb_wifi,
+        pb_server_connection,
+        backlight_channel,
+        10,
+    );
+
+    let menu_loop_res = run_menu_loop(
+        spawner, 
+        Menu::CustomMenu(CustomMenu::Title), 
+        &mut io_handles).await;
+    match menu_loop_res {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            display_err_menu(&mut io_handles, &e)?;
+            Err(e)
+        },
+    }
+}
+
+fn display_err_menu(h: &mut IOHandles<'_>, e: &anyhow::Error) -> anyhow::Result<()> {
+    let theme = Theme::Dark;
+    h.screen.clear(theme.bg().as_rgb565())?;
+
+    ComponentMenu::draw_error_dialogue(Cow::Owned(format!("Main failed on error:\n\n{:?}", e)), &theme, h)?;
     Ok(())
 }
 

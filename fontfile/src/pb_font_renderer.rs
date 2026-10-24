@@ -23,7 +23,7 @@ use core::cell::RefCell;
 use alloc::rc::Rc;
 use alloc::vec::Vec;
 
-use crate::{PbFont, RGB, rgb, FontSize};
+use crate::{PbFont, RGB, rgb, FontSize, CharMetadata};
 use profiler::timed;
 
 /// Defines the global state of the renderer. Font size and everything is already included in
@@ -71,9 +71,42 @@ impl TextRenderer for &PbFontRenderer {
 
             // dbg_pindriver.set_low();
 
-            let (metrics, coldata) = timed!("load char", { 
-                self.font.borrow_mut().load_char(c).unwrap() // TODO: fix this!
+            let char_res = timed!("load char", { 
+                self.font.borrow_mut().load_char(c)// .unwrap() // TODO: fix this!
             });
+            let (metrics, coldata) = match char_res {
+                Ok(k) => k,
+                Err(_) => {
+                    let av = match self.font.borrow_mut().font_size {
+                        Some(FontSize::Sz7) => 4,
+                        Some(FontSize::Sz12) => 9,
+                        Some(FontSize::Sz14) => 11,
+                        Some(FontSize::Sz18) => 14,
+                        Some(FontSize::Sz24) => 20,
+                        Some(FontSize::Sz42) => 38,
+                        _ => 4,
+                    };
+                    let m = CharMetadata {
+                        vertical: true,
+                        advance: av,
+                        x: 0,
+                        y: 0,
+                        width: 4,
+                        height: 8,
+                    };
+                    let mut bitmask = 0b10000000_00000000;
+                    let mut coldata = Vec::with_capacity(16);
+                    for i in 0..16 {
+                        coldata.push(if bitmask & c == 0 {
+                            rgb![0]
+                        } else {
+                            rgb![255]
+                        });
+                        bitmask >>= 1;
+                    }
+                    (m, coldata)
+                },
+            };
             if metrics.width != 0 {
                 // let true_height = timed!("true_height = ", metrics.height / 3);
                 // let bottom_right = start_char_point + Point::new((metrics.width - 1).into(), (metrics.y.saturating_sub_unsigned(metrics.height - 1)).into());
@@ -139,7 +172,29 @@ impl TextRenderer for &PbFontRenderer {
         let mut bb_bottom_right = position;
         let mut start_char_point = position;
         for c in text.encode_utf16() {
-            let metrics = self.font.borrow_mut().load_char_metadata(c).unwrap(); // TODO: fix this!
+            let m = self.font.borrow_mut().load_char_metadata(c); //.unwrap(); // TODO: fix this!
+            let metrics = match m {
+                Ok(k) => k,
+                Err(_) => {
+                    let av = match self.font.borrow_mut().font_size {
+                        Some(FontSize::Sz7) => 4,
+                        Some(FontSize::Sz12) => 9,
+                        Some(FontSize::Sz14) => 11,
+                        Some(FontSize::Sz18) => 14,
+                        Some(FontSize::Sz24) => 20,
+                        Some(FontSize::Sz42) => 38,
+                        _ => 4,
+                    };
+                    CharMetadata {
+                        vertical: true,
+                        advance: av,
+                        x: 0,
+                        y: 0,
+                        width: 4,
+                        height: 8,
+                    }
+                }
+            };
             let top_left = start_char_point - Point::new(0, metrics.y.into());
             let bottom_right = top_left + Size::new(metrics.width.into(), (metrics.height / 3).into());
             if top_left.x < bb_top_left.x {
