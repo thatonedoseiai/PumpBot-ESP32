@@ -7,13 +7,13 @@ use global_settings::{
         Lang,
         LanguageString,
         TEXT_SETUP_PB,
-        TEXT_SETUP_PB_A,
+        // TEXT_SETUP_PB_A,
         TEXT_WIFI_SETUP,
         TEXT_STANDALONE_SETUP,
         TEXT_TOOLTIP_WIFI_SETUP,
-        TEXT_TOOLTIP_WIFI_SETUP_A,
+        // TEXT_TOOLTIP_WIFI_SETUP_A,
         TEXT_TOOLTIP_STANDALONE_SETUP,
-        TEXT_TOOLTIP_STANDALONE_SETUP_A,
+        // TEXT_TOOLTIP_STANDALONE_SETUP_A,
         TEXT_NEXT,
         TEXT_BACK,
     }, 
@@ -65,7 +65,7 @@ pub struct SetupMethodState {
 }
 
 const TOOLTIPS_TOP: [&'static LanguageString; 2] = [&TEXT_TOOLTIP_WIFI_SETUP, &TEXT_TOOLTIP_STANDALONE_SETUP];
-const TOOLTIPS_BOTTOM: [&'static LanguageString; 2] = [&TEXT_TOOLTIP_WIFI_SETUP_A, &TEXT_TOOLTIP_STANDALONE_SETUP_A];
+// const TOOLTIPS_BOTTOM: [&'static LanguageString; 2] = [&TEXT_TOOLTIP_WIFI_SETUP_A, &TEXT_TOOLTIP_STANDALONE_SETUP_A];
 impl SetupMethodState {
     pub fn new() -> Self {
         SetupMethodState {
@@ -77,9 +77,9 @@ impl SetupMethodState {
         let tooltip_top = Text::with_alignment(TOOLTIPS_TOP[current_tooltip as usize][lang], Point::new(64, 80), &io_handles.font, Alignment::Center);
         self.undraw_tooltip[0] = tooltip_top.bounding_box();
         tooltip_top.draw(io_handles.screen.borrow_mut())?;
-        let tooltip_bottom = Text::with_alignment(TOOLTIPS_BOTTOM[current_tooltip as usize][lang], Point::new(64, 90), &io_handles.font, Alignment::Center);
-        self.undraw_tooltip[1] = tooltip_bottom.bounding_box();
-        tooltip_bottom.draw(io_handles.screen.borrow_mut())?;
+        // let tooltip_bottom = Text::with_alignment(TOOLTIPS_BOTTOM[current_tooltip as usize][lang], Point::new(64, 90), &io_handles.font, Alignment::Center);
+        // self.undraw_tooltip[1] = tooltip_bottom.bounding_box();
+        // tooltip_bottom.draw(io_handles.screen.borrow_mut())?;
         Ok(())
     }
 }
@@ -90,7 +90,7 @@ impl SetupMethodState {
     fn draw_menu_base(&mut self, current_selection: u8, lang: Lang, theme: &Theme, io_handles: &mut IOHandles<'_>) -> anyhow::Result<(Rectangle, Rectangle)> {
         io_handles.font.bgcol = theme.bg();
         Text::with_alignment(TEXT_SETUP_PB[lang], Point::new(64, 20), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
-        Text::with_alignment(TEXT_SETUP_PB_A[lang], Point::new(64, 30), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
+        // Text::with_alignment(TEXT_SETUP_PB_A[lang], Point::new(64, 30), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
         Text::with_alignment(TEXT_WIFI_SETUP[lang], Point::new(64, 50), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
         Text::with_alignment(TEXT_STANDALONE_SETUP[lang], Point::new(64, 60), &io_handles.font, Alignment::Center).draw(io_handles.screen.borrow_mut())?;
         Text::with_alignment(TEXT_BACK[lang], Point::new(8, 150), &io_handles.font, Alignment::Left).draw(io_handles.screen.borrow_mut())?;

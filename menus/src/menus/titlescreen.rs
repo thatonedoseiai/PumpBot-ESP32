@@ -3,7 +3,7 @@
 //! constant rate.
 
 use crate::{MenuSignal, IOHandles, Menu, ComponentMenu};
-use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC, TEXT_WELCOME_A};
+use global_settings::lang::{Lang, TEXT_WELCOME, TEXT_PRESSENC};
 // use ilidriver::ILIDriver;
 use fontfile::FontSize;
 use embedded_graphics::{
@@ -88,15 +88,15 @@ impl TitleState {
             timed!("Draw WELCOME", {
                 top_text.draw(io_handles.screen.borrow_mut())?
             });
-            let mid_text = timed!("Create WELCOME 2", {
-                Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), &io_handles.font, Alignment::Center)
-            });
-            self.undraw_bbs[1] = timed!("push box WELCOME 2", {
-                mid_text.bounding_box()
-            });
-            timed!("draw WELCOME 2", {
-                mid_text.draw(io_handles.screen.borrow_mut())?
-            });
+            // let mid_text = timed!("Create WELCOME 2", {
+            //     Text::with_alignment(TEXT_WELCOME_A[self.cur_lang], Point::new(64, 50), &io_handles.font, Alignment::Center)
+            // });
+            // self.undraw_bbs[1] = timed!("push box WELCOME 2", {
+            //     mid_text.bounding_box()
+            // });
+            // timed!("draw WELCOME 2", {
+            //     mid_text.draw(io_handles.screen.borrow_mut())?
+            // });
             timed!("Change font size", {
                 RefCell::borrow_mut(&io_handles.font.font).set_size(FontSize::Sz7)?
             });
