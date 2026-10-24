@@ -129,7 +129,7 @@ impl TextRenderer for &PbFontRenderer {
                     &byteslice.as_slice(), metrics.width.into())
                 });
                 // println!("character {:?} metrics {:?}", char::from_u32(c as u32), &metrics);
-                let image = Image::new(&rawimage, start_char_point - Point::new(0, metrics.y.into()));
+                let image = Image::new(&rawimage, start_char_point + Point::new(metrics.x.into(), (-metrics.y).into()));
                 timed!("draw char as image", {
                     image.draw(&mut timed!("convert char color", target.color_converted()))?
                 });
