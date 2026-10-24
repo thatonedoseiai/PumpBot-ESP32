@@ -262,7 +262,7 @@ pub const TEXT_CHOOSE_LANG: LanguageString = LanguageString {
 
 pub const TEXT_SETUP_PB: LanguageString = LanguageString {
     en: "How would you like to\nsetup PumpBot?",
-    jp: "PumpBotをどうやって\n設定したいですか？",
+    jp: "PumpBotをどうやって\n設定したいですか?",
     fr: "Comment voulez-vous\nconfigurer Pumpbot?",
     es: "¿Cómo te gustaría\nconfigurar PumpBot?",
     pt: "Como gostaria de\nconfigurar o PumpBot?",
@@ -358,7 +358,7 @@ pub const TEXT_SAVE_EXIT: LanguageString = LanguageString {
 
 pub const TEXT_WIFI_CONTINUE_WITHOUT: LanguageString = LanguageString {
     en: "Continue without\nconnecting to Wi-Fi?",
-    jp: "Wi-Fiに接続せずに\n続きますか？",
+    jp: "Wi-Fiに接続せずに\n続きますか?",
     fr: "Continuer sans\nse connecter au Wi-Fi?",
     es: "¿Continuar sin\nconexión Wi-Fi?",
     pt: "Continuar sem conectar\na uma rede Wi-Fi?",
