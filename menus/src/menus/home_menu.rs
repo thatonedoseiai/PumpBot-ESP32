@@ -13,7 +13,7 @@ use button_idf::{ButtonEventKind, ButtonType};
 use rotenc::Direction;
 use alloc::string::ToString;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum HomeMenuMode {
     Browse,
     Edit
@@ -69,7 +69,7 @@ impl HomeMenu {
         }
     }
 
-    async fn draw_main_dial(&mut self, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
+    async fn draw_main_dial(&mut self, selected: bool, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         h.font.font.borrow_mut().set_size(FontSize::Sz14)?;
         let current_state = self.selected_channel.get_state().await;
         let percentage = current_state.get_duty_pct();
@@ -78,6 +78,7 @@ impl HomeMenu {
         let dial_end = (percentage as f32 * 2.7).deg();
         let dial = Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
                     .into_styled(PrimitiveStyle::with_stroke(theme.fg().as_rgb565(), 5));
+        h.font.fgcol = if selected { theme.highlight() } else { theme.fg() };
         let dial_text = Text::with_alignment(&percentage_string, Point::new(64, 78), &h.font, Alignment::Center);
         self.main_dial_undraw = dial.bounding_box(); // dial_text.bounding_box();
         dial.draw(&mut h.screen)?;
@@ -86,6 +87,7 @@ impl HomeMenu {
         Arc::with_center(Point::new(64, 70), 80, 135.0.deg(), dial_end)
                     .into_styled(PrimitiveStyle::with_stroke(dial_colour, 3))
                     .draw(&mut h.screen)?;
+        h.font.fgcol = theme.fg();
         Ok(())
     }
 
@@ -139,7 +141,7 @@ impl HomeMenu {
         h.screen.clear(theme.bg().as_rgb565())?;
         h.font.fgcol = theme.fg();
         h.font.bgcol = theme.bg();
-        self.draw_main_dial(&theme, h).await?;
+        self.draw_main_dial(false, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
 
@@ -156,7 +158,7 @@ impl HomeMenu {
             match (result, self.mode) {
                 (Either4::First(r), HomeMenuMode::Browse) => {
                     self.next_selection();
-                    self.draw_main_dial(&theme, h).await?;
+                    self.draw_main_dial(false, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 },
@@ -180,6 +182,7 @@ impl HomeMenu {
                                 HomeMenuMode::Edit => HomeMenuMode::Browse,
                                 HomeMenuMode::Browse => HomeMenuMode::Edit,
                             };
+                            self.draw_main_dial(self.mode == HomeMenuMode::Edit, &theme, h).await?;
                         },
                         _ => ()
                     }
@@ -211,8 +214,8 @@ impl HomeMenu {
                         )).await;
                     }
                 },
-                (Either4::Third(_), _) => {
-                    self.draw_main_dial(&theme, h).await?;
+                (Either4::Third(_), mode) => {
+                    self.draw_main_dial(mode == HomeMenuMode::Edit, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 }
