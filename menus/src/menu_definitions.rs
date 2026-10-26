@@ -479,7 +479,7 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                 click: OptionScrollerHandler::TransitionToMenu,
                 left: OptionScrollerHandler::PrevOption,
                 right: OptionScrollerHandler::NextOption,
-                num_visible_elements: 5,
+                num_visible_elements: 6,
                 width: 128,
                 font_size: FontSize::Sz12,
                 options: OptionsGenerator::Menus(&[
@@ -488,10 +488,19 @@ pub const SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
                     (&TEXT_SERVER_SETTINGS, Menu::ComponentMenu(ComponentMenu::ServerDetailsSettingsMenu)),
                     (&TEXT_RGB_SETTINGS, Menu::ComponentMenu(ComponentMenu::RgbMenu)),
                     (&TEXT_PWM_WIZARD, Menu::CustomMenu(CustomMenu::PwmWizard)),
+                    (&TEXT_LANGUAGE, Menu::ComponentMenu(ComponentMenu::LanguageSettingsMenu)),
                 ]),
             }),
     ],
-    static_elements: &[],
+    static_elements: &[
+        StaticElement::Text(
+            BACK_BUTTON_POINT,
+            FontSize::Sz7,
+            &TEXT_BACK,
+            ThemedColor::Fg,
+            Alignment::Left,
+        ),
+    ],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
 };
@@ -575,6 +584,34 @@ pub const PWM_WIZARD: ComponentMenuDefinition = ComponentMenuDefinition {
     components: &[],
     static_elements: &[],
     left_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::Back)),
+    right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
+};
+
+pub const LANGUAGE_SETTINGS_MENU: ComponentMenuDefinition = ComponentMenuDefinition {
+    components: &[
+        ComponentDefinition::OptionSwitch(
+            &OptionSwitchDefinition {
+                pos: Point::new(26, 50),
+                click: OptionSwitchHandler::Generic(GenericHandler::SetLanguageAndRedraw),
+                left: OptionSwitchHandler::PrevElementUpdateLang,
+                right: OptionSwitchHandler::NextElementUpdateLang,
+                initial_option: OptionSwitchInitialOptionGenerator::Const(0),
+                font_size: FontSize::Sz12,
+                options: &[
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::En)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Jp)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Fr)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Es)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Pt)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Zh)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Cn)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::Ru)),
+                    LanguageString::const_string(TEXT_LANGUAGE_NAME.const_index(Lang::De)),
+                ],
+            }),
+    ],
+    static_elements: &LANG.static_elements[0..LANG.static_elements.len() - 1],
+    left_btn: LANG.left_btn,
     right_btn: MenuHandler::Generic(GenericHandler::Signal(HandlerResult::None)),
 };
 // TODO: might want to make a done signal somehow

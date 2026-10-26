@@ -42,6 +42,7 @@ use crate::menu_definitions::{
     WIFI_DETAILS_SETTINGS_MENU,
     SERVER_DETAILS_SETTINGS_MENU,
     PWM_WIZARD,
+    LANGUAGE_SETTINGS_MENU,
 };
 use crate::static_element::StaticElement;
 use crate::menus::titlescreen::TitleState;
@@ -251,6 +252,9 @@ enum MenuInternalState {
         selected_channel: PwmNumber,
         voltage: u8,
     },
+    LanguageSettingsMenu {
+        language: u8
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -268,6 +272,7 @@ pub enum ComponentMenu {
     WifiDetailsSettingsMenu(usize),
     ServerDetailsSettingsMenu,
     PwmWizard,
+    LanguageSettingsMenu,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -327,6 +332,7 @@ impl ComponentMenu {
             Self::WifiDetailsSettingsMenu(_) => &WIFI_DETAILS_SETTINGS_MENU,
             Self::ServerDetailsSettingsMenu => &SERVER_DETAILS_SETTINGS_MENU,
             Self::PwmWizard => &PWM_WIZARD,
+            Self::LanguageSettingsMenu => &LANGUAGE_SETTINGS_MENU,
         }
     }
 
@@ -398,7 +404,10 @@ impl ComponentMenu {
             Self::PwmWizard => MenuInternalState::PwmWizard {
                 selected_channel: PwmNumber::Pwm0,
                 voltage: 12, // 12V default
-            }
+            },
+            Self::LanguageSettingsMenu => MenuInternalState::LanguageSettingsMenu {
+                language: settings.lang.into()
+            },
         }
     }
 }

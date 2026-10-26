@@ -141,6 +141,10 @@ impl HomeMenu {
         h.screen.clear(theme.bg().as_rgb565())?;
         h.font.fgcol = theme.fg();
         h.font.bgcol = theme.bg();
+        h.font.font.borrow_mut().set_size(FontSize::Sz14)?;
+        Text::with_alignment("⚙", Point::new(123, 155), &h.font, Alignment::Right).draw(&mut h.screen)?;
+        h.font.font.borrow_mut().set_size(FontSize::Sz12)?;
+        Text::with_alignment("⏻", Point::new(5, 150), &h.font, Alignment::Left).draw(&mut h.screen)?;
         self.draw_main_dial(false, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
         self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;

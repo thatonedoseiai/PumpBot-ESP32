@@ -59,6 +59,7 @@ pub enum GenericHandler {
     Print(&'static str),
     Signal(HandlerResult),
     SetLanguageAndTransition(Menu),
+    SetLanguageAndRedraw,
     ConnectDisconnectWifi,
     ConnectServer,
 }
@@ -109,6 +110,15 @@ impl Handler<()> for GenericHandler {
                     panic!("Handler::SetLanguageAndTransition used on bad menu!");
                 }
             },
+            Self::SetLanguageAndRedraw => {
+                if let MenuInternalState::LanguageSettingsMenu { language } = menu_state {
+                    let mut settings = PB_GLOBAL_SETTINGS.write().await;
+                    settings.lang = (*language).into();
+                    Ok(HandlerResult::ForceRedrawAndUnfocus)
+                } else {
+                    panic!("Handler::SetLanguageAndRedraw used on bad menu!");
+                }
+            }
             Self::ConnectDisconnectWifi => {
                 match menu_state {
                     MenuInternalState::WifiDetails { ap, pass } => {
@@ -196,7 +206,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 Ok(HandlerResult::None)
             },
             Self::NextElementUpdateLang => {
-                if let MenuInternalState::Lang { language } = menu_state {
+                if let MenuInternalState::Lang { language } | MenuInternalState::LanguageSettingsMenu { language } | MenuInternalState::Lang { language } = menu_state {
                     state.selection = (state.selection + 1) % state.definition.options.len();
                     state.draw(h).await?;
                     *language = state.selection as u8;
@@ -206,7 +216,7 @@ impl Handler<OptionSwitchState> for OptionSwitchHandler {
                 }
             },
             Self::PrevElementUpdateLang => {
-                if let MenuInternalState::Lang { language } = menu_state {
+                if let MenuInternalState::Lang { language } | MenuInternalState::LanguageSettingsMenu { language } = menu_state {
                     let num_options = state.definition.options.len();
                     state.selection = (state.selection + num_options - 1) % num_options;
                     state.draw(h).await?;
