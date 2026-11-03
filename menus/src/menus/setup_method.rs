@@ -13,6 +13,7 @@ use global_settings::{
         TEXT_TOOLTIP_STANDALONE_SETUP,
         TEXT_NEXT,
         TEXT_BACK,
+        ERR_NOT_YET_IMPLEMENTED,
     }, 
     Theme,
     PB_GLOBAL_SETTINGS
@@ -142,7 +143,7 @@ impl SetupMethodState {
                         (ButtonType::Right, ButtonEventKind::Down) |
                         (ButtonType::Rotenc, ButtonEventKind::Down) => {
                             if current_selection == 0 {
-                                ComponentMenu::draw_error_dialogue(Cow::Borrowed("no.\n\nThis option is not yet\nimplemented!"), &theme, io_handles)?;
+                                ComponentMenu::draw_error_dialogue(Cow::Borrowed(ERR_NOT_YET_IMPLEMENTED[lang]), &theme, io_handles)?;
                                 while io_handles.button.receive().await.event != ButtonEventKind::Down {}
                                 io_handles.screen.clear(theme.bg().as_rgb565())?;
                                 self.draw_menu_base(current_selection, lang, &theme, io_handles)?;

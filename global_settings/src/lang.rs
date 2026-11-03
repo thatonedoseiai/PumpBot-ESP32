@@ -1509,3 +1509,15 @@ pub const TEXT_SOLENOID_MODE: LanguageString = LanguageString {
     ru: "Режим соленоида", //MACHINE TRANSLATION
     de: "Magnetventil-Modus", //MACHINE TRANSLATION
 };
+
+pub const ERR_NOT_YET_IMPLEMENTED: LanguageString = LanguageString {
+    en: "no.\n\nThis option is not yet\nimplemented!",
+    jp: "no.\n\nThis option is not yet\nimplemented!",
+    fr: "no.\n\nThis option is not yet\nimplemented!",
+    es: "no.\n\nThis option is not yet\nimplemented!",
+    pt: "no.\n\nThis option is not yet\nimplemented!",
+    zh: "no.\n\nThis option is not yet\nimplemented!",
+    cn: "no.\n\nThis option is not yet\nimplemented!",
+    ru: "no.\n\nThis option is not yet\nimplemented!",
+    de: "no.\n\nThis option is not yet\nimplemented!"
+};
