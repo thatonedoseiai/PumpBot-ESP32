@@ -1511,13 +1511,13 @@ pub const TEXT_SOLENOID_MODE: LanguageString = LanguageString {
 };
 
 pub const ERR_NOT_YET_IMPLEMENTED: LanguageString = LanguageString {
-    en: "no.\n\nThis option is not yet\nimplemented!",
-    jp: "no.\n\nThis option is not yet\nimplemented!",
-    fr: "no.\n\nThis option is not yet\nimplemented!",
-    es: "no.\n\nThis option is not yet\nimplemented!",
-    pt: "no.\n\nThis option is not yet\nimplemented!",
-    zh: "no.\n\nThis option is not yet\nimplemented!",
-    cn: "no.\n\nThis option is not yet\nimplemented!",
-    ru: "no.\n\nThis option is not yet\nimplemented!",
-    de: "no.\n\nThis option is not yet\nimplemented!"
+    en: "This is unfinished!",
+    jp: "選択未完成!",
+    fr: "Ceci n’est pas implémenté!",
+    es: "¡Esto no está implementado!",
+    pt: "Isso não foi implementado!", //MACHINE TRANSLATION
+    zh: "这条选择未造完!",
+    cn: "這條選擇未造完!",
+    ru: "Это не реализовано!", //MACHINE TRANSLATION
+    de: "Dies ist nicht implementiert!" //MACHINE TRANSLATION
 };
