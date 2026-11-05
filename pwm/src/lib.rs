@@ -19,6 +19,7 @@ use core::fmt;
 use alloc::collections::binary_heap::BinaryHeap;
 use alloc::vec::Vec;
 use alloc::sync::Arc;
+use alloc::format;
 use core::future;
 
 type Time = u64;
@@ -312,8 +313,8 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: 
                 ));
             },
             Either3::Second(_) => {
-                if let command = command_queue.pop() {
-                    execute_command(&mut channels, command.action, max_duty).await.expect("[Error]: PWM is unable to run the command {:?}!", command);
+                if let Some(command) = command_queue.pop() {
+                    execute_command(&mut channels, command.action, max_duty).await.expect(format!("[Error]: PWM is unable to run the command {:?}!", command).as_str());
                     done_signal.signal(PwmResponse);
                 }
             },
