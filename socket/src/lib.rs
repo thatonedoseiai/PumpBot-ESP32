@@ -65,7 +65,12 @@ impl core::error::Error for ServerError { }
 impl fmt::Display for ServerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::ConnectError(c) => write!(f, "SERVER ERROR: ConnectError {}", c),
+            Self::ConnectError(c) => write!(f, "SERVER ERROR: ConnectError {}", match c {
+                ConnectError::InvalidState => "Invalid State",
+                ConnectError::ConnectionReset => "Connection Reset",
+                ConnectError::TimedOut => "Timed Out",
+                ConnectError::NoRoute => "No Route",
+            }),
             Self::TcpError(e) => write!(f, "SERVER ERROR: Tcp Error during read: {}", e),
         }
     }

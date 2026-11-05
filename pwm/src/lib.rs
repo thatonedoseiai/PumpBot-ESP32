@@ -13,7 +13,7 @@ use embassy_sync::signal::Signal;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_time::{Timer as ETimer, Duration};
 use embassy_executor::Spawner;
-use embedded_hal::pwm::SetDutyCycle;
+use embedded_hal::pwm::{SetDutyCycle};
 use core::cmp::{Ord, Ordering, PartialOrd, min};
 use core::fmt;
 use alloc::collections::binary_heap::BinaryHeap;
@@ -296,7 +296,7 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: 
             Some(d) => Some(ETimer::after(Duration::from_millis(d))),
             None => None,
         };
-        let next_unfreeze = PIN_STATES.iter().map(|f| block_on(f.read()).freeze_timer).min().unwrap();
+        let next_unfreeze = PIN_STATES.iter().map(|f| block_on(f.read()).freeze_timer).min().expect("[Error]: impossible situation - PWM driver has unexpectedly lost all pin information!");
         let unfreeze_event = if next_unfreeze > 0 {
             Some(ETimer::after(Duration::from_millis(next_unfreeze)))
         } else {
@@ -312,9 +312,10 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: 
                 ));
             },
             Either3::Second(_) => {
-                let command = command_queue.pop().unwrap();
-                execute_command(&mut channels, command.action, max_duty).await;
-                done_signal.signal(PwmResponse);
+                if let command = command_queue.pop() {
+                    execute_command(&mut channels, command.action, max_duty).await.expect("[Error]: PWM is unable to run the command {:?}!", command);
+                    done_signal.signal(PwmResponse);
+                }
             },
             Either3::Third(_) => {
                 PIN_STATES.iter().for_each(|f| {
@@ -329,22 +330,22 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: 
     }
 }
 
-async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmAction, max_duty: u32) {
+async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmAction, max_duty: u32) -> Result<(), Error> {
     match action {
         PwmAction::On(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
+            channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty))?;
             state.state = PwmPinState::On;
         },
         PwmAction::Off(c) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
-            channels[usize::from(c)].set_duty_cycle(0).unwrap();
+            channels[usize::from(c)].set_duty_cycle(0)?;
             state.state = PwmPinState::Off;
         },
         PwmAction::SetDuty(c, duty) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
             if state.state == PwmPinState::On {
-                channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(duty)).unwrap();
+                channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(duty))?;
             }
             state.duty = duty;
         },
@@ -352,7 +353,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let mut state = PIN_STATES[usize::from(c)].write().await;
             let duty_pct = pct_to_duty(max_duty, pct);
             if state.state == PwmPinState::On {
-                channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(duty_pct)).unwrap();
+                channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(duty_pct))?;
             }
             state.duty = 164 * pct as u16;
         },
@@ -363,7 +364,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
                 // state.duty = ((((cur_duty_pct + p) as u32).min(100) * 16383u32) / 100) as u16;
                 state.duty = pct_to_duty(max_duty, (cur_duty_pct.saturating_add(p)).min(100));
                 if state.state == PwmPinState::On {
-                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty))?;
                 }
             }
         },
@@ -371,9 +372,9 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let mut state = PIN_STATES[usize::from(c)].write().await;
             let cur_duty_pct = state.get_duty_pct();
             if cur_duty_pct > 0 {
-                state.duty = pct_to_duty(max_duty, (cur_duty_pct.saturating_sub(p)));
+                state.duty = pct_to_duty(max_duty, cur_duty_pct.saturating_sub(p));
                 if state.state == PwmPinState::On {
-                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty))?;
                 }
                 // state.duty = 164 * (cur_duty_pct.saturating_sub(p)) as u16;
             }
@@ -387,7 +388,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
                         PwmPinState::On => state.map_duty_max_min(state.duty),
                         PwmPinState::Off => 0,
                     }
-                ).unwrap();
+                )?;
             }
             // state.state = PwmPinState::On;
         },
@@ -395,11 +396,11 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             let mut state = PIN_STATES[usize::from(c)].write().await;
             match state.state {
                 PwmPinState::On => {
-                    channels[usize::from(c)].set_duty_cycle(0).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(0)?;
                     state.state = PwmPinState::Off;
                 },
                 PwmPinState::Off => {
-                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty)).unwrap();
+                    channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(state.duty))?;
                     state.state = PwmPinState::On;
                 },
             }
@@ -411,6 +412,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             state.freeze_timer = t;
         }
     }
+    Ok(())
 }
 
 const fn pct_to_duty(max_duty: u32, pct: u8) -> u16 {

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = { version = "1.0.104", default-features = false }
 embassy-executor = "0.10.0"
 embassy-futures = "0.1.2"
 embassy-sync = "0.8.0"

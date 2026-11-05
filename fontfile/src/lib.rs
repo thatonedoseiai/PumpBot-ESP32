@@ -154,6 +154,19 @@ pub struct CharMetadata {
     pub height: u16,
 }
 
+impl CharMetadata {
+    pub const fn error_default(advance: u16) -> Self {
+        CharMetadata {
+            vertical: true,
+            advance: advance,
+            x: 0,
+            y: 0,
+            width: 4,
+            height: 8,
+        }
+    }
+}
+
 impl From<[u8; 10]> for CharMetadata {
     fn from(val: [u8; 10]) -> CharMetadata {
         let mut advance = u16::from_le_bytes([val[0], val[1]]);
@@ -230,7 +243,7 @@ impl From<io::Error> for FontFileError {
 }
 
 impl FontSize {
-    fn as_path(&self) -> &Path {
+    const fn as_path(&self) -> &Path {
         match self {
             FontSize::Sz7 =>  FONT_NAME_SIZE_7,
             FontSize::Sz12 => FONT_NAME_SIZE_12,
@@ -238,6 +251,17 @@ impl FontSize {
             FontSize::Sz18 => FONT_NAME_SIZE_18,
             FontSize::Sz24 => FONT_NAME_SIZE_24,
             FontSize::Sz42 => FONT_NAME_SIZE_42,
+        }
+    }
+
+    const fn default_advance(&self) -> u16 {
+        match self {
+            FontSize::Sz7 => 4,
+            FontSize::Sz12 => 9,
+            FontSize::Sz14 => 11,
+            FontSize::Sz18 => 14,
+            FontSize::Sz24 => 20,
+            FontSize::Sz42 => 38,
         }
     }
 }

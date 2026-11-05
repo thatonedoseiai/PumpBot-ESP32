@@ -72,28 +72,13 @@ impl TextRenderer for &PbFontRenderer {
             // dbg_pindriver.set_low();
 
             let char_res = timed!("load char", { 
-                self.font.borrow_mut().load_char(c)// .unwrap() // TODO: fix this!
+                self.font.borrow_mut().load_char(c)
             });
             let (metrics, coldata) = match char_res {
                 Ok(k) => k,
                 Err(_) => {
-                    let av = match self.font.borrow_mut().font_size {
-                        Some(FontSize::Sz7) => 4,
-                        Some(FontSize::Sz12) => 9,
-                        Some(FontSize::Sz14) => 11,
-                        Some(FontSize::Sz18) => 14,
-                        Some(FontSize::Sz24) => 20,
-                        Some(FontSize::Sz42) => 38,
-                        _ => 4,
-                    };
-                    let m = CharMetadata {
-                        vertical: true,
-                        advance: av,
-                        x: 0,
-                        y: 0,
-                        width: 4,
-                        height: 8,
-                    };
+                    let av = self.font.borrow_mut().font_size.unwrap_or(FontSize::Sz7).default_advance();
+                    let m = CharMetadata::error_default(av);
                     let mut bitmask = 0b10000000_00000000;
                     let mut coldata = Vec::with_capacity(16);
                     for i in 0..16 {
@@ -172,27 +157,12 @@ impl TextRenderer for &PbFontRenderer {
         let mut bb_bottom_right = position;
         let mut start_char_point = position;
         for c in text.encode_utf16() {
-            let m = self.font.borrow_mut().load_char_metadata(c); //.unwrap(); // TODO: fix this!
+            let m = self.font.borrow_mut().load_char_metadata(c);
             let metrics = match m {
                 Ok(k) => k,
                 Err(_) => {
-                    let av = match self.font.borrow_mut().font_size {
-                        Some(FontSize::Sz7) => 4,
-                        Some(FontSize::Sz12) => 9,
-                        Some(FontSize::Sz14) => 11,
-                        Some(FontSize::Sz18) => 14,
-                        Some(FontSize::Sz24) => 20,
-                        Some(FontSize::Sz42) => 38,
-                        _ => 4,
-                    };
-                    CharMetadata {
-                        vertical: true,
-                        advance: av,
-                        x: 0,
-                        y: 0,
-                        width: 4,
-                        height: 8,
-                    }
+                    let av = self.font.borrow_mut().font_size.unwrap_or(FontSize::Sz7).default_advance();
+                    CharMetadata::error_default(av)
                 }
             };
             let top_left = start_char_point - Point::new(0, metrics.y.into());

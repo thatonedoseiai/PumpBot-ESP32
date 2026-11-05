@@ -224,7 +224,7 @@ impl ComponentBehaviour for ButtonState {
         let theme = &settings.theme;
         f.fgcol = theme.fg();
         f.bgcol = theme.bg();
-        f.font.borrow_mut().set_size(self.definition.font_size).unwrap();
+        f.font.borrow_mut().set_size(self.definition.font_size)?;
         let label = self.definition.text.generate(&settings.lang, h).await?;
         let button_text = Text::with_alignment(&label, self.definition.pos, &h.font, Alignment::Left);
         let text_bb = button_text.bounding_box();

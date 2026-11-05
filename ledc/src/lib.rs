@@ -14,8 +14,23 @@ use embassy_executor::Spawner;
 use embassy_sync::once_lock::OnceLock;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_time::{Timer as ETimer, Duration as EDuration};
+use core::fmt;
 
 // --- Types and Configuration ---
+
+#[derive(Debug, Copy, Clone)]
+enum LedcError {
+    CreationError,
+}
+
+impl core::error::Error for LedcError {}
+impl fmt::Display for LedcError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::CreationError => write!(f, "[Ledc Creation Error]"),
+        }
+    }
+}
 
 type RwLock<T> = embassy_sync::rwlock::RwLock<CriticalSectionRawMutex, T>;
 
@@ -126,9 +141,9 @@ async fn ledc_worker(mut p: LedPeripherals<'static>) {
 
         {
             let brightness = {current.read().await.brightness};
-            p.channel_r.set_duty_cycle(apply(r, brightness)).unwrap();
-            p.channel_g.set_duty_cycle(apply(g, brightness)).unwrap();
-            p.channel_b.set_duty_cycle(apply(b, brightness)).unwrap();
+            p.channel_r.set_duty_cycle(apply(r, brightness)).expect("[Error]: unable to set the duty cycle of r channel in LEDC subtask!");
+            p.channel_g.set_duty_cycle(apply(g, brightness)).expect("[Error]: unable to set the duty cycle of g channel in LEDC subtask!");
+            p.channel_b.set_duty_cycle(apply(b, brightness)).expect("[Error]: unable to set the duty cycle of b channel in LEDC subtask!");
         }
         let speed = {current.read().await.speed_ms};
 
@@ -144,19 +159,19 @@ impl LedController {
         spawner: Spawner,
         p: LedPeripherals<'static>,
         initial_mode: LedMode,
-    ) -> Self {
+    ) -> anyhow::Result<Self> {
         let inner_arc = Arc::new(RwLock::new(ControllerState {
             mode: initial_mode,
             brightness: 255,
             speed_ms: 10,
         }));
-        STATE.init(inner_arc.clone()).unwrap();
+        STATE.init(inner_arc.clone()).map_err(|_| LedcError::CreationError)?;
 
         // Spawn the worker thread
         // thread::spawn(move || { });
-        let _ = spawner.spawn(ledc_worker(p).unwrap());
+        spawner.spawn(ledc_worker(p).unwrap());
 
-        Self { state: inner_arc }
+        Ok(Self { state: inner_arc })
     }
 
     // TODO: add the errors or make it async

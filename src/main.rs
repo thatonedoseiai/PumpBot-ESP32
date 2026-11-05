@@ -60,6 +60,7 @@ use esp_hal::spi::master::{Spi, Config};
 use esp_hal::time::Rate;
 use esp_hal::clock::CpuClock;
 use esp_hal::ledc::{Ledc, LSGlobalClkSource, timer, LowSpeed, timer::{TimerIFace, Timer}, channel, channel::ChannelIFace};
+use esp_hal::pcnt::unit::InvalidFilterThreshold;
 // use esp_alloc::HEAP;
 
 use littlefs2::io;
@@ -114,6 +115,7 @@ enum PbError {
     FSError(io::Error),
     LedcError(channel::Error),
     LedTimerError(timer::Error),
+    RotencInitError(InvalidFilterThreshold),
 }
 
 impl core::error::Error for PbError { }
@@ -123,6 +125,7 @@ impl fmt::Display for PbError {
             PbError::FSError(e) => write!(f, "FS error! {:?}", e),
             PbError::LedcError(e) => write!(f, "Channel error! {:?}", e),
             PbError::LedTimerError(e) => write!(f, "Timer error! {:?}", e),
+            PbError::RotencInitError(e) => write!(f, "Rotenc error! {:?}", e),
         }
     }
 }
@@ -251,7 +254,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         (peripherals.GPIO0.into(), ButtonType::Left), 
         (peripherals.GPIO3.into(), ButtonType::Right), 
         (peripherals.GPIO18.into(), ButtonType::Rotenc)]);
-    let rotenc_receiver = start_rotenc_thread(peripherals.GPIO17.into(), peripherals.GPIO8.into(), peripherals.PCNT);
+    let rotenc_receiver = start_rotenc_thread(peripherals.GPIO17.into(), peripherals.GPIO8.into(), peripherals.PCNT).map_err(|e| PbError::RotencInitError(e))?;
 
     // use embassy_time::{Timer, Duration};
     // loop {
@@ -274,7 +277,7 @@ async fn init_board(spawner: Spawner, peripherals: Peripherals) -> anyhow::Resul
         &ledc,
         lstimer0,
     ).map_err(|e| PbError::LedcError(e))?;
-    let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off);
+    let leddriver = LedController::new(spawner, ledperipherals, LedMode::Off)?;
     leddriver.set_brightness(128).await;
     let outputperipherals = Pwm::new(
         &spawner, 

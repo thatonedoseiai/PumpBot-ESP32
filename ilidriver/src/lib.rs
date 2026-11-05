@@ -3,8 +3,8 @@
 
 mod ili9341;
 
-pub use ili9341::{Ili9341, Orientation, DisplaySize240x320, ILIError};
-use fontfile::{PbFont};
+pub use ili9341::{Ili9341, Orientation, DisplaySize240x320};
+use fontfile::{PbFont, FontFileError};
 // use esp_idf_hal::gpio::{PinDriver, AnyIOPin, Output};
 // use esp_idf_hal::delay::{Delay};
 // use esp_idf_hal::spi::{config::{DriverConfig, Config}, SPI2, SpiDeviceDriver, SpiDriver};
@@ -53,6 +53,24 @@ pub struct ILIDriver<'a> {
 //     }
 // }
 
+enum ILIError {
+    Internal(ili9341::ILIError),
+    MissingChar(u16),
+    FontFileError(FontFileError),
+}
+
+impl From<ili9341::ILIError> for ILIError {
+    fn from(val: ili9341::ILIError) -> ILIError {
+        ILIError::Internal(val)
+    }
+}
+
+impl From<FontFileError> for ILIError {
+    fn from(val: FontFileError) -> ILIError {
+        ILIError::FontFileError(val)
+    }
+}
+
 impl<'a> ILIDriver<'a> {
     pub fn new(spi2: SPI2<'a>,
                dc: AnyPin<'a>,
@@ -61,7 +79,7 @@ impl<'a> ILIDriver<'a> {
                sdi: AnyPin<'a>,
                rst: AnyPin<'a>,
                bl: AnyPin<'a>,
-        ) -> Result<ILIDriver<'a>, ILIError> {
+        ) -> Result<ILIDriver<'a>, ili9341::ILIError> {
         let config = OutputConfig::default();
         let inputconfig = InputConfig::default().with_pull(Pull::Up);
 
@@ -100,27 +118,25 @@ impl<'a> ILIDriver<'a> {
     }
 
     pub async fn draw_string(&mut self, x: u16, y: u16, to_draw: &str, font: &mut PbFont, newline_offset: i16) -> Result<(), ILIError> {
-        let mut start_x: u16 = x; // x.try_into().map_err(|_| ILIError::WritingOffScreen(x, y))?;
-        let mut start_y: u16 = y; // y.try_into().map_err(|_| ILIError::WritingOffScreen(x, y))?;
+        let mut start_x: u16 = x; // x.try_into().map_err(|_| ili9341::ILIError::WritingOffScreen(x, y))?;
+        let mut start_y: u16 = y; // y.try_into().map_err(|_| ili9341::ILIError::WritingOffScreen(x, y))?;
         for c in to_draw.encode_utf16() {
-            info!("loading char {}: {} at {} {}", c, char::from_u32(c as u32).unwrap(), start_x, start_y);
+            info!("loading char {}: {} at {} {}", c, char::from_u32(c as u32).ok_or(ILIError::MissingChar(c))?, start_x, start_y);
             let (char_metrics, char_slice) = font.load_char(c)?;
             if char_metrics.width != 0 {
                 let true_height = char_metrics.height / 3;
-                let char_start_x: u16 = (start_x.checked_sub_signed(char_metrics.x)).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
-                let char_start_y: u16 = (start_y.checked_sub_signed(char_metrics.y)).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
+                let char_start_x: u16 = (start_x.checked_sub_signed(char_metrics.x)).ok_or(ili9341::ILIError::WritingOffScreen(start_x, start_y))?;
+                let char_start_y: u16 = (start_y.checked_sub_signed(char_metrics.y)).ok_or(ili9341::ILIError::WritingOffScreen(start_x, start_y))?;
                 if usize::from(char_start_x+char_metrics.width-1) > self.display.width() {
                     if newline_offset > 0 {
-                        start_y = start_y.checked_sub_signed(newline_offset).ok_or(ILIError::WritingOffScreen(start_x, start_y))?;
-                        start_x = x.try_into().map_err(|_| ILIError::WritingOffScreen(char_start_x, char_start_y))?;
+                        start_y = start_y.checked_sub_signed(newline_offset).ok_or(ili9341::ILIError::WritingOffScreen(start_x, start_y))?;
+                        start_x = x.try_into().map_err(|_| ili9341::ILIError::WritingOffScreen(char_start_x, char_start_y))?;
                         continue;
                     } else {
-                        return Err(ILIError::WritingOffScreen(char_start_x, char_start_y));
+                        return Err(ili9341::ILIError::WritingOffScreen(char_start_x, char_start_y).into());
                     }
                 }
-                // info!("draw {}: {} boundaries: {} {} {} {} height: {} y: {}", c, char::from_u32(c as u32).unwrap(), char_start_y, char_start_x, char_start_y+true_height-1, char_start_x+char_metrics.width-1, true_height, char_metrics.y);
                 self.display.draw_raw_slice(
-                    // char_start_y-true_height+1, 
                     char_start_y, 
                     char_start_x, 
                     char_start_y+true_height-1, 
@@ -128,7 +144,6 @@ impl<'a> ILIDriver<'a> {
                     char_slice.as_slice())?;
             }
             start_x += char_metrics.advance;
-            // start_x += i16::try_from(char_metrics.advance).map_err(|_| ILIError::WritingOffScreen(start_x, start_y))?;
         }
         Ok(())
     }

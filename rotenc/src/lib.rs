@@ -19,7 +19,7 @@ extern crate alloc;
 pub use rotary_encoder_embedded::{standard::StandardMode, Direction};
 use quadrature_encoder::{RotaryEncoder, RotaryMovement};
 use esp_hal::gpio::{AnyPin, Input, InputConfig, Pull};
-use esp_hal::pcnt::{Pcnt, unit::Unit, channel::{CtrlMode, EdgeMode}};
+use esp_hal::pcnt::{Pcnt, unit::{Unit, InvalidFilterThreshold}, channel::{CtrlMode, EdgeMode}};
 use esp_hal::peripherals::PCNT;
 // use esp_hal::delay::Delay;
 use embassy_sync::channel::{Channel, Receiver};
@@ -100,79 +100,26 @@ impl RotencDriver {
 // static EVENT_QUEUE: Channel<CriticalSectionRawMutex, EncoderEvent, 20> = Channel::new();
 static EVENT_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
-/// the rotary encoder thread
-#[embassy_executor::task]
-async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>, p: PCNT<'static>, event_signal: Arc<Signal<CriticalSectionRawMutex, bool>>) {
-    let inputconfig = InputConfig::default().with_pull(Pull::Up);
-    let pin_a_driver = Input::new(pin_a, inputconfig);
-    let pin_b_driver = Input::new(pin_b, inputconfig);
-    let pcnt = Pcnt::new(p);
-    let u0 = pcnt.unit0;
-    // u0.set_low_limit(Some(-100)).unwrap();
-    // u0.set_high_limit(Some(100)).unwrap();
-    u0.set_filter(Some(800)).unwrap();
-    let input_a = pin_a_driver.peripheral_input();
-    let input_b = pin_b_driver.peripheral_input();
-    let ch0 = &u0.channel0;
-    // let ch1 = &u0.channel1;
-    ch0.set_ctrl_signal(input_a.clone());
-    ch0.set_edge_signal(input_b.clone());
-    ch0.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
-    ch0.set_input_mode(EdgeMode::Increment, EdgeMode::Hold);
+// /// the rotary encoder thread
+// #[embassy_executor::task]
+// async fn rotenc_thread(pin_a: AnyPin<'static>, pin_b: AnyPin<'static>, p: PCNT<'static>, event_signal: Arc<Signal<CriticalSectionRawMutex, bool>>) {
+//     let inputconfig = InputConfig::default().with_pull(Pull::Up);
+//     let pin_a_driver = Input::new(pin_a, inputconfig);
+//     let pin_b_driver = Input::new(pin_b, inputconfig);
+//     let pcnt = Pcnt::new(p);
+//     let u0 = pcnt.unit0;
+//     u0.set_filter(Some(800)).expect("[error]: unable to set filter value in rotenc thread!");
+//     let input_a = pin_a_driver.peripheral_input();
+//     let input_b = pin_b_driver.peripheral_input();
+//     let ch0 = &u0.channel0;
+//     ch0.set_ctrl_signal(input_a.clone());
+//     ch0.set_edge_signal(input_b.clone());
+//     ch0.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
+//     ch0.set_input_mode(EdgeMode::Increment, EdgeMode::Hold);
 
-    // ch1.set_ctrl_signal(input_b);
-    // ch1.set_edge_signal(input_a);
-    // ch1.set_ctrl_mode(CtrlMode::Keep, CtrlMode::Reverse);
-    // ch1.set_input_mode(EdgeMode::Decrement, EdgeMode::Increment);
-
-    u0.clear();
-    u0.resume();
-
-    // loop {
-        // log::warn!("rotenc pos: {}", u0.value());
-        // Timer::after(Duration::from_millis(1000)).await;
-    // }
-
-    // ch0.set_edge_action(esp_hal::pcnt::channel::EdgeAction::Increment, esp_hal::pcnt::channel::EdgeAction::Hold);
-    // ch0.set_level_action(esp_hal::pcnt::channel::LevelAction::Keep, esp_hal::pcnt::channel::LevelAction::Inverse);
-    // ch0.set_pins(Some(pin_a.peripheral_input()), Some(pin_b.peripheral_input()));
-    // let delay = Delay::new();
-
-    // let mut encoder = StandardMode::new();
-    // let mut encoder = RotaryEncoder::<_, _>::new(pin_a_driver, pin_b_driver).into_async();
-    // let mut position = Wrapping(0i32);
-
-    // loop {
-    //     // let dir = encoder.update(pin_a_driver.is_high(), pin_b_driver.is_high());
-    //     let encoder_val = encoder.poll().await;
-    //     let dir = match encoder_val {
-    //         Ok(Some(RotaryMovement::Clockwise)) => {
-    //             position += 1;
-    //             Direction::Clockwise
-    //         },
-    //         Ok(Some(RotaryMovement::CounterClockwise)) => {
-    //             position -= 1;
-    //             Direction::Anticlockwise
-    //         },
-    //         Err(e) => {
-    //             panic!("Rotary encoder error! {:?}", e);
-    //         },
-    //         _ => {
-    //             Direction::None
-    //         },
-    //     };
-
-    //     // let _ = q_task.send_back(EncoderEvent::new(position, dir).into(), 10);
-    //     if dir != Direction::None {
-    //         assert!(position == Wrapping(encoder.position()));
-    //         log::warn!("rotenc event! {}", position);
-    //         // EVENT_QUEUE.send(EncoderEvent::new(position, dir)).await;
-    //     }
-    //     // Timer::after(Duration::from_millis(10)).await;
-    //     // delay.delay_millis(10);
-    //     // FreeRtos::delay_ms(10);
-    // }
-}
+//     u0.clear();
+//     u0.resume();
+// }
 
 static UNIT0: Mutex<RefCell<Option<Unit<'static, 0>>>> = Mutex::new(RefCell::new(None));
 
@@ -185,7 +132,7 @@ pub fn start_rotenc_thread(
     pin_b: AnyPin<'static>,
     p: PCNT<'static>,
 // ) -> Receiver<'static, CriticalSectionRawMutex, EncoderEvent, 20> {
-) -> RotencDriver {
+) -> Result<RotencDriver, InvalidFilterThreshold> {
 
     // let e = Arc::new(Signal::new());
     // let _ = spawner.spawn(rotenc_thread(pin_a, pin_b, pcnt, e.clone()).unwrap());
@@ -196,7 +143,7 @@ pub fn start_rotenc_thread(
     let mut pcnt = Pcnt::new(p);
     pcnt.set_interrupt_handler(interrupt_handler);
     let u0 = pcnt.unit0;
-    u0.set_filter(Some(800)).unwrap();
+    u0.set_filter(Some(800))?;
     let input_a = pin_a_driver.peripheral_input();
     let input_b = pin_b_driver.peripheral_input();
     let ch0 = &u0.channel0;
@@ -212,10 +159,10 @@ pub fn start_rotenc_thread(
 
     critical_section::with(|cs| UNIT0.borrow_ref_mut(cs).replace(u0));
 
-    RotencDriver {
+    Ok(RotencDriver {
         prev_event: RefCell::new(Instant::now()),
         // rotenc_unit: u0,
-    }
+    })
 
     // EVENT_QUEUE.receiver()
 }
