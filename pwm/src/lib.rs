@@ -115,6 +115,8 @@ pub enum PwmAction {
     UnfreezePin(PwmNumber),
     Toggle(PwmNumber),
     FreezePin(PwmNumber, Time),
+    EnablePwm,
+    DisablePwm,
 }
 
 impl fmt::Display for PwmAction {
@@ -128,7 +130,9 @@ impl fmt::Display for PwmAction {
             PwmAction::DecDutyPct(x, p) => { write!(f, "CHANNEL {}: DECREMENT DUTY BY {}%", x, p) },
             PwmAction::UnfreezePin(x) => { write!(f, "UNFREEZE CHANNEL {}", x) },
             PwmAction::Toggle(x) => { write!(f, "TOGGLE CHANNEL {}", x) },
-            PwmAction::FreezePin(x, t) => { write!(f, "FREEZE CHANNEL {} FOR {} MS", x, t) }
+            PwmAction::FreezePin(x, t) => { write!(f, "FREEZE CHANNEL {} FOR {} MS", x, t) },
+            PwmAction::EnablePwm => { write!(f, "ENABLE PWM") },
+            PwmAction::DisablePwm => { write!(f, "DISABLE PWM") }
         }
     }
 }
@@ -161,7 +165,8 @@ impl Pwm<'_> {
                     .collect();
         channels.iter_mut()
                 .try_for_each(|chan| {
-                    chan.configure(channel_config)
+                    chan.configure(channel_config)?;
+                    chan.set_duty_cycle_fully_off()
                 })?;
         let result_signal = Arc::new(Signal::new());
         let max_duty = channels[0].max_duty_cycle() - 1; // NOTE: this is because of a BUG in
@@ -287,6 +292,7 @@ const CHANNEL_NUMBERS: [Number; 4] = [Number::Channel3, Number::Channel4, Number
 async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: Arc<Signal<CriticalSectionRawMutex, PwmResponse>>, md: u16) {
     let mut command_queue: BinaryHeap<Command> = BinaryHeap::new();
     let max_duty = md as u32;
+    let mut pwm_enabled = false;
 
     loop {
         let now = Instant::now();
@@ -314,7 +320,23 @@ async fn pwm_runner(mut channels: Vec<Channel<'static, LowSpeed>>, done_signal: 
             },
             Either3::Second(_) => {
                 if let Some(command) = command_queue.pop() {
-                    execute_command(&mut channels, command.action, max_duty).await.expect(format!("[Error]: PWM is unable to run the command {:?}!", command).as_str());
+                    match command.action {
+                        PwmAction::EnablePwm => { pwm_enabled = true; },
+                        PwmAction::DisablePwm => {
+                            pwm_enabled = false;
+                            {
+                                channels.iter_mut().try_for_each(|c| {
+                                    c.set_duty_cycle_fully_off()
+                                }).expect(format!("[Error]: PWM is unable to stop the PWM pins!").as_str());
+                            }
+                        },
+                        _ => { 
+                            if pwm_enabled {
+                                execute_command(&mut channels, command.action, max_duty).await
+                                    .expect(format!("[Error]: PWM is unable to run the command {:?}!", command).as_str());
+                            }
+                        }
+                    }
                     done_signal.signal(PwmResponse);
                 }
             },
@@ -412,6 +434,7 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             state.frozen = true;
             state.freeze_timer = t;
         }
+        PwmAction::EnablePwm | PwmAction::DisablePwm => {}
     }
     Ok(())
 }

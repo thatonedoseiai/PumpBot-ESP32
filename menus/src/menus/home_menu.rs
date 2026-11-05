@@ -160,6 +160,8 @@ impl HomeMenu {
         // let ip = h.wifi.wget("http://ifconfig.me").await.unwrap();
         // log::error!("my ip! {}", ip);
 
+        h.pwm_output.send_await(Command::new(PwmAction::EnablePwm, 0)).await;
+
         loop {
             let result = select4(
                 h.rotenc.receive(0),
@@ -179,6 +181,7 @@ impl HomeMenu {
                         (ButtonType::Right, ButtonEventKind::Down) => {
                             // transition to settings menu
                             // todo!("transition to settings menu")
+                            h.pwm_output.send_await(Command::new(PwmAction::DisablePwm, 0));
                             return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Settings)));
                         },
                         (ButtonType::Left, ButtonEventKind::Down) => {
