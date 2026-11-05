@@ -181,7 +181,7 @@ impl HomeMenu {
                         (ButtonType::Right, ButtonEventKind::Down) => {
                             // transition to settings menu
                             // todo!("transition to settings menu")
-                            h.pwm_output.send_await(Command::new(PwmAction::DisablePwm, 0));
+                            h.pwm_output.send_await(Command::new(PwmAction::DisablePwm, 0)).await;
                             return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Settings)));
                         },
                         (ButtonType::Left, ButtonEventKind::Down) => {

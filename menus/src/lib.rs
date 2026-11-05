@@ -303,7 +303,7 @@ impl ComponentMenu {
 
     const fn dialogue_box_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
-            .stroke_width(3)
+            .stroke_width(1)
             .stroke_color(theme.fg().as_rgb565())
             .fill_color(theme.bg_secondary().as_rgb565())
             .build()
@@ -339,17 +339,16 @@ impl ComponentMenu {
     pub fn draw_error_dialogue(message: Cow<'_, str>, theme: &Theme, h: &mut IOHandles<'_>) -> anyhow::Result<()> {
         h.font.font.borrow_mut().set_size(FontSize::Sz7)?;
         h.font.bgcol = theme.bg_secondary();
-        Circle::new(Point::new(2, 2), 11)
-            .into_styled(Self::cross_bg_style(theme))
-            .draw(&mut h.screen)?;
-        Line::new(Point::new(5, 5), Point::new(10, 10))
-            .into_styled(PrimitiveStyle::with_stroke(theme.highlight().as_rgb565(), 2))
-            .draw(&mut h.screen)?;
-        Line::new(Point::new(5, 10), Point::new(10, 5))
-            .into_styled(PrimitiveStyle::with_stroke(theme.highlight().as_rgb565(), 2))
-            .draw(&mut h.screen)?;
         Self::DIALOGUE_BOX.into_styled(Self::dialogue_box_style(&theme)).draw(&mut h.screen)?;
-        Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new(5, 10), &h.font, Alignment::Left).draw(&mut h.screen)?;
+        Text::with_alignment("⤓", 
+            Self::DIALOGUE_BOX.rectangle.top_left + Point::new(
+                (Self::DIALOGUE_BOX.rectangle.size.width / 2) as i32, 
+                (Self::DIALOGUE_BOX.rectangle.size.height - 5) as i32),
+            &h.font,
+            Alignment::Center)
+            .draw(&mut h.screen)?;
+
+        Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new((Self::DIALOGUE_BOX.rectangle.size.width / 2) as i32, 10), &h.font, Alignment::Center).draw(&mut h.screen)?;
         Ok(())
     }
 
