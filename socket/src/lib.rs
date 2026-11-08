@@ -99,12 +99,14 @@ impl ServerConnection {
         spawner.spawn(socket_runner_task(COMMAND_CHANNEL.receiver(), RESPONSE_CHANNEL.sender(), netstack).unwrap());
 
         ServerConnection {
+            // TODO: remove this and turn it back to 0s everywhere
             server_ip: IpAddress::v4(0,0,0,0),
             server_port: 0,
         }
     }
 
     pub async fn connect(&mut self) -> Result<ServerResponse, ServerError> {
+        log::info!("connecting at {}, {}", self.server_ip, self.server_port);
         COMMAND_CHANNEL.send(ServerCommand::Connect(self.server_ip, self.server_port)).await;
         RESPONSE_CHANNEL.receive().await
     }

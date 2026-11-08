@@ -108,9 +108,14 @@ impl<'a> PbWifi<'a> {
         self.connected_info = Some(self.wifi_mod.connect_async().await?);
         info!("connect_async connected!");
 
+        self.netstack.wait_link_up().await;
+
         self.netstack.wait_config_up().await;
         if let Some(config) = self.netstack.config_v4() {
-            info!("Wifi netif up at IP {}", config.address);
+            match config.gateway {
+                Some(k) => info!("Wifi netif up at IP {} gw {}", config.address, k),
+                None => info!("Wifi netif up at IP {} with no gateway!", config.address),
+            }
         }
 
         Ok(())

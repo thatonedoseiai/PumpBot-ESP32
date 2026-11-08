@@ -29,6 +29,8 @@ pub struct HomeMenu {
     pwm3_undraw: Rectangle,
 }
 
+const HID_TIMEOUT_STRING: &str = "⟴⟶";
+
 impl HomeMenu {
     const CHANNEL_BOX: Rectangle = Rectangle::new(Point::new(0, 0), Size::new(40, 30));
 
@@ -235,6 +237,7 @@ impl HomeMenu {
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 }
                 (Either4::Fourth(_), _) => {
+                    // draw HID blocking string
                     todo!("handle a network command!")
                 }
             }

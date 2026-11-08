@@ -131,14 +131,20 @@ impl Handler<()> for GenericHandler {
                 }
             },
             Self::ConnectServer => {
-                let res = h.server.connect().await;
-                match res {
-                    Ok(_) => {
-                        Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))
-                    },
-                    Err(_) => {
-                        Ok(HandlerResult::ShowErrorDialogue(Cow::Borrowed("Pb failed to connect\nto the server!")))
+                if let MenuInternalState::ServerDetails { ip, port } | MenuInternalState::ServerDetailsSettingsMenu { ip, port } = menu_state {
+                    h.server.server_ip = *ip;
+                    h.server.server_port = *port;
+                    let res = h.server.connect().await;
+                    match res {
+                        Ok(_) => {
+                            Ok(HandlerResult::Transition(Menu::ComponentMenu(ComponentMenu::DisplaySettings)))
+                        },
+                        Err(e) => {
+                            Ok(HandlerResult::ShowErrorDialogue(Cow::Owned(format!("Pb failed to connect\nto the server!\n{:?}", e))))
+                        }
                     }
+                } else {
+                    panic!("Handler::ConnectServer used on bad menu!");
                 }
             },
         }
@@ -648,7 +654,7 @@ impl Handler<TextBoxState> for TextSubmitHandler {
                 p.replace(state.current_entry.as_ref().borrow().to_string());
                 Ok(HandlerResult::None)
             },
-            (Self::SetServerIP, MenuInternalState::ServerDetails { ip, .. }) => {
+            (Self::SetServerIP, MenuInternalState::ServerDetails { ip, .. }) | (Self::SetServerIP, MenuInternalState::ServerDetailsSettingsMenu { ip, .. }) => {
                 if let Ok(new_ip) = IpAddress::from_str(&state.current_entry.as_ref().borrow()) {
                     *ip = new_ip;
                 } else {
@@ -656,7 +662,7 @@ impl Handler<TextBoxState> for TextSubmitHandler {
                 }
                 Ok(HandlerResult::None)
             },
-            (Self::SetServerPort, MenuInternalState::ServerDetails { port, .. }) => {
+            (Self::SetServerPort, MenuInternalState::ServerDetails { port, .. }) | (Self::SetServerPort, MenuInternalState::ServerDetails { port, .. }) => {
                 if let Ok(new_port) = u16::from_str(&state.current_entry.as_ref().borrow()) {
                     *port = new_port;
                 } else {
