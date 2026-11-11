@@ -8,10 +8,12 @@ use embedded_graphics::{
 };
 use embassy_futures::select::{Either4, select4};
 use global_settings::{PB_GLOBAL_SETTINGS, Theme, rgb, rgb::RGB};
-use pwm::{PwmNumber, Command, PwmAction, PwmPinState};
+use pwm::{PwmNumber, Command, PwmAction, PwmPinState, PwmPinInfo};
 use button_idf::{ButtonEventKind, ButtonType};
 use rotenc::Direction;
 use alloc::string::ToString;
+use socket::{ ServerResponse, ServerResponseAction };
+use alloc::vec::Vec;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum HomeMenuMode {
@@ -30,6 +32,14 @@ pub struct HomeMenu {
 }
 
 const HID_TIMEOUT_STRING: &str = "⟴⟶";
+
+fn encode_pin_state(p: PwmPinInfo) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(3);
+    buf.push((p.duty >> 8) as u8);
+    buf.push((p.duty & 0xff) as u8);
+    buf.push(if p.state == PwmPinState::On { 0 } else { 1 });
+    buf
+}
 
 impl HomeMenu {
     const CHANNEL_BOX: Rectangle = Rectangle::new(Point::new(0, 0), Size::new(40, 30));
@@ -163,6 +173,7 @@ impl HomeMenu {
         // log::error!("my ip! {}", ip);
 
         h.pwm_output.send_await(Command::new(PwmAction::EnablePwm, 0)).await;
+        h.server.enable_receive_packets();
 
         loop {
             let result = select4(
@@ -184,6 +195,7 @@ impl HomeMenu {
                             // transition to settings menu
                             // todo!("transition to settings menu")
                             h.pwm_output.send_await(Command::new(PwmAction::DisablePwm, 0)).await;
+                            h.server.disable_receive_packets();
                             return Ok(MenuSignal::Transition(Menu::ComponentMenu(ComponentMenu::Settings)));
                         },
                         (ButtonType::Left, ButtonEventKind::Down) => {
@@ -236,9 +248,56 @@ impl HomeMenu {
                     self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
                     self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 }
-                (Either4::Fourth(_), _) => {
+                (Either4::Fourth(cmd), _) => {
                     // draw HID blocking string
-                    todo!("handle a network command!")
+                    let unwrapped_cmd = cmd?;
+                    let action = unwrapped_cmd.action;
+                    let time = unwrapped_cmd.time as u64 * 10;
+                    match action {
+                        ServerResponseAction::BlockHid(time) => {
+                            let millis = time as u64 * 10;
+                            todo!("block HID for amount of time");
+                        },
+                        ServerResponseAction::BlockHidRelative(time) => {
+                            let millis = time as u64 * 10;
+                            todo!("block HID for relative amount of time");
+                        },
+                        ServerResponseAction::ToggleChannel(c) => {
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::Toggle(c), time
+                            )).await;
+                        },
+                        ServerResponseAction::ChannelOff(c) => {
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::Off(c), time
+                            )).await;
+                        },
+                        ServerResponseAction::ChannelOn(c) => {
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::On(c), time
+                            )).await;
+                        },
+                        ServerResponseAction::SetPwmValue(val, c) => {
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::SetDuty(c, val), time
+                            )).await;
+                        },
+                        ServerResponseAction::SetPwmValueRelative(val, c) => {
+                            h.pwm_output.send_and_forget(Command::new(
+                                PwmAction::SetDutyRelative(c, val), time
+                            )).await;
+                        },
+                        ServerResponseAction::GetState(c) => {
+                            let pin_info = c.get_state().await;
+                            let encoded = encode_pin_state(pin_info);
+                            log::error!("sending pin state: {:?}", encoded);
+                            h.server.send(encoded).await?;
+                        },
+                        ServerResponseAction::None => {},
+                    };
+                    self.draw_main_dial(self.mode == HomeMenuMode::Edit, &theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm1, &theme, h).await?;
+                    self.draw_channel(PwmNumber::Pwm0, &theme, h).await?;
                 }
             }
             // let text = Text::with_alignment("menu", Point::new(10, 20), &h.font, Alignment::Left);

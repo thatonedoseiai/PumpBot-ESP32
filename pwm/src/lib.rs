@@ -109,6 +109,7 @@ pub enum PwmAction {
     On(PwmNumber),
     Off(PwmNumber),
     SetDuty(PwmNumber, u16),
+    SetDutyRelative(PwmNumber, i16),
     SetDutyPct(PwmNumber, u8),
     IncDutyPct(PwmNumber, u8),
     DecDutyPct(PwmNumber, u8),
@@ -125,6 +126,7 @@ impl fmt::Display for PwmAction {
             PwmAction::On(x) => { write!(f, "CHANNEL {} ON", x) },
             PwmAction::Off(x) => { write!(f, "CHANNEL {} OFF", x) },
             PwmAction::SetDuty(x, v) => { write!(f, "CHANNEL {} => DUTY {}", x, v) },
+            PwmAction::SetDutyRelative(x, d) => { write!(f, "CHANNEL {} => SET DUTY RELATIVE: {}", x, d) },
             PwmAction::SetDutyPct(x, p) => { write!(f, "CHANNEL {} => SET DUTY {}%", x, p) },
             PwmAction::IncDutyPct(x, p) => { write!(f, "CHANNEL {}: INCREMENT DUTY BY {}%", x, p) },
             PwmAction::DecDutyPct(x, p) => { write!(f, "CHANNEL {}: DECREMENT DUTY BY {}%", x, p) },
@@ -372,6 +374,14 @@ async fn execute_command(channels: &mut Vec<Channel<'_, LowSpeed>>, action: PwmA
             }
             state.duty = duty;
         },
+        PwmAction::SetDutyRelative(c, duty_delta) => {
+            let mut state = PIN_STATES[usize::from(c)].write().await;
+            let new_duty = (state.duty.saturating_add_signed(duty_delta)).clamp(0, PWM_MAX_DUTY);
+            if state.state == PwmPinState::On {
+                channels[usize::from(c)].set_duty_cycle(state.map_duty_max_min(new_duty))?;
+            }
+            state.duty = new_duty;
+        }
         PwmAction::SetDutyPct(c, pct) => {
             let mut state = PIN_STATES[usize::from(c)].write().await;
             let duty_pct = pct_to_duty(max_duty, pct);
