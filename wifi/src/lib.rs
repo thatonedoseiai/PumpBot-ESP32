@@ -28,11 +28,14 @@ use embassy_net::{Config as EConfig, StackResources, DhcpConfig, Stack, Runner};
 use esp_radio::wifi::{ControllerConfig, WifiController, Config, sta::{StationConfig, ConnectedInfo}, AuthenticationMethod, WifiError, Interface, ap::AccessPointInfo, scan::{ScanConfig, ScanTypeConfig}};
 use esp_hal::rng::Rng;
 use esp_hal::peripherals::WIFI;
+use esp_hal::efuse::{interface_mac_address, InterfaceMacAddress};
 // pub use crate::http_server::{PbHttpServer, PbHttpServerError};
 use log::{info, warn};
 use alloc::string::{ToString, String};
 use alloc::vec::Vec;
+use alloc::format;
 use core::cell::{RefCell, Ref};
+use core::str::FromStr;
 use alloc::rc::Rc;
 use esp_hal::time::Duration;
 use wget::wget;
@@ -70,7 +73,13 @@ impl<'a> PbWifi<'a> {
     pub fn new(spawner: Spawner, wifi: WIFI<'a>) -> Result<Self, WifiError> {
         let wifi_mod = WifiController::new(wifi, ControllerConfig::default())?;
 
-        let dhcpv4_config = EConfig::dhcpv4(DhcpConfig::default());
+        let mac = interface_mac_address(InterfaceMacAddress::Station);
+        let name = format!("PB-{}", mac);
+        let mut dhcp_config = DhcpConfig::default();
+        dhcp_config.hostname = Some(heapless::String::<32>::from_str(&name).map_err(|_| WifiError::InvalidArguments)?);
+        log::info!("setting hostname to {:?}", dhcp_config.hostname);
+
+        let dhcpv4_config = EConfig::dhcpv4(dhcp_config);
         let rng = Rng::new();
         let seed = (rng.random() as u64) << 32 | rng.random() as u64;
 
