@@ -301,6 +301,8 @@ impl ComponentMenu {
                         Size::new(10, 10),
                     );
 
+    const ERROR_DIALOGUE_WRAPPING_CHARS: usize = 20;
+
     const fn dialogue_box_style(theme: &Theme) -> PrimitiveStyle<Rgb565> {
         PrimitiveStyleBuilder::new()
             .stroke_width(1)
@@ -348,7 +350,20 @@ impl ComponentMenu {
             Alignment::Center)
             .draw(&mut h.screen)?;
 
-        Text::with_alignment(&message, Self::DIALOGUE_BOX.rectangle.top_left + Point::new((Self::DIALOGUE_BOX.rectangle.size.width / 2) as i32, 10), &h.font, Alignment::Center).draw(&mut h.screen)?;
+        let intersperse_newlines = message.chars()
+                                        .enumerate()
+                                        .flat_map(|(i, c)| {
+                                            if i != 0 && i % Self::ERROR_DIALOGUE_WRAPPING_CHARS == 0 {
+                                                Some('\n')
+                                            } else {
+                                                None
+                                            }
+                                            .into_iter()
+                                            .chain(core::iter::once(c))
+                                        })
+                                        .collect::<String>();
+
+        Text::with_alignment(&Cow::Owned(intersperse_newlines), Self::DIALOGUE_BOX.rectangle.top_left + Point::new((Self::DIALOGUE_BOX.rectangle.size.width / 2) as i32, 10), &h.font, Alignment::Center).draw(&mut h.screen)?;
         Ok(())
     }
 
