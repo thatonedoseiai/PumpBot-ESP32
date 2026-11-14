@@ -354,7 +354,8 @@ impl ComponentBehaviour for OptionSwitchState {
         let settings = &PB_GLOBAL_SETTINGS.read().await;
         let theme = &settings.theme;
         f.bgcol = theme.bg();
-        f.font.borrow_mut().set_size(self.definition.font_size)?;
+        f.font.borrow_mut().set_size(self.definition.font_size)?;   // BUG: attempt to subtract
+                                                                    // with overflow...?
         if let Some(boxes) = self.text_undraw {
             boxes.into_styled(Self::undraw_style(theme)).draw(s)?;
             self.text_undraw = None;
@@ -589,6 +590,8 @@ impl ComponentBehaviour for OptionScrollerState {
         // screen is redrawn forcibly.
         self.generated_options.replace(None);
         self.selection = 0;
+        self.page_start = 0;
+        self.redraw_scrollbar = true;
     }
 }
 // }}}
